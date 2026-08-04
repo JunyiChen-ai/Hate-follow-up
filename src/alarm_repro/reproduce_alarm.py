@@ -46,8 +46,8 @@ PROJECT_ROOT = "/data/jehc223/EMNLP2"
 RESULTS_SUBDIR = "alarm"
 
 
-def _ds_paths(dataset: str):
-    root = os.path.join(PROJECT_ROOT, "results", RESULTS_SUBDIR, dataset)
+def _ds_paths(dataset: str, results_subdir: str, eval_split: str):
+    root = os.path.join(PROJECT_ROOT, "results", results_subdir, dataset)
     return {
         "root": root,
         "label": os.path.join(root, "label.jsonl"),
@@ -55,12 +55,12 @@ def _ds_paths(dataset: str):
         "pairs": os.path.join(root, "retrieve", "pairs.jsonl"),
         "experience": os.path.join(root, "experience.jsonl"),
         "reference": os.path.join(root, "reference.json"),
-        "test_out": os.path.join(root, "test_alarm.jsonl"),
+        "eval_out": os.path.join(root, f"{eval_split}_alarm.jsonl"),
     }
 
 
 def run_one_dataset(dataset: str, args, model: Qwen2VLVideoModel):
-    paths = _ds_paths(dataset)
+    paths = _ds_paths(dataset, args.results_subdir, args.eval_split)
     os.makedirs(paths["root"], exist_ok=True)
 
     logging.info(f"[{dataset}] building train items")
@@ -71,12 +71,12 @@ def run_one_dataset(dataset: str, args, model: Qwen2VLVideoModel):
         f"[{dataset}] train items: {len(train_items)}  missing={train_missing}"
     )
 
-    logging.info(f"[{dataset}] building test items")
-    test_items, test_missing = build_video_items(
-        dataset, "test", include_frames=True
+    logging.info(f"[{dataset}] building {args.eval_split} items")
+    eval_items, eval_missing = build_video_items(
+        dataset, args.eval_split, include_frames=True
     )
     logging.info(
-        f"[{dataset}] test items: {len(test_items)}  missing={test_missing}"
+        f"[{dataset}] {args.eval_split} items: {len(eval_items)}  missing={eval_missing}"
     )
 
     train_by_id = {it["id"]: it for it in train_items}
@@ -132,11 +132,11 @@ def run_one_dataset(dataset: str, args, model: Qwen2VLVideoModel):
         logging.info(f"[{dataset}] Stage 6: InPredict on test split")
         stages.run_inpredict(
             model=model,
-            test_items=test_items,
+            test_items=eval_items,
             reference_path=paths["reference"],
-            out_path=paths["test_out"],
+            out_path=paths["eval_out"],
         )
-    logging.info(f"[{dataset}] done. Final output → {paths['test_out']}")
+    logging.info(f"[{dataset}] done. Final output -> {paths['eval_out']}")
 
 
 def main():
@@ -146,6 +146,8 @@ def main():
     parser.add_argument("--dataset", choices=ALL_DATASETS)
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--model", default=DEFAULT_MODEL_ID)
+    parser.add_argument("--eval-split", default="test", choices=["test", "validation"])
+    parser.add_argument("--results-subdir", default=RESULTS_SUBDIR)
 
     # Per-stage toggles — default all on, but callers can re-run
     # individual stages for debugging / resume.
@@ -187,6 +189,7 @@ def main():
     datasets = ALL_DATASETS if args.all else [args.dataset]
     logging.info(
         f"ALARM repro: datasets={datasets} model={args.model}  "
+        f"eval_split={args.eval_split} results_subdir={args.results_subdir}  "
         f"stages=[label={args.do_label} embed={args.do_embed} "
         f"retrieve={args.do_retrieve} experience={args.do_experience} "
         f"reference={args.do_reference} inpredict={args.do_inpredict}]"

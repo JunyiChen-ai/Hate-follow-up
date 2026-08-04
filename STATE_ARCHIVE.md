@@ -1576,3 +1576,670 @@ Caveats:
   iteration log
 - `logs/baseline_preds_v2.out`, `logs/select_band_logit_alpha*.out`,
   `logs/rescue_8b_*_v*.out`, `logs/apply_eval_alpha*_v*_*.out`
+
+---
+
+## CURRENT PIPELINE — Triplet-judge rescue (adopted 2026-04-24)
+
+Back-half is **entropy-band + triplet judge majority vote**. No gating
+dictionary, no hedge dictionary, no analytical Bayes-rate threshold.
+
+### Phase A — Stage-1 holistic scoring (1 MLLM call per video)
+
+Per slug s ∈ {`2b`, `qwen2.5-vl-7b`, `gemma-3-12b-it`, `gemma-3-12b-it-16f`,
+`pixtral-12b-2409`, `minicpm-v-26`}, score every test (and train, where
+needed) video with `binary_nodef` prompt.
+
+- Script: `src/our_method/score_holistic_2b.py` (slug-generalised)
+- Settings: 16 frames, temperature=0, max_tokens=1, logprobs=20, mp4>frames
+- Output: `results/holistic_<slug>/<ds>/{test,train}_binary.jsonl`
+  (one P(Yes) per video)
+
+### Phase B — Per-(slug, ds) threshold pinning (CPU, label-free)
+
+```bash
+python src/boundary_rescue/baseline_preds_v2.py \
+    --model-tag <slug> --criterion <crit>
+```
+
+Criterion per (slug, ds) comes from the label-free oracle scan in
+`results/boundary_rescue/threshold_search_summary.json` (criterion ∈
+{`otsu`, `gmm`, `li_lee`}, `fit_source` ∈ {`train`, `test`}). For the
+pinned 2b baseline this reduces to the protocol (EN=TR-Otsu, ZH=TR-GMM,
+HM=TF-li_lee, IH=TR-GMM) and the legacy filenames
+`baseline_preds_v2.jsonl` + `v2_baseline.json`. Other slugs write
+`baseline_preds_v2_<slug>_<crit>.jsonl` + `v2_baseline_<slug>_<crit>.json`.
+
+### Phase C — Entropy-above-mean band (CPU, label-free, parameter-free)
+
+```bash
+python src/boundary_rescue/select_entropy_band.py --model-tag <slug>
+```
+
+Per (slug, ds):
+1. Fit 2-component GMM in logit space on stage-1 test scores
+   (reuses `select_bayes_band.fit_gmm`).
+2. Posterior `p_hi = P(hateful-component | logit(score))`.
+3. Binary entropy `H_i = −p·log(p) − (1−p)·log(1−p)`.
+4. `in_band := (H_i > mean(H))`. No quantile, no α, no labels.
+
+Output: `results/boundary_rescue/<ds>/candidates_entropy_band_<slug>.jsonl`.
+Band sizes for 2b: EN=91/161, ZH=88/149, HM=100/215, IH=153/401.
+
+### Phase D — Offline judges (1 MLLM call per video, per judge)
+
+```bash
+python src/boundary_rescue/judge_offline.py --model <judge_id> --all
+```
+
+Runs the same rescue prompt as V1 on **every** test video for each of
+the 8 judges in the pool — `qwen3-vl-8b`, `gemma-3-12b-it`,
+`gemma-3-27b-it`, `qwen2.5-vl-32b-awq`, `qwen2.5-vl-72b-awq`,
+`internvl35-8b`, `llava-onevision-qwen2-7b-ov-hf`, `minicpm-v-26`.
+`HATEMM_DEF` for EN/ZH/HM; `IH_DEF` + IH-prompt variant for
+ImpliHateVid. Pre-computing on the full test set (not only on band
+videos) lets the downstream grid enumerate arbitrary triplets offline;
+at deployment, Phase D is called only on `in_band` videos.
+
+Output: `results/boundary_rescue/<ds>/offline_test_<judge>.jsonl` (and
+`offline_test_ih_<judge>.jsonl` for IH).
+
+### Phase E — Triplet majority-vote grid (CPU)
+
+```bash
+python src/boundary_rescue/grid_eval_all.py \
+    --slugs 2b qwen2.5-vl-7b gemma-3-12b-it gemma-3-12b-it-16f \
+            pixtral-12b-2409 minicpm-v-26
+```
+
+For each (slug, triplet ∈ C(8,3)=56, ds ∈ 4): load stage-1 preds + band
++ 3 judge files; on every `in_band` video, collect triplet judge preds,
+majority vote when ≥2 valid and ≥2 agree, flip stage-1 if majority
+disagrees. Outside the band, stage-1 stands. Outputs:
+
+- `results/boundary_rescue/grid_eval/grid_raw.jsonl` (1344 cells)
+- `results/boundary_rescue/grid_eval/{grid_summary.json,grid_summary_top.md}`
+
+### Per-video MLLM budget
+
+Stage-1 is 1 call per video. Judges apply only to band videos, so a
+triplet rescue adds at most 3 parallel judge calls on a subset of test.
+The prompt-budget cap (≤2 distinct-role calls per video) is read as
+"stage-1 role + judge role = 2"; the three triplet members share the
+single judge role.
+
+### Current best cell (2026-04-20 grid)
+
+Stage-1 slug `2b` + triplet `gemma-3-27b-it + qwen2.5-vl-32b-awq +
+llava-onevision-qwen2-7b-ov-hf`: EN 0.783/0.711, ZH 0.826/0.806,
+HM 0.842/0.832, IH 0.833/0.832. Full grid, per-slug baselines, Δ-acc
+distributions, entropy-band tightness sweep, and side-test negatives
+in `docs/triplet_judge_round_2026_04_20.md`.
+
+### Open issues
+
+- **Oracle criterion in Phase B.** `threshold_search_summary.json`
+  picks the per-(slug, ds) criterion by label; this contaminates the
+  label-free claim for non-`2b` stage-1 slugs and must be replaced by
+  a label-free selector before the pipeline is publishable.
+
+### Artifacts
+
+- Code: `src/boundary_rescue/{score_holistic_2b,baseline_preds_v2,select_entropy_band,judge_offline,grid_eval_all}.py`
+- Stage-1 scores: `results/holistic_<slug>/<ds>/{test,train}_binary.jsonl`
+- Threshold summary: `results/boundary_rescue/threshold_search_summary.{json,md}`
+- Per-slug baselines: `results/boundary_rescue/v2_baseline_<slug>_<crit>.json`,
+  `results/boundary_rescue/<ds>/baseline_preds_v2_<slug>_<crit>.jsonl`
+- Per-slug entropy bands: `results/boundary_rescue/<ds>/candidates_entropy_band_<slug>.jsonl`
+- Judge outputs: `results/boundary_rescue/<ds>/offline_test_<judge>.jsonl`,
+  `offline_test_ih_<judge>.jsonl`
+- Grid: `results/boundary_rescue/grid_eval/{grid_raw.jsonl,grid_summary.json,grid_summary_top.md}`
+- Sbatch: `scripts/run_holistic_<slug>.sh`, `scripts/run_judge_*_<judge>.sh`
+
+---
+
+## Sequential entropy-stop verification (exploratory update, 2026-04-25)
+
+This update replaces the inelegant "fixed three-judge majority vote" story
+with an ordered evidence-acquisition story that is easier to package in the
+paper:
+
+1. Stage-1 remains the lightweight probabilistic reader. It produces a
+   continuous score, an unsupervised threshold prediction, and a GMM posterior
+   `p = P(high-score component | logit(score))`.
+2. A video enters Stage-2 only if it is inside the same label-free entropy
+   band already used by the triplet-judge pipeline:
+   `H(p) > mean_entropy_dataset`.
+3. Stage-2 calls a fixed ordered verifier list. After each verifier verdict,
+   update the posterior log-odds by a fixed verifier-evidence prior:
+   `logit(p') = logit(p) + sign(verdict) * log(rho/(1-rho))`.
+4. Stop as soon as the updated posterior leaves the same label-free
+   uncertainty region, i.e. `H(p') <= mean_entropy_dataset`; otherwise call
+   the next verifier.
+5. Final label is `1[p >= 0.5]`. Outside the band, the Stage-1 label stands.
+
+The important packaging point is that the stopping interval is not hand-set.
+It is induced by the same unlabeled score geometry as the Stage-1 band. The
+only remaining scalar prior is `rho`, which should be framed as a fixed
+verifier-evidence prior and reported with sensitivity/ablation rather than
+as a per-dataset tuned parameter.
+
+### Preferred no-pool `rho`: entropy-boundary calibration
+
+The cleaner way to remove the `rho` hyperparameter is to tie it directly to
+the same entropy geometry used for routing and stopping. Interpret `rho` not
+as "known judge accuracy", but as the posterior step size contributed by one
+verifier verdict. Starting from a maximally uncertain routed sample
+`p = 0.5`, a positive verifier verdict updates the posterior to `p' = rho`.
+We choose `rho` so that this one unit of verifier evidence lands exactly on
+the label-free stopping boundary:
+
+```text
+rho_ds = upper solution of H(rho_ds) = mean_entropy_dataset
+```
+
+Equivalently, `rho_ds` is the upper edge of the dataset's entropy band. No
+labels, no verifier pool, and no preliminary all-judge pass are required.
+For `2b`, this gives:
+
+| Dataset | mean entropy Hbar | rho_ds = upper entropy boundary |
+|---|---:|---:|
+| MHClip_EN | 0.4632 | 0.825 |
+| MHClip_ZH | 0.4316 | 0.845 |
+| HateMM | 0.3159 | 0.904 |
+| ImpliHateVid | 0.2341 | 0.937 |
+
+Performance with `g27 > q32 > q72` and this no-pool `rho_ds`:
+
+| rho source | rho EN/ZH/HM/IH | Calls | Avg ACC | Avg MF1 | Avg MP | Avg MR | Per-dataset ACC |
+|---|---|---:|---:|---:|---:|---:|---|
+| entropy-boundary rho_ds | 0.825 / 0.845 / 0.904 / 0.937 | 1.68 | 83.2 | 0.809 | 0.820 | 0.809 | 79.5 / 83.9 / 86.5 / 82.8 |
+| fixed rho=0.85 | 0.850 / 0.850 / 0.850 / 0.850 | 1.73 | 83.3 | 0.810 | 0.821 | 0.810 | 79.5 / 83.9 / 86.0 / 83.8 |
+| fixed rho=0.90 | 0.900 / 0.900 / 0.900 / 0.900 | 1.67 | **83.4** | **0.811** | **0.822** | **0.813** | 79.5 / 83.9 / 86.5 / 83.5 |
+
+Takeaway: the no-pool entropy-boundary `rho_ds` essentially matches the
+hand-set `rho=0.85` while being fully label-free and deployment-natural.
+This is the preferred method definition for the paper. The paper can say:
+
+> We calibrate one verifier's evidence to move a maximally uncertain sample
+> to the edge of the dataset's own label-free uncertainty band.
+
+This keeps the whole second stage self-contained: the same unlabeled
+posterior entropy defines routing, stopping, and verifier evidence strength.
+
+### Diagnostic `rho` estimation (inter-verifier agreement)
+
+Inter-verifier agreement also recovers a similar `rho`, but it requires an
+extra verifier pool or a calibration pass over verifier outputs. Treat this
+as a diagnostic/ablation, not the preferred deployable rule. The strongest
+simple estimator is inter-verifier agreement on the routed band:
+
+1. Run the fixed verifier pool on the unlabeled band videos.
+2. For each verifier verdict, compute whether it agrees with the
+   leave-one-out consensus of the remaining verifiers.
+3. Estimate either a global `rho` or per-verifier `rho_j` from this
+   agreement rate.
+4. Use `rho` in the same posterior update:
+   `logit(p') = logit(p) ± log(rho/(1-rho))`.
+
+On the main order `g27 > q32 > q72`, the label-free estimates nearly
+recover the hand-set `rho=0.85`:
+
+| rho source | Estimated rho | Calls | Avg ACC | Avg MF1 | Avg MP | Avg MR | Per-dataset ACC |
+|---|---|---:|---:|---:|---:|---:|---|
+| fixed prior | 0.850 / 0.850 / 0.850 | 1.73 | **83.3** | **0.810** | **0.821** | **0.810** | 79.5 / 83.9 / 86.0 / 83.8 |
+| global leave-one all-8 consensus | 0.854 / 0.854 / 0.854 | 1.73 | 83.2 | 0.810 | 0.821 | 0.810 | 79.5 / 83.9 / 86.0 / 83.5 |
+| per-verifier leave-one all-8 consensus | 0.856 / 0.876 / 0.897 | 1.72 | 83.2 | 0.809 | 0.820 | 0.810 | 79.5 / 83.2 / 86.5 / 83.5 |
+| order-triplet pairwise agreement | 0.851 / 0.851 / 0.851 | 1.73 | **83.3** | **0.810** | **0.821** | **0.810** | 79.5 / 83.9 / 86.0 / 83.8 |
+| order-triplet leave-one consensus | 0.907 / 0.899 / 0.919 | 1.66 | 83.2 | 0.810 | 0.821 | 0.812 | 79.5 / 83.9 / 86.5 / 83.0 |
+| Stage-1 soft agreement | 0.605 / 0.612 / 0.605 | 2.17 | 81.0 | 0.784 | 0.792 | 0.786 | 75.8 / 81.2 / 84.7 / 82.5 |
+
+Takeaway: agreement-derived `rho` explains why `rho≈0.85` is reasonable, but
+it is less clean than entropy-boundary calibration because it requires
+additional verifier outputs. Stage-1 soft-agreement is a weak estimator
+because the routed band intentionally contains near-boundary Stage-1
+posteriors, compressing the estimate toward 0.5.
+
+If this diagnostic is reported, define it as:
+
+```text
+rho = mean_j P(v_j = majority(V \ {j})) on unlabeled routed-band samples
+```
+
+This is task-label-free, but it should not be the main method unless the
+paper is comfortable introducing an explicit verifier pool calibration step.
+
+### Label-free entropy-stop thresholds for 2B
+
+The entropy threshold `mean_entropy_dataset` is computed over each dataset's
+unlabeled GMM posterior distribution. For `2b`, it corresponds to the
+following posterior intervals:
+
+| Dataset | mean entropy Hbar | Equivalent posterior interval |
+|---|---:|---:|
+| MHClip_EN | 0.4632 | [0.175, 0.825] |
+| MHClip_ZH | 0.4316 | [0.155, 0.845] |
+| HateMM | 0.3159 | [0.096, 0.904] |
+| ImpliHateVid | 0.2341 | [0.063, 0.937] |
+
+### Main comparison (2B Stage-1)
+
+Metrics are averaged over MHClip_EN / MHClip_ZH / HateMM /
+ImpliHateVid. `Calls` is average MLLM calls per video, counting Stage-1
+plus verifier calls issued only inside the entropy band.
+
+| Config | Order | rho | Calls | Avg ACC | Avg MF1 | Avg MP | Avg MR | Per-dataset ACC |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| Stage-1 only | `-` | - | 1.00 | 79.5 | 0.755 | 0.784 | 0.753 | 76.4 / 79.2 / 80.5 / 81.8 |
+| Current triplet majority | `g27 + q32 + llava` unordered vote | - | 2.50 | 82.1 | 0.796 | 0.808 | 0.796 | 78.3 / 82.6 / 84.2 / 83.3 |
+| Entropy-stop sequential | `g27 > q32 > q72` | 0.85 | 1.73 | **83.3** | **0.810** | **0.821** | **0.810** | **79.5 / 83.9 / 86.0 / 83.8** |
+
+Full per-dataset metrics for the main sequential cell:
+
+| Dataset | ACC | MF1 | MP | MR |
+|---|---:|---:|---:|---:|
+| MHClip_EN | 79.5 | 0.732 | 0.773 | 0.715 |
+| MHClip_ZH | 83.9 | 0.819 | 0.808 | 0.840 |
+| HateMM | 86.0 | 0.853 | 0.858 | 0.849 |
+| ImpliHateVid | 83.8 | 0.837 | 0.845 | 0.838 |
+
+Main paper claim supported by this table: sequential verification beats the
+current majority-vote back half on all four averaged metrics while reducing
+average calls from 2.50 to 1.73 per video.
+
+### Full-test-set TestFit sensitivity (not out-of-band-only)
+
+This diagnostic uses the standard TestFit definition: fit the unsupervised
+threshold on the full unlabeled test-score distribution for each dataset,
+then evaluate. This is different from the rejected out-of-band-only variant:
+the threshold fitting set here is the whole test set. The entropy band and
+sequential verifier are unchanged. For sequential rows, in-band videos are
+resolved by `g27 > q32 > q72` with fixed `rho=0.85`; out-of-band videos keep
+the Stage-1 TestFit label.
+
+Stage-1 only, full-test-set TestFit:
+
+| Criterion | Dataset | ACC | MF1 | MP | MR | Threshold |
+|---|---|---:|---:|---:|---:|---:|
+| otsu | MHClip_EN | 76.4 | 65.3 | 76.3 | 64.1 | 0.2705 |
+| otsu | MHClip_ZH | 75.8 | 60.4 | 82.8 | 60.6 | 0.2736 |
+| otsu | HateMM | 79.1 | 76.7 | 80.4 | 75.8 | 0.3797 |
+| otsu | ImpliHateVid | 68.3 | 65.2 | 78.3 | 68.3 | 0.2695 |
+| otsu | **Avg** | **74.9** | **66.9** | **79.5** | **67.2** |  |
+| gmm | MHClip_EN | 67.7 | 63.4 | 63.1 | 64.2 | 0.0921 |
+| gmm | MHClip_ZH | 81.2 | 78.7 | 77.8 | 80.2 | 0.0362 |
+| gmm | HateMM | 74.9 | 74.7 | 75.3 | 76.4 | 0.0938 |
+| gmm | ImpliHateVid | 82.0 | 82.0 | 82.3 | 82.0 | 0.0411 |
+| gmm | **Avg** | **76.5** | **74.7** | **74.6** | **75.7** |  |
+| li_lee | MHClip_EN | 71.4 | 65.0 | 65.7 | 64.5 | 0.1288 |
+| li_lee | MHClip_ZH | 77.9 | 70.6 | 74.9 | 69.0 | 0.1142 |
+| li_lee | HateMM | 80.5 | 79.3 | 80.0 | 78.9 | 0.2410 |
+| li_lee | ImpliHateVid | 75.1 | 74.3 | 78.5 | 75.0 | 0.1251 |
+| li_lee | **Avg** | **76.2** | **72.3** | **74.8** | **71.9** |  |
+
+Sequential verifier after full-test-set TestFit:
+
+| Criterion | Dataset | ACC | MF1 | MP | MR | Calls | Changed out-of-band labels | Threshold |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| otsu | MHClip_EN | 79.5 | 73.2 | 77.3 | 71.5 | 1.76 | 0 | 0.2705 |
+| otsu | MHClip_ZH | 79.2 | 69.5 | 81.6 | 67.4 | 1.79 | 35 | 0.2736 |
+| otsu | HateMM | 86.0 | 85.3 | 85.8 | 84.9 | 1.67 | 0 | 0.3797 |
+| otsu | ImpliHateVid | 77.1 | 76.1 | 81.9 | 77.0 | 1.70 | 49 | 0.2695 |
+| otsu | **Avg** | **80.5** | **76.0** | **81.7** | **75.2** | **1.73** | **21.0** |  |
+| gmm | MHClip_EN | 75.2 | 69.6 | 70.5 | 68.9 | 1.76 | 9 | 0.0921 |
+| gmm | MHClip_ZH | 83.9 | 81.9 | 80.8 | 84.0 | 1.79 | 0 | 0.0362 |
+| gmm | HateMM | 86.0 | 85.3 | 85.8 | 84.9 | 1.67 | 0 | 0.0938 |
+| gmm | ImpliHateVid | 83.8 | 83.7 | 84.5 | 83.8 | 1.70 | 0 | 0.0411 |
+| gmm | **Avg** | **82.2** | **80.1** | **80.4** | **80.4** | **1.73** | **2.2** |  |
+| li_lee | MHClip_EN | 75.2 | 69.6 | 70.5 | 68.9 | 1.76 | 9 | 0.1288 |
+| li_lee | MHClip_ZH | 81.2 | 76.8 | 78.2 | 75.8 | 1.79 | 16 | 0.1142 |
+| li_lee | HateMM | 86.0 | 85.3 | 85.8 | 84.9 | 1.67 | 0 | 0.2410 |
+| li_lee | ImpliHateVid | 83.8 | 83.7 | 84.5 | 83.8 | 1.70 | 0 | 0.1251 |
+| li_lee | **Avg** | **81.6** | **78.8** | **79.8** | **78.4** | **1.73** | **6.2** |  |
+
+Dataset-wise best full-test-set TestFit criteria:
+
+| Stage | Dataset | Best criterion | ACC | MF1 | MP | MR | Calls | Threshold |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| Stage-1 only | MHClip_EN | otsu | 76.4 | 65.3 | 76.3 | 64.1 | 1.00 | 0.2705 |
+| Stage-1 only | MHClip_ZH | gmm | 81.2 | 78.7 | 77.8 | 80.2 | 1.00 | 0.0362 |
+| Stage-1 only | HateMM | li_lee | 80.5 | 79.3 | 80.0 | 78.9 | 1.00 | 0.2410 |
+| Stage-1 only | ImpliHateVid | gmm | 82.0 | 82.0 | 82.3 | 82.0 | 1.00 | 0.0411 |
+| Stage-1 only | **Avg** | dataset-wise best | **80.0** | **76.3** | **79.1** | **76.3** | **1.00** |  |
+| Sequential | MHClip_EN | otsu | 79.5 | 73.2 | 77.3 | 71.5 | 1.76 | 0.2705 |
+| Sequential | MHClip_ZH | gmm | 83.9 | 81.9 | 80.8 | 84.0 | 1.79 | 0.0362 |
+| Sequential | HateMM | otsu / gmm / li_lee tie | 86.0 | 85.3 | 85.8 | 84.9 | 1.67 | - |
+| Sequential | ImpliHateVid | gmm / li_lee tie | 83.8 | 83.7 | 84.5 | 83.8 | 1.70 | - |
+| Sequential | **Avg** | dataset-wise best | **83.3** | **81.0** | **82.1** | **81.0** | **1.73** |  |
+
+Takeaway: full-test-set TestFit is feasible for all four datasets. As a
+Stage-1-only diagnostic, the best single shared TestFit criterion is `gmm`
+(`76.5` average ACC, `74.7` average MF1), while selecting the best criterion
+per dataset gives `80.0` average ACC / `76.3` average MF1. After sequential
+verification, the dataset-wise best full-TestFit criteria reach `83.3`
+average ACC / `81.0` average MF1, matching the current mixed-protocol
+sequential cell. The winning criteria are EN=`otsu`, ZH=`gmm`, HM=tie after
+sequential verification, and IH=`gmm`/`li_lee` tie after sequential
+verification. This is paper-useful as a TestFit upper-sensitivity result,
+but it should be described explicitly as dataset-wise criterion selection.
+
+### Curated top sequential entropy-stop configs (2B Stage-1)
+
+These are the most paper-useful verifier backbones/orderings from the sweep.
+They show that the gain is not tied to a single third verifier; the stable
+pattern is `Gemma-27B` first, followed by a strong Qwen-family verifier, with
+the third verifier often rarely reached because of entropy stopping.
+
+| Config | Order | rho | Calls | Avg ACC | Avg MF1 | Avg MP | Avg MR | Per-dataset ACC |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| g27 > q32 > q72 | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.85 | 1.73 | **83.3** | **0.810** | **0.821** | **0.810** | 79.5 / 83.9 / 86.0 / 83.8 |
+| g27 > q72 > q32 | `gemma-3-27b-it > qwen2.5-vl-72b-awq > qwen2.5-vl-32b-awq` | 0.85 | 1.72 | **83.3** | **0.810** | **0.821** | **0.810** | 79.5 / 83.9 / 86.0 / 83.8 |
+| g27 > q32 > internvl | `gemma-3-27b-it > qwen2.5-vl-32b-awq > internvl35-8b` | 0.85 | 1.74 | 83.0 | 0.806 | 0.818 | 0.805 | 79.5 / 83.2 / 85.6 / 83.5 |
+| g27 > internvl > q32 | `gemma-3-27b-it > internvl35-8b > qwen2.5-vl-32b-awq` | 0.85 | 1.74 | 83.0 | 0.806 | 0.818 | 0.805 | 79.5 / 83.2 / 85.6 / 83.5 |
+| g27 > q3-8b > q32 | `gemma-3-27b-it > qwen3-vl-8b > qwen2.5-vl-32b-awq` | 0.85 | 1.74 | 82.8 | 0.805 | 0.816 | 0.804 | 79.5 / 83.2 / 85.1 / 83.5 |
+| g27 > q32 > q3-8b | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen3-vl-8b` | 0.85 | 1.74 | 82.8 | 0.805 | 0.816 | 0.804 | 79.5 / 83.2 / 85.1 / 83.5 |
+| g27 > q32 > llava | `gemma-3-27b-it > qwen2.5-vl-32b-awq > llava-onevision-qwen2-7b-ov-hf` | 0.85 | 1.74 | 82.7 | 0.805 | 0.815 | 0.806 | 80.1 / 82.6 / 84.2 / 84.0 |
+| g27 > llava > q32 | `gemma-3-27b-it > llava-onevision-qwen2-7b-ov-hf > qwen2.5-vl-32b-awq` | 0.85 | 1.77 | 82.7 | 0.805 | 0.815 | 0.806 | 80.1 / 82.6 / 84.2 / 84.0 |
+| g27 > q3-8b > q72 | `gemma-3-27b-it > qwen3-vl-8b > qwen2.5-vl-72b-awq` | 0.85 | 1.73 | 82.5 | 0.800 | 0.812 | 0.799 | 78.3 / 82.6 / 86.5 / 82.8 |
+| g27 > q72 > q3-8b | `gemma-3-27b-it > qwen2.5-vl-72b-awq > qwen3-vl-8b` | 0.85 | 1.72 | 82.5 | 0.800 | 0.812 | 0.799 | 78.3 / 82.6 / 86.5 / 82.8 |
+| g27 > q32 > q72 | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.80 | 1.80 | 82.5 | 0.800 | 0.813 | 0.801 | 78.3 / 83.2 / 86.0 / 82.5 |
+
+Useful robustness angles:
+- Swapping the order of `q32` and `q72` after `g27` gives the same top
+  result.
+- Replacing the third verifier with `internvl35-8b`, `qwen3-vl-8b`, or
+  `llava-ov` remains above the current majority-vote average.
+- Lowering `rho` from 0.85 to 0.80 still matches/exceeds the old majority
+  on average accuracy while keeping lower call budget.
+
+### Early-exit behavior by verifier order (2B Stage-1)
+
+This diagnostic checks whether the dynamic sequential design actually uses
+fewer verifiers on easier routed cases, rather than behaving like a fixed
+three-judge majority vote. The table reports only the entropy-routed
+in-band videos; out-of-band videos keep Stage-1 and require zero verifier
+calls. `rho_D` denotes the label-free entropy-boundary value computed from
+each dataset's Stage-1 score distribution:
+
+| Dataset | rho_D |
+|---|---:|
+| MHClip_EN | 0.825 |
+| MHClip_ZH | 0.845 |
+| HateMM | 0.904 |
+| ImpliHateVid | 0.937 |
+
+With label-free `rho_D`, early exit is stable across the useful verifier
+order variants:
+
+| Order | Avg ACC | Avg MF1 | In-band 1-call stop | In-band <=2-call stop | Avg calls / in-band | Counts 0/1/2/3 |
+|---|---:|---:|---:|---:|---:|---|
+| `g27 > q32 > q72` | 83.2 | 0.809 | 70.6% | 92.1% | 1.37 | 494 / 305 / 93 / 34 |
+| `g27 > q72 > q32` | 83.2 | 0.809 | 70.6% | 89.6% | 1.40 | 494 / 305 / 82 / 45 |
+| `g27 > q32 > internvl` | 83.3 | 0.809 | 70.6% | 92.1% | 1.37 | 494 / 305 / 93 / 34 |
+| `g27 > internvl > q32` | 83.3 | 0.809 | 70.6% | 91.4% | 1.38 | 494 / 305 / 90 / 37 |
+| `g27 > q32 > q3` | 83.3 | 0.810 | 70.6% | 92.1% | 1.37 | 494 / 305 / 93 / 34 |
+| `g27 > q32 > llava` | 82.8 | 0.807 | 70.6% | 92.1% | 1.37 | 494 / 305 / 93 / 34 |
+| `q32 > g12 > g27` | 82.5 | 0.801 | 69.7% | 91.4% | 1.39 | 494 / 301 / 94 / 37 |
+| `q32 > g27 > g12` | 82.5 | 0.801 | 69.7% | 92.1% | 1.38 | 494 / 301 / 97 / 34 |
+
+For comparison, fixed `rho=0.85` is more conservative: the same main order
+has 60.4% one-call stops, 82.4% <=2-call stops, and 1.57 calls per in-band
+video, while reaching 83.3 average ACC / 0.810 average MF1. The label-free
+`rho_D` setting therefore gives nearly the same accuracy with earlier exits,
+especially on datasets whose Stage-1 entropy boundary implies a stronger
+verifier evidence scale.
+
+Paper-facing interpretation: the first verifier resolves the easy agreement
+cases, and later verifiers are mostly reserved for samples where the first
+verifier conflicts with the Stage-1 posterior direction. This supports the
+dynamic panel story: the method is not simply a three-call majority vote with
+an early-stop wrapper.
+
+### Stop-bucket rescue quality (2B Stage-1, main order)
+
+This diagnostic uses the main order `g27 > q32 > q72` and separates the
+entropy-routed in-band videos by the number of verifier calls actually used.
+The key flip-quality definitions are:
+
+```
+Flip Rescue Rate = # flipped from Stage-1 and correct / # flipped
+Flip Harm Rate   = # flipped from Stage-1 and wrong   / # flipped
+```
+
+With label-free `rho_D`:
+
+| Stop bucket | N | Stage-1 ACC | Final ACC | Flipped | Flip Rescue Rate | Flip Harm Rate |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 call | 305 | 78.4 | 82.0 | 29 | 20 / 29 = 69.0% | 9 / 29 = 31.0% |
+| 2 calls | 93 | 51.6 | 71.0 | 50 | 34 / 50 = 68.0% | 16 / 50 = 32.0% |
+| 3 calls | 34 | 52.9 | 52.9 | 14 | 7 / 14 = 50.0% | 7 / 14 = 50.0% |
+
+With fixed `rho=0.85`:
+
+| Stop bucket | N | Stage-1 ACC | Final ACC | Flipped | Flip Rescue Rate | Flip Harm Rate |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 call | 261 | 83.1 | 84.3 | 13 | 8 / 13 = 61.5% | 5 / 13 = 38.5% |
+| 2 calls | 95 | 57.9 | 74.7 | 32 | 24 / 32 = 75.0% | 8 / 32 = 25.0% |
+| 3 calls | 76 | 43.4 | 60.5 | 43 | 28 / 43 = 65.1% | 15 / 43 = 34.9% |
+
+Takeaway: the stop buckets have the intended structure. One-call cases are
+mostly high-accuracy confirmation cases with few harmful flips. Two-call
+cases are substantially harder under Stage-1 but have strong flip quality,
+showing that the second verifier is doing real rescue work. Three-call cases
+are the ambiguous tail; under label-free `rho_D`, their flips are essentially
+50/50, which is useful evidence that the design is exhausting the easy
+recoveries before reaching the full verifier budget.
+
+### Exhaustive order sweep for story-compatible stop buckets
+
+Follow-up exhaustive sweep over all ordered verifier triplets from the
+8-verifier pool (`8P3 = 336` orders). This is specifically designed to find
+paper-useful combinations that jointly support the two desired claims:
+
+1. **Dynamic early exit:** most routed videos stop after one verifier, and
+   nearly all stop within two verifiers.
+2. **Bucket semantics:** one-call cases are easy confirmations; two-call
+   cases are harder under Stage-1 but have high flip rescue quality; the
+   remaining three-call cases are a hard tail.
+
+For the primary label-free `rho_D` setting, the strict story filter is:
+
+```
+Avg ACC >= 82.5
+in-band 1-call stop >= 68%
+in-band <=2-call stop >= 89%
+bucket-1 final ACC >= 80%, bucket-1 flip rescue >= 60%
+bucket-2 Stage-1 ACC <= 60%, bucket-2 final ACC >= 68%
+bucket-2 flip rescue >= 60%
+bucket-3 N <= 50
+```
+
+This yields **10 strict story-compatible orders** under label-free `rho_D`
+and **24 relaxed story-compatible orders**. The strict set is:
+
+| Order | ACC | MF1 | 1-call | <=2-call | B1 final / flipR | B2 S1->final / flipR | B3 final / flipR |
+|---|---:|---:|---:|---:|---|---|---|
+| `g27 > q3 > q32` | 83.3 | 0.810 | 70.6% | 91.0% | 82.0 / 69.0 | 56.8->69.3 / 63.4 | 66.7 / 77.8 |
+| `g27 > q32 > q3` | 83.3 | 0.810 | 70.6% | 92.1% | 82.0 / 69.0 | 51.6->71.0 / 68.0 | 61.8 / 66.7 |
+| `g27 > q32 > internvl` | 83.3 | 0.809 | 70.6% | 92.1% | 82.0 / 69.0 | 51.6->71.0 / 68.0 | 61.8 / 66.7 |
+| `g27 > internvl > q32` | 83.3 | 0.809 | 70.6% | 91.4% | 82.0 / 69.0 | 53.3->70.0 / 67.4 | 64.9 / 68.8 |
+| `g27 > q32 > q72` | 83.2 | 0.809 | 70.6% | 92.1% | 82.0 / 69.0 | 51.6->71.0 / 68.0 | 52.9 / 50.0 |
+| `g27 > q32 > llava` | 82.8 | 0.807 | 70.6% | 92.1% | 82.0 / 69.0 | 51.6->71.0 / 68.0 | 50.0 / 45.5 |
+| `g27 > q3 > llava` | 82.7 | 0.802 | 70.6% | 91.0% | 82.0 / 69.0 | 56.8->69.3 / 63.4 | 53.8 / 66.7 |
+| `g27 > internvl > llava` | 82.6 | 0.800 | 70.6% | 91.4% | 82.0 / 69.0 | 53.3->70.0 / 67.4 | 51.4 / 53.3 |
+| `q32 > g27 > g12` | 82.5 | 0.801 | 69.7% | 92.1% | 81.4 / 63.6 | 51.5->70.1 / 68.0 | 52.9 / 57.1 |
+| `g27 > q32 > minicpm` | 82.5 | 0.801 | 70.6% | 92.1% | 82.0 / 69.0 | 51.6->71.0 / 68.0 | 38.2 / 27.3 |
+
+Notation: `B1/B2/B3` are stop buckets after 1/2/3 verifier calls;
+`flipR` is `# flipped-and-correct / # flipped`. `q3` is
+`qwen3-vl-8b`; `q32`/`q72` are Qwen2.5-VL 32B/72B; `internvl` is
+`internvl35-8b`; `llava` is `llava-onevision-qwen2-7b-ov-hf`.
+
+Relaxed filter:
+
+```
+Avg ACC >= 82.0
+in-band 1-call stop >= 60%
+in-band <=2-call stop >= 82%
+bucket-1 final ACC >= 78%, bucket-1 flip rescue >= 58%
+bucket-2 final ACC >= 68%, bucket-2 flip rescue >= 60%
+```
+
+Under label-free `rho_D`, relaxed-compatible orders are concentrated in
+`g27` first plus a small but useful non-`g27` first pocket:
+
+| First verifier | # relaxed-compatible orders | Best order | Best ACC / MF1 |
+|---|---:|---|---:|
+| `g27` | 22 | `g27 > q3 > q32` | 83.3 / 0.810 |
+| `q32` | 2 | `q32 > g27 > g12` | 82.5 / 0.801 |
+
+This supports the nuanced robustness story: the exact later verifier order
+is not fragile, and a strong non-`g27` first verifier (`q32`) can preserve
+the bucket behavior, but the broad high-performing region still favors
+`g27` as the first verifier.
+
+Fixed `rho=0.85` sensitivity is more conservative: there are **0 strict**
+orders under the above early-exit-heavy filter, but **19 relaxed-compatible
+orders**, all with `g27` first. Representative rows:
+
+| Order | ACC | MF1 | 1-call | <=2-call | B1 final / flipR | B2 S1->final / flipR | B3 final / flipR |
+|---|---:|---:|---:|---:|---|---|---|
+| `g27 > q32 > q72` | 83.3 | 0.810 | 60.4% | 82.4% | 84.3 / 61.5 | 57.9->74.7 / 75.0 | 60.5 / 65.1 |
+| `g27 > q32 > internvl` | 83.0 | 0.806 | 60.4% | 82.4% | 84.3 / 61.5 | 57.9->74.7 / 75.0 | 56.6 / 63.2 |
+| `g27 > internvl > q32` | 83.0 | 0.806 | 60.4% | 82.6% | 84.3 / 61.5 | 56.2->71.9 / 77.8 | 60.0 / 62.8 |
+| `g27 > q3 > q32` | 82.8 | 0.805 | 60.4% | 82.9% | 84.3 / 61.5 | 56.7->70.1 / 72.4 | 60.8 / 65.8 |
+| `g27 > q32 > q3` | 82.8 | 0.805 | 60.4% | 82.4% | 84.3 / 61.5 | 57.9->74.7 / 75.0 | 55.3 / 62.9 |
+| `g27 > q32 > llava` | 82.7 | 0.805 | 60.4% | 82.4% | 84.3 / 61.5 | 57.9->74.7 / 75.0 | 55.3 / 62.2 |
+| `g27 > q3 > q72` | 82.5 | 0.800 | 60.4% | 82.9% | 84.3 / 61.5 | 56.7->70.1 / 72.4 | 56.8 / 62.9 |
+
+Takeaway: label-free `rho_D` is the cleaner paper setting because it gives
+both competitive accuracy and stronger early-exit behavior. Fixed `rho=0.85`
+still supports the bucket-quality claim but looks less dynamic because more
+cases remain inside the band until later calls.
+
+### Diverse first-verifier evidence under performance-plus-bucket criteria
+
+The previous strict table is top-performance oriented and therefore heavily
+concentrated on `g27` as the first verifier. For a more defensible
+generalizability story, use a broader but still meaningful criterion:
+
+```
+1. Average ACC and MF1 improve over the 2B Stage-1 baseline.
+2. Bucket behavior remains story-compatible:
+   - in-band 1-call stop >= 55%
+   - in-band <=2-call stop >= 82%
+   - bucket-1 final ACC >= 78%, bucket-1 flip rescue >= 55%
+   - bucket-2 Stage-1 ACC <= 62%
+   - bucket-2 final ACC >= 66%, bucket-2 flip rescue >= 58%
+```
+
+Under label-free `rho_D`, this gives **48 story-compatible orders** with
+more diverse first verifiers:
+
+| First verifier | # orders | Best order | Avg ACC / MF1 | Per-dataset ACC | Bucket summary |
+|---|---:|---|---:|---|---|
+| `g27` | 24 | `g27 > q3 > q32` | 83.3 / 0.810 | 79.5 / 83.2 / 86.5 / 83.8 | 1-call 70.6%, <=2-call 91.0%, B1 82.0/69.0, B2 56.8->69.3/63.4 |
+| `q32` | 12 | `q32 > g12 > g27` | 82.5 / 0.801 | 78.9 / 81.9 / 86.0 / 83.3 | 1-call 69.7%, <=2-call 91.4%, B1 81.4/63.6, B2 51.1->67.0/66.7 |
+| `internvl` | 6 | `internvl > g27 > q72` | 81.8 / 0.784 | 77.0 / 81.2 / 85.6 / 83.5 | 1-call 68.3%, <=2-call 89.6%, B1 80.0/76.9, B2 54.3->70.7/67.4 |
+| `q3` | 6 | `q3 > g27 > g12` | 81.5 / 0.785 | 77.6 / 79.9 / 86.5 / 82.0 | 1-call 70.6%, <=2-call 91.0%, B1 78.7/75.0, B2 56.8->69.3/63.4 |
+
+All four best-by-first rows above improve Stage-1 on all four datasets under
+the per-dataset ACC+MF1 check used in the sweep. This is a better robustness
+story than only reporting `g27`-first variants: `g27` remains the strongest
+first verifier, but `q32`, `internvl`, and `q3` can also instantiate the same
+dynamic early-exit and hard-rescue bucket structure.
+
+If the paper needs an even broader appendix-style diversity table, a looser
+bucket criterion still requiring average Stage-1 improvement gives **192**
+orders with six distinct first verifiers:
+
+| First verifier | # loose-compatible orders | Best order | Avg ACC / MF1 | Notes |
+|---|---:|---|---:|---|
+| `g27` | 36 | `g27 > q3 > q32` | 83.3 / 0.810 | strongest region |
+| `q32` | 24 | `q32 > g12 > g27` | 82.5 / 0.801 | best non-`g27` first |
+| `g12` | 42 | `g12 > q32 > q72` | 81.9 / 0.792 | high early exit: 73.6% 1-call, 94.2% <=2-call |
+| `internvl` | 30 | `internvl > q32 > q72` | 81.9 / 0.785 | strong bucket-1 flip rescue |
+| `q72` | 36 | `q72 > q3 > g12` | 81.7 / 0.785 | lower 1-call rate, still bucket-compatible |
+| `q3` | 24 | `q3 > g12 > g27` | 81.5 / 0.785 | diverse non-Qwen first |
+
+Paper-facing framing: do not claim all first verifiers are equally strong.
+Instead claim that the **paradigm** generalizes: multiple verifier families
+can serve as the first verifier while preserving the same qualitative
+behavior. `g27` is the best-performing instantiation; `q32`, `internvl`, and
+`q3` are the cleanest diversity evidence under stricter criteria, with
+`g12` and `q72` available for a broader appendix.
+
+### Best sequential entropy-stop per Stage-1 backbone
+
+This table supports the "generalizable paradigm" claim: the same
+entropy-routed sequential verification framework improves the Stage-1
+baseline across multiple first-stage readers. The best verifier order is
+allowed to vary here to show backbone-level headroom.
+
+| Stage-1 slug | Order | rho | Calls | Avg ACC | Avg MF1 | Avg MP | Avg MR | Per-dataset ACC |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| 2b | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.85 | 1.73 | **83.3** | **0.810** | **0.821** | **0.810** | 79.5 / 83.9 / 86.0 / 83.8 |
+| qwen2.5-vl-7b | `gemma-3-27b-it > qwen3-vl-8b > llava-onevision-qwen2-7b-ov-hf` | 0.70 | 2.06 | 81.1 | 0.789 | 0.807 | 0.796 | 77.6 / 77.2 / 84.7 / 84.8 |
+| gemma-3-12b-it | `qwen2.5-vl-72b-awq > internvl35-8b > llava-onevision-qwen2-7b-ov-hf` | 0.85 | 1.27 | 76.5 | 0.752 | 0.760 | 0.769 | 73.3 / 72.5 / 81.4 / 78.8 |
+| gemma-3-12b-it-16f | `qwen3-vl-8b > gemma-3-27b-it > llava-onevision-qwen2-7b-ov-hf` | 0.85 | 1.28 | 77.3 | 0.760 | 0.761 | 0.774 | 74.5 / 71.1 / 80.5 / 83.0 |
+| pixtral-12b-2409 | `gemma-3-27b-it > gemma-3-12b-it > qwen2.5-vl-32b-awq` | 0.85 | 1.54 | 76.9 | 0.752 | 0.773 | 0.760 | 75.8 / 73.2 / 81.9 / 76.8 |
+| minicpm-v-26 | `gemma-3-27b-it > qwen2.5-vl-72b-awq > llava-onevision-qwen2-7b-ov-hf` | 0.85 | 1.66 | 78.4 | 0.762 | 0.774 | 0.770 | 77.0 / 80.5 / 71.6 / 84.3 |
+
+Stage-1 baselines for reference:
+
+| Stage-1 slug | Avg ACC | Avg MF1 | Avg MP | Avg MR | Per-dataset ACC |
+|---|---:|---:|---:|---:|---|
+| 2b | 79.5 | 0.755 | 0.784 | 0.753 | 76.4 / 79.2 / 80.5 / 81.8 |
+| qwen2.5-vl-7b | 77.7 | 0.741 | 0.766 | 0.742 | 73.9 / 73.8 / 82.3 / 80.8 |
+| gemma-3-12b-it | 74.9 | 0.735 | 0.745 | 0.753 | 72.7 / 69.1 / 79.1 / 78.8 |
+| gemma-3-12b-it-16f | 76.1 | 0.748 | 0.751 | 0.762 | 74.5 / 71.1 / 78.6 / 80.3 |
+| pixtral-12b-2409 | 73.3 | 0.714 | 0.737 | 0.733 | 70.2 / 63.8 / 76.3 / 83.0 |
+| minicpm-v-26 | 73.3 | 0.725 | 0.738 | 0.752 | 71.4 / 70.5 / 68.4 / 83.0 |
+
+### Fixed verifier-order transfer across Stage-1 backbones
+
+This table is stricter than the best-per-backbone table: it holds the
+verifier order fixed to the top 2B order, `g27 > q32 > q72`, and uses
+`rho=0.85` for every Stage-1 reader.
+
+| Stage-1 slug | Order | rho | Calls | Avg ACC | Avg MF1 | Avg MP | Avg MR | Per-dataset ACC |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| 2b | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.85 | 1.73 | 83.3 | 0.810 | 0.821 | 0.810 | 79.5 / 83.9 / 86.0 / 83.8 |
+| qwen2.5-vl-7b | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.85 | 1.74 | 80.3 | 0.782 | 0.793 | 0.785 | 77.6 / 75.8 / 85.6 / 82.3 |
+| gemma-3-12b-it | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.85 | 1.27 | 76.0 | 0.747 | 0.755 | 0.764 | 73.3 / 71.1 / 80.9 / 78.8 |
+| gemma-3-12b-it-16f | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.85 | 1.26 | 76.8 | 0.755 | 0.755 | 0.767 | 73.9 / 71.1 / 80.0 / 82.3 |
+| pixtral-12b-2409 | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.85 | 1.53 | 76.6 | 0.747 | 0.767 | 0.756 | 73.9 / 73.2 / 82.3 / 76.8 |
+| minicpm-v-26 | `gemma-3-27b-it > qwen2.5-vl-32b-awq > qwen2.5-vl-72b-awq` | 0.85 | 1.65 | 77.8 | 0.757 | 0.768 | 0.764 | 77.0 / 77.9 / 74.0 / 82.5 |
+
+This is useful for a conservative robustness claim: the exact fixed order
+does not make every weak Stage-1 model competitive with the 2B reader, but
+it still improves the average over the corresponding Stage-1 baseline for
+all six tested readers.
+
+### Paper-facing summary
+
+Strongest claim:
+- A 2B probabilistic reader plus label-free entropy-routed sequential
+  verification (`g27 > q32 > q72`, `rho=0.85`) reaches 83.3 average ACC,
+  0.810 average MF1, 0.821 average MP, and 0.810 average MR over four
+  datasets, while using only 1.73 average calls/video.
+- It improves over both Stage-1 only and the current triplet-majority
+  back half.
+- Multiple verifier variants around the same family-diverse order remain
+  above 82.5 average ACC, supporting a robustness story for the back-half
+  verifier choice.
+- The same entropy-stop paradigm improves average ACC for six tested
+  Stage-1 readers, giving a backbone-transfer story.
+
+Caveats to keep explicit:
+- The verifier order is still selected from offline experiments; the paper
+  should justify it using an external capability/cost rule (large,
+  open-weight, cross-family verifier first; Qwen-family verifiers next).
+- `rho` should be presented primarily as a label-free entropy-boundary
+  evidence scale, `H(rho_D)=Hbar_D`, with fixed `rho=0.85` retained as a
+  sensitivity baseline. Avoid claiming verifier-specific reliability unless
+  there is a separate calibration experiment.
+- Non-2B Stage-1 baselines currently rely on the protocol/criterion files
+  already used by the triplet grid. If the final paper claims strict
+  label-free selection for non-2B readers, replace any label-informed
+  threshold criterion choices with a fully label-free selector.

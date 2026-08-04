@@ -65,7 +65,12 @@ _OUR_METHOD = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "our_method"
 )
 sys.path.insert(0, _OUR_METHOD)
-from data_utils import DATASET_ROOTS, SKIP_VIDEOS, load_annotations  # noqa: E402
+from data_utils import (  # noqa: E402
+    DATASET_ROOTS,
+    SKIP_VIDEOS,
+    load_annotations,
+    load_clean_split_ids,
+)
 
 PROJECT_ROOT = "/data/jehc223/EMNLP2"
 PROCAP_8FRAME_SUBDIR = "procap_lavis_blip2_flan_t5_xl_8frame"
@@ -303,14 +308,7 @@ def load_procap_captions(dataset, split="test", prefer="v3_qwen2vl"):
 
 def load_split_video_ids(dataset, split):
     """Return the ordered list of video_ids for `splits/<split>_clean.csv`."""
-    csv_path = os.path.join(
-        DATASET_ROOTS[dataset], "splits", f"{split}_clean.csv"
-    )
-    if not os.path.isfile(csv_path):
-        from data_utils import generate_clean_splits
-        generate_clean_splits(dataset)
-    with open(csv_path) as f:
-        return [line.strip() for line in f if line.strip()]
+    return load_clean_split_ids(dataset, split)
 
 
 def build_examples(dataset, split, transcript_limit=512):
@@ -376,7 +374,7 @@ def build_examples(dataset, split, transcript_limit=512):
     return rows, missing_caps
 
 
-def build_support_and_test(dataset, num_shots, seed=1111):
+def build_support_and_test(dataset, num_shots, seed=1111, eval_split="test"):
     """K-shot support set + test set pair.
 
     Upstream `Few_HM_Data.process_data` shuffles the train split and
@@ -391,7 +389,7 @@ def build_support_and_test(dataset, num_shots, seed=1111):
 
     rng = random.Random(seed)
     train_rows, missing_train = build_examples(dataset, "train")
-    test_rows, missing_test = build_examples(dataset, "test")
+    test_rows, missing_test = build_examples(dataset, eval_split)
 
     rng.shuffle(train_rows)
     support = []
@@ -408,6 +406,7 @@ def build_support_and_test(dataset, num_shots, seed=1111):
     missing_info = {
         "train": missing_train,
         "test": missing_test,
+        eval_split: missing_test,
         "support_counts": counts,
     }
     return support, test_rows, missing_info

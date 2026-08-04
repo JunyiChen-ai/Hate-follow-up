@@ -43,6 +43,26 @@ import random
 import numpy as np
 import torch
 
+# autoawq 0.2.x still imports symbols removed in recent transformers.
+# PEFT can touch the AWQ dispatcher while loading LoRA modules even for
+# non-AWQ LLaMA weights, so keep the same compatibility shim used by ALARM.
+try:
+    import transformers.activations
+    import transformers.modeling_utils
+
+    if not hasattr(transformers.activations, "PytorchGELUTanh"):
+        import torch.nn as _nn
+
+        class _PytorchGELUTanh(_nn.Module):
+            def forward(self, x):
+                return torch.nn.functional.gelu(x, approximate="tanh")
+
+        transformers.activations.PytorchGELUTanh = _PytorchGELUTanh
+    if not hasattr(transformers.modeling_utils, "shard_checkpoint"):
+        transformers.modeling_utils.shard_checkpoint = lambda *a, **k: ({}, None)
+except Exception:
+    pass
+
 
 UPSTREAM_LORA_ROOT = os.path.join(
     "/data/jehc223/EMNLP2", "external_repos", "mod_hate", "LoRA_modules"

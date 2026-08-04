@@ -17,6 +17,21 @@ DATASET_ROOTS = {
     "ImpliHateVid": "/data/jehc223/ImpliHateVid",
 }
 
+SPLIT_ALIASES = {
+    "train": "train",
+    "test": "test",
+    "valid": "validation",
+    "val": "validation",
+    "validation": "validation",
+}
+
+RAW_VALIDATION_SPLITS = {
+    "MHClip_EN": "valid.csv",
+    "MHClip_ZH": "valid.csv",
+    "HateMM": "valid.csv",
+    "ImpliHateVid": "val.csv",
+}
+
 MP4_SUBDIRS = {
     "MHClip_EN": "video_mp4",
     "MHClip_ZH": "video",
@@ -46,6 +61,19 @@ SKIP_VIDEOS = {
     "HateMM": set(),
     "ImpliHateVid": set(),
 }
+
+_EXTRA_SKIP_FILE = os.environ.get("EXTRA_SKIP_VIDEOS_FILE")
+if _EXTRA_SKIP_FILE and os.path.isfile(_EXTRA_SKIP_FILE):
+    with open(_EXTRA_SKIP_FILE) as _sf:
+        extra = {line.strip() for line in _sf if line.strip()}
+    for _skip_set in SKIP_VIDEOS.values():
+        _skip_set.update(extra)
+
+_EXTRA_SKIP_VIDEOS = os.environ.get("EXTRA_SKIP_VIDEOS")
+if _EXTRA_SKIP_VIDEOS:
+    extra = {v.strip() for v in _EXTRA_SKIP_VIDEOS.split(",") if v.strip()}
+    for _skip_set in SKIP_VIDEOS.values():
+        _skip_set.update(extra)
 
 
 def get_media_path(vid, dataset):
@@ -95,15 +123,51 @@ def load_annotations(dataset):
     return result
 
 
-def generate_clean_splits(dataset):
-    """Generate train_clean.csv and test_clean.csv excluding missing-media or
-    not-in-annotation videos. Prints counts."""
+def canonical_split(split):
+    try:
+        return SPLIT_ALIASES[split]
+    except KeyError as exc:
+        raise ValueError(
+            f"unknown split={split!r}; expected train/test/validation"
+        ) from exc
+
+
+def raw_split_path(dataset, split):
+    split = canonical_split(split)
+    if split == "validation":
+        fname = RAW_VALIDATION_SPLITS[dataset]
+    else:
+        fname = f"{split}.csv"
+    return os.path.join(DATASET_ROOTS[dataset], "splits", fname)
+
+
+def clean_split_path(dataset, split):
+    split = canonical_split(split)
+    return os.path.join(DATASET_ROOTS[dataset], "splits", f"{split}_clean.csv")
+
+
+def load_clean_split_ids(dataset, split):
+    split = canonical_split(split)
+    path = clean_split_path(dataset, split)
+    if not os.path.isfile(path):
+        generate_clean_splits(dataset, splits=[split])
+    with open(path) as f:
+        return [line.strip() for line in f if line.strip()]
+
+
+def generate_clean_splits(dataset, splits=None):
+    """Generate clean split csvs excluding missing-media or not-in-annotation videos.
+
+    Validation is normalized to `validation_clean.csv` even when the raw
+    dataset file is named `valid.csv` or `val.csv`.
+    """
     root = DATASET_ROOTS[dataset]
     splits_dir = os.path.join(root, "splits")
     annotations = load_annotations(dataset)
+    splits = [canonical_split(s) for s in (splits or ["train", "test", "validation"])]
 
-    for split_name in ["train", "test"]:
-        src_path = os.path.join(splits_dir, f"{split_name}.csv")
+    for split_name in splits:
+        src_path = raw_split_path(dataset, split_name)
         if not os.path.isfile(src_path):
             print(f"  [WARN] {src_path} not found, skipping")
             continue
@@ -124,7 +188,7 @@ def generate_clean_splits(dataset):
                 continue
             clean_ids.append(vid)
 
-        out_path = os.path.join(splits_dir, f"{split_name}_clean.csv")
+        out_path = clean_split_path(dataset, split_name)
         with open(out_path, "w") as f:
             for vid in clean_ids:
                 f.write(vid + "\n")

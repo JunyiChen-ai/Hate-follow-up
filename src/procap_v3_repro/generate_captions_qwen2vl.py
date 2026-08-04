@@ -42,7 +42,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "..", "our_method"))
-from data_utils import DATASET_ROOTS, SKIP_VIDEOS  # noqa: E402
+from data_utils import DATASET_ROOTS, SKIP_VIDEOS, load_clean_split_ids  # noqa: E402
 
 PROJECT_ROOT = "/data/jehc223/EMNLP2"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
@@ -72,14 +72,7 @@ GEN_PROBE = ("gen", "describe the video in one sentence.")
 
 
 def load_split_video_ids(dataset, split):
-    csv_path = os.path.join(
-        DATASET_ROOTS[dataset], "splits", f"{split}_clean.csv"
-    )
-    if not os.path.isfile(csv_path):
-        from data_utils import generate_clean_splits
-        generate_clean_splits(dataset)
-    with open(csv_path) as f:
-        return [line.strip() for line in f if line.strip()]
+    return load_clean_split_ids(dataset, split)
 
 
 def frame_paths_for(dataset, vid):
@@ -208,7 +201,7 @@ def main():
     parser.add_argument("--dataset", choices=ALL_DATASETS)
     parser.add_argument("--all", action="store_true")
     parser.add_argument(
-        "--split", choices=["train", "test"], required=True
+        "--split", choices=["train", "test", "validation"], required=True
     )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--max-model-len", type=int, default=16384)

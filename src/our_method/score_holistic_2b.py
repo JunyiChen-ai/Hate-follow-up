@@ -251,19 +251,42 @@ def extract_triclass_score(output, label_token_ids):
     return {"p_hateful": p_h, "p_offensive": p_o, "p_normal": p_n, "score": p_h + p_o}
 
 
-def build_media_content(media_path, media_type):
-    """Build vLLM content list for video or frames."""
-    if media_type == "video":
+def _resolve_frames_from_mp4(media_path, dataset):
+    """Given an mp4 path, find the matching frames_16/ dir (same convention
+    as judge_offline.py). Fallback: dataset_root/frames_16/<vid>."""
+    import glob as globmod
+    from data_utils import DATASET_ROOTS
+    vid_name = os.path.basename(media_path).rsplit(".", 1)[0]
+    parent = os.path.dirname(media_path)
+    root = os.path.dirname(parent) if os.path.basename(parent) in ("video", "video_mp4") else parent
+    frame_dir = os.path.join(root, "frames_16", vid_name)
+    if not os.path.isdir(frame_dir):
+        frame_dir = os.path.join(DATASET_ROOTS[dataset], "frames_16", vid_name)
+    if not os.path.isdir(frame_dir):
+        return []
+    return sorted(globmod.glob(os.path.join(frame_dir, "*.jpg")) +
+                  globmod.glob(os.path.join(frame_dir, "*.jpeg")) +
+                  globmod.glob(os.path.join(frame_dir, "*.png")))
+
+
+def build_media_content(media_path, media_type, no_video=False, dataset=None,
+                        num_frames=8):
+    """Build vLLM content list for video or frames.
+    If no_video is set, mp4 paths are fall-back-resolved to frames_16/.
+    num_frames: sub-sample cap when feeding as images (default 8)."""
+    import glob as globmod
+    if media_type == "video" and not no_video:
         return [{"type": "video_url", "video_url": {"url": f"file://{media_path}"}}]
+    if media_type == "video" and no_video:
+        jpgs = _resolve_frames_from_mp4(media_path, dataset)
     else:
-        # frames directory: collect sorted jpgs as image list
-        import glob as globmod
         jpgs = sorted(globmod.glob(os.path.join(media_path, "*.jpg")))
-        # Sample up to 8 frames evenly
-        if len(jpgs) > 8:
-            indices = np.linspace(0, len(jpgs) - 1, 8, dtype=int)
-            jpgs = [jpgs[i] for i in indices]
-        return [{"type": "image_url", "image_url": {"url": f"file://{p}"}} for p in jpgs]
+    if not jpgs:
+        return []
+    if len(jpgs) > num_frames:
+        indices = np.linspace(0, len(jpgs) - 1, num_frames, dtype=int)
+        jpgs = [jpgs[i] for i in indices]
+    return [{"type": "image_url", "image_url": {"url": f"file://{p}"}} for p in jpgs]
 
 
 def evaluate_scores(out_path, dataset):
@@ -387,6 +410,26 @@ def main():
     parser.add_argument("--triclass-style", default="narrow",
                         choices=["narrow", "broad", "norules", "nodef"],
                         help="Triclass prompt style: 'narrow' (default), 'broad' (wider definitions), 'norules' (no policy rules), or 'nodef' (no label definitions)")
+    parser.add_argument("--no-video", action="store_true",
+                        help="Force frames_16/ fallback even when mp4 exists. "
+                             "Use for MLLMs that don't support video_url (e.g. "
+                             "gemma-3, Pixtral, LLaVA-OneVision in vLLM 0.11.0).")
+    parser.add_argument("--no-mm-kwargs", action="store_true",
+                        help="Drop Qwen-specific mm_processor_kwargs (max_pixels) "
+                             "from LLM init. Required for non-Qwen MLLMs.")
+    parser.add_argument("--model-slug", default=None,
+                        help="Override output folder slug. Default: derived "
+                             "from --model last segment, lowercased. Use to "
+                             "disambiguate variants.")
+    parser.add_argument("--tokenizer-mode", default=None,
+                        choices=[None, "auto", "slow", "mistral", "custom"],
+                        help="vLLM tokenizer mode. Set 'mistral' for "
+                             "Pixtral (MistralCommonTokenizer is incompatible "
+                             "with vLLM 0.11.0's default path).")
+    parser.add_argument("--num-frames", type=int, default=8,
+                        help="Cap frames per video when --no-video "
+                             "(sub-sampled uniformly from 16-frame source). "
+                             "Default 8; set 16 to feed full frame grid.")
     args = parser.parse_args()
 
     # Logging
@@ -439,8 +482,22 @@ def main():
     else:
         prompt_template = TRICLASS_PROMPT
 
-    # Output — detect model size from model name
-    model_tag = "holistic_8b" if "8B" in args.model else "holistic_2b"
+    # Output — slug-based folder. Default derives from model id; preserved
+    # special cases for the existing "holistic_2b" / "holistic_8b" dirs so
+    # prior Qwen3-VL runs keep landing at their original path.
+    if args.model_slug:
+        slug = args.model_slug
+    else:
+        last = args.model.split("/")[-1].lower()
+        # Strip the -Instruct suffix / normalise underscores
+        last = last.replace("-instruct", "").replace("_instruct", "").replace("_", "-")
+        if last == "qwen3-vl-2b":
+            slug = "2b"
+        elif last == "qwen3-vl-8b":
+            slug = "8b"
+        else:
+            slug = last
+    model_tag = f"holistic_{slug}"
     out_dir = os.path.join(PROJECT_ROOT, "results", model_tag, args.dataset)
     os.makedirs(out_dir, exist_ok=True)
     suffix = ""
@@ -482,15 +539,19 @@ def main():
     # Load vLLM
     from vllm import LLM, SamplingParams
 
-    llm = LLM(
+    llm_kwargs = dict(
         model=args.model,
         trust_remote_code=True,
         gpu_memory_utilization=0.92,
         max_model_len=32768,
-        limit_mm_per_prompt={"video": 1, "image": 8},
+        limit_mm_per_prompt=({"image": args.num_frames} if args.no_video else {"video": 1, "image": args.num_frames}),
         allowed_local_media_path="/data/jehc223",
-        mm_processor_kwargs={"max_pixels": 100352},
     )
+    if not args.no_mm_kwargs:
+        llm_kwargs["mm_processor_kwargs"] = {"max_pixels": 100352}
+    if args.tokenizer_mode:
+        llm_kwargs["tokenizer_mode"] = args.tokenizer_mode
+    llm = LLM(**llm_kwargs)
 
     tokenizer = llm.get_tokenizer()
 
@@ -553,7 +614,15 @@ def main():
                 rules=rules_text,
             )
 
-            media_content = build_media_content(media_path, media_type)
+            media_content = build_media_content(
+                media_path, media_type,
+                no_video=args.no_video, dataset=args.dataset,
+                num_frames=args.num_frames,
+            )
+            if not media_content:
+                logging.warning(f"  {vid_id}: empty media content, skipping")
+                n_skipped += 1
+                continue
             content = media_content + [{"type": "text", "text": prompt_text}]
 
             messages = [

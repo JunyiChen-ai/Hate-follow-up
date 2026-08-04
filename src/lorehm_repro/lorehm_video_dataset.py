@@ -45,7 +45,12 @@ _OUR_METHOD = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "our_method"
 )
 sys.path.insert(0, _OUR_METHOD)
-from data_utils import DATASET_ROOTS, SKIP_VIDEOS, load_annotations  # noqa: E402
+from data_utils import (  # noqa: E402
+    DATASET_ROOTS,
+    SKIP_VIDEOS,
+    load_annotations,
+    load_clean_split_ids,
+)
 
 PROJECT_ROOT = "/data/jehc223/EMNLP2"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
@@ -68,14 +73,7 @@ def collapse_label(dataset, gt_label):
 
 
 def load_split_video_ids(dataset, split):
-    csv_path = os.path.join(
-        DATASET_ROOTS[dataset], "splits", f"{split}_clean.csv"
-    )
-    if not os.path.isfile(csv_path):
-        from data_utils import generate_clean_splits
-        generate_clean_splits(dataset)
-    with open(csv_path) as f:
-        return [line.strip() for line in f if line.strip()]
+    return load_clean_split_ids(dataset, split)
 
 
 def frames_dir_for(dataset, vid):

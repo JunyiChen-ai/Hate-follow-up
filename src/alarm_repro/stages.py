@@ -539,9 +539,39 @@ def run_reference(
     if not os.path.exists(experience_path):
         logging.warning(f"  no experience file at {experience_path}")
         return
+    if os.path.exists(reference_out_path):
+        try:
+            with open(reference_out_path) as f:
+                existing = json.load(f)
+            if isinstance(existing, list):
+                logging.info(
+                    f"  reference already exists at {reference_out_path}; skip"
+                )
+                return
+        except Exception:
+            pass
+
     ref_set = ReferenceSet(size=size)
+    ckpt_path = reference_out_path + ".checkpoint.json"
+    start_line = 0
+    if os.path.exists(ckpt_path):
+        try:
+            with open(ckpt_path) as f:
+                ckpt = json.load(f)
+            ckpt_set = ckpt.get("set")
+            if isinstance(ckpt_set, list):
+                ref_set.set = ckpt_set[:size]
+                start_line = int(ckpt.get("next_line", 0))
+                logging.info(
+                    f"  resume reference from {ckpt_path} at line {start_line}"
+                )
+        except Exception as e:
+            logging.warning(f"  could not load reference checkpoint: {e}")
+
     with open(experience_path) as f:
-        for line in f:
+        for line_idx, line in enumerate(f):
+            if line_idx < start_line:
+                continue
             line = line.strip()
             if not line:
                 continue
@@ -564,12 +594,27 @@ def run_reference(
                 resp = ""
             ops = _parse_reference_ops(resp)
             ref_set.apply_ops(ops)
+            with open(ckpt_path, "w") as ckpt_f:
+                json.dump(
+                    {
+                        "next_line": line_idx + 1,
+                        "size": size,
+                        "set": ref_set.to_list(),
+                    },
+                    ckpt_f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                ckpt_f.flush()
+                os.fsync(ckpt_f.fileno())
 
     os.makedirs(os.path.dirname(reference_out_path), exist_ok=True)
     with open(reference_out_path, "w") as f:
         json.dump(ref_set.to_list(), f, ensure_ascii=False, indent=2)
         f.flush()
         os.fsync(f.fileno())
+    if os.path.exists(ckpt_path):
+        os.remove(ckpt_path)
     logging.info(
         f"  wrote reference set of {len(ref_set.set)} items to {reference_out_path}"
     )

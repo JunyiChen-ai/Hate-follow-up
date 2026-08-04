@@ -185,9 +185,10 @@ def load_train_labels(dataset: str) -> Dict[str, int]:
     return out
 
 
-def rel_sampl_output_path(dataset: str) -> str:
+def rel_sampl_output_path(dataset: str, split: str = "test") -> str:
+    suffix = "rel_sampl.json" if split == "test" else f"rel_sampl_{split}.json"
     return os.path.join(
-        PROJECT_ROOT, "results", "lorehm", dataset, "rel_sampl.json"
+        PROJECT_ROOT, "results", "lorehm", dataset, suffix
     )
 
 
@@ -231,6 +232,7 @@ def build_rel_sampl_for_dataset(
     pool_topk: int = DEFAULT_POOL_TOPK,
     model=None,
     persist: bool = True,
+    eval_split: str = "test",
 ):
     """Top-level helper: load Jina-CLIP-v2, extract train + test
     features, build `rel_sampl` for the test split. Persists to disk
@@ -246,20 +248,20 @@ def build_rel_sampl_for_dataset(
     logging.info(
         f"[{dataset}]   extracted {len(train_feats)} train features"
     )
-    logging.info(f"[{dataset}] extracting test features")
-    test_feats = extract_video_features(dataset, "test", model)
+    logging.info(f"[{dataset}] extracting {eval_split} features")
+    test_feats = extract_video_features(dataset, eval_split, model)
     logging.info(
-        f"[{dataset}]   extracted {len(test_feats)} test features"
+        f"[{dataset}]   extracted {len(test_feats)} {eval_split} features"
     )
     train_labels = load_train_labels(dataset)
     rel_map = build_rel_sampl(
         test_feats, train_feats, train_labels, pool_topk
     )
     logging.info(
-        f"[{dataset}]   built rel_sampl for {len(rel_map)} test videos"
+        f"[{dataset}]   built rel_sampl for {len(rel_map)} {eval_split} videos"
     )
     if persist:
-        out_path = rel_sampl_output_path(dataset)
+        out_path = rel_sampl_output_path(dataset, eval_split)
         save_rel_sampl(dataset, rel_map, out_path)
         logging.info(f"[{dataset}]   wrote {out_path}")
     return rel_map, test_feats, train_feats, train_labels
@@ -274,6 +276,7 @@ def main():
     )
     parser.add_argument("--dataset", choices=ALL_DATASETS)
     parser.add_argument("--all", action="store_true")
+    parser.add_argument("--eval-split", default="test", choices=["test", "validation"])
     parser.add_argument("--pool-topk", type=int, default=DEFAULT_POOL_TOPK)
     args = parser.parse_args()
     if not args.dataset and not args.all:
@@ -290,7 +293,8 @@ def main():
     datasets = ALL_DATASETS if args.all else [args.dataset]
     for ds in datasets:
         build_rel_sampl_for_dataset(
-            ds, pool_topk=args.pool_topk, model=model, persist=True
+            ds, pool_topk=args.pool_topk, model=model, persist=True,
+            eval_split=args.eval_split,
         )
     logging.info("All datasets done.")
 

@@ -19,7 +19,12 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "..", "our_method"))
-from data_utils import DATASET_ROOTS, get_media_path, load_annotations  # noqa: E402
+from data_utils import (  # noqa: E402
+    DATASET_ROOTS,
+    get_media_path,
+    load_annotations,
+    load_clean_split_ids,
+)
 
 NUM_FRAMES = 16
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
@@ -93,7 +98,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", choices=ALL_DATASETS)
     parser.add_argument("--all", action="store_true")
-    parser.add_argument("--split", default="all", choices=["train", "test", "all"])
+    parser.add_argument("--split", default="all", choices=["train", "test", "validation", "all"])
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
@@ -107,12 +112,7 @@ def main():
         if args.split == "all":
             vids = list(ann.keys())
         else:
-            split_path = os.path.join(DATASET_ROOTS[ds], "splits", f"{args.split}_clean.csv")
-            if not os.path.isfile(split_path):
-                from data_utils import generate_clean_splits
-                generate_clean_splits(ds)
-            with open(split_path) as f:
-                vids = [line.strip() for line in f if line.strip()]
+            vids = load_clean_split_ids(ds, args.split)
         print(f"[{ds}] extracting 16 frames for {len(vids)} videos")
 
         from collections import Counter

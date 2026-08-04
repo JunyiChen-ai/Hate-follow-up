@@ -201,14 +201,15 @@ def score_one_test_row(row, model, tokenizer):
 
 
 def run_one_dataset(dataset, num_shots, args, out_dir):
-    logging.info(f"[{dataset}] building K={num_shots} support + test")
+    logging.info(f"[{dataset}] building K={num_shots} support + {args.eval_split}")
     support, test_rows, missing = (
         video_caption_adapter.build_support_and_test(
-            dataset, num_shots=num_shots, seed=args.seed
+            dataset, num_shots=num_shots, seed=args.seed,
+            eval_split=args.eval_split,
         )
     )
     logging.info(
-        f"[{dataset}]   support={len(support)}  test={len(test_rows)}  "
+        f"[{dataset}]   support={len(support)}  {args.eval_split}={len(test_rows)}  "
         f"missing_caps_train={len(missing['train'])}  "
         f"missing_caps_test={len(missing['test'])}  "
         f"support_counts={missing['support_counts']}"
@@ -266,7 +267,7 @@ def run_one_dataset(dataset, num_shots, args, out_dir):
     composed_model.config.eos_token_id = 2
 
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"test_mod_hate_{num_shots}shot.jsonl")
+    out_path = os.path.join(out_dir, f"{args.eval_split}_mod_hate_{num_shots}shot.jsonl")
 
     # Skip already-predicted ids for resume.
     done = set()
@@ -326,6 +327,7 @@ def main():
     )
     parser.add_argument("--dataset", choices=ALL_DATASETS)
     parser.add_argument("--all", action="store_true")
+    parser.add_argument("--eval-split", default="test", choices=["test", "validation"])
     parser.add_argument(
         "--shots", type=int, nargs="+", default=[4, 8],
         help="K-shot settings to run (default: both 4 and 8)",
@@ -359,6 +361,7 @@ def main():
     datasets = ALL_DATASETS if args.all else [args.dataset]
     logging.info(
         f"Mod-HATE repro: datasets={datasets}  shots={args.shots}  "
+        f"eval_split={args.eval_split}  "
         f"base_model={args.base_model}  load_8bit={args.load_8bit}"
     )
 

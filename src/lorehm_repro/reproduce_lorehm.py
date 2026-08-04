@@ -205,24 +205,25 @@ def run_one_dataset(dataset: str, args, runner: LlavaRunner):
     # Load or build rel_sampl (v2 brief: build once, reuse from disk).
     rel_sampl_map = None
     if args.rsa:
-        rel_sampl_map = load_rel_sampl(dataset)
+        rel_sampl_map = load_rel_sampl(dataset, rel_sampl_output_path(dataset, args.eval_split))
         if not rel_sampl_map:
             logging.info(
-                f"[{dataset}] no cached rel_sampl.json; building now via Jina-CLIP-v2"
+                f"[{dataset}] no cached rel_sampl for {args.eval_split}; building now via Jina-CLIP-v2"
             )
             rel_sampl_map, _, _, _ = build_rel_sampl_for_dataset(
-                dataset, pool_topk=args.pool_topk, persist=True
+                dataset, pool_topk=args.pool_topk, persist=True,
+                eval_split=args.eval_split,
             )
         else:
             logging.info(
-                f"[{dataset}] loaded cached rel_sampl for {len(rel_sampl_map)} test videos"
+                f"[{dataset}] loaded cached rel_sampl for {len(rel_sampl_map)} {args.eval_split} videos"
             )
 
     items, missing = build_video_items(
-        dataset, "test", rel_sampl_map=rel_sampl_map
+        dataset, args.eval_split, rel_sampl_map=rel_sampl_map
     )
     logging.info(
-        f"[{dataset}] {len(items)} test items  missing={missing}"
+        f"[{dataset}] {len(items)} {args.eval_split} items  missing={missing}"
     )
 
     mia_block = None
@@ -235,7 +236,7 @@ def run_one_dataset(dataset: str, args, runner: LlavaRunner):
 
     out_dir = os.path.join(PROJECT_ROOT, "results", "lorehm", dataset)
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "test_lorehm.jsonl")
+    out_path = os.path.join(out_dir, f"{args.eval_split}_lorehm.jsonl")
 
     # Resume.
     done = set()
@@ -295,6 +296,7 @@ def main():
     parser.add_argument("--dataset", choices=ALL_DATASETS)
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--model", default=DEFAULT_MODEL_ID)
+    parser.add_argument("--eval-split", default="test", choices=["test", "validation"])
     parser.add_argument("--rsa", action="store_true", default=True,
                         help="Enable RSA re-ask (upstream default)")
     parser.add_argument("--no-rsa", dest="rsa", action="store_false")
@@ -320,6 +322,7 @@ def main():
     datasets = ALL_DATASETS if args.all else [args.dataset]
     logging.info(
         f"LoReHM repro rework: datasets={datasets}  model={args.model}  "
+        f"eval_split={args.eval_split}  "
         f"rsa={args.rsa} k={args.rsa_k} pool={args.pool_topk}  "
         f"mia={args.mia}  bf16 device_map=auto  "
         f"max_memory_per_gpu={args.max_memory_per_gpu}  "

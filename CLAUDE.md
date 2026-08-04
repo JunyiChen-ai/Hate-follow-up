@@ -89,6 +89,17 @@ If a technique passes 1–4, it has a story. If it only has "it works on the val
 
 ---
 
+## GPU / 资源
+- **所有 GPU / 计算任务必须通过 SLURM 提交**(登录节点即计算节点,非 SLURM 的计算进程会被回收)。
+- 环境:`conda activate HateVideo`。
+- 提交:`sbatch scripts/slurm/<name>.sbatch`,**不要设 `--time`**。每用户上限:16 CPU / 128 GB / 2 GPU。
+- 作业初始通常是 `PENDING (JobHeldUser)` → **等自动放行即可**,不要强行释放。
+
+## 权责声明(最重要)
+- **主对话 = 你和我讨论、决策、汇报**,主对话本身**不执行任何杂活**。
+- **一切杂活**(写代码、数据处理、提交与监控 SLURM、调试、跑实验)**一律交给 subagent 或 dynamic workflow 去做**。
+- **主对话调用 subagent 只能用 Opus 4.8**(`model: opus`,即 `claude-opus-4-8`),**不得降级也不得升级**到其他模型。
+
 ## How to use this document
 
 - Before writing code for a new component, write the 4-point story (phenomenon → mechanism → prediction → counterfactual) in the PR description or experiment plan. If you cannot write it, do not implement the component yet.
@@ -101,3 +112,7 @@ The guiding question for every decision in this repo is:
 > **Is there a story to be told, in the hateful-video application context, behind the technique we just adopted?**
 
 If the honest answer is no, change the technique.
+
+<!-- BEGIN agent-style v0.3.1 -->
+@.agent-style/claude-code.md
+<!-- END agent-style -->

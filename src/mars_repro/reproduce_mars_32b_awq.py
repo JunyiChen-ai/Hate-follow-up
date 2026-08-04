@@ -78,7 +78,12 @@ import numpy as np
 
 _OUR_METHOD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "our_method")
 sys.path.insert(0, _OUR_METHOD)
-from data_utils import DATASET_ROOTS, get_media_path, load_annotations  # noqa: E402
+from data_utils import (  # noqa: E402
+    DATASET_ROOTS,
+    get_media_path,
+    load_annotations,
+    load_clean_split_ids,
+)
 
 PROJECT_ROOT = "/data/jehc223/EMNLP2"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
@@ -380,13 +385,7 @@ def resume_done_ids(out_path: str):
 
 
 def load_split_ids(dataset: str, split: str):
-    root = DATASET_ROOTS[dataset]
-    split_path = os.path.join(root, "splits", f"{split}_clean.csv")
-    if not os.path.isfile(split_path):
-        from data_utils import generate_clean_splits
-        generate_clean_splits(dataset)
-    with open(split_path) as f:
-        return [line.strip() for line in f if line.strip()]
+    return load_clean_split_ids(dataset, split)
 
 
 def mars_one_video(vid: str, transcript: str, pil_frames, llm, processor, sampling_params) -> Dict:
@@ -523,7 +522,7 @@ def main():
     )
     parser.add_argument("--dataset", choices=ALL_DATASETS)
     parser.add_argument("--all", action="store_true")
-    parser.add_argument("--split", default="test", choices=["train", "test"])
+    parser.add_argument("--split", default="test", choices=["train", "test", "validation"])
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--seed", type=int, default=42,
                         help="vLLM sampling seed (MARS uses temperature=0.7 sampling; "

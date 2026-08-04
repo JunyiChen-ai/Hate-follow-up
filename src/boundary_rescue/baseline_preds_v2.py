@@ -12,8 +12,15 @@ this pilot; EN/ZH switch to TR):
 Apply each threshold to the test 2B scores, write
 `results/boundary_rescue/{dataset}/baseline_preds_v2.jsonl`, pin the
 strict-beat targets to `v2_baseline.json`.
+
+2026-04-19: generalised to accept --model-tag <slug> (read scores from
+`results/holistic_<slug>/` instead of `results/holistic_2b/`) and
+--criterion {otsu,gmm,li_lee,protocol} (override the per-dataset
+protocol criterion). Default behaviour (no flags) is byte-identical
+to the 2B pinned run.
 """
 
+import argparse
 import json
 import os
 import sys
@@ -63,37 +70,33 @@ PROTOCOL = {
     },
 }
 
-TRAIN_SCORE_FILES = {
-    "MHClip_EN": os.path.join(
-        PROJECT_ROOT, "results", "holistic_2b", "MHClip_EN", "train_binary.jsonl"
-    ),
-    "MHClip_ZH": os.path.join(
-        PROJECT_ROOT, "results", "holistic_2b", "MHClip_ZH", "train_binary.jsonl"
-    ),
-    # HateMM: no train scores; HateMM uses TF
-    "ImpliHateVid": os.path.join(
-        PROJECT_ROOT, "results", "holistic_2b", "ImpliHateVid", "train_binary.jsonl"
-    ),
-}
+def _train_score_path(slug, dataset):
+    base = os.path.join(PROJECT_ROOT, "results", f"holistic_{slug}", dataset, "train_binary.jsonl")
+    return base
 
-TEST_SCORE_FILES = {
-    "MHClip_EN": os.path.join(
-        PROJECT_ROOT, "results", "holistic_2b", "MHClip_EN", "test_binary.jsonl"
-    ),
-    "MHClip_ZH": os.path.join(
-        PROJECT_ROOT,
-        "results",
-        "holistic_2b",
-        "MHClip_ZH",
-        "test_binary.jsonl.prerepro_20260413",
-    ),
-    "HateMM": os.path.join(
-        PROJECT_ROOT, "results", "holistic_2b", "HateMM", "test_binary.jsonl"
-    ),
-    "ImpliHateVid": os.path.join(
-        PROJECT_ROOT, "results", "holistic_2b", "ImpliHateVid", "test_binary.jsonl"
-    ),
-}
+
+def _test_score_path(slug, dataset):
+    # The 2B ZH test file has a historical _prerepro suffix; other slugs use
+    # plain test_binary.jsonl.
+    if slug == "2b" and dataset == "MHClip_ZH":
+        return os.path.join(PROJECT_ROOT, "results", "holistic_2b",
+                            "MHClip_ZH", "test_binary.jsonl.prerepro_20260413")
+    return os.path.join(PROJECT_ROOT, "results", f"holistic_{slug}", dataset, "test_binary.jsonl")
+
+
+def _build_score_files(slug):
+    return (
+        # train score files (HateMM absent)
+        {ds: _train_score_path(slug, ds)
+         for ds in ["MHClip_EN", "MHClip_ZH", "ImpliHateVid"]},
+        # test score files (all 4)
+        {ds: _test_score_path(slug, ds)
+         for ds in ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]},
+    )
+
+
+# Default: legacy 2B paths (backwards compatible)
+TRAIN_SCORE_FILES, TEST_SCORE_FILES = _build_score_files("2b")
 
 
 def dataset_metrics(video_ids, preds, dataset):
@@ -141,8 +144,27 @@ def _ordered_test_ids(test_path):
     return order
 
 
-def process(dataset):
-    proto = PROTOCOL[dataset]
+def process(dataset, slug="2b", criterion_override=None, suffix=""):
+    """Run the baseline threshold pipeline for one dataset.
+
+    slug              : stage-1 MLLM tag (e.g. '2b', 'qwen2.5-vl-7b').
+    criterion_override: one of 'otsu','gmm','li_lee' to override the
+                        per-dataset protocol criterion. None = protocol.
+    suffix            : appended to output filename
+                        (`baseline_preds_v2{suffix}.jsonl`).
+    """
+    global TRAIN_SCORE_FILES, TEST_SCORE_FILES
+    TRAIN_SCORE_FILES, TEST_SCORE_FILES = _build_score_files(slug)
+
+    proto = dict(PROTOCOL[dataset])
+    if criterion_override:
+        from thresholds import otsu_threshold, gmm_threshold, li_lee_threshold
+        fn_map = {"otsu": otsu_threshold, "gmm": gmm_threshold,
+                  "li_lee": li_lee_threshold}
+        proto["criterion_name"] = criterion_override
+        proto["criterion_fn"] = fn_map[criterion_override]
+        proto["protocol"] = f"{'TF' if proto['fit_source']=='test' else 'TR'}-{criterion_override}"
+
     test_path = TEST_SCORE_FILES[dataset]
     if not os.path.isfile(test_path):
         raise FileNotFoundError(test_path)
@@ -172,7 +194,7 @@ def process(dataset):
 
     out_dir = os.path.join(OUT_ROOT, dataset)
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "baseline_preds_v2.jsonl")
+    out_path = os.path.join(out_dir, f"baseline_preds_v2{suffix}.jsonl")
     with open(out_path, "w") as f:
         for vid, s, p in zip(test_ids, test_scores, preds):
             f.write(
@@ -207,18 +229,41 @@ def process(dataset):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--model-tag", default="2b",
+                    help="stage-1 MLLM slug (folder = holistic_<slug>/). "
+                         "Default '2b' reproduces the pinned baseline.")
+    ap.add_argument("--criterion", default="protocol",
+                    choices=["protocol", "otsu", "gmm", "li_lee"],
+                    help="Override per-dataset criterion. 'protocol' keeps "
+                         "the V1 mapping (EN=otsu, ZH=gmm, HM=li_lee, IH=gmm).")
+    args = ap.parse_args()
+
+    slug = args.model_tag
+    crit = None if args.criterion == "protocol" else args.criterion
+    # suffix: default (slug=2b, protocol) produces baseline_preds_v2.jsonl
+    if slug == "2b" and crit is None:
+        suffix = ""
+    else:
+        suffix = f"_{slug}_" + (crit or "protocol")
+
+    # Rebuild the module-level file dicts for this invocation
+    global TRAIN_SCORE_FILES, TEST_SCORE_FILES
+    TRAIN_SCORE_FILES, TEST_SCORE_FILES = _build_score_files(slug)
+
     rows = []
     all_datasets = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
     for ds in all_datasets:
-        # Skip datasets whose dependency files don't exist yet.
         proto = PROTOCOL[ds]
         if proto["fit_source"] == "train" and not os.path.isfile(TRAIN_SCORE_FILES[ds]):
-            print(f"[skip] {ds}: train score file not yet available")
+            print(f"[skip] {ds}: train score file not yet available "
+                  f"({TRAIN_SCORE_FILES[ds]})")
             continue
         if not os.path.isfile(TEST_SCORE_FILES[ds]):
-            print(f"[skip] {ds}: test score file not yet available")
+            print(f"[skip] {ds}: test score file not yet available "
+                  f"({TEST_SCORE_FILES[ds]})")
             continue
-        rows.append(process(ds))
+        rows.append(process(ds, slug=slug, criterion_override=crit, suffix=suffix))
 
     # Print sanity table
     print()
@@ -238,8 +283,8 @@ def main():
         )
     print()
 
-    # Pin v2 baseline targets
-    out_path = os.path.join(OUT_ROOT, "v2_baseline.json")
+    # Pin v2 baseline targets (suffix keeps non-default runs separate)
+    out_path = os.path.join(OUT_ROOT, f"v2_baseline{suffix}.json")
     pinned = {}
     for r in rows:
         m = r["metrics"]

@@ -1,0 +1,2 @@
+"""Harmful meme baseline adapters."""
+
