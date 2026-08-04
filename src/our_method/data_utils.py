@@ -10,11 +10,16 @@ import json
 import os
 import glob as globmod
 
+# Dataset location. Default is this cluster's shared data directory; on
+# other machines set HVD_DATA_ROOT to a directory laid out the same way
+# (e.g. $HVD_DATA_ROOT/ImpliHateVid/{annotation(new).json,splits/,frames_16/}).
+_DATA_ROOT = os.environ.get("HVD_DATA_ROOT", "/data/jehc223")
+
 DATASET_ROOTS = {
-    "MHClip_EN": "/data/jehc223/Multihateclip/English",
-    "MHClip_ZH": "/data/jehc223/Multihateclip/Chinese",
-    "HateMM": "/data/jehc223/HateMM",
-    "ImpliHateVid": "/data/jehc223/ImpliHateVid",
+    "MHClip_EN": os.path.join(_DATA_ROOT, "Multihateclip", "English"),
+    "MHClip_ZH": os.path.join(_DATA_ROOT, "Multihateclip", "Chinese"),
+    "HateMM": os.path.join(_DATA_ROOT, "HateMM"),
+    "ImpliHateVid": os.path.join(_DATA_ROOT, "ImpliHateVid"),
 }
 
 SPLIT_ALIASES = {

@@ -23,7 +23,9 @@ import os
 import sys
 import time
 
-sys.path.insert(0, "/data/jehc223/EMNLP3/src/our_method")
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(_THIS_DIR, "..", ".."))
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "src", "our_method"))
 
 from data_utils import get_media_path, load_annotations, load_clean_split_ids  # noqa: E402
 from score_holistic_2b import (  # noqa: E402
@@ -34,7 +36,8 @@ from score_holistic_2b import (  # noqa: E402
     extract_binary_score,
 )
 
-PROJECT_ROOT = "/data/jehc223/EMNLP3"
+# vLLM will only read media below this path. Must cover the dataset root.
+MEDIA_ROOT = os.environ.get("HVD_DATA_ROOT", "/data/jehc223")
 
 # Frozen BINARY_PROMPT skeleton with one extra {reader_block} slot between
 # the rules and the question. Byte-identical to score_holistic_2b.BINARY_PROMPT
@@ -185,7 +188,7 @@ def main():
         max_model_len=32768,
         limit_mm_per_prompt=({"image": args.num_frames} if args.no_video
                              else {"video": 1, "image": args.num_frames}),
-        allowed_local_media_path="/data/jehc223",
+        allowed_local_media_path=MEDIA_ROOT,
         mm_processor_kwargs={"max_pixels": 100352},
     )
     tokenizer = llm.get_tokenizer()

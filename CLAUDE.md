@@ -12,7 +12,8 @@ The north star is a method that (a) does not rely on human-annotated hate labels
 
 ## Execution constraints
 
-- **All code must be submitted via Slurm.** Never run Python scripts directly on the login node. Use `sbatch --gres=gpu:1 --wrap "python ..."` for GPU jobs and `sbatch --wrap "python ..."` for CPU-only jobs.
+- **Machine detection first.** Before executing any code, run `nvidia-smi` and count the GPUs. **More than one GPU visible → this is the shared cluster: submit everything through Slurm as below.** **Exactly one GPU visible → this is a dedicated single-GPU machine: direct command-line execution is permitted** (no Slurm needed; see `docs/duplex/NEW_MACHINE_RUNBOOK.md` for the current experiment's runner).
+- **On the cluster, all code must be submitted via Slurm.** Never run Python scripts directly on the login node. Use `sbatch --gres=gpu:1 --wrap "python ..."` for GPU jobs and `sbatch --wrap "python ..."` for CPU-only jobs.
 - **No job chaining.** Submit one job at a time. Wait for it to complete before submitting the next. Do not use Slurm dependency chains (`--dependency`), background submission with `&`, or any form of parallel job submission.
 - **1 GPU max at any given time.** This is not per-job — it means the total number of GPUs occupied across all running jobs must never exceed 1.
 - **Conda env:** `SafetyContradiction` (vllm 0.11.0). Always activate before running: `conda activate SafetyContradiction && python ...`
@@ -98,7 +99,7 @@ If a technique passes 1–4, it has a story. If it only has "it works on the val
 ## 权责声明(最重要)
 - **主对话 = 你和我讨论、决策、汇报**,主对话本身**不执行任何杂活**。
 - **一切杂活**(写代码、数据处理、提交与监控 SLURM、调试、跑实验)**一律交给 subagent 或 dynamic workflow 去做**。
-- **主对话调用 subagent 只能用 Opus 4.8**(`model: opus`,即 `claude-opus-4-8`),**不得降级也不得升级**到其他模型。
+- **主对话调用 subagent 只能用 Opus 5.0**(`model: opus`,即 `claude-opus-5-0`),**不得降级也不得升级**到其他模型。
 
 ## How to use this document
 

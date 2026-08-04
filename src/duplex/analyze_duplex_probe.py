@@ -28,7 +28,7 @@ import math
 import os
 import sys
 
-PROJECT_ROOT = "/data/jehc223/EMNLP3"
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
 EPS = 1e-4  # clip before logit; probe scores can hit exact 0/1
 
