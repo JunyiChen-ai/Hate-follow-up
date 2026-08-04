@@ -54,14 +54,24 @@ The payload is pre-packed on the source cluster as a single tarball:
 md5: b5a7fc7eda9aa102248c8dac81348f17
 ```
 
-If this machine can reach the cluster (campus network / VPN), pull it:
+**Preferred route — Backblaze B2 (no SSH connectivity needed).** The
+tarball is uploaded at `b2:junyi-data/hate-followup/ihv_killtest_payload.tar`
+(1,590,435,840 bytes). Install rclone, then copy the owner's rclone config
+(a 90-byte `[b2]` section with `account` + `key`, from
+`~/.config/rclone/rclone.conf` on the cluster — the owner supplies it) to
+`~/.config/rclone/rclone.conf` on this machine, and pull:
+
+```
+rclone copy b2:junyi-data/hate-followup/ihv_killtest_payload.tar . --progress
+```
+
+Fallback — direct scp if this machine can reach the campus network / VPN:
 
 ```
 scp jehc223@foscsmlprd02.its.auckland.ac.nz:/data/jehc223/ihv_killtest_payload.tar .
 ```
 
-If not (e.g. a cloud GPU box), have the owner push it from the cluster to
-this machine's SSH endpoint instead. Either way, then:
+Either way, then:
 
 ```
 md5sum ihv_killtest_payload.tar          # must match the hash above
