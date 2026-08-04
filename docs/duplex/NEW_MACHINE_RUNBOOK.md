@@ -47,16 +47,28 @@ $HVD_DATA_ROOT/ImpliHateVid/
 └── frames_16/               # 2009 subdirs of 16 pre-extracted jpgs
 ```
 
-Transfer from the source cluster (adjust user/host to whatever login the
-owner provides; the source path is exact):
+The payload is pre-packed on the source cluster as a single tarball:
 
 ```
-rsync -avz --progress \
-  jehc223@foscsmlprd02.its.auckland.ac.nz:/data/jehc223/ImpliHateVid/'{annotation(new).json,splits,frames_16}' \
-  $HVD_DATA_ROOT/ImpliHateVid/
+/data/jehc223/ihv_killtest_payload.tar   # 1.5 GB
+md5: b5a7fc7eda9aa102248c8dac81348f17
 ```
 
-Integrity checks after transfer:
+If this machine can reach the cluster (campus network / VPN), pull it:
+
+```
+scp jehc223@foscsmlprd02.its.auckland.ac.nz:/data/jehc223/ihv_killtest_payload.tar .
+```
+
+If not (e.g. a cloud GPU box), have the owner push it from the cluster to
+this machine's SSH endpoint instead. Either way, then:
+
+```
+md5sum ihv_killtest_payload.tar          # must match the hash above
+tar -xf ihv_killtest_payload.tar -C $HVD_DATA_ROOT
+```
+
+Integrity checks after extraction:
 
 - `ls $HVD_DATA_ROOT/ImpliHateVid/frames_16 | wc -l` → 2009
 - `wc -l $HVD_DATA_ROOT/ImpliHateVid/splits/train_clean.csv` → 1283
