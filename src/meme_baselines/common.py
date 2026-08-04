@@ -9,7 +9,7 @@ from typing import Iterable
 
 import numpy as np
 
-PROJECT_ROOT = Path("/data/jehc223/EMNLP2")
+PROJECT_ROOT = Path("/data/jehc223/EMNLP3")
 DATA_ROOT = PROJECT_ROOT / "datasets" / "harmful_meme" / "processed"
 RESULT_ROOT = PROJECT_ROOT / "results" / "meme_baselines"
 LOG_ROOT = PROJECT_ROOT / "logs" / "meme_baselines"

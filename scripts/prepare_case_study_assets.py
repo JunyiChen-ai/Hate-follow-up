@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "paper" / "analysis" / "case_study_assets"
 
 sys.path.insert(0, str(ROOT / "results" / "paper_stage2_experiments"))

@@ -12,7 +12,7 @@ import os
 import random
 from pathlib import Path
 
-PROJECT_ROOT = Path("/data/jehc223/EMNLP2")
+PROJECT_ROOT = Path("/data/jehc223/EMNLP3")
 
 
 def load_band(dataset: str):

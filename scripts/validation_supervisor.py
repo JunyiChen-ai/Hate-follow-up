@@ -11,7 +11,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path("/data/jehc223/EMNLP2")
+PROJECT_ROOT = Path("/data/jehc223/EMNLP3")
 sys.path.insert(0, str(PROJECT_ROOT / "src" / "our_method"))
 
 from data_utils import load_clean_split_ids  # noqa: E402

@@ -106,7 +106,7 @@ def main():
             issue = check_judge_file(path)
         elif typ == "holistic":
             issue = check_holistic_file(path)
-        slurm_log = f"/data/jehc223/EMNLP2/slurm-{jobid}.out"
+        slurm_log = f"/data/jehc223/EMNLP3/slurm-{jobid}.out"
         log_hit = tail_check(slurm_log)
         if issue:
             print(f"ALERT jobid={jobid} {issue}")

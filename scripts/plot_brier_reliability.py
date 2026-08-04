@@ -24,7 +24,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from _paper_palette import COLOR, apply_style
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "paper" / "figures"
 ANALYSIS_DIR = ROOT / "paper" / "analysis"
 

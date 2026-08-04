@@ -2,7 +2,7 @@
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 # MATCH stage 3 — MFCC audio feature extraction via librosa.
 # CPU-only (no GPU), all 4 datasets, both splits.

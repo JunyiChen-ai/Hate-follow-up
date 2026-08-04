@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.join(_HERE, "..", "naive_baseline"))
 from data_utils import load_annotations, SKIP_VIDEOS  # noqa: E402
 from eval_generative_predictions import collapse_label, eval_one  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 OUT_ROOT = os.path.join(PROJECT_ROOT, "results", "boundary_rescue")
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 

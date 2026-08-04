@@ -135,7 +135,7 @@ def main():
     for model_tag, model_dir in [("2B", "holistic_2b"), ("8B", "holistic_8b")]:
         for dataset in ["MHClip_EN", "MHClip_ZH"]:
             ann = load_annotations(dataset)
-            base = f"/data/jehc223/EMNLP2/results/{model_dir}/{dataset}"
+            base = f"/data/jehc223/EMNLP3/results/{model_dir}/{dataset}"
             for cfg_name, (mode, suffix) in CONFIGS.items():
                 test_path = f"{base}/test_{mode}{suffix}.jsonl"
                 train_path = f"{base}/train_{mode}{suffix}.jsonl"
@@ -216,8 +216,8 @@ def main():
         tr_g = fmt(r.get("tr_gmm", {"err": "no train"}))
         print(f"{r['model']:<4} {r['dataset']:<12} {r['config']:<25} {r['n_test']:<6} {oracle:<14} {tf_o:<14} {tf_g:<14} {tr_o:<14} {tr_g:<14}")
 
-    os.makedirs("/data/jehc223/EMNLP2/results/analysis", exist_ok=True)
-    with open("/data/jehc223/EMNLP2/results/analysis/quick_eval_all.json", "w") as f:
+    os.makedirs("/data/jehc223/EMNLP3/results/analysis", exist_ok=True)
+    with open("/data/jehc223/EMNLP3/results/analysis/quick_eval_all.json", "w") as f:
         json.dump(rows, f, indent=2)
     print(f"\nSaved: results/analysis/quick_eval_all.json")
 

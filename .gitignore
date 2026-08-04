@@ -65,3 +65,12 @@ external_repos/
 
 # Independently released repo (github.com/JunyiChen-ai/TRIAGE)
 release/triage/
+
+# Read-only references into the frozen EMNLP2 tree
+results_frozen
+paper_emnlp2_frozen
+
+# The above are symlinks here, not directories; slash-suffixed rules miss them
+/datasets
+/external_repos
+/third_party

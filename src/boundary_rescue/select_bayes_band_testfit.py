@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(_HERE, "..", "naive_baseline"))
 from quick_eval_all import load_scores_file  # noqa
 from data_utils import SKIP_VIDEOS  # noqa
 
-ROOT = "/data/jehc223/EMNLP2"
+ROOT = "/data/jehc223/EMNLP3"
 OUT = os.path.join(ROOT, "results", "boundary_rescue")
 DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 

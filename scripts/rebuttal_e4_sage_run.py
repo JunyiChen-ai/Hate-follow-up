@@ -21,7 +21,7 @@ import numpy as np
 import yaml
 import torch
 
-REPO = "/data/jehc223/EMNLP2"
+REPO = "/data/jehc223/EMNLP3"
 sys.path.insert(0, os.path.join(REPO, "external_repos/SAGE/model"))
 sys.path.insert(0, os.path.join(REPO, "src"))
 

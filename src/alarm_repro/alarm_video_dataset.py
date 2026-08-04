@@ -37,7 +37,7 @@ from data_utils import (  # noqa: E402
     load_clean_split_ids,
 )
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 
 FRAME_INDICES = (0, 2, 4, 6, 8, 10, 12, 14)

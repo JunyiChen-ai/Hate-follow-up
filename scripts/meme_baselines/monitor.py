@@ -4,7 +4,7 @@ import json
 import subprocess
 from pathlib import Path
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 RESULT = ROOT / "results" / "meme_baselines"
 DATA = ROOT / "datasets" / "harmful_meme" / "processed"
 DATASETS = ("FHM", "MAMI", "ToxiCN_MM")

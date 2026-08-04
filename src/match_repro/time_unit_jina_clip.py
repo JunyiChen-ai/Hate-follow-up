@@ -62,7 +62,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "..", "our_method"))
 from data_utils import DATASET_ROOTS, SKIP_VIDEOS, load_annotations  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 DEFAULT_MODEL = "jinaai/jina-clip-v2"
 TRUNCATE_DIM = 512  # upstream `time_unit.py:84`

@@ -4,11 +4,11 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH -t 24:00:00
-#SBATCH -o /data/jehc223/EMNLP2/logs/meme_baselines/slurm/%x_%j.out
-#SBATCH -e /data/jehc223/EMNLP2/logs/meme_baselines/slurm/%x_%j.err
+#SBATCH -o /data/jehc223/EMNLP3/logs/meme_baselines/slurm/%x_%j.out
+#SBATCH -e /data/jehc223/EMNLP3/logs/meme_baselines/slurm/%x_%j.err
 
 set -euo pipefail
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
 mkdir -p logs/meme_baselines/slurm results/meme_baselines

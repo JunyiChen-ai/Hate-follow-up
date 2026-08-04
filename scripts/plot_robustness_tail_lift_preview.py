@@ -15,7 +15,7 @@ import numpy as np
 from _paper_palette import COLOR, apply_style, style_axes
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 FIG_DIR = ROOT / "paper" / "figures"
 SOURCE = FIG_DIR / "robustness_all_configs.csv"
 

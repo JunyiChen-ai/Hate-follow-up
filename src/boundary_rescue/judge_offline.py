@@ -57,7 +57,7 @@ if _EXTRA_SKIP_VIDEOS:
 
 ONLY_VIDEO_ID = _os.environ.get("ONLY_VIDEO_ID", "").strip()
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 OUT_ROOT = os.path.join(PROJECT_ROOT, "results", "boundary_rescue")
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 

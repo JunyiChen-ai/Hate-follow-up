@@ -17,7 +17,7 @@ import csv
 import cv2
 import numpy as np
 
-REPO = "/data/jehc223/EMNLP2"
+REPO = "/data/jehc223/EMNLP3"
 sys.path.insert(0, os.path.join(REPO, "src"))
 from our_method import data_utils as du  # noqa: E402
 

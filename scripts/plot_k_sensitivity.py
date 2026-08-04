@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 IN_PATH = ROOT / "results" / "boundary_rescue" / "k_sensitivity" / "k_sensitivity_summary.csv"
 OUT_PATH = ROOT / "paper" / "figures" / "k_sensitivity.pdf"
 

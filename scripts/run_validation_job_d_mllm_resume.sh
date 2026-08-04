@@ -3,13 +3,13 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
 #SBATCH -t 72:00:00
-#SBATCH -o /data/jehc223/EMNLP2/logs/validation_job_d_%j.out
-#SBATCH -e /data/jehc223/EMNLP2/logs/validation_job_d_%j.err
+#SBATCH -o /data/jehc223/EMNLP3/logs/validation_job_d_%j.out
+#SBATCH -e /data/jehc223/EMNLP3/logs/validation_job_d_%j.err
 
 set -euo pipefail
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 mkdir -p logs results/validation_runs
 
 unset HF_HUB_OFFLINE

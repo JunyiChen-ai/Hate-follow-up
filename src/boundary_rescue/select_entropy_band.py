@@ -36,7 +36,7 @@ from quick_eval_all import load_scores_file  # noqa: E402
 from data_utils import SKIP_VIDEOS  # noqa: E402
 from select_bayes_band import to_logit, fit_gmm  # noqa: E402
 
-PROJECT_ROOT = Path("/data/jehc223/EMNLP2")
+PROJECT_ROOT = Path("/data/jehc223/EMNLP3")
 OUT_ROOT = PROJECT_ROOT / "results" / "boundary_rescue"
 DS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 

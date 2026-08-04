@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path("/data/jehc223/EMNLP2")
+PROJECT_ROOT = Path("/data/jehc223/EMNLP3")
 sys.path.insert(0, str(PROJECT_ROOT / "src" / "naive_baseline"))
 sys.path.insert(0, str(PROJECT_ROOT / "src" / "our_method"))
 

@@ -4,7 +4,7 @@
 # gate weight on the test set, to check whether any expert (esp. ZH text) is
 # dead/noisy. Read-only w.r.t. training artifacts (writes diag.json only).
 # Usage: sbatch --gres=gpu:1 --cpus-per-task=8 --mem=48G scripts/rebuttal_e4_sage_diag.sh
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 source ~/.bashrc                    # /etc/bashrc reads unset vars — must precede `set -u`
 conda activate SafetyContradiction
 set -euo pipefail

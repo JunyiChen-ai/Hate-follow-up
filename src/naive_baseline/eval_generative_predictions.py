@@ -117,7 +117,7 @@ def main():
     parser.add_argument("--out", help="Write summary JSON to this path")
     args = parser.parse_args()
 
-    project_root = "/data/jehc223/EMNLP2"
+    project_root = "/data/jehc223/EMNLP3"
     results = []
 
     if args.naive:

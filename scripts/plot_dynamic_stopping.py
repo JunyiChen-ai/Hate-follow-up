@@ -22,7 +22,7 @@ import numpy as np
 from _paper_palette import COLOR, apply_style, style_axes
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "paper" / "figures"
 CSV_PATH = OUT_DIR / "dynamic_stopping_composition.csv"
 

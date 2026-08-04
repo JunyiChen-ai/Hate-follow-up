@@ -4,7 +4,7 @@ import sys, json
 from pathlib import Path
 from collections import defaultdict
 
-sys.path.insert(0, "/data/jehc223/EMNLP2/src")
+sys.path.insert(0, "/data/jehc223/EMNLP3/src")
 from boundary_rescue.grid_eval_all import load_labels, SKIP_VIDEOS, ld_jsonl
 
 import numpy as np
@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-FIG_DIR = Path("/data/jehc223/EMNLP2/paper/figures")
+FIG_DIR = Path("/data/jehc223/EMNLP3/paper/figures")
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 DATASETS = [
@@ -21,7 +21,7 @@ DATASETS = [
     ("MHClip_ZH", "MHClip-ZH"),
     ("ImpliHateVid", "ImpliHateVid"),
 ]
-BAND_PATH = Path("/data/jehc223/EMNLP2/results/boundary_rescue")
+BAND_PATH = Path("/data/jehc223/EMNLP3/results/boundary_rescue")
 GRID_PATH = BAND_PATH / "grid_eval" / "grid_raw.jsonl"
 
 

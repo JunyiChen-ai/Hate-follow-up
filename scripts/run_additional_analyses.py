@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "paper" / "figures"
 ANALYSIS_DIR = ROOT / "paper" / "analysis"
 

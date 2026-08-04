@@ -15,7 +15,7 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT = ROOT / "results/boundary_rescue/HateMM/offline_test_qwen2.5-vl-72b-awq.jsonl"
 SKIP_FILE = ROOT / "results/boundary_rescue/HateMM/qwen2.5-vl-72b-awq_16f_crash_skip.txt"
 LOG_DIR = ROOT / "results/boundary_rescue/HateMM/qwen2.5-vl-72b-awq_16f_attempt_logs"

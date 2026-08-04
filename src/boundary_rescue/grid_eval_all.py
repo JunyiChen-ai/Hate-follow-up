@@ -37,7 +37,7 @@ from data_utils import SKIP_VIDEOS  # noqa: E402
 from eval_generative_predictions import collapse_label  # noqa: E402
 from data_utils import load_annotations  # noqa: E402
 
-PROJECT_ROOT = Path("/data/jehc223/EMNLP2")
+PROJECT_ROOT = Path("/data/jehc223/EMNLP3")
 OUT_ROOT = PROJECT_ROOT / "results" / "boundary_rescue"
 GRID_DIR = OUT_ROOT / "grid_eval"
 DS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]

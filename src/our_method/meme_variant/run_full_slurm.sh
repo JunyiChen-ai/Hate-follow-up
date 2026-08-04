@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 mkdir -p logs/meme_variant/slurm
 
 submit_subset() {
@@ -15,7 +15,7 @@ submit_subset() {
     --export=ALL,MEME_DATASETS="${datasets[*]}" <<'SLURM'
 #!/usr/bin/env bash
 set -euo pipefail
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
 

@@ -17,8 +17,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Callable
 
-ROOT = Path("/data/jehc223/EMNLP2/results/boundary_rescue")
-DATA = Path("/data/jehc223/EMNLP2/datasets")
+ROOT = Path("/data/jehc223/EMNLP3/results/boundary_rescue")
+DATA = Path("/data/jehc223/EMNLP3/datasets")
 DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 
 def load_annot_labels():

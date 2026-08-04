@@ -8,7 +8,7 @@ import json
 import math
 from pathlib import Path
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 DATA = ROOT / "datasets"
 LABMAP = {
     "MHClip_EN": {"Hateful": 1, "Offensive": 1, "Normal": 0},

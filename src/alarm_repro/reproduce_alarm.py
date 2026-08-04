@@ -42,7 +42,7 @@ from alarm_video_dataset import ALL_DATASETS, build_video_items  # noqa: E402
 from qwen2vl_video_model import DEFAULT_MODEL_ID, Qwen2VLVideoModel  # noqa: E402
 import stages  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 RESULTS_SUBDIR = "alarm"
 
 

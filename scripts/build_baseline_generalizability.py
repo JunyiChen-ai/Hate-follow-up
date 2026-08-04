@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 FIG_DIR = ROOT / "paper" / "figures"
 ANALYSIS_DIR = ROOT / "paper" / "analysis"
 

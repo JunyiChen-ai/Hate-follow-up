@@ -17,7 +17,7 @@ import os
 import sys
 import numpy as np
 
-sys.path.insert(0, "/data/jehc223/EMNLP2/src")
+sys.path.insert(0, "/data/jehc223/EMNLP3/src")
 from quick_eval_all import metrics, load_scores_file, build_arrays
 from data_utils import load_annotations
 
@@ -30,7 +30,7 @@ BASELINE = {
 
 def enumerate_buckets(dataset):
     ann = load_annotations(dataset)
-    base = f"/data/jehc223/EMNLP2/results/holistic_2b/{dataset}"
+    base = f"/data/jehc223/EMNLP3/results/holistic_2b/{dataset}"
     train = load_scores_file(f"{base}/train_binary.jsonl")
     test = load_scores_file(f"{base}/test_binary.jsonl")
 
@@ -127,7 +127,7 @@ def main():
             "strict_mf_only_count": len(strict_mf),
         }
 
-    outpath = "/data/jehc223/EMNLP2/results/analysis/director_pareto_check.json"
+    outpath = "/data/jehc223/EMNLP3/results/analysis/director_pareto_check.json"
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
     with open(outpath, "w") as f:
         json.dump(out, f, indent=2)

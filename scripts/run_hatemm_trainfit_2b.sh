@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
 
@@ -34,7 +34,7 @@ from pathlib import Path
 import numpy as np
 from sklearn.mixture import GaussianMixture
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 sys.path.insert(0, str(ROOT / "src" / "boundary_rescue"))
 sys.path.insert(0, str(ROOT / "src" / "our_method"))
 sys.path.insert(0, str(ROOT / "src" / "naive_baseline"))

@@ -18,8 +18,8 @@ import json, re
 from pathlib import Path
 from collections import Counter, defaultdict
 
-ROOT = Path("/data/jehc223/EMNLP2/results/boundary_rescue")
-DATA = Path("/data/jehc223/EMNLP2/datasets")
+ROOT = Path("/data/jehc223/EMNLP3/results/boundary_rescue")
+DATA = Path("/data/jehc223/EMNLP3/datasets")
 DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 V1 = {
     "MHClip_EN":   (0.7826, 0.6958),

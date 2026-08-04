@@ -6,7 +6,7 @@
 #   sbatch --gres=gpu:1 ... scripts/rebuttal_e4_sage_train.sh hatemm "0 1 2"
 #     -> single dataset, chosen seeds (lets the director shard around the E3 GPU job).
 # Datasets: hatemm (HateMM), mhclip_yt (MHClip_EN), mhclip_bl (MHClip_ZH).
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 source ~/.bashrc                    # /etc/bashrc reads unset vars — must precede `set -u`
 conda activate SafetyContradiction
 set -euo pipefail                  # strict flags for the actual work

@@ -9,7 +9,7 @@ import sys, json
 from pathlib import Path
 from collections import Counter
 
-sys.path.insert(0, "/data/jehc223/EMNLP2/src")
+sys.path.insert(0, "/data/jehc223/EMNLP3/src")
 from boundary_rescue.grid_eval_all import (
     baseline_pred_path, entropy_band_path, judge_path,
     load_labels, SKIP_VIDEOS, ld_jsonl,
@@ -35,7 +35,7 @@ ALL_JUDGES_8 = (
     "minicpm-v-26", "qwen3-vl-8b",
 )
 
-OFFLINE_DIR = Path("/data/jehc223/EMNLP2/results/boundary_rescue")
+OFFLINE_DIR = Path("/data/jehc223/EMNLP3/results/boundary_rescue")
 
 
 def _offline_judge(ds, judge_stem):

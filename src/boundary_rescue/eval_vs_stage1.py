@@ -3,8 +3,8 @@
 import json, re
 from pathlib import Path
 
-ROOT = Path("/data/jehc223/EMNLP2/results/boundary_rescue")
-DATA = Path("/data/jehc223/EMNLP2/datasets")
+ROOT = Path("/data/jehc223/EMNLP3/results/boundary_rescue")
+DATA = Path("/data/jehc223/EMNLP3/datasets")
 DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 N = {"MHClip_EN":161,"MHClip_ZH":149,"HateMM":215,"ImpliHateVid":401}
 LABMAP = {"MHClip_EN":{"Hateful":1,"Offensive":1,"Normal":0},

@@ -10,7 +10,7 @@ import time
 
 from .common import DATASETS, LOG_ROOT, RESULT_ROOT, dataset_iter, done_ids, load_split, read_jsonl, safe_text
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 DEFAULT_BASE_MODEL = "yahma/llama-7b-hf"
 YES_TOKEN_ID = 8241
 NO_TOKEN_ID = 3782

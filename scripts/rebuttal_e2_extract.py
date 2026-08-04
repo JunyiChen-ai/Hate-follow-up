@@ -24,7 +24,7 @@ import itertools
 import sys
 from pathlib import Path
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "results" / "rebuttal" / "E2_small_panel"
 
 sys.path.insert(0, str(ROOT / "src" / "boundary_rescue"))

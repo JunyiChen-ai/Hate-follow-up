@@ -57,7 +57,7 @@ from lorehm_video_dataset import (  # noqa: E402
     load_split_video_ids,
 )
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 
 # v2 brief adaptation 4: Jina-CLIP-v2, matching upstream ALARM
 # `make_embeddings.py:11` loader (same model file, already cached).

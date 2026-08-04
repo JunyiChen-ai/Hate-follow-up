@@ -85,7 +85,7 @@ from data_utils import (  # noqa: E402
     load_clean_split_ids,
 )
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 NUM_FRAMES = 16  # MARS default, paper says stable at 8/16/32
 DEFAULT_MODEL = "Qwen/Qwen2.5-VL-32B-Instruct-AWQ"

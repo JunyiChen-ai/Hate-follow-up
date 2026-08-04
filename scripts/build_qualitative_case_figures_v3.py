@@ -8,7 +8,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 DATA_ROOT = ROOT / "datasets"
 CASE_CSV = ROOT / "paper" / "analysis" / "qualitative_cases.csv"
 FIG_DIR = ROOT / "paper" / "figures"

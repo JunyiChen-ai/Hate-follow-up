@@ -13,7 +13,7 @@ import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import run_deployment_collaboration_probe as probe  # noqa: E402

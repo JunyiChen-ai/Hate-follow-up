@@ -57,7 +57,7 @@ from dataset_procap import (  # noqa: E402
 )
 from pbm import PromptHateModel  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 
 

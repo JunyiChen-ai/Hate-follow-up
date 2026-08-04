@@ -3,12 +3,12 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
 #SBATCH -t 08:00:00
-#SBATCH -o /data/jehc223/EMNLP2/slurm-%j.out
+#SBATCH -o /data/jehc223/EMNLP3/slurm-%j.out
 
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 STEM="qwen2.5-vl-32b-awq"
 MODEL="Qwen/Qwen2.5-VL-32B-Instruct-AWQ"

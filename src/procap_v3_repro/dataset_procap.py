@@ -50,7 +50,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "..", "our_method"))
 from data_utils import DATASET_ROOTS, SKIP_VIDEOS, load_annotations  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 
 # Upstream `config.py:21-22` — POS_WORD='good', NEG_WORD='bad'. The
 # `{0: POS_WORD, 1: NEG_WORD}` mapping (label 0=harmless→good,

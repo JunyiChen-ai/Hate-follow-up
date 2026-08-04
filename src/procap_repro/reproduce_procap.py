@@ -57,7 +57,7 @@ from data_utils import (  # noqa: E402
     load_annotations,
 )
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 DEFAULT_MODEL = "Salesforce/blip2-flan-t5-xl"
 

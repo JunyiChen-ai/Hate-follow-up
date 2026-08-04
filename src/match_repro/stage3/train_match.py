@@ -38,7 +38,7 @@ sys.path.insert(0, _HERE)
 import dataset_loaders  # noqa: E402
 import match_model  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 
 # Defaults from upstream `src/config/HateMM_MATCH.yaml`.

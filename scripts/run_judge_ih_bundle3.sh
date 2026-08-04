@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=80G
 #SBATCH -t 08:00:00
-#SBATCH -o /data/jehc223/EMNLP2/slurm-%j.out
+#SBATCH -o /data/jehc223/EMNLP3/slurm-%j.out
 
 # Final IH resume bundle:
 # - llava-onevision at NUM_FRAMES=4 (8 frames still blew max_model_len).
@@ -12,7 +12,7 @@
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 echo "=== 1/2: llava-onevision (NUM_FRAMES=4) ==="
 NUM_FRAMES=4 python src/boundary_rescue/judge_offline.py \

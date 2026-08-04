@@ -50,7 +50,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "results" / "rebuttal" / "E1_prevalence"
 
 sys.path.insert(0, str(ROOT / "src" / "boundary_rescue"))

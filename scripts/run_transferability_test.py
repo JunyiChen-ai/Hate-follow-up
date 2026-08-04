@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.mixture import GaussianMixture
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 sys.path.insert(0, str(ROOT / "src" / "boundary_rescue"))
 sys.path.insert(0, str(ROOT / "src" / "our_method"))
 sys.path.insert(0, str(ROOT / "src" / "naive_baseline"))

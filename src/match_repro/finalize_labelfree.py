@@ -44,7 +44,7 @@ import os
 import re
 
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 
 # Positive phrases (→ pred=1). Ordered longest-first so that
 # "should not be classified as hateful" does not accidentally match

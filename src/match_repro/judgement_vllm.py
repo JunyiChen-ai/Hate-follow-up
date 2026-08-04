@@ -45,7 +45,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "..", "our_method"))
 from data_utils import DATASET_ROOTS, SKIP_VIDEOS  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 DEFAULT_MODEL = "Qwen/Qwen2.5-VL-7B-Instruct"
 MAX_TOKENS = 4096  # upstream `judgement.py:111`

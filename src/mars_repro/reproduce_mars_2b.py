@@ -43,7 +43,7 @@ _OUR_METHOD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ou
 sys.path.insert(0, _OUR_METHOD)
 from data_utils import DATASET_ROOTS, get_media_path, load_annotations  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 NUM_FRAMES = 16  # MARS default, paper says stable at 8/16/32
 

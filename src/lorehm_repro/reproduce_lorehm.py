@@ -70,7 +70,7 @@ from retrieval import (  # noqa: E402
     rel_sampl_output_path,
 )
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 
 # Transcript truncation to 500 chars (unchanged from prior brief).
 TRANSCRIPT_LIMIT = 500

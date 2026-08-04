@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=48G
 #SBATCH -t 10:00:00
-#SBATCH -o /data/jehc223/EMNLP2/slurm-%j.out
+#SBATCH -o /data/jehc223/EMNLP3/slurm-%j.out
 
 # Resume + retry for the 3 small IH-prompt judges. Fixes from bundle1:
 # - internvl3_5-8b: NUM_FRAMES=8 (16 frames → 37-53K tokens, over 32K cap)
@@ -13,7 +13,7 @@
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 export NUM_FRAMES=8
 

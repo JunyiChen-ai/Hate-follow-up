@@ -50,7 +50,7 @@ sys.path.insert(0, os.path.join(_HERE, "..", "our_method"))
 import video_caption_adapter  # noqa: E402
 import lora_compose  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 DEFAULT_BASE_MODEL = "yahma/llama-7b-hf"
 

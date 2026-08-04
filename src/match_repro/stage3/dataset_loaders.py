@@ -44,7 +44,7 @@ import torch
 from torch.utils.data import Dataset
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_PROJECT_ROOT = "/data/jehc223/EMNLP2"
+_PROJECT_ROOT = "/data/jehc223/EMNLP3"
 _OUR_METHOD = os.path.join(_PROJECT_ROOT, "src", "our_method")
 if _OUR_METHOD not in sys.path:
     sys.path.insert(0, _OUR_METHOD)

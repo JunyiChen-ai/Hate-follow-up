@@ -44,7 +44,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "..", "our_method"))
 from data_utils import DATASET_ROOTS, SKIP_VIDEOS, load_clean_split_ids  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 DEFAULT_MODEL = "Qwen/Qwen2-VL-7B-Instruct"
 NUM_FRAMES = 16

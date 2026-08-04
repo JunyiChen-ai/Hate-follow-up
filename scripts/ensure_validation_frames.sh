@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
-LOCK=/data/jehc223/EMNLP2/results/validation_runs/validation_frames.lock
+LOCK=/data/jehc223/EMNLP3/results/validation_runs/validation_frames.lock
 mkdir -p "$(dirname "$LOCK")"
 
 (

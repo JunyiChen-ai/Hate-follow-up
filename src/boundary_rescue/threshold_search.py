@@ -37,7 +37,7 @@ from data_utils import load_annotations, SKIP_VIDEOS  # noqa: E402
 from eval_generative_predictions import collapse_label  # noqa: E402
 from thresholds import otsu_threshold, gmm_threshold, li_lee_threshold  # noqa: E402
 
-PROJECT_ROOT = Path("/data/jehc223/EMNLP2")
+PROJECT_ROOT = Path("/data/jehc223/EMNLP3")
 OUT_ROOT = PROJECT_ROOT / "results" / "boundary_rescue"
 DS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 CRITERIA = {"otsu": otsu_threshold, "gmm": gmm_threshold, "li_lee": li_lee_threshold}

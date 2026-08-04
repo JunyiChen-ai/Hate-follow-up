@@ -7,7 +7,7 @@
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 SLUGS="2b qwen2.5-vl-7b gemma-3-12b-it minicpm-v-26 pixtral-12b-2409 internvl3-14b"
 

@@ -8,7 +8,7 @@
 
 set -e
 
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 source activate SafetyContradiction
 
 MODEL="Qwen/Qwen3-VL-2B-Instruct"

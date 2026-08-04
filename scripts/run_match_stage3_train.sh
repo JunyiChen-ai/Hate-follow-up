@@ -2,7 +2,7 @@
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 # MATCH stage 3 — supervised training per dataset.
 # Late-fusion MLP over 4 text streams (transcript/judge/hate/nonhate

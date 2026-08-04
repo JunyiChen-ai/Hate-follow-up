@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -u
-cd /data/jehc223/EMNLP2 || exit 1
+cd /data/jehc223/EMNLP3 || exit 1
 
 LOG=logs/meme_baselines/resume_monitor.log
 mkdir -p logs/meme_baselines

@@ -22,7 +22,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 from data_utils import DATASET_ROOTS, get_media_path, load_annotations
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 
 CONSTITUTION_MAP = {
     "MHClip_EN": "youtube",

@@ -2,7 +2,7 @@
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 # Extract 32 frames per train video for MATCH stage 3 ViViT input.
 # Blocks: MATCH stage 3 extract_vivit.py (needs frames_32/<vid>/).

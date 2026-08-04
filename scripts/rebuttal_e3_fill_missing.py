@@ -30,7 +30,7 @@ import logging
 import sys
 from pathlib import Path
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "results" / "rebuttal" / "E3_72b_zeroshot"
 
 sys.path.insert(0, str(ROOT / "scripts"))

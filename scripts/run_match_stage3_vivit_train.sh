@@ -2,7 +2,7 @@
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 # MATCH stage 3 — ViViT train-split feature extraction.
 # EN/ZH/HateMM first (frames_32 train already extracted).
@@ -13,7 +13,7 @@ python src/match_repro/stage3/extract_vivit.py --dataset MHClip_ZH --split train
 python src/match_repro/stage3/extract_vivit.py --dataset HateMM --split train
 
 # Wait for frames_32 extraction to ensure ImpliHateVid frames are ready.
-while [ ! -f /data/jehc223/EMNLP2/logs/.extr_tr_32_done ]; do
+while [ ! -f /data/jehc223/EMNLP3/logs/.extr_tr_32_done ]; do
   if ! squeue -u jehc223 -h -o "%j" 2>/dev/null | grep -q extr_tr_32; then
     echo "[vivit_train] extr_tr_32 no longer in queue; proceeding"
     break

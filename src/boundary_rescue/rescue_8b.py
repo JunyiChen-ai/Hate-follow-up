@@ -33,7 +33,7 @@ from data_utils import load_annotations, get_media_path  # noqa: E402
 sys.path.insert(0, os.path.join(_HERE, "..", "our_method"))
 from score_holistic_2b import build_media_content  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 OUT_ROOT = os.path.join(PROJECT_ROOT, "results", "boundary_rescue")
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 

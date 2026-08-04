@@ -72,7 +72,7 @@ from data_utils import (  # noqa: E402
     load_clean_split_ids,
 )
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 PROCAP_8FRAME_SUBDIR = "procap_lavis_blip2_flan_t5_xl_8frame"
 PROCAP_1FRAME_SUBDIR = "procap_lavis_blip2_flan_t5_xl"
 PROCAP_V3_SUBDIR = "procap_v3"

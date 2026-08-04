@@ -8,7 +8,7 @@
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 export NUM_FRAMES=8
 # Use default prompt (rationale + answer Yes/No since judge_offline.py default); 
 # But we want hateful/normal format to compare with original. Add --rtg-mode would have rt field.

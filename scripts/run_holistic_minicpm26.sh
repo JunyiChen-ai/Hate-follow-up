@@ -3,12 +3,12 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
 #SBATCH -t 10:00:00
-#SBATCH -o /data/jehc223/EMNLP2/slurm-%j.out
+#SBATCH -o /data/jehc223/EMNLP3/slurm-%j.out
 
 set -e
 source /data/jehc223/home/miniconda3/etc/profile.d/conda.sh
 conda activate SafetyContradiction
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 MODEL="openbmb/MiniCPM-V-2_6"
 SLUG="minicpm-v-26"

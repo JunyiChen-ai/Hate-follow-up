@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 from _paper_palette import COLOR, apply_style
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "paper" / "figures"
 
 DATASETS = ["HateMM", "MHClip-EN", "MHClip-ZH", "ImpliHateVid"]

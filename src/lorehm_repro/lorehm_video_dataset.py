@@ -52,7 +52,7 @@ from data_utils import (  # noqa: E402
     load_clean_split_ids,
 )
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 
 # Rework 2026-04-15: LLaVA-Next multi-image path — use all 16 frames

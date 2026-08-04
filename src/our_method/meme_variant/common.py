@@ -5,7 +5,7 @@ import math
 import re
 from pathlib import Path
 
-PROJECT_ROOT = Path("/data/jehc223/EMNLP2")
+PROJECT_ROOT = Path("/data/jehc223/EMNLP3")
 RESULT_ROOT = PROJECT_ROOT / "results" / "meme_variant"
 
 DATASETS = ("FHM", "MAMI", "ToxiCN_MM")

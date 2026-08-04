@@ -38,7 +38,7 @@ import sys
 import traceback
 from datetime import datetime
 
-_PROJECT_ROOT = "/data/jehc223/EMNLP2"
+_PROJECT_ROOT = "/data/jehc223/EMNLP3"
 _NAIVE_BASELINE = os.path.join(_PROJECT_ROOT, "src", "naive_baseline")
 sys.path.insert(0, _NAIVE_BASELINE)
 from eval_generative_predictions import eval_one, ALL_DATASETS  # noqa: E402
@@ -253,7 +253,7 @@ def main():
     parser.add_argument(
         "--results-root",
         default=os.path.join(_PROJECT_ROOT, "results"),
-        help="Root of the results tree (default: /data/jehc223/EMNLP2/results)",
+        help="Root of the results tree (default: /data/jehc223/EMNLP3/results)",
     )
     parser.add_argument(
         "--out-dir",

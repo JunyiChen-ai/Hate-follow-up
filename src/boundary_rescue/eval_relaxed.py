@@ -7,8 +7,8 @@
 import json, re, argparse
 from pathlib import Path
 
-ROOT = Path("/data/jehc223/EMNLP2/results/boundary_rescue")
-DATA = Path("/data/jehc223/EMNLP2/datasets")
+ROOT = Path("/data/jehc223/EMNLP3/results/boundary_rescue")
+DATA = Path("/data/jehc223/EMNLP3/datasets")
 DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
 V1 = {"MHClip_EN":(0.7826,0.6958),"MHClip_ZH":(0.8255,0.8023),
       "HateMM":(0.8465,0.8362),"ImpliHateVid":(0.8204,0.8199)}

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /data/jehc223/EMNLP2
+cd /data/jehc223/EMNLP3
 
 python -m src.our_method.meme_variant.data_utils build --dataset all
 python -m src.our_method.meme_variant.validate_outputs --stage processed --dataset all

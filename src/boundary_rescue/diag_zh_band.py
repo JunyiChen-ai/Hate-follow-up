@@ -8,8 +8,8 @@ import json
 from pathlib import Path
 from collections import Counter, defaultdict
 
-ROOT = Path("/data/jehc223/EMNLP2/results/boundary_rescue")
-DATA = Path("/data/jehc223/EMNLP2/datasets")
+ROOT = Path("/data/jehc223/EMNLP3/results/boundary_rescue")
+DATA = Path("/data/jehc223/EMNLP3/datasets")
 DS = "MHClip_ZH"
 
 ann = json.load(open(DATA/DS/"annotation(new).json"))

@@ -25,7 +25,7 @@ from quick_eval_all import load_scores_file  # noqa: E402
 from data_utils import load_annotations, SKIP_VIDEOS  # noqa: E402
 from eval_generative_predictions import collapse_label  # noqa: E402
 
-PROJECT_ROOT = "/data/jehc223/EMNLP2"
+PROJECT_ROOT = "/data/jehc223/EMNLP3"
 OUT_ROOT = os.path.join(PROJECT_ROOT, "results", "boundary_rescue")
 
 SCORE_FILES = {

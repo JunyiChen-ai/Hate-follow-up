@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys, json
 from pathlib import Path
 
-sys.path.insert(0, "/data/jehc223/EMNLP2/src")
+sys.path.insert(0, "/data/jehc223/EMNLP3/src")
 from boundary_rescue.grid_eval_all import load_labels, SKIP_VIDEOS, ld_jsonl
 
 import numpy as np
@@ -11,7 +11,7 @@ from sklearn.metrics import (
     accuracy_score, f1_score, precision_score, recall_score,
 )
 
-ROOT = Path("/data/jehc223/EMNLP2/results")
+ROOT = Path("/data/jehc223/EMNLP3/results")
 DATASETS = ["HateMM", "MHClip_EN", "MHClip_ZH", "ImpliHateVid"]
 
 BASELINES = {

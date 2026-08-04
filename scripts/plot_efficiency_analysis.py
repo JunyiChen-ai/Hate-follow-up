@@ -15,7 +15,7 @@ import numpy as np
 from _paper_palette import COLOR, apply_style
 
 
-ROOT = Path("/data/jehc223/EMNLP2")
+ROOT = Path("/data/jehc223/EMNLP3")
 OUT_DIR = ROOT / "paper" / "figures"
 CSV_PATH = OUT_DIR / "efficiency_setup_tradeoff.csv"
 PDF_PATH = OUT_DIR / "efficiency_setup_tradeoff.pdf"

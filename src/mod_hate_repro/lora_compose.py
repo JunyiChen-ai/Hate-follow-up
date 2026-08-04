@@ -65,7 +65,7 @@ except Exception:
 
 
 UPSTREAM_LORA_ROOT = os.path.join(
-    "/data/jehc223/EMNLP2", "external_repos", "mod_hate", "LoRA_modules"
+    "/data/jehc223/EMNLP3", "external_repos", "mod_hate", "LoRA_modules"
 )
 DEFAULT_LORA_MODULES = ("hate-exp", "meme-captions", "hate-speech")
 
