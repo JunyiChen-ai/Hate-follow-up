@@ -83,3 +83,13 @@ Results are reported for all pre-registered arms regardless of outcome.
 Any deviation from this document (new arms, changed thresholds, edited
 prompts) must be recorded here as a dated amendment before the deviating
 run is submitted.
+
+## Amendment — 2026-08-05 (execution parameter only)
+
+The 8B stage on the off-cluster replication machine (single RTX 5090, 32 GB)
+is executed with `--batch-size 2` instead of 8, after the batch-8 run hit
+CUDA OOM (16.4 GB of weights plus one batch of eight 16-frame
+high-resolution sets). Batch size is an execution-throughput parameter:
+decoding is greedy with per-video constrained scoring, so per-sample scores
+do not depend on batch composition. No prompt, threshold, reader block,
+`--gpu-mem`, `max_model_len`, frame count, or transcript limit is changed.

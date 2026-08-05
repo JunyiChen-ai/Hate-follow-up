@@ -1,0 +1,106 @@
+{
+  "dataset": "ImpliHateVid",
+  "split": "train",
+  "model": "qwen3-vl-8b-instruct",
+  "lit_variant": "lit_v1",
+  "P1_divergence": {
+    "pair": "prag-lit_v1",
+    "n": {
+      "IM": 264,
+      "EX": 259,
+      "NH": 632
+    },
+    "median_D": {
+      "IM": 2.9801202499704704,
+      "EX": 1.460240392761313,
+      "NH": 0.0
+    },
+    "auc_IM_vs_EX": 0.6069234819234819,
+    "auc_IM_vs_NH": 0.7737881185270425,
+    "cliffs_IM_vs_EX": 0.21384696384696378,
+    "cliffs_IM_vs_NH": 0.5475762370540851
+  },
+  "P2_quadrants": {
+    "lit_median": -9.21024036697585,
+    "prag_median": -6.249999834114428,
+    "occupancy": {
+      "IM": {
+        "low_low": 0.159,
+        "low_high": 0.042,
+        "high_low": 0.004,
+        "high_high": 0.795
+      },
+      "EX": {
+        "low_low": 0.046,
+        "low_high": 0.023,
+        "high_low": 0.004,
+        "high_high": 0.927
+      },
+      "NH": {
+        "low_low": 0.813,
+        "low_high": 0.04,
+        "high_low": 0.013,
+        "high_high": 0.134
+      }
+    }
+  },
+  "P3_incremental": {
+    "tercile_bounds": [
+      1.3709575112870135e-06,
+      0.9770226283913265
+    ],
+    "n_mid": 386,
+    "n_hateful": 173,
+    "n_normal": 213,
+    "auc_D_hateful_vs_normal_mid": 0.6510353062498304,
+    "auc_prag_hateful_vs_normal_mid": 0.7706314961057288
+  },
+  "P4_compliance": {
+    "lit_v1": {
+      "auc_EX_vs_NH_via_lit": 0.9569424759298177,
+      "median_s_lit_EX": 0.994779873791927,
+      "median_s_lit_NH": 1.1253564334776422e-07,
+      "median_IM_suppression_z_lit_minus_z_prag": -2.9801202499704704
+    },
+    "lit_v2": {
+      "auc_EX_vs_NH_via_lit": 0.9559283514979717,
+      "median_s_lit_EX": 0.9968273169324521,
+      "median_s_lit_NH": 1.1253564334798979e-07,
+      "median_IM_suppression_z_lit_minus_z_prag": -2.605120089940291
+    }
+  },
+  "P5a_placebo": {
+    "pair": "effort-lit_v1",
+    "n": {
+      "IM": 264,
+      "EX": 259,
+      "NH": 632
+    },
+    "median_D": {
+      "IM": 0.5000000699083866,
+      "EX": 0.0,
+      "NH": 0.0
+    },
+    "auc_IM_vs_EX": 0.6041812916812916,
+    "auc_IM_vs_NH": 0.6837241081703107,
+    "cliffs_IM_vs_EX": 0.2083625833625833,
+    "cliffs_IM_vs_NH": 0.3674482163406214
+  },
+  "P5b_noise_floor": {
+    "pair": "prag-prag_para",
+    "n": {
+      "IM": 264,
+      "EX": 259,
+      "NH": 632
+    },
+    "median_D": {
+      "IM": 0.2499998850625893,
+      "EX": 0.0,
+      "NH": 0.0
+    },
+    "auc_IM_vs_EX": 0.5313194688194688,
+    "auc_IM_vs_NH": 0.6483625815113156,
+    "cliffs_IM_vs_EX": 0.06263893763893758,
+    "cliffs_IM_vs_NH": 0.2967251630226313
+  }
+}
