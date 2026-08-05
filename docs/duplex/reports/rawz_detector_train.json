@@ -1,0 +1,237 @@
+{
+  "source_scores": "results/duplex_readout/ImpliHateVid/scores.jsonl",
+  "prereg": "docs/duplex/PREREG_duplex_readout.md",
+  "probe_report": "docs/duplex/reports/readout_probe_8b_train.json",
+  "dataset": "ImpliHateVid",
+  "split": "train_clean",
+  "split_caveat": "All figures are on the 1283-video train_clean split. The ImpliHateVid test split has not been scored and is reserved. Published supervised numbers (IARE, SIGIR 2026, F1 91.75) are on the test split under full supervision, so no direct comparison is licensed by anything here.",
+  "readout": "raw unclipped z = logit(Yes) - logit(No), single forward pass, frozen prag reader, Qwen3-VL-8B-Instruct bf16",
+  "n": 1283,
+  "group_counts": {
+    "EX": 325,
+    "IM": 324,
+    "NH": 634
+  },
+  "n_hateful": 649,
+  "n_normal": 634,
+  "auc": {
+    "hateful_vs_NH_full": 0.9334392149047552,
+    "hateful_vs_NH_full_boot95": [
+      0.9189949169554714,
+      0.9459713864572042
+    ],
+    "IM_vs_NH": 0.914999318456206,
+    "EX_vs_NH": 0.9518223732103859,
+    "confirms_report_json": {
+      "IM_vs_NH_report": 0.914999318456206,
+      "EX_vs_NH_report": 0.9518223732103859,
+      "IM_vs_NH_match": true,
+      "EX_vs_NH_match": true
+    }
+  },
+  "threshold_estimators": {
+    "a_zero": {
+      "label_free": true,
+      "definition": "z = 0, the model's own Yes/No decision boundary (P(Yes) = 0.5 after renormalization)",
+      "value": 0.0
+    },
+    "b_kde_valley": {
+      "label_free": true,
+      "definition": "Gaussian KDE of the 1283 raw-z values, Scott bandwidth, evaluated on a 4001-point grid spanning [min(z)-2, max(z)+2]. The two grid local maxima of highest density are taken as the modes; the threshold is the grid point of minimum density strictly between them. Uses z only, no labels.",
+      "value": -2.903500000000001,
+      "bandwidth_scott": 2.8436482539686994,
+      "mode_locations": [
+        -16.26775,
+        10.860812499999994
+      ],
+      "mode_densities": [
+        0.03667328589736997,
+        0.029454587292807942
+      ],
+      "valley_density": 0.017546888955019477,
+      "n_grid_local_maxima": 2
+    },
+    "c_oracle_f1max": {
+      "label_free": false,
+      "definition": "F1-maximizing threshold chosen against gold labels. Reported as an upper bound only. NOT a label-free result.",
+      "value": -7.125
+    }
+  },
+  "operating_points": {
+    "a_zero": {
+      "threshold": 0.0,
+      "tp": 497,
+      "fp": 64,
+      "fn": 152,
+      "tn": 570,
+      "precision": 0.8859180035650623,
+      "recall": 0.765793528505393,
+      "f1_hateful": 0.8214876033057851,
+      "precision_normal": 0.7894736842105263,
+      "recall_normal": 0.8990536277602523,
+      "f1_normal": 0.84070796460177,
+      "accuracy": 0.8316445830085737,
+      "macro_f1": 0.8310977839537775
+    },
+    "b_kde_valley": {
+      "threshold": -2.903500000000001,
+      "tp": 539,
+      "fp": 82,
+      "fn": 110,
+      "tn": 552,
+      "precision": 0.8679549114331723,
+      "recall": 0.8305084745762712,
+      "f1_hateful": 0.8488188976377954,
+      "precision_normal": 0.8338368580060423,
+      "recall_normal": 0.8706624605678234,
+      "f1_normal": 0.851851851851852,
+      "accuracy": 0.8503507404520655,
+      "macro_f1": 0.8503353747448237
+    },
+    "c_oracle_f1max_NOT_label_free": {
+      "threshold": -7.125,
+      "tp": 592,
+      "fp": 126,
+      "fn": 57,
+      "tn": 508,
+      "precision": 0.8245125348189415,
+      "recall": 0.9121725731895224,
+      "f1_hateful": 0.8661302121433796,
+      "precision_normal": 0.8991150442477877,
+      "recall_normal": 0.8012618296529969,
+      "f1_normal": 0.847372810675563,
+      "accuracy": 0.857365549493375,
+      "macro_f1": 0.8567515114094713
+    }
+  },
+  "error_anatomy_at_threshold_b": {
+    "threshold": -2.903500000000001,
+    "false_negatives": {
+      "n": 110,
+      "by_group": {
+        "EX": 32,
+        "IM": 78
+      },
+      "share_IM": 0.7090909090909091,
+      "recall_loss_within_group": {
+        "EX": 0.09846153846153846,
+        "IM": 0.24074074074074073
+      },
+      "z": {
+        "n": 110,
+        "min": -16.25,
+        "q1": -10.1875,
+        "median": -7.75,
+        "q3": -5.25,
+        "max": -3.0
+      },
+      "overlap_with_dismissed_stratum": {
+        "definition": "dismissed means z < -2.944 (frozen pre-registration bound)",
+        "n_FN_dismissed": 110,
+        "n_FN_dismissed_IM": 78,
+        "n_FN_dismissed_EX": 32,
+        "n_dismissed_IM_total": 78,
+        "n_dismissed_EX_total": 32,
+        "frac_of_dismissed_IM_that_are_FN": 1.0,
+        "n_FN_interior": 0
+      }
+    },
+    "false_positives": {
+      "n": 82,
+      "all_NH_by_construction": true,
+      "z": {
+        "n": 82,
+        "min": -2.75,
+        "q1": 0.5,
+        "median": 3.25,
+        "q3": 6.9375,
+        "max": 14.5
+      },
+      "n_asserted_z_gt_2.944": 48,
+      "n_interior": 34,
+      "phase0_surface_marker_overlap": {
+        "tagged_pool": "phase0 a3_tagged.json: 97 over-flagged NH plus 97 controls, blind-tagged for a=profanity, b=identity-group mention, c=aggressive/violent language, d=explicitly about hate or racism",
+        "n_tagged_pool": 194,
+        "n_FP_in_tagged_pool": 74,
+        "coverage_of_FP": 0.9024390243902439,
+        "n_with_any_marker": 48,
+        "frac_with_any_marker": 0.6486486486486487,
+        "by_marker": {
+          "a_profanity": 11,
+          "b_identity_group": 31,
+          "c_aggressive_violent": 25,
+          "d_about_hate_racism": 13
+        },
+        "control_baseline_any_marker": {
+          "n_controls": 97,
+          "frac_any_marker": 0.16494845360824742
+        }
+      }
+    }
+  },
+  "threshold_sensitivity": {
+    "note": "F1(hateful) as the threshold moves; shows how much the label-free choice costs relative to the oracle",
+    "grid": [
+      {
+        "t": -8.0,
+        "f1_hateful": 0.8602461984069516,
+        "accuracy": 0.8495713172252534,
+        "macro_f1": 0.8486885000473576,
+        "precision": 0.8114754098360656,
+        "recall": 0.9152542372881356
+      },
+      {
+        "t": -6.0,
+        "f1_hateful": 0.8605518269947801,
+        "accuracy": 0.8542478565861262,
+        "macro_f1": 0.8539493828851452,
+        "precision": 0.8338150289017341,
+        "recall": 0.889060092449923
+      },
+      {
+        "t": -4.0,
+        "f1_hateful": 0.8538283062645011,
+        "accuracy": 0.852689010132502,
+        "macro_f1": 0.852680060437828,
+        "precision": 0.8571428571428571,
+        "recall": 0.8505392912172574
+      },
+      {
+        "t": -2.0,
+        "f1_hateful": 0.8411811652035115,
+        "accuracy": 0.8448947778643804,
+        "macro_f1": 0.84480992761318,
+        "precision": 0.8725165562913907,
+        "recall": 0.8120184899845917
+      },
+      {
+        "t": 0.0,
+        "f1_hateful": 0.8214876033057851,
+        "accuracy": 0.8316445830085737,
+        "macro_f1": 0.8310977839537775,
+        "precision": 0.8859180035650623,
+        "recall": 0.765793528505393
+      },
+      {
+        "t": 2.0,
+        "f1_hateful": 0.7923875432525951,
+        "accuracy": 0.8129384255650819,
+        "macro_f1": 0.8110873886475742,
+        "precision": 0.903353057199211,
+        "recall": 0.7057010785824345
+      },
+      {
+        "t": 4.0,
+        "f1_hateful": 0.7629427792915532,
+        "accuracy": 0.7965705378020265,
+        "macro_f1": 0.7923928913522612,
+        "precision": 0.9292035398230089,
+        "recall": 0.6471494607087828
+      }
+    ]
+  },
+  "reading": {
+    "band": "A single forward pass with one frozen prompt, read at raw logit precision and thresholded without any label, lands in the F1 0.849 band on train_clean.",
+    "where_the_error_lives": "The false-negative mass is the dismissed-IM subpopulation the readout probe was built to explain; the false-positive mass is over-flagged NH carrying surface markers of hate topic without hateful stance."
+  }
+}
