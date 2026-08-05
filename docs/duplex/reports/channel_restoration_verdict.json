@@ -1,0 +1,261 @@
+{
+ "title": "Channel restoration kill-test",
+ "prereg": "docs/duplex/PREREG_channel_restoration.md",
+ "dataset": "ImpliHateVid train_clean (test split untouched)",
+ "flip_definition": "z > 0 under the intervention, for a video that started below -2.944",
+ "coverage": {
+  "n_dismissed": 662,
+  "n_hateful": 110,
+  "n_nh": 552,
+  "c1_8b_scored": 662,
+  "c2_8b_scored": 662,
+  "c1_2b_scored": 1283,
+  "n_all_1283": 1283
+ },
+ "z_distribution_by_condition": {
+  "C0": {
+   "dismissed_hateful": {
+    "n": 110,
+    "median_z": -7.75,
+    "q1": -10.1875,
+    "q3": -5.25,
+    "max_z": -3.0
+   },
+   "dismissed_nh": {
+    "n": 552,
+    "median_z": -15.75,
+    "q1": -18.0,
+    "q3": -12.1875,
+    "max_z": -3.0
+   }
+  },
+  "C1": {
+   "dismissed_hateful": {
+    "n": 110,
+    "median_z": -3.625,
+    "q1": -8.1875,
+    "q3": 7.25,
+    "max_z": 17.0
+   },
+   "dismissed_nh": {
+    "n": 552,
+    "median_z": -16.75,
+    "q1": -18.75,
+    "q3": -12.6875,
+    "max_z": 13.0
+   }
+  },
+  "C2": {
+   "dismissed_hateful": {
+    "n": 110,
+    "median_z": 0.75,
+    "q1": -7.75,
+    "q3": 9.0,
+    "max_z": 16.75
+   },
+   "dismissed_nh": {
+    "n": 552,
+    "median_z": -17.25,
+    "q1": -19.25,
+    "q3": -13.4375,
+    "max_z": 9.75
+   }
+  }
+ },
+ "P1_flip_asymmetry": {
+  "bar": "C2 flip-rate(hateful) - flip-rate(NH) >= 0.15 and Fisher p < 0.01; asymmetry < 0.05 or comparable NH rate = kill",
+  "C2": {
+   "hateful": {
+    "group": "dismissed_hateful",
+    "n": 110,
+    "flipped": 57,
+    "flip_rate": 0.518182
+   },
+   "nh": {
+    "group": "dismissed_nh",
+    "n": 552,
+    "flipped": 18,
+    "flip_rate": 0.032609
+   },
+   "asymmetry": 0.485573,
+   "fisher_p": 1.2952717075269314e-35
+  },
+  "C1_reported_alongside": {
+   "hateful": {
+    "group": "dismissed_hateful",
+    "n": 110,
+    "flipped": 42,
+    "flip_rate": 0.381818
+   },
+   "nh": {
+    "group": "dismissed_nh",
+    "n": 552,
+    "flipped": 22,
+    "flip_rate": 0.039855
+   },
+   "asymmetry": 0.341963,
+   "fisher_p": 4.809025500837685e-21
+  },
+  "verdict": "PASS"
+ },
+ "P1_descriptive_at_kde_valley": {
+  "valley": -2.9035,
+  "C1": {
+   "hateful": 51,
+   "nh": 30
+  },
+  "C2": {
+   "hateful": 66,
+   "nh": 25
+  }
+ },
+ "P2_three_way_dissociation": {
+  "bar": "directional pattern holds across all three cells; failure weakens interpretation, does not kill",
+  "cells": [
+   {
+    "cell": "(i) truncation route: cue in hidden tail only",
+    "n": 32,
+    "predicted": "flip under C1",
+    "flips_C1": 18,
+    "flips_C2": 22,
+    "flips_C2_not_C1": 6,
+    "median_z_C0": -8.875,
+    "median_z_C1": 3.25,
+    "median_z_C2": 5.0
+   },
+   {
+    "cell": "(ii) ASR route: Step-0 recoverable speech",
+    "n": 6,
+    "predicted": "flip under C2 and not under C1",
+    "flips_C1": 0,
+    "flips_C2": 4,
+    "flips_C2_not_C1": 4,
+    "median_z_C0": -9.375,
+    "median_z_C1": -9.375,
+    "median_z_C2": 7.625
+   },
+   {
+    "cell": "(iii) residual: Step-0 no meaningful speech",
+    "n": 8,
+    "predicted": "flip under neither",
+    "flips_C1": 0,
+    "flips_C2": 0,
+    "flips_C2_not_C1": 0,
+    "median_z_C0": -8.0,
+    "median_z_C1": -8.0,
+    "median_z_C2": -8.5
+   }
+  ],
+  "fragile_excluded": {
+   "cell": "excluded: Step-0 fragile language",
+   "n": 3,
+   "predicted": "excluded from pass/fail",
+   "flips_C1": 0,
+   "flips_C2": 1,
+   "flips_C2_not_C1": 1,
+   "median_z_C0": -5.5,
+   "median_z_C1": -5.5,
+   "median_z_C2": -8.5
+  },
+  "cell_i_ids_n": 32,
+  "directional": {
+   "cell_i_above_C1_base_rate": true,
+   "cell_ii_C2_exceeds_C1": true,
+   "cell_iii_no_flips": true
+  },
+  "verdict": "PASS"
+ },
+ "P3_no_collateral_damage": {
+  "bar": "C2 flip-rate among dismissed-NH <= 0.08 and |median z shift| <= 1.0 on the 150-video seed-0 subsample",
+  "c2_nh_flip_rate": 0.032609,
+  "nh150_n": 150,
+  "nh150_median_z_shift_C2_minus_C0": -1.25,
+  "nh150_q1_shift": -2.75,
+  "nh150_q3_shift": -0.25,
+  "all_nh_median_z_shift_C2_minus_C0": -1.0,
+  "flip_rate_bar_met": true,
+  "median_shift_bar_met": false,
+  "nh150_frac_shift_positive": 0.22,
+  "shift_direction": "more negative: dismissed NH become more confidently normal under C2",
+  "verdict": "FAIL"
+ },
+ "P4_transcription_changed": {
+  "bar": "descriptive; a null change would make P1 uninterpretable",
+  "by_label_half": {
+   "dismissed_hateful": {
+    "n": 110,
+    "n_with_fresh_pass": 110,
+    "median_old_chars": 1177.0,
+    "median_fresh_raw_chars": 1458.5,
+    "median_gated_chars": 1207.0,
+    "median_edit_norm_vs_dataset": 0.2289,
+    "frac_edit_norm_gt_0.5": 0.2909,
+    "gate_rejected": 4,
+    "no_fresh_pass": 0,
+    "gate_accepted": 106,
+    "hit_30min_cap": 0,
+    "cue_recovered_absent_from_old_visible_window": 41,
+    "frac_cue_recovered": 0.3727
+   },
+   "dismissed_nh": {
+    "n": 552,
+    "n_with_fresh_pass": 552,
+    "median_old_chars": 956.0,
+    "median_fresh_raw_chars": 1001.0,
+    "median_gated_chars": 985,
+    "median_edit_norm_vs_dataset": 0.0432,
+    "frac_edit_norm_gt_0.5": 0.0399,
+    "gate_rejected": 3,
+    "no_fresh_pass": 0,
+    "gate_accepted": 549,
+    "hit_30min_cap": 1,
+    "cue_recovered_absent_from_old_visible_window": 165,
+    "frac_cue_recovered": 0.2989
+   }
+  },
+  "total_gate_rejected": 7,
+  "total_no_fresh_pass": 0,
+  "total_hit_30min_cap": 1,
+  "collapse_shrink_median": 0.0
+ },
+ "determinism_check_C1_vs_C0": {
+  "note": "for these the C1 input is byte-identical to C0; any flip is decoder nondeterminism, not evidence",
+  "n_fully_visible_dismissed": 50,
+  "n_hateful": 16,
+  "n_compared": 50,
+  "n_z_exactly_equal": 50,
+  "max_abs_z_delta": 0.0,
+  "n_flipped": 0
+ },
+ "P5_2B_arm": {
+  "bar": "AUC(IM vs NH, raw z) improves by >= 0.02 under C1 AND the FN set below the frozen valley 0.374625 shrinks by >= 15% while FP growth is less than half the FN reduction",
+  "n_scored_C1": 1283,
+  "n_expected": 1283,
+  "valley": 0.374625,
+  "auc_C0": 0.8627,
+  "auc_C1": 0.8894,
+  "auc_delta": 0.0267,
+  "auc_bar_met": true,
+  "false_negatives_C0": 79,
+  "false_negatives_C1": 24,
+  "fn_reduction": 55,
+  "fn_reduction_frac": 0.6962,
+  "fn_bar_met": true,
+  "false_positives_C0": 154,
+  "false_positives_C1": 230,
+  "fp_growth": 76,
+  "fp_bar_met": false,
+  "median_z_C0_IM": 1.0,
+  "median_z_C1_IM": 1.25,
+  "median_z_C0_NH": 0.0,
+  "median_z_C1_NH": 0.0,
+  "verdict": "FAIL-KILL"
+ },
+ "kill_verdict": {
+  "8B_arm": "channel starvation SURVIVES for the 8B",
+  "8B_basis": "P1 PASS",
+  "2B_arm": "channel starvation KILLED for the 2B",
+  "2B_basis": "P5 FAIL-KILL",
+  "note": "P2, P3 and P4 qualify the interpretation of a P1 pass and do not by themselves kill the mechanism"
+ }
+}

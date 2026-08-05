@@ -87,11 +87,26 @@ def resolve_frames(vid, dataset, num_frames):
     return jpgs
 
 
-def build_messages(ann, frame_paths, rules_text, transcript_limit):
+def resolve_transcript(ann, vid, overrides, transcript_limit):
+    """The transcript text the judge sees.
+
+    `overrides` maps video_id to a replacement transcript and is None for the
+    frozen default; ids absent from it keep the dataset transcript. A
+    `transcript_limit` of 0 or None removes the character cap. With the
+    defaults (no overrides, limit 300) this returns the frozen judge's input.
+    """
+    if overrides is not None and vid in overrides:
+        text = overrides[vid] or ""
+    else:
+        text = ann.get("transcript", "") or ""
+    return text[:transcript_limit] if transcript_limit else text
+
+
+def build_messages(ann, frame_paths, rules_text, transcript):
     """System message plus a user turn of N images followed by the prompt text."""
     prompt_text = DUPLEX_PROMPT.format(
         title=ann.get("title", "") or "",
-        transcript=(ann.get("transcript", "") or "")[:transcript_limit],
+        transcript=transcript,
         rules=rules_text,
         reader_block=READER_BLOCKS[READER],
     )
@@ -147,7 +162,11 @@ def main():
     parser.add_argument("--split", default="train")
     parser.add_argument("--model", default="Qwen/Qwen3-VL-8B-Instruct")
     parser.add_argument("--num-frames", type=int, default=16)
-    parser.add_argument("--transcript-limit", type=int, default=300)
+    parser.add_argument("--transcript-limit", type=int, default=300,
+                        help="Character cap on the transcript; 0 = uncapped")
+    parser.add_argument("--transcript-override-json", default=None,
+                        help="JSON mapping video_id -> transcript text that "
+                             "replaces the dataset transcript for those ids")
     parser.add_argument("--max-pixels", type=int, default=MAX_PIXELS)
     parser.add_argument("--min-pixels", type=int, default=MIN_PIXELS)
     parser.add_argument("--out-dir", default=None,
@@ -174,6 +193,12 @@ def main():
     rules_text = BILIBILI_RULES if platform == "bilibili" else YOUTUBE_RULES
 
     annotations = load_annotations(args.dataset)
+    overrides = None
+    if args.transcript_override_json:
+        with open(args.transcript_override_json) as f:
+            overrides = json.load(f)
+        logging.info(f"Transcript overrides: {len(overrides)} ids from "
+                     f"{args.transcript_override_json}")
     if args.video_ids:
         split_ids = [v.strip() for v in args.video_ids.split(",") if v.strip()]
     else:
@@ -250,7 +275,8 @@ def main():
             continue
 
         images = [Image.open(p).convert("RGB") for p in frame_paths]
-        messages = build_messages(ann, frame_paths, rules_text, args.transcript_limit)
+        transcript = resolve_transcript(ann, vid, overrides, args.transcript_limit)
+        messages = build_messages(ann, frame_paths, rules_text, transcript)
         text = processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True)
         inputs = processor(text=[text], images=images, return_tensors="pt",
@@ -306,6 +332,12 @@ def main():
             "n_tokens_total": n_tokens_total,
             "n_image_tokens_per_frame": n_img_tokens,
         }
+        # Provenance of the transcript, emitted only when an intervention is
+        # active so that a default run's records stay byte-identical.
+        if overrides is not None or args.transcript_limit != 300:
+            rec["n_transcript_chars"] = len(transcript)
+            rec["transcript_source"] = (
+                "override" if overrides is not None and vid in overrides else "dataset")
         with open(scores_path, "a") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
             f.flush()
