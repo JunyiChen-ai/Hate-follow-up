@@ -203,6 +203,14 @@ def main():
     ap.add_argument("--dataset", default="ImpliHateVid")
     ap.add_argument("--results-dir", default=None)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--model", default="Qwen/Qwen3-VL-8B-Instruct",
+                    help="Recorded in the report; the hidden-state array shape is "
+                         "read from the .npy files, not from this string.")
+    ap.add_argument("--ignore-purity-abort", action="store_true",
+                    help="Continue past the pre-registered anchor-purity abort "
+                         "instead of returning. Off by default, so the "
+                         "pre-registered path is unchanged; used only for "
+                         "exploratory contrast arms, which the report labels.")
     args = ap.parse_args()
 
     res_dir = args.results_dir or os.path.join(
@@ -216,7 +224,7 @@ def main():
 
     report = {"prereg": "docs/duplex/PREREG_duplex_readout.md",
               "dataset": args.dataset, "split": "train",
-              "model": "Qwen/Qwen3-VL-8B-Instruct"}
+              "model": args.model}
 
     rows = load_scores(scores_path)
     vids = sorted(rows.keys())
@@ -224,10 +232,13 @@ def main():
     groups = [gold_group(v) for v in vids]
     print(f"loaded {len(vids)} videos with finite z")
 
-    H = np.zeros((len(vids), 37, 4096), dtype=np.float32)
+    # Array shape comes from the extraction output: [n_layers + 1, hidden_size],
+    # which differs across model sizes.
+    arr_shape = np.load(os.path.join(hidden_dir, f"{vids[0]}.npy")).shape
+    H = np.zeros((len(vids),) + tuple(arr_shape), dtype=np.float32)
     for i, v in enumerate(vids):
         a = np.load(os.path.join(hidden_dir, f"{v}.npy"))
-        if a.shape != (37, 4096):
+        if a.shape != arr_shape:
             raise SystemExit(f"{v}: shape {a.shape}")
         H[i] = a.astype(np.float32)
     if not np.isfinite(H).all():
@@ -307,8 +318,11 @@ def main():
         "note": ("descriptive only; the raw-z readout leaves large dynamic range "
                  "inside the dismissed stratum, unlike the clipped readout the "
                  "pre-registration's framing assumed"),
-        "z_min": float(zd.min()), "z_max": float(zd.max()),
-        "z_iqr": [float(np.percentile(zd, 25)), float(np.percentile(zd, 75))],
+        "n": int(len(zd)),
+        "z_min": float(zd.min()) if len(zd) else None,
+        "z_max": float(zd.max()) if len(zd) else None,
+        "z_iqr": [float(np.percentile(zd, 25)), float(np.percentile(zd, 75))]
+                 if len(zd) else None,
         "by_group": {grp: {"n": int((dismissed & (g == grp)).sum()),
                            "median_z": float(np.median(z[dismissed & (g == grp)]))
                            if (dismissed & (g == grp)).sum() else None}
@@ -337,29 +351,30 @@ def main():
             "reason": (f"anchor purity below {PURITY_ABORT}: top={p_top:.3f} "
                        f"bottom={p_bot:.3f}; run declared invalid for prediction "
                        f"testing per the pre-registration."),
+            "continued_anyway": bool(args.ignore_purity_abort),
         }
-        with open(out_path, "w") as f:
-            json.dump(report, f, indent=2)
-        print(json.dumps(report["diagnostic_abort"], indent=2))
-        return
-    report["diagnostic_abort"] = {"triggered": False}
+        if not args.ignore_purity_abort:
+            with open(out_path, "w") as f:
+                json.dump(report, f, indent=2)
+            print(json.dumps(report["diagnostic_abort"], indent=2))
+            return
+    else:
+        report["diagnostic_abort"] = {"triggered": False}
 
     # ---- label-free layer selection
     cv_mean, cv_folds = layer_cv_accuracy(H, idx_hi, idx_lo, rng)
     primary = int(np.argmax(cv_mean))
     tied = [int(L) for L in np.flatnonzero(cv_mean >= cv_mean[primary] - 1e-12)]
     report["layer_selection"] = {
-        "method": "5-fold CV inside the 128 anchors, sign of projection about "
-                  "the centroid midpoint, direction refit per fold",
+        "method": f"5-fold CV inside the {2 * n_anchor} anchors, sign of projection "
+                  f"about the centroid midpoint, direction refit per fold",
         "primary_layer": primary,
         "tied_layers_at_max": tied,
-        "tie_break": ("the anchor sets are linearly separable from layer 19 up, so "
-                      "held-out accuracy saturates at 1.0 across many layers. The "
-                      "pre-registration says argmax and does not name a tie-break; "
-                      "the lowest tied index is taken, which is the choice that "
-                      "gives the probe the least post-hoc freedom. The full sweep "
-                      "is reported, and the P1 verdict is unchanged at every tied "
-                      "layer."),
+        "tie_break": (f"held-out accuracy reaches {cv_mean[primary]:.4f} at "
+                      f"{len(tied)} layer(s). The pre-registration says argmax and "
+                      f"does not name a tie-break; the lowest tied index is taken, "
+                      f"which is the choice that gives the probe the least post-hoc "
+                      f"freedom. The full sweep is reported."),
         "primary_layer_cv_accuracy": float(cv_mean[primary]),
         "cv_accuracy_by_layer": [float(x) for x in cv_mean],
         "cv_accuracy_std_by_layer": [float(x) for x in cv_folds.std(axis=0)],
@@ -389,8 +404,10 @@ def main():
         "pass": bool(p1_pass),
         "kill_condition_probe_le_z_plus_0.03": bool(p1_kill),
         "probe_auc_by_layer": probe_p1_by_layer,
-        "best_layer_any": int(np.nanargmax(probe_p1_by_layer)),
-        "best_auc_any_layer": float(np.nanmax(probe_p1_by_layer)),
+        "best_layer_any": (int(np.nanargmax(probe_p1_by_layer))
+                           if np.isfinite(probe_p1_by_layer).any() else None),
+        "best_auc_any_layer": (float(np.nanmax(probe_p1_by_layer))
+                               if np.isfinite(probe_p1_by_layer).any() else None),
         "n_layers_passing_floor_and_margin": int(sum(
             1 for a in probe_p1_by_layer
             if a >= P1_AUC_FLOOR and a >= z_p1 + P1_MARGIN)),
@@ -455,10 +472,10 @@ def main():
         "empirical_p_value": float((perm_stats >= probe_p1).mean()),
         "pass": bool(probe_p1 > q95),
         "conservative_variant_max_over_layers": {
-            "note": ("placebo given the same layer freedom: per permutation, the "
-                     "maximum P1 statistic over all 37 layers. Reported as an "
-                     "extra-conservative check; the pre-registered arm fixes the "
-                     "primary layer."),
+            "note": (f"placebo given the same layer freedom: per permutation, the "
+                     f"maximum P1 statistic over all {n_layers} layers. Reported as "
+                     f"an extra-conservative check; the pre-registered arm fixes "
+                     f"the primary layer."),
             "p95": float(np.percentile(perm_max_over_layers, 95)),
             "pass": bool(probe_p1 > float(np.percentile(perm_max_over_layers, 95))),
         },
@@ -583,8 +600,13 @@ def main():
     }
 
     curve = np.array(probe_p1_by_layer, dtype=np.float64)
-    flat = bool(np.nanmax(np.abs(curve - 0.5)) < 0.05)
-    if flat:
+    if not np.isfinite(curve).any():
+        # The dismissed stratum is empty, so the P1 curve does not exist. This
+        # happens when the readout never commits below sigmoid(z) = 0.05.
+        flat = None
+        fp = ("dismissed stratum empty: no video scores below the pre-registered "
+              "z = -2.944 bound, so the P1 curve is undefined at every layer")
+    elif (flat := bool(np.nanmax(np.abs(curve - 0.5)) < 0.05)):
         fp = ("knowledge absence: dismissed IM is indistinguishable from dismissed "
               "NH at every layer, which argues for a knowledge-side successor "
               "rather than a readout-side one")
@@ -598,7 +620,8 @@ def main():
     int_auc = auc(S[interior & (g == "IM"), primary], S[interior & (g == "NH"), primary])
     report["fingerprint"] = {
         "dismissed_IM_vs_NH_curve_flat_at_0.5": flat,
-        "max_abs_deviation_from_0.5": float(np.nanmax(np.abs(curve - 0.5))),
+        "max_abs_deviation_from_0.5": (float(np.nanmax(np.abs(curve - 0.5)))
+                                       if np.isfinite(curve).any() else None),
         "interior_IM_vs_NH_probe_auc": int_auc,
         "n_interior_IM": int((interior & (g == "IM")).sum()),
         "n_interior_NH": int((interior & (g == "NH")).sum()),
