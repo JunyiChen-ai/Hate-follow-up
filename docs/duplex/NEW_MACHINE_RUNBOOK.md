@@ -84,6 +84,23 @@ Integrity checks after extraction:
 - `wc -l $HVD_DATA_ROOT/ImpliHateVid/splits/train_clean.csv` → 1283
 - prefix census of train_clean: 634 NH / 325 EX / 324 IM
 
+### Other datasets (beyond the kill-test)
+
+The remaining three benchmarks are packed the same way (annotation +
+splits + frames_16, symlinks dereferenced) in the same B2 folder. Extract
+each with `tar -xf <name>.tar -C $HVD_DATA_ROOT`; the internal paths
+already match the layout `data_utils.py` expects:
+
+| Tarball | Size | md5 | Extracts to |
+|---|---|---|---|
+| `hatemm_processed.tar` | 1.2 GB | `558b3e67791db3a267226a9dbce656c2` | `HateMM/` (1066 videos) |
+| `mhclip_en_processed.tar` | 2.3 GB | `1dc32afc2686be042a79c7ca89a1a3d1` | `Multihateclip/English/` (790 videos) |
+| `mhclip_zh_processed.tar` | 3.3 GB | `d225bc6c063b5ded76c4cffff62d081b` | `Multihateclip/Chinese/` (806 videos) |
+
+These are frames_16-only payloads: any script must run with `--no-video`
+on this machine. The raw mp4s stay on the source cluster and on B2 under
+the original dataset folders.
+
 ## Run
 
 ```
