@@ -24,6 +24,7 @@ How much of the judge input the channel-restoration stage actually replaced. A l
 |---|---|---|---|---|---|---|---|---|
 | ImpliHateVid | 400 | 401 | 401 | 401 | 393 | 8 | 0 | 0.9800 |
 | HateMM | 215 | 215 | 215 | 215 | 201 | 14 | 0 | 0.9349 |
+| MHClip-EN | 161 | 161 | 161 | 161 | 155 | 6 | 0 | 0.9627 |
 
 ## Headline
 
@@ -35,6 +36,8 @@ AUC is hateful vs normal on the raw z. macro-F1 and accuracy are at the label-fr
 | ImpliHateVid | Qwen3-VL-2B | 400 | 0.497 | 0.9199 | [0.892, 0.945] | 2 | 0.483 | 0.8023 | 0.8075 | 5 | 72 | 0.8230 | 0.0208 |
 | HateMM | Qwen3-VL-8B | 215 | 0.400 | 0.9232 | [0.881, 0.959] | 2 | -2.346 | 0.6562 | 0.6605 | 3 | 70 | 0.8879 | 0.2317 |
 | HateMM | Qwen3-VL-2B | 215 | 0.400 | 0.8912 | [0.844, 0.933] | 1 | -- | -- | -- | -- | -- | -- | -- |
+| MHClip-EN | Qwen3-VL-8B | 161 | 0.304 | 0.7847 | [0.714, 0.853] | 2 | -0.503 | 0.6962 | 0.7267 | 16 | 28 | 0.6888 | -0.0074 |
+| MHClip-EN | Qwen3-VL-2B | 161 | 0.304 | 0.7442 | [0.658, 0.827] | 1 | -- | -- | -- | -- | -- | -- | -- |
 
 ### Valley stability
 
@@ -46,6 +49,8 @@ AUC is hateful vs normal on the raw z. macro-F1 and accuracy are at the label-fr
 | ImpliHateVid | Qwen3-VL-2B | 0.045 | [0.12, 1.11] | 0.23 | 91/1000 |
 | HateMM | Qwen3-VL-8B | 0.283 | [-5.14, 0.40] | 1.43 | 1/1000 |
 | HateMM | Qwen3-VL-2B | -- | [-1.50, 1.65] | 0.85 | 595/1000 |
+| MHClip-EN | Qwen3-VL-8B | 0.082 | [-5.80, 3.35] | 2.29 | 92/1000 |
+| MHClip-EN | Qwen3-VL-2B | -- | [-1.24, 2.08] | 1.06 | 489/1000 |
 
 ### ImpliHateVid: where the misses sit
 
