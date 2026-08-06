@@ -51,18 +51,23 @@ FROZEN_IHV_C0_VALLEY_8B = -2.903500000000001
 
 # Binary collapse of each benchmark's own annotation vocabulary. MHClip is
 # 3-class and `Offensive` maps to 1: the binary task is Hateful+Offensive vs
-# Normal. HateMM is already binary.
+# Normal. HateMM and ImpliHateVid are already binary.
 LABEL_MAP = {
     "HateMM": {"Hate": 1, "Non Hate": 0},
     "MHClip_EN": {"Hateful": 1, "Offensive": 1, "Normal": 0},
     "MHClip_ZH": {"Hateful": 1, "Offensive": 1, "Normal": 0},
+    "ImpliHateVid": {"Hateful": 1, "Normal": 0},
 }
+
+# ImpliHateVid ids carry a gold implicitness prefix. It is diagnostic ground
+# truth for this analysis only: no scoring component may consume it.
+IHV_GROUPS = ("EX", "IM", "NH")
 
 REFERENCE_METHODS = ["naive_2b", "holistic_2b", "holistic_8b", "mars_2b",
                      "boundary_rescue", "alarm_backup_7b_20260416"]
 REF_DOC = os.path.join(ROOT, "docs", "results_2026_04_16_v2.md")
 REF_COLUMN = {"HateMM": "HateMM", "MHClip_EN": "MHClip_EN",
-              "MHClip_ZH": "MHClip_ZH"}
+              "MHClip_ZH": "MHClip_ZH", "ImpliHateVid": "ImpliHateVid"}
 
 
 def load_z(path):
@@ -328,12 +333,19 @@ def main():
     for v in ids:
         raw_counts[ann[v]["label"]] = raw_counts.get(ann[v]["label"], 0) + 1
 
+    is_test = args.split == "test"
     out = {
-        "title": f"Cross-benchmark measurement on {ds}, {args.model_name}",
-        "status": "method-development measurement on train_clean; NOT a "
-                  "kill-test; no pre-registration governs it and none is claimed",
-        "dataset": f"{ds} {args.split}_clean, {len(ids)} videos "
-                   f"(test split untouched)",
+        "title": (f"Held-out test measurement on {ds}, {args.model_name}"
+                  if is_test else
+                  f"Cross-benchmark measurement on {ds}, {args.model_name}"),
+        "status": ("held-out test-split measurement, run once under the "
+                   "configuration frozen on train; NOT a kill-test; no "
+                   "pre-registration governs it and none is claimed"
+                   if is_test else
+                   "method-development measurement on train_clean; NOT a "
+                   "kill-test; no pre-registration governs it and none is claimed"),
+        "dataset": (f"{ds} {args.split}_clean, {len(ids)} videos"
+                    + ("" if is_test else " (test split untouched)")),
         "condition": "the method as it stands: gated fresh Whisper large-v3 "
                      "transcript fed uncapped to a single judge call, with the "
                      "dataset transcript as the gate's fallback; label-free "
@@ -341,7 +353,7 @@ def main():
         "label_mapping": {"map": lmap,
                           "note": "MHClip is 3-class and Offensive maps to 1: "
                                   "the binary task is Hateful+Offensive vs Normal",
-                          "raw_label_counts_train_clean": raw_counts,
+                          "raw_label_counts_split": raw_counts,
                           "n_duplicate_ids_dropped": n_dup},
         "config_provenance": {
             "audio": "scripts/duplex/crossbench_audio.py, which imports ffprobe, "
@@ -371,7 +383,7 @@ def main():
         },
         "mllm_calls_per_video": 1,
         "coverage": {
-            "n_train_clean": len(ids),
+            f"n_{args.split}_clean": len(ids),
             "n_scored": len(scored),
             "n_missing": len(ids) - len(scored),
             "n_hateful": len(pos), "n_normal": len(neg),
@@ -445,6 +457,16 @@ def main():
             "Hateful_vs_Normal": round(auc(z, hate_only, neg), 6) if hate_only else None,
             "Offensive_vs_Normal": round(auc(z, off_only, neg), 6) if off_only else None,
             "n_Hateful": len(hate_only), "n_Offensive": len(off_only),
+        }
+    if ds == "ImpliHateVid":
+        ex = [x for x in scored if x.startswith("EX_")]
+        im = [x for x in scored if x.startswith("IM_")]
+        out["auc"]["by_implicitness_subgroup"] = {
+            "note": "gold EX/IM/NH prefixes are diagnostic ground truth for "
+                    "this analysis only; no scoring component reads them",
+            "EX_vs_NH": round(auc(z, ex, neg), 6) if ex and neg else None,
+            "IM_vs_NH": round(auc(z, im, neg), 6) if im and neg else None,
+            "n_EX": len(ex), "n_IM": len(im), "n_NH": len(neg),
         }
 
     # ---------- label-free threshold ----------
@@ -559,6 +581,21 @@ def main():
             anat["false_negatives"]["by_3class_subgroup"] = {
                 "Hateful": sum(1 for x in fn_ids if ann[x]["label"] == "Hateful"),
                 "Offensive": sum(1 for x in fn_ids if ann[x]["label"] == "Offensive"),
+            }
+        if ds == "ImpliHateVid":
+            n_ex = sum(1 for x in pos if x.startswith("EX_"))
+            n_im = sum(1 for x in pos if x.startswith("IM_"))
+            fn_ex = sum(1 for x in fn_ids if x.startswith("EX_"))
+            fn_im = sum(1 for x in fn_ids if x.startswith("IM_"))
+            anat["false_negatives"]["by_implicitness_subgroup"] = {
+                "note": "miss rate within each gold implicitness stratum. The "
+                        "channel-restoration story predicts the IM stratum "
+                        "carries the residual misses.",
+                "EX": fn_ex, "IM": fn_im,
+                "miss_rate_EX": round(fn_ex / n_ex, 4) if n_ex else None,
+                "miss_rate_IM": round(fn_im / n_im, 4) if n_im else None,
+                "share_of_FN_that_is_IM": round(fn_im / len(fn_ids), 4)
+                if fn_ids else None,
             }
         out["error_anatomy_at_method_threshold"] = anat
 
