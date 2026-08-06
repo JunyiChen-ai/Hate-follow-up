@@ -151,6 +151,12 @@ def launch(slug, dry_run=False):
     if dry_run:
         say(f"DRY RUN: would launch {' '.join(cmd)} > {log} 2>&1 < /dev/null")
         return True
+    # A run may also have been started by hand. Two processes on one dataset
+    # would append to the same score files, so an existing one always wins.
+    if subprocess.run(["pgrep", "-f", f"run_testrun.sh {slug}"],
+                      capture_output=True).returncode == 0:
+        say(f"{slug}: a run is already alive; not launching a second one")
+        return True
     say(f"launching {' '.join(cmd)} > {log}")
     with open(log, "a") as lf, open(os.devnull) as devnull:
         subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT,

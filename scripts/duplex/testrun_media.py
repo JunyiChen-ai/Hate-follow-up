@@ -63,7 +63,10 @@ def refresh_listing(path=LISTING, timeout=3600):
     previous listing intact rather than truncating it to nothing.
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = path + ".tmp"
+    # Several dataset runs refresh the listing at once, each in its own process.
+    # A shared temp name lets one process rename the file out from under
+    # another, so the temp name carries the pid.
+    tmp = f"{path}.tmp.{os.getpid()}"
     try:
         with open(tmp, "w") as f:
             p = subprocess.run(
