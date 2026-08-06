@@ -1,0 +1,359 @@
+{
+ "title": "Cross-benchmark measurement on MHClip_ZH, Qwen3-VL-8B-Instruct",
+ "status": "method-development measurement on train_clean; NOT a kill-test; no pre-registration governs it and none is claimed",
+ "dataset": "MHClip_ZH train_clean, 579 videos (test split untouched)",
+ "condition": "the method as it stands: gated fresh Whisper large-v3 transcript fed uncapped to a single judge call, with the dataset transcript as the gate's fallback; label-free KDE-valley threshold on this run's own raw-z distribution",
+ "label_mapping": {
+  "map": {
+   "Hateful": 1,
+   "Offensive": 1,
+   "Normal": 0
+  },
+  "note": "MHClip is 3-class and Offensive maps to 1: the binary task is Hateful+Offensive vs Normal",
+  "raw_label_counts_train_clean": {
+   "Normal": 399,
+   "Offensive": 113,
+   "Hateful": 67
+  },
+  "n_duplicate_ids_dropped": 0
+ },
+ "config_provenance": {
+  "audio": "scripts/duplex/crossbench_audio.py, which imports ffprobe, extract_wav and the 1800 s cap from scripts/duplex/channel_restoration_audio.py unmodified; ffmpeg 16 kHz mono, silero-VAD speech fraction",
+  "asr": "scripts/duplex/crossbench_asr.py, which imports the model id and the text statistics from scripts/duplex/channel_restoration_asr.py unmodified: openai/whisper-large-v3, transformers ASR pipeline, fp16 on cuda (asserted), language auto (so MHClip_ZH resolves to zh), chunk_length_s=30 long-form, batch_size=8",
+  "gate": "scripts/duplex/crossbench_gate.py, which imports collapse_repeats and both bounds from scripts/duplex/channel_restoration_gate.py unmodified: clause-level repetition collapse (max_ngram 8), reject iff vad_speech_frac < 0.05 AND gzip ratio of raw fresh text > 7",
+  "judge": "src/duplex/extract_duplex_readout.py, unmodified: frozen prag reader, 16 frames from frames_16, max_pixels 100352, single forward pass, raw unclipped z = logsumexp(Yes ids) - logsumexp(No ids), transcript_limit 0 (uncapped)",
+  "threshold_recipe": "docs/duplex/reports/rawz_detector_train.json, estimator b_kde_valley, reimplemented here and verified against that document's C0 value",
+  "model": "Qwen3-VL-8B-Instruct"
+ },
+ "mllm_calls_per_video": 1,
+ "coverage": {
+  "n_train_clean": 579,
+  "n_scored": 579,
+  "n_missing": 0,
+  "n_hateful": 180,
+  "n_normal": 399,
+  "prevalence_hateful": 0.3109
+ },
+ "restoration_coverage": {
+  "role": "how much of the judge input the channel-restoration stage actually replaced. Zero here means the method degenerated to its own fallback branch and the ASR route was never exercised.",
+  "n_with_source_media": 0,
+  "n_with_usable_audio": 0,
+  "n_fresh_transcripts": 0,
+  "gate_outcomes": {
+   "accepted": 0,
+   "rejected": 0,
+   "no_fresh_pass": 579
+  },
+  "transcript_source_in_judge_input": {
+   "override_gated_fresh": 0,
+   "fallback_dataset_transcript": 579
+  },
+  "restoration_fraction": 0.0
+ },
+ "threshold_recipe_selfcheck": {
+  "note": "this code path applied to the ImpliHateVid C0 scores must reproduce the valley frozen in rawz_detector_train.json",
+  "n": 1283,
+  "recomputed_valley": -2.903500000000001,
+  "frozen_valley": -2.903500000000001,
+  "matches": true
+ },
+ "auc": {
+  "hateful_vs_normal": 0.855465,
+  "boot95": [
+   0.824235,
+   0.886216
+  ],
+  "n_pos": 180,
+  "n_neg": 399,
+  "by_3class_subgroup": {
+   "Hateful_vs_Normal": 0.893409,
+   "Offensive_vs_Normal": 0.832967,
+   "n_Hateful": 67,
+   "n_Offensive": 113
+  }
+ },
+ "threshold_label_free": {
+  "definition": "Gaussian KDE of this run's raw-z values, Scott bandwidth, 4001-point grid over [min-2, max+2]; the two highest grid local maxima are the modes and the threshold is the minimum-density grid point strictly between them. Labels are not used.",
+  "computed_on": "the MHClip_ZH train_clean score distribution",
+  "bandwidth_scott": 2.546602436739367,
+  "n_grid_local_maxima": 2,
+  "grid_points": 4001,
+  "grid_span": [
+   -23.0,
+   17.25
+  ],
+  "value": -1.6574375000000003,
+  "mode_locations": [
+   -6.899999999999999,
+   6.875562500000001
+  ],
+  "mode_densities": [
+   0.03182963823449232,
+   0.03832505031877799
+  ],
+  "valley_density": 0.028533382996762374,
+  "valley_over_lower_mode": 0.8964406942533847,
+  "valley_over_higher_mode": 0.7445099943621463,
+  "relative_trough_depth": 0.10355930574661532,
+  "stability_bootstrap": {
+   "n_boot": 1000,
+   "n_without_valley": 21,
+   "frac_without_valley": 0.021,
+   "median": -1.5970624999999998,
+   "q1": -2.32684375,
+   "q3": -0.9108437500000015,
+   "ci95": [
+    -5.085800000000001,
+    0.5522874999999952
+   ],
+   "sd": 1.4880158060581274
+  },
+  "z_distribution": {
+   "n": 579,
+   "min": -21.0,
+   "q1": -8.75,
+   "median": -0.25,
+   "q3": 6.75,
+   "max": 15.25,
+   "mean": -1.2461
+  },
+  "z_distribution_hateful": {
+   "n": 180,
+   "min": -13.75,
+   "q1": 3.0,
+   "median": 8.0,
+   "q3": 11.0,
+   "max": 15.25,
+   "mean": 6.3194
+  },
+  "z_distribution_normal": {
+   "n": 399,
+   "min": -21.0,
+   "q1": -11.25,
+   "median": -5.5,
+   "q3": 2.25,
+   "max": 12.0,
+   "mean": -4.6591
+  }
+ },
+ "operating_points": {
+  "METHOD_self_computed_valley": {
+   "label_free": true,
+   "role": "the method number: threshold computed from this run's own score distribution, no labels",
+   "threshold": -1.6574375000000003,
+   "tp": 159,
+   "fp": 146,
+   "fn": 21,
+   "tn": 253,
+   "precision": 0.521311475409836,
+   "recall": 0.8833333333333333,
+   "f1_hateful": 0.6556701030927835,
+   "precision_normal": 0.9233576642335767,
+   "recall_normal": 0.6340852130325815,
+   "f1_normal": 0.7518573551263001,
+   "accuracy": 0.7115716753022453,
+   "macro_f1": 0.7037637291095418
+  },
+  "diagnostic_zero": {
+   "label_free": true,
+   "role": "diagnostic: the model's own Yes/No boundary",
+   "threshold": 0.0,
+   "tp": 155,
+   "fp": 128,
+   "fn": 25,
+   "tn": 271,
+   "precision": 0.5477031802120141,
+   "recall": 0.8611111111111112,
+   "f1_hateful": 0.6695464362850972,
+   "precision_normal": 0.9155405405405406,
+   "recall_normal": 0.6791979949874687,
+   "f1_normal": 0.7798561151079136,
+   "accuracy": 0.7357512953367875,
+   "macro_f1": 0.7247012756965054
+  },
+  "diagnostic_frozen_ImpliHateVid_C0_valley": {
+   "label_free": true,
+   "role": "diagnostic only: the 8B valley frozen on ImpliHateVid C0, transplanted unchanged, to show how far a threshold travels across benchmarks",
+   "threshold": -2.903500000000001,
+   "tp": 160,
+   "fp": 163,
+   "fn": 20,
+   "tn": 236,
+   "precision": 0.4953560371517028,
+   "recall": 0.8888888888888888,
+   "f1_hateful": 0.6361829025844931,
+   "precision_normal": 0.921875,
+   "recall_normal": 0.5914786967418546,
+   "f1_normal": 0.7206106870229007,
+   "accuracy": 0.6839378238341969,
+   "macro_f1": 0.6783967948036969
+  },
+  "diagnostic_oracle_f1max_NOT_label_free": {
+   "label_free": false,
+   "role": "diagnostic upper bound: chosen against gold labels. The method does not use it.",
+   "threshold": 1.25,
+   "tp": 150,
+   "fp": 113,
+   "fn": 30,
+   "tn": 286,
+   "precision": 0.5703422053231939,
+   "recall": 0.8333333333333334,
+   "f1_hateful": 0.6772009029345373,
+   "precision_normal": 0.9050632911392406,
+   "recall_normal": 0.7167919799498746,
+   "f1_normal": 0.7999999999999999,
+   "accuracy": 0.7530224525043178,
+   "macro_f1": 0.7386004514672686
+  }
+ },
+ "oracle_gap": {
+  "macro_f1_method": 0.7037637291095418,
+  "macro_f1_oracle": 0.7386004514672686,
+  "gap": 0.034837,
+  "threshold_method": -1.6574375000000003,
+  "threshold_oracle": 1.25
+ },
+ "error_anatomy_at_method_threshold": {
+  "threshold": -1.6574375000000003,
+  "false_negatives": {
+   "n": 21,
+   "z": {
+    "n": 21,
+    "min": -13.75,
+    "q1": -7.5,
+    "median": -5.5,
+    "q3": -4.0,
+    "max": -1.75,
+    "mean": -6.1071
+   },
+   "seen_transcript_chars": {
+    "n": 21,
+    "min": 0,
+    "q1": 18,
+    "median": 54,
+    "q3": 165,
+    "max": 607,
+    "mean": 116.7143
+   },
+   "n_with_empty_seen_transcript": 2,
+   "gate_outcome": {
+    "fell_back_to_dataset_transcript": 21,
+    "used_gated_fresh_transcript": 0
+   },
+   "surface_cue_in_seen_transcript": {
+    "n": 0,
+    "frac": 0.0
+   },
+   "by_3class_subgroup": {
+    "Hateful": 5,
+    "Offensive": 16
+   }
+  },
+  "false_positives": {
+   "n": 146,
+   "z": {
+    "n": 146,
+    "min": -1.5,
+    "q1": 1.25,
+    "median": 4.5,
+    "q3": 7.0,
+    "max": 12.0,
+    "mean": 4.4349
+   },
+   "seen_transcript_chars": {
+    "n": 146,
+    "min": 0,
+    "q1": 26.25,
+    "median": 68.0,
+    "q3": 176.25,
+    "max": 456,
+    "mean": 103.2603
+   },
+   "surface_cue_in_seen_transcript": {
+    "note": "the frozen regex cue family from the kill-test analysis, applied to the transcript the judge read. A text-locating device only: never an input to any model or threshold. The patterns are English, so on MHClip_ZH they under-fire and the rates there are not interpretable.",
+    "n": 0,
+    "frac": 0.0,
+    "true_negative_baseline_n": 2,
+    "true_negative_baseline_frac": 0.0079,
+    "fisher_p": 0.4014810896588653
+   },
+   "by_marker_family": {
+    "identity": 0,
+    "slur_or_profanity": 0,
+    "violence": 0,
+    "meta_hate": 0
+   },
+   "gate_outcome": {
+    "fell_back_to_dataset_transcript": 146,
+    "used_gated_fresh_transcript": 0
+   }
+  }
+ },
+ "starvation_diagnostics": {
+  "role": "how much text the judge had, and how much of it the ASR route replaced. This is the starvation axis the channel-restoration story runs on.",
+  "dataset_transcript_chars": {
+   "all": {
+    "n": 579,
+    "min": 0,
+    "q1": 26.0,
+    "median": 78,
+    "q3": 165.0,
+    "max": 663,
+    "mean": 105.2712
+   },
+   "hateful": {
+    "n": 180,
+    "min": 0,
+    "q1": 8.75,
+    "median": 47.5,
+    "q3": 116.0,
+    "max": 663,
+    "mean": 83.0667
+   },
+   "normal": {
+    "n": 399,
+    "min": 0,
+    "q1": 33.5,
+    "median": 92,
+    "q3": 181.0,
+    "max": 456,
+    "mean": 115.2882
+   },
+   "n_empty": 24,
+   "n_over_300_chars": 26,
+   "frac_over_300_chars": 0.0449,
+   "note": "300 characters was the old clipped instrument's visible window; the fraction above it bounds how much text that instrument could never see on this benchmark"
+  },
+  "fresh_transcript_chars": null,
+  "edit_norm_fresh_vs_dataset": null,
+  "unavailable_reason": "no fresh transcript exists for this benchmark: the source media was not reachable, so stage A produced no usable audio and stage B had nothing to transcribe. Every video therefore took the gate's fallback branch and the judge read the dataset transcript."
+ },
+ "reference_points_prior_project": {
+  "source": "docs/results_2026_04_16_v2.md (this repo)",
+  "caveat": "NOT directly comparable to the numbers in this report. Those rows are TEST-split results from the prior project, produced by a different judge (2B/7B/8B depending on the row) under the old clipped-transcript instrument and a generative hateful/not decode, not the raw-z readout used here. This report measures TRAIN_CLEAN with a raw-z threshold. Read them as an order-of-magnitude orientation only.",
+  "split": "test",
+  "instrument": "generative decode, clipped transcript",
+  "best_variant_per_method": {
+   "alarm_backup_7b_20260416": {
+    "variant": "test_alarm",
+    "acc_over_macro_f1": "0.7114 / 0.4749",
+    "macro_f1": 0.4749
+   },
+   "boundary_rescue": {
+    "variant": "test_v2_bayes_band_rate_v1_G7",
+    "acc_over_macro_f1": "0.8255 / 0.8043",
+    "macro_f1": 0.8043
+   },
+   "mars_2b": {
+    "variant": "test_mars",
+    "acc_over_macro_f1": "0.7450 / 0.7047",
+    "macro_f1": 0.7047
+   },
+   "naive_2b": {
+    "variant": "test_naive",
+    "acc_over_macro_f1": "0.7450 / 0.5822",
+    "macro_f1": 0.5822
+   }
+  }
+ }
+}
