@@ -25,7 +25,7 @@ How much of the judge input the channel-restoration stage actually replaced. A l
 | ImpliHateVid | 400 | 401 | 401 | 401 | 393 | 8 | 0 | 0.9800 |
 | HateMM | 215 | 215 | 215 | 215 | 201 | 14 | 0 | 0.9349 |
 | MHClip-EN | 161 | 161 | 161 | 161 | 155 | 6 | 0 | 0.9627 |
-| MHClip-ZH | 13 | 149 | 149 | 149 | 147 | 2 | 0 | 1.0000 |
+| MHClip-ZH | 149 | 149 | 149 | 149 | 147 | 2 | 0 | 0.9866 |
 
 ## Headline
 
@@ -39,8 +39,8 @@ AUC is hateful vs normal on the raw z. macro-F1 and accuracy are at the label-fr
 | HateMM | Qwen3-VL-2B | 215 | 0.400 | 0.8912 | [0.844, 0.933] | 1 | -- | -- | -- | -- | -- | -- | -- |
 | MHClip-EN | Qwen3-VL-8B | 161 | 0.304 | 0.7847 | [0.714, 0.853] | 2 | -0.503 | 0.6962 | 0.7267 | 16 | 28 | 0.6888 | -0.0074 |
 | MHClip-EN | Qwen3-VL-2B | 161 | 0.304 | 0.7442 | [0.658, 0.827] | 1 | -- | -- | -- | -- | -- | -- | -- |
-| MHClip-ZH | Qwen3-VL-8B | 13 | 0.385 | 0.6750 | [0.350, 0.950] | 1 | -- | -- | -- | -- | -- | -- | -- |
-| MHClip-ZH | Qwen3-VL-2B | 13 | 0.385 | 0.8125 | [0.550, 1.000] | 1 | -- | -- | -- | -- | -- | -- | -- |
+| MHClip-ZH | Qwen3-VL-8B | 149 | 0.302 | 0.8547 | [0.785, 0.912] | 2 | 0.607 | 0.7256 | 0.7383 | 6 | 33 | 0.7932 | 0.0676 |
+| MHClip-ZH | Qwen3-VL-2B | 149 | 0.302 | 0.7917 | [0.716, 0.861] | 1 | -- | -- | -- | -- | -- | -- | -- |
 
 ### Valley stability
 
@@ -54,8 +54,8 @@ AUC is hateful vs normal on the raw z. macro-F1 and accuracy are at the label-fr
 | HateMM | Qwen3-VL-2B | -- | [-1.50, 1.65] | 0.85 | 595/1000 |
 | MHClip-EN | Qwen3-VL-8B | 0.082 | [-5.80, 3.35] | 2.29 | 92/1000 |
 | MHClip-EN | Qwen3-VL-2B | -- | [-1.24, 2.08] | 1.06 | 489/1000 |
-| MHClip-ZH | Qwen3-VL-8B | -- | [-11.26, 8.01] | 3.92 | 545/1000 |
-| MHClip-ZH | Qwen3-VL-2B | -- | [-0.13, 1.13] | 0.37 | 697/1000 |
+| MHClip-ZH | Qwen3-VL-8B | 0.162 | [-2.80, 2.39] | 1.46 | 20/1000 |
+| MHClip-ZH | Qwen3-VL-2B | -- | [-1.62, 0.84] | 0.81 | 454/1000 |
 
 ### ImpliHateVid: where the misses sit
 
@@ -65,6 +65,34 @@ The gold EX/IM/NH prefixes are diagnostic ground truth for this table only; no s
 |---|---|---|---|---|---|---|---|
 | Qwen3-VL-8B | 0.9731 | 0.9255 | 0 | 15 | 0.000 | 0.139 | 1.000 |
 | Qwen3-VL-2B | 0.9436 | 0.8999 | 2 | 3 | 0.022 | 0.028 | 0.600 |
+
+## MHClip-ZH anomaly diagnostic (2026-08-07)
+
+The first MHClip-ZH test run reported 0.675 for the 8B against 0.8125 for the 2B, the only scale inversion across the four benchmarks, with restoration coverage at 1.0. Two explanations were on the table: the fresh Whisper Chinese transcripts had hurt the larger model, or the test split was simply harder. Neither is what happened.
+
+**Root cause.** frames_16/<one MHClip_ZH test video>/frame_012.jpg was a partially written JPEG: 131,059 bytes against roughly 260,000 for every intact neighbour in the same directory. extract_duplex_readout.py opens all 16 frames with PIL.Image.open(p).convert('RGB') outside any try block. The truncated file raises OSError, which propagates out of main() and kills the process. The run script retries three times, and each retry resumes onto the same file and dies at the same video. The loop died at video 14 of 149. Both the 8B and the 2B arm therefore scored 13 videos, and the published AUCs rested on 5 positives and 8 negatives. A scan of every frame of every `test_clean` video across all four benchmarks found exactly one unreadable JPEG, which is why only this dataset was affected. The frame was re-decoded from the local source mp4 at the index the original extractor used; the same code path reproduces the intact neighbour frame at 37.61 dB PSNR, so the frame numbering agrees. The run was then repeated to full coverage and the reports above are the corrected ones.
+
+**The four cells.** Every test cell is the same 149 videos, 45 hateful and 104 normal. The train row is 579 videos. Train under fresh Whisper was never measured: the train-split source media was not pulled to this machine, so the ASR route was never exercised there.
+
+| split | transcript the judge read | 8B AUC | 8B 95% CI | 2B AUC |
+|---|---|---|---|---|
+| train | dataset | 0.8555 | [0.824, 0.886] | 0.7615 |
+| train | fresh Whisper | not measured | -- | -- |
+| test | dataset | 0.8665 | [0.805, 0.919] | 0.7870 |
+| test | fresh Whisper (auto language) | 0.8547 | [0.787, 0.909] | 0.7917 |
+| test | fresh Whisper (language forced zh) | 0.8577 | [0.791, 0.912] | -- |
+
+**Did restoration hurt?** No, not measurably. On the same 149 videos the fresh transcript moves the 8B AUC by -0.0118, paired bootstrap [-0.0334, 0.0083], straddling zero; the 2B moves 0.0047. The 8B raw z ranks the two arms at Spearman 0.975 even though the median normalized edit distance between the two transcripts is 0.43. The text changes substantially; what the judge does with it does not.
+
+**Is the test split different?** No. Holding the transcript fixed at the dataset one, the 8B scores 0.8555 on train and 0.8665 on test, a difference of 0.0110 with heavily overlapping intervals.
+
+**Language mismatch.** Whisper's own per-chunk language vote came back empty for all 149 videos, so language was read off the Unicode script profile instead: 24 of 149 auto-detected transcripts (0.161) are not Han-dominant, which fired the pre-registered trigger for a forced-zh arm. Forcing zh rescues 20 of those 24 and lifts the median Han fraction to 1.0, and moves the 8B AUC by 0.0030, [-0.0078, 0.0140]. The mechanism is real and the consequence is nil, so automatic detection stays: forcing a language would buy nothing and would oblige the method to make a correct per-corpus language decision on every new corpus.
+
+**What this says about the method on non-English corpora.** Channel restoration is neutral on MHClip-ZH, not harmful and not helpful. The starvation premise it runs on is weak here: the dataset transcript already has a median of 76 characters and only 1.3 percent of videos exceed the 300-character window the old clipped instrument could see, so there is little starvation left to relieve. Report it as a neutral result on this corpus rather than as evidence against the mechanism, and do not tune the ASR to chase it.
+
+**Infrastructure.** One unreadable frame silently cost 91 percent of a held-out measurement, and the run still reported `DONE` with a plausible-looking AUC on the surviving 13 videos. The judge should record and skip an unreadable frame rather than abort, and the analysis should refuse to write a report when coverage falls far below the split size instead of quietly reporting the subset.
+
+Full statistics, including the transcript forensics and the score-movement anatomy: `docs/duplex/reports/test_zh_anomaly_diag.json`.
 
 ## Context
 

@@ -28,11 +28,11 @@
  "mllm_calls_per_video": 1,
  "coverage": {
   "n_test_clean": 149,
-  "n_scored": 13,
-  "n_missing": 136,
-  "n_hateful": 5,
-  "n_normal": 8,
-  "prevalence_hateful": 0.3846
+  "n_scored": 149,
+  "n_missing": 0,
+  "n_hateful": 45,
+  "n_normal": 104,
+  "prevalence_hateful": 0.302
  },
  "restoration_coverage": {
   "role": "how much of the judge input the channel-restoration stage actually replaced. Zero here means the method degenerated to its own fallback branch and the ASR route was never exercised.",
@@ -45,10 +45,10 @@
    "no_fresh_pass": 0
   },
   "transcript_source_in_judge_input": {
-   "override_gated_fresh": 13,
-   "fallback_dataset_transcript": 0
+   "override_gated_fresh": 147,
+   "fallback_dataset_transcript": 2
   },
-  "restoration_fraction": 1.0
+  "restoration_fraction": 0.9866
  },
  "threshold_recipe_selfcheck": {
   "note": "this code path applied to the ImpliHateVid C0 scores must reproduce the valley frozen in rawz_detector_train.json",
@@ -58,124 +58,235 @@
   "matches": true
  },
  "auc": {
-  "hateful_vs_normal": 0.675,
+  "hateful_vs_normal": 0.854701,
   "boot95": [
-   0.35,
-   0.95
+   0.785353,
+   0.911859
   ],
-  "n_pos": 5,
-  "n_neg": 8,
+  "n_pos": 45,
+  "n_neg": 104,
   "by_3class_subgroup": {
-   "Hateful_vs_Normal": 0.625,
-   "Offensive_vs_Normal": 0.875,
-   "n_Hateful": 4,
-   "n_Offensive": 1
+   "Hateful_vs_Normal": 0.87698,
+   "Offensive_vs_Normal": 0.841174,
+   "n_Hateful": 17,
+   "n_Offensive": 28
   }
  },
  "threshold_label_free": {
   "definition": "Gaussian KDE of this run's raw-z values, Scott bandwidth, 4001-point grid over [min-2, max+2]; the two highest grid local maxima are the modes and the threshold is the minimum-density grid point strictly between them. Labels are not used.",
   "computed_on": "the MHClip_ZH test_clean score distribution",
-  "bandwidth_scott": 4.62161929788598,
-  "n_grid_local_maxima": 1,
+  "bandwidth_scott": 3.3286386784012976,
+  "n_grid_local_maxima": 2,
   "grid_points": 4001,
   "grid_span": [
-   -16.0,
-   13.75
+   -19.75,
+   15.5
   ],
-  "value": null,
-  "note": "fewer than two modes: the recipe finds no valley",
+  "value": 0.6068749999999987,
+  "mode_locations": [
+   -6.028937500000001,
+   8.106312499999998
+  ],
+  "mode_densities": [
+   0.031797734394708496,
+   0.04323098183154453
+  ],
+  "valley_density": 0.02663480752384549,
+  "valley_over_lower_mode": 0.8376322411284065,
+  "valley_over_higher_mode": 0.6161046174623488,
+  "relative_trough_depth": 0.1623677588715935,
   "stability_bootstrap": {
    "n_boot": 1000,
-   "n_without_valley": 545,
-   "frac_without_valley": 0.545,
-   "median": 4.1705000000000005,
-   "q1": 2.6712500000000006,
-   "q3": 6.000125000000001,
+   "n_without_valley": 20,
+   "frac_without_valley": 0.02,
+   "median": 0.6244999999999976,
+   "q1": -0.1069375000000008,
+   "q3": 1.2680468749999987,
    "ci95": [
-    -11.263931249999999,
-    8.005274999999997
+    -2.8021703125,
+    2.3866937499999987
    ],
-   "sd": 3.9152932668538907
+   "sd": 1.4592470172251346
   },
   "z_distribution": {
-   "n": 13,
-   "min": -14.0,
-   "q1": -7.75,
-   "median": -5.5,
-   "q3": -1.25,
-   "max": 11.75,
-   "mean": -3.3462
+   "n": 149,
+   "min": -17.75,
+   "q1": -7.5,
+   "median": -0.5,
+   "q3": 8.0,
+   "max": 13.5,
+   "mean": -0.5604
   },
   "z_distribution_hateful": {
-   "n": 5,
+   "n": 45,
    "min": -8.25,
-   "q1": -6.5,
-   "median": -1.25,
-   "q3": 5.75,
-   "max": 11.75,
-   "mean": 0.3
+   "q1": 6.25,
+   "median": 8.5,
+   "q3": 9.75,
+   "max": 13.5,
+   "mean": 7.1111
   },
   "z_distribution_normal": {
-   "n": 8,
-   "min": -14.0,
-   "q1": -9.1875,
-   "median": -5.75,
-   "q3": -3.0625,
-   "max": 7.5,
-   "mean": -5.625
+   "n": 104,
+   "min": -17.75,
+   "q1": -10.25,
+   "median": -5.0,
+   "q3": 2.75,
+   "max": 11.0,
+   "mean": -3.8798
   }
  },
  "operating_points": {
+  "METHOD_self_computed_valley": {
+   "label_free": true,
+   "role": "the method number: threshold computed from this run's own score distribution, no labels",
+   "threshold": 0.6068749999999987,
+   "tp": 39,
+   "fp": 33,
+   "fn": 6,
+   "tn": 71,
+   "precision": 0.5416666666666666,
+   "recall": 0.8666666666666667,
+   "f1_hateful": 0.6666666666666667,
+   "precision_normal": 0.922077922077922,
+   "recall_normal": 0.6826923076923077,
+   "f1_normal": 0.7845303867403315,
+   "accuracy": 0.738255033557047,
+   "macro_f1": 0.7255985267034991
+  },
   "diagnostic_zero": {
    "label_free": true,
    "role": "diagnostic: the model's own Yes/No boundary",
    "threshold": 0.0,
-   "tp": 2,
-   "fp": 1,
-   "fn": 3,
-   "tn": 7,
-   "precision": 0.6666666666666666,
-   "recall": 0.4,
-   "f1_hateful": 0.5,
-   "precision_normal": 0.7,
-   "recall_normal": 0.875,
-   "f1_normal": 0.7777777777777777,
-   "accuracy": 0.6923076923076923,
-   "macro_f1": 0.6388888888888888
+   "tp": 39,
+   "fp": 34,
+   "fn": 6,
+   "tn": 70,
+   "precision": 0.5342465753424658,
+   "recall": 0.8666666666666667,
+   "f1_hateful": 0.6610169491525425,
+   "precision_normal": 0.9210526315789473,
+   "recall_normal": 0.6730769230769231,
+   "f1_normal": 0.7777777777777778,
+   "accuracy": 0.7315436241610739,
+   "macro_f1": 0.7193973634651601
   },
   "diagnostic_frozen_ImpliHateVid_C0_valley": {
    "label_free": true,
    "role": "diagnostic only: the 8B valley frozen on ImpliHateVid C0, transplanted unchanged, to show how far a threshold travels across benchmarks",
    "threshold": -2.903500000000001,
-   "tp": 3,
-   "fp": 2,
-   "fn": 2,
-   "tn": 6,
-   "precision": 0.6,
-   "recall": 0.6,
-   "f1_hateful": 0.6,
-   "precision_normal": 0.75,
-   "recall_normal": 0.75,
-   "f1_normal": 0.75,
-   "accuracy": 0.6923076923076923,
-   "macro_f1": 0.675
+   "tp": 40,
+   "fp": 45,
+   "fn": 5,
+   "tn": 59,
+   "precision": 0.47058823529411764,
+   "recall": 0.8888888888888888,
+   "f1_hateful": 0.6153846153846153,
+   "precision_normal": 0.921875,
+   "recall_normal": 0.5673076923076923,
+   "f1_normal": 0.7023809523809524,
+   "accuracy": 0.6644295302013423,
+   "macro_f1": 0.6588827838827839
   },
   "diagnostic_oracle_f1max_NOT_label_free": {
    "label_free": false,
    "role": "diagnostic upper bound: chosen against gold labels. The method does not use it.",
-   "threshold": -1.25,
-   "tp": 3,
-   "fp": 1,
-   "fn": 2,
-   "tn": 7,
-   "precision": 0.75,
-   "recall": 0.6,
-   "f1_hateful": 0.6666666666666665,
-   "precision_normal": 0.7777777777777778,
-   "recall_normal": 0.875,
-   "f1_normal": 0.823529411764706,
-   "accuracy": 0.7692307692307693,
-   "macro_f1": 0.7450980392156863
+   "threshold": 5.0,
+   "tp": 38,
+   "fp": 21,
+   "fn": 7,
+   "tn": 83,
+   "precision": 0.6440677966101694,
+   "recall": 0.8444444444444444,
+   "f1_hateful": 0.7307692307692307,
+   "precision_normal": 0.9222222222222223,
+   "recall_normal": 0.7980769230769231,
+   "f1_normal": 0.8556701030927835,
+   "accuracy": 0.8120805369127517,
+   "macro_f1": 0.7932196669310071
+  }
+ },
+ "oracle_gap": {
+  "macro_f1_method": 0.7255985267034991,
+  "macro_f1_oracle": 0.7932196669310071,
+  "gap": 0.067621,
+  "threshold_method": 0.6068749999999987,
+  "threshold_oracle": 5.0
+ },
+ "error_anatomy_at_method_threshold": {
+  "threshold": 0.6068749999999987,
+  "false_negatives": {
+   "n": 6,
+   "z": {
+    "n": 6,
+    "min": -8.25,
+    "q1": -5.875,
+    "median": -3.75,
+    "q3": -3.3125,
+    "max": -1.25,
+    "mean": -4.4583
+   },
+   "seen_transcript_chars": {
+    "n": 6,
+    "min": 22,
+    "q1": 29.5,
+    "median": 47.5,
+    "q3": 143.5,
+    "max": 189,
+    "mean": 84.1667
+   },
+   "n_with_empty_seen_transcript": 0,
+   "gate_outcome": {
+    "fell_back_to_dataset_transcript": 0,
+    "used_gated_fresh_transcript": 6
+   },
+   "surface_cue_in_seen_transcript": {
+    "n": 0,
+    "frac": 0.0
+   },
+   "by_3class_subgroup": {
+    "Hateful": 2,
+    "Offensive": 4
+   }
+  },
+  "false_positives": {
+   "n": 33,
+   "z": {
+    "n": 33,
+    "min": 0.75,
+    "q1": 3.0,
+    "median": 7.5,
+    "q3": 8.75,
+    "max": 11.0,
+    "mean": 6.2652
+   },
+   "seen_transcript_chars": {
+    "n": 33,
+    "min": 3,
+    "q1": 47,
+    "median": 84,
+    "q3": 202,
+    "max": 280,
+    "mean": 116.3333
+   },
+   "surface_cue_in_seen_transcript": {
+    "note": "the frozen regex cue family from the kill-test analysis, applied to the transcript the judge read. A text-locating device only: never an input to any model or threshold. The patterns are English, so on MHClip_ZH they under-fire and the rates there are not interpretable.",
+    "n": 2,
+    "frac": 0.0606,
+    "true_negative_baseline_n": 1,
+    "true_negative_baseline_frac": 0.0141,
+    "fisher_p": 0.20595100774729136
+   },
+   "by_marker_family": {
+    "identity": 2,
+    "slur_or_profanity": 0,
+    "violence": 0,
+    "meta_hate": 0
+   },
+   "gate_outcome": {
+    "fell_back_to_dataset_transcript": 1,
+    "used_gated_fresh_transcript": 32
+   }
   }
  },
  "starvation_diagnostics": {

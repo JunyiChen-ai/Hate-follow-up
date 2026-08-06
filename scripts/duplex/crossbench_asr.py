@@ -10,7 +10,9 @@ detection, 30-second chunked long-form decoding, batch size 8, and the
 
 Automatic language detection is deliberate and matters here: MHClip_ZH is
 Mandarin and MHClip_EN is English, so no `language` is passed and Whisper
-selects per chunk.
+selects per chunk. `--language` overrides that for diagnostic arms only; it
+defaults to None, which is the frozen behaviour, and `--asr-name` keeps such an
+arm's output in a separate file so it can never overwrite the frozen one.
 
 CUDA is mandatory. Placement and dtype are asserted after load and the run
 aborts rather than falling back to CPU.
@@ -41,11 +43,17 @@ def main():
     ap.add_argument("--dataset", required=True)
     ap.add_argument("--split", default="train")
     ap.add_argument("--out-dir", required=True)
+    ap.add_argument("--language", default=None,
+                    help="Force Whisper's decoding language (e.g. 'zh'). "
+                         "Default None keeps the frozen automatic detection.")
+    ap.add_argument("--asr-name", default="fresh_transcripts.jsonl",
+                    help="Output filename inside --out-dir. Non-default values "
+                         "keep a diagnostic arm out of the frozen file.")
     args = ap.parse_args()
 
     wav_dir = os.path.join(args.out_dir, "wav")
     meta_path = os.path.join(args.out_dir, "audio_meta.jsonl")
-    asr_path = os.path.join(args.out_dir, "fresh_transcripts.jsonl")
+    asr_path = os.path.join(args.out_dir, args.asr_name)
 
     ids = load_clean_split_ids(args.dataset, args.split)
     ann = load_annotations(args.dataset)
@@ -107,6 +115,12 @@ def main():
                     dtype=torch.float16, device="cuda",
                     chunk_length_s=30, batch_size=8)
 
+    gen_kwargs = {"task": "transcribe"}
+    if args.language:
+        gen_kwargs["language"] = args.language
+    print(f"decoding language: {args.language or 'auto (frozen default)'}; "
+          f"writing {asr_path}", flush=True)
+
     t0 = time.time()
     audio_done = 0.0
     fh = open(asr_path, "a")
@@ -115,7 +129,7 @@ def main():
         tv = time.time()
         try:
             out = pipe(wav, return_timestamps=True, return_language=True,
-                       generate_kwargs={"task": "transcribe"})
+                       generate_kwargs=gen_kwargs)
             text = (out.get("text") or "").strip()
             langs = Counter(c.get("language") for c in out.get("chunks", [])
                             if c.get("language"))

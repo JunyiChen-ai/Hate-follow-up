@@ -204,6 +204,122 @@ def main():
               f"{f(fs.get('share_of_FN_that_is_IM'), 3)} |")
         W("")
 
+    # ------------------------------------------------ MHClip-ZH diagnostic
+    diag_path = os.path.join(REPORTS, "test_zh_anomaly_diag.json")
+    if os.path.exists(diag_path):
+        dg = json.load(open(diag_path))
+        rc, ver = dg.get("root_cause", {}), dg.get("verdict", {})
+        cells = get(dg, "four_cell_table", "cells", default={})
+        eff = dg.get("restoration_effect", {})
+        fz = dg.get("forced_zh_arm", {})
+
+        W(f"## MHClip-ZH anomaly diagnostic ({dg.get('date')})")
+        W("")
+        W("The first MHClip-ZH test run reported "
+          f"{f(get(rc, 'superseded_numbers', '8b_auc_at_n13'), 3)} for the 8B "
+          f"against {f(get(rc, 'superseded_numbers', '2b_auc_at_n13'), 4)} for "
+          "the 2B, the only scale inversion across the four benchmarks, with "
+          "restoration coverage at 1.0. Two explanations were on the table: the "
+          "fresh Whisper Chinese transcripts had hurt the larger model, or the "
+          "test split was simply harder. Neither is what happened.")
+        W("")
+        W(f"**Root cause.** {rc.get('what')} {rc.get('mechanism')} "
+          f"{rc.get('blast_radius')} A scan of every frame of every "
+          "`test_clean` video across all four benchmarks found exactly one "
+          "unreadable JPEG, which is why only this dataset was affected. The "
+          "frame was re-decoded from the local source mp4 at the index the "
+          "original extractor used; the same code path reproduces the intact "
+          "neighbour frame at 37.61 dB PSNR, so the frame numbering agrees. "
+          "The run was then repeated to full coverage and the reports above "
+          "are the corrected ones.")
+        W("")
+        W("**The four cells.** Every test cell is the same 149 videos, 45 "
+          "hateful and 104 normal. The train row is 579 videos. Train under "
+          "fresh Whisper was never measured: the train-split source media was "
+          "not pulled to this machine, so the ASR route was never exercised "
+          "there.")
+        W("")
+        W("| split | transcript the judge read | 8B AUC | 8B 95% CI | 2B AUC |")
+        W("|---|---|---|---|---|")
+        for key, split, tname in [
+                ("train_x_dataset_transcript", "train", "dataset"),
+                ("train_x_fresh_whisper", "train", "fresh Whisper"),
+                ("test_x_dataset_transcript", "test", "dataset"),
+                ("test_x_fresh_whisper", "test", "fresh Whisper (auto language)"),
+                ("test_x_fresh_whisper_language_forced_zh", "test",
+                 "fresh Whisper (language forced zh)")]:
+            c = cells.get(key) or {}
+            a8, a2 = c.get("8b"), c.get("2b")
+            ci = (a8 or {}).get("boot95") or [None, None]
+            W(f"| {split} | {tname} | "
+              f"{f((a8 or {}).get('auc')) if a8 else 'not measured'} | "
+              f"{('[' + f(ci[0], 3) + ', ' + f(ci[1], 3) + ']') if a8 else '--'} | "
+              f"{f((a2 or {}).get('auc')) if a2 else '--'} |")
+        W("")
+        d8 = eff.get("8b_fresh_minus_dataset") or {}
+        d2 = eff.get("2b_fresh_minus_dataset") or {}
+        sp = eff.get("split_effect_8b_dataset_transcript") or {}
+        W("**Did restoration hurt?** No, not measurably. On the same 149 "
+          f"videos the fresh transcript moves the 8B AUC by "
+          f"{f(d8.get('delta_auc'))}, paired bootstrap "
+          f"[{f((d8.get('boot95_paired') or [None, None])[0])}, "
+          f"{f((d8.get('boot95_paired') or [None, None])[1])}], straddling "
+          f"zero; the 2B moves {f(d2.get('delta_auc'))}. The 8B raw z ranks "
+          "the two arms at Spearman "
+          f"{f(get(dg, 'paired_control_vs_c2', '8b', 'spearman_z_c2_vs_ctrl'), 3)} "
+          "even though the median normalized edit distance between the two "
+          "transcripts is "
+          f"{f(get(dg, 'transcript_forensics', 'degeneracy_and_gate', 'all', 'edit_norm_vs_dataset', 'median'), 2)}. "
+          "The text changes substantially; what the judge does with it does not.")
+        W("")
+        W("**Is the test split different?** No. Holding the transcript fixed "
+          f"at the dataset one, the 8B scores {f(sp.get('train_auc'))} on train "
+          f"and {f(sp.get('test_auc'))} on test, a difference of "
+          f"{f(sp.get('test_minus_train'))} with heavily overlapping intervals.")
+        W("")
+        tr = fz.get("trigger", {})
+        ft = fz.get("effect_on_the_transcript", {})
+        dfz = eff.get("8b_forcedzh_minus_autolang") or {}
+        W("**Language mismatch.** Whisper's own per-chunk language vote came "
+          "back empty for all 149 videos, so language was read off the Unicode "
+          "script profile instead: "
+          f"{tr.get('observed_non_han_dominant')} of 149 auto-detected "
+          f"transcripts ({f(tr.get('observed_frac'), 3)}) are not "
+          "Han-dominant, which fired the pre-registered trigger for a "
+          f"forced-zh arm. Forcing zh rescues "
+          f"{ft.get('n_of_those_now_han_dominant')} of those "
+          f"{ft.get('n_auto_non_han_dominant')} and lifts the median Han "
+          "fraction to 1.0, and moves the 8B AUC by "
+          f"{f(dfz.get('delta_auc'))}, "
+          f"[{f((dfz.get('boot95_paired') or [None, None])[0])}, "
+          f"{f((dfz.get('boot95_paired') or [None, None])[1])}]. The mechanism "
+          "is real and the consequence is nil, so automatic detection stays: "
+          "forcing a language would buy nothing and would oblige the method to "
+          "make a correct per-corpus language decision on every new corpus.")
+        W("")
+        W("**What this says about the method on non-English corpora.** "
+          "Channel restoration is neutral on MHClip-ZH, not harmful and not "
+          "helpful. The starvation premise it runs on is weak here: the "
+          "dataset transcript already has a median of "
+          f"{f(get(dg, 'transcript_forensics', 'length', 'all', 'dataset_chars', 'median'), 0)} "
+          "characters and only 1.3 percent of videos exceed the 300-character "
+          "window the old clipped instrument could see, so there is little "
+          "starvation left to relieve. Report it as a neutral result on this "
+          "corpus rather than as evidence against the mechanism, and do not "
+          "tune the ASR to chase it.")
+        W("")
+        W("**Infrastructure.** One unreadable frame silently cost 91 percent "
+          "of a held-out measurement, and the run still reported `DONE` with a "
+          "plausible-looking AUC on the surviving 13 videos. The judge should "
+          "record and skip an unreadable frame rather than abort, and the "
+          "analysis should refuse to write a report when coverage falls far "
+          "below the split size instead of quietly reporting the subset.")
+        W("")
+        W("Full statistics, including the transcript forensics and the "
+          "score-movement anatomy: "
+          "`docs/duplex/reports/test_zh_anomaly_diag.json`.")
+        W("")
+
     # -------------------------------------------------------------- context
     W("## Context")
     W("")

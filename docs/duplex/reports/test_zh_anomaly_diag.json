@@ -1,0 +1,1139 @@
+{
+ "title": "MHClip_ZH held-out test anomaly: diagnostic",
+ "date": "2026-08-07",
+ "status": "diagnostic run. Labels enter evaluation only; no component was tuned or selected against them.",
+ "question": "The MHClip_ZH test_clean C2 run reported 8B AUC 0.675 against 2B 0.8125 -- the only scale inversion across four benchmarks -- with restoration coverage 1.0. Did the fresh Whisper Chinese transcripts hurt the 8B, or is the test split simply different?",
+ "finding_headline": "Neither. The reported run was truncated by a corrupt input file, not by the method.",
+ "root_cause": {
+  "what": "frames_16/<one MHClip_ZH test video>/frame_012.jpg was a partially written JPEG: 131,059 bytes against roughly 260,000 for every intact neighbour in the same directory.",
+  "mechanism": "extract_duplex_readout.py opens all 16 frames with PIL.Image.open(p).convert('RGB') outside any try block. The truncated file raises OSError, which propagates out of main() and kills the process. The run script retries three times, and each retry resumes onto the same file and dies at the same video.",
+  "blast_radius": "The loop died at video 14 of 149. Both the 8B and the 2B arm therefore scored 13 videos, and the published AUCs rested on 5 positives and 8 negatives.",
+  "why_only_this_dataset": "a scan of every frame of every test_clean video across all four benchmarks found exactly one unreadable JPEG, in MHClip_ZH. HateMM, MHClip_EN and ImpliHateVid have none, which is why only this dataset's run was truncated.",
+  "frame_scan": {
+   "MHClip_ZH": 1,
+   "MHClip_EN": 0,
+   "HateMM": 0,
+   "ImpliHateVid": 0,
+   "unit": "unreadable frames across the test_clean split"
+  },
+  "repair": "the frame was re-decoded from the local source mp4 at the index the original extractor used, np.linspace(0, n_frames-1, 16, dtype=int)[12]. The same code path applied to the intact neighbour frame reproduces the on-disk file at 37.61 dB PSNR (MAE 1.46), which is JPEG re-encoding noise, so the decoder's frame numbering agrees with the original extractor's. The truncated original was quarantined alongside it, not deleted.",
+  "superseded_numbers": {
+   "role": "what the truncated run reported, kept for the record",
+   "8b_auc_at_n13": 0.675,
+   "2b_auc_at_n13": 0.8125,
+   "n_scored": 13,
+   "n_pos": 5,
+   "n_neg": 8,
+   "boot95_8b": [
+    0.35,
+    0.95
+   ],
+   "boot95_2b": [
+    0.55,
+    1.0
+   ]
+  }
+ },
+ "four_cell_table": {
+  "role": "{train, test} x {dataset transcript, fresh Whisper} for the 8B, with the 2B alongside. Every test cell is 149 videos, 45 hateful and 104 normal.",
+  "cells": {
+   "train_x_dataset_transcript": {
+    "8b": {
+     "auc": 0.855465,
+     "boot95": [
+      0.824235,
+      0.886216
+     ],
+     "n_pos": 180,
+     "n_neg": 399,
+     "n_scored": 579,
+     "restoration_fraction": 0.0,
+     "source": "docs/duplex/reports/crossbench_mhclip_zh_8b.json"
+    },
+    "2b": {
+     "auc": 0.761536,
+     "boot95": [
+      0.72206,
+      0.800561
+     ],
+     "n_pos": 180,
+     "n_neg": 399,
+     "n_scored": 579,
+     "restoration_fraction": 0.0,
+     "source": "docs/duplex/reports/crossbench_mhclip_zh_2b.json"
+    }
+   },
+   "train_x_fresh_whisper": {
+    "8b": null,
+    "2b": null,
+    "note": "never measured: the train-split source media was not pulled to this machine, so restoration_fraction on train is 0.0 and the ASR route was never exercised there"
+   },
+   "test_x_dataset_transcript": {
+    "8b": {
+     "auc": 0.866453,
+     "boot95": [
+      0.804808,
+      0.91859
+     ],
+     "n_pos": 45,
+     "n_neg": 104,
+     "n_scored": 149
+    },
+    "2b": {
+     "auc": 0.786966,
+     "boot95": [
+      0.703419,
+      0.859829
+     ],
+     "n_pos": 45,
+     "n_neg": 104,
+     "n_scored": 149
+    },
+    "note": "the control arm run for this diagnostic"
+   },
+   "test_x_fresh_whisper": {
+    "8b": {
+     "auc": 0.854701,
+     "boot95": [
+      0.7875,
+      0.908868
+     ],
+     "n_pos": 45,
+     "n_neg": 104,
+     "n_scored": 149
+    },
+    "2b": {
+     "auc": 0.791667,
+     "boot95": [
+      0.713034,
+      0.860684
+     ],
+     "n_pos": 45,
+     "n_neg": 104,
+     "n_scored": 149
+    },
+    "note": "the C2 condition, re-run to full coverage after the frame repair"
+   },
+   "test_x_fresh_whisper_language_forced_zh": {
+    "8b": {
+     "auc": 0.857692,
+     "boot95": [
+      0.791026,
+      0.912393
+     ],
+     "n_pos": 45,
+     "n_neg": 104,
+     "n_scored": 149
+    },
+    "2b": null,
+    "note": "fifth cell, from the optional arm: the same pipeline with Whisper's decoding language pinned to zh instead of detected"
+   }
+  }
+ },
+ "restoration_effect": {
+  "role": "AUC(fresh Whisper) - AUC(dataset transcript) on the same 149 test videos, with a paired bootstrap. This is the quantity the question 'did restoration hurt' actually asks about.",
+  "8b_fresh_minus_dataset": {
+   "delta_auc": -0.011752,
+   "boot95_paired": [
+    -0.03344,
+    0.008333
+   ],
+   "excludes_zero": false,
+   "n_pos": 45,
+   "n_neg": 104
+  },
+  "2b_fresh_minus_dataset": {
+   "delta_auc": 0.004701,
+   "boot95_paired": [
+    -0.036218,
+    0.045833
+   ],
+   "excludes_zero": false,
+   "n_pos": 45,
+   "n_neg": 104
+  },
+  "8b_forcedzh_minus_dataset": {
+   "delta_auc": -0.008761,
+   "boot95_paired": [
+    -0.030021,
+    0.011432
+   ],
+   "excludes_zero": false,
+   "n_pos": 45,
+   "n_neg": 104
+  },
+  "8b_forcedzh_minus_autolang": {
+   "delta_auc": 0.002991,
+   "boot95_paired": [
+    -0.007799,
+    0.013996
+   ],
+   "excludes_zero": false,
+   "n_pos": 45,
+   "n_neg": 104
+  },
+  "split_effect_8b_dataset_transcript": {
+   "role": "the other half of the question: is the test split different? Both numbers read the dataset transcript, so the transcript is held fixed and only the split changes. Unpaired: different videos.",
+   "train_auc": 0.855465,
+   "test_auc": 0.866453,
+   "test_minus_train": 0.010988,
+   "train_boot95": [
+    0.824235,
+    0.886216
+   ],
+   "test_boot95": [
+    0.804808,
+    0.91859
+   ]
+  }
+ },
+ "paired_control_vs_c2": {
+  "role": "the same 149 videos scored twice, differing only in which transcript the judge read. dz = z(fresh Whisper) - z(dataset).",
+  "8b": {
+   "n": 149,
+   "dz": {
+    "n": 149,
+    "min": -6.75,
+    "q1": -0.5,
+    "median": 0.25,
+    "q3": 1.5,
+    "max": 10.0,
+    "mean": 0.5973,
+    "sd": 1.9085
+   },
+   "dz_hateful": {
+    "n": 45,
+    "min": -3.5,
+    "q1": -0.25,
+    "median": 0.25,
+    "q3": 1.5,
+    "max": 4.5,
+    "mean": 0.4444,
+    "sd": 1.4906
+   },
+   "dz_normal": {
+    "n": 104,
+    "min": -6.75,
+    "q1": -0.5,
+    "median": 0.5,
+    "q3": 1.5,
+    "max": 10.0,
+    "mean": 0.6635,
+    "sd": 2.0597
+   },
+   "n_dz_zero": 16,
+   "n_dz_gt_1": 63,
+   "n_dz_gt_5": 5,
+   "spearman_z_c2_vs_ctrl": 0.9745,
+   "separation_shift": {
+    "role": "mean z on hateful minus mean z on normal, per arm. The quantity the AUC ranks.",
+    "c2_fresh": 10.9909,
+    "control_dataset": 11.2099
+   }
+  },
+  "2b": {
+   "n": 149,
+   "dz": {
+    "n": 149,
+    "min": -1.0,
+    "q1": -0.25,
+    "median": 0.0,
+    "q3": 0.25,
+    "max": 1.0,
+    "mean": 0.0067,
+    "sd": 0.3051
+   },
+   "dz_hateful": {
+    "n": 45,
+    "min": -0.5,
+    "q1": -0.25,
+    "median": 0.0,
+    "q3": 0.25,
+    "max": 0.75,
+    "mean": -0.0222,
+    "sd": 0.283
+   },
+   "dz_normal": {
+    "n": 104,
+    "min": -1.0,
+    "q1": -0.25,
+    "median": 0.0,
+    "q3": 0.25,
+    "max": 1.0,
+    "mean": 0.0192,
+    "sd": 0.3133
+   },
+   "n_dz_zero": 47,
+   "spearman_z_c2_vs_ctrl": 0.9061
+  }
+ },
+ "transcript_forensics": {
+  "role": "what the fresh Chinese ASR actually produced, and how it differs from the dataset transcript the judge would otherwise have read",
+  "language": {
+   "all": {
+    "n": 149,
+    "whisper_top_language": {
+     "none": 149
+    },
+    "whisper_vote_available": 0,
+    "whisper_non_zh_frac": null,
+    "whisper_vote_note": "the ASR pipeline returned no per-chunk language for any video on this run, so Whisper's own language vote is unavailable and the Unicode script profile below is the language evidence",
+    "script_dominant_fresh": {
+     "han": 123,
+     "latin": 20,
+     "kana": 3,
+     "none": 2,
+     "cyrillic": 1
+    },
+    "script_non_han_frac": 0.1611,
+    "han_frac_of_letters": {
+     "n": 147,
+     "min": 0.0,
+     "q1": 0.9914,
+     "median": 1.0,
+     "q3": 1.0,
+     "max": 1.0,
+     "mean": 0.8401,
+     "sd": 0.3482
+    },
+    "latin_frac_of_letters": {
+     "n": 147,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 1.0,
+     "mean": 0.1374,
+     "sd": 0.3253
+    }
+   },
+   "hateful": {
+    "n": 45,
+    "whisper_top_language": {
+     "none": 45
+    },
+    "whisper_vote_available": 0,
+    "whisper_non_zh_frac": null,
+    "whisper_vote_note": "the ASR pipeline returned no per-chunk language for any video on this run, so Whisper's own language vote is unavailable and the Unicode script profile below is the language evidence",
+    "script_dominant_fresh": {
+     "han": 35,
+     "latin": 8,
+     "none": 1,
+     "cyrillic": 1
+    },
+    "script_non_han_frac": 0.2,
+    "han_frac_of_letters": {
+     "n": 44,
+     "min": 0.0,
+     "q1": 0.947,
+     "median": 1.0,
+     "q3": 1.0,
+     "max": 1.0,
+     "mean": 0.786,
+     "sd": 0.4008
+    },
+    "latin_frac_of_letters": {
+     "n": 44,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0529,
+     "max": 1.0,
+     "mean": 0.1974,
+     "sd": 0.3826
+    }
+   },
+   "normal": {
+    "n": 104,
+    "whisper_top_language": {
+     "none": 104
+    },
+    "whisper_vote_available": 0,
+    "whisper_non_zh_frac": null,
+    "whisper_vote_note": "the ASR pipeline returned no per-chunk language for any video on this run, so Whisper's own language vote is unavailable and the Unicode script profile below is the language evidence",
+    "script_dominant_fresh": {
+     "han": 88,
+     "latin": 12,
+     "kana": 3,
+     "none": 1
+    },
+    "script_non_han_frac": 0.1442,
+    "han_frac_of_letters": {
+     "n": 103,
+     "min": 0.0,
+     "q1": 0.9943,
+     "median": 1.0,
+     "q3": 1.0,
+     "max": 1.0,
+     "mean": 0.8633,
+     "sd": 0.3203
+    },
+    "latin_frac_of_letters": {
+     "n": 103,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 1.0,
+     "mean": 0.1117,
+     "sd": 0.2937
+    }
+   }
+  },
+  "length": {
+   "all": {
+    "dataset_chars": {
+     "n": 149,
+     "min": 0.0,
+     "q1": 31.0,
+     "median": 76.0,
+     "q3": 162.0,
+     "max": 312.0,
+     "mean": 98.7584,
+     "sd": 83.6028
+    },
+    "fresh_chars": {
+     "n": 149,
+     "min": 1.0,
+     "q1": 31.0,
+     "median": 91.0,
+     "q3": 155.0,
+     "max": 2466.0,
+     "mean": 141.3624,
+     "sd": 270.7882
+    },
+    "served_chars": {
+     "n": 149,
+     "min": 1.0,
+     "q1": 30.0,
+     "median": 88.0,
+     "q3": 154.0,
+     "max": 1098.0,
+     "mean": 109.8725,
+     "sd": 112.9125
+    },
+    "log2_ratio_fresh_over_dataset": {
+     "n": 149,
+     "min": -3.3219,
+     "q1": -0.263,
+     "median": -0.1255,
+     "q3": 0.4975,
+     "max": 7.4094,
+     "mean": 0.6048,
+     "sd": 1.87
+    },
+    "n_fresh_shorter": 86,
+    "n_fresh_longer": 60,
+    "n_fresh_near_empty_lt10": 2,
+    "n_dataset_empty": 7
+   },
+   "hateful": {
+    "dataset_chars": {
+     "n": 45,
+     "min": 0.0,
+     "q1": 13.0,
+     "median": 43.0,
+     "q3": 100.0,
+     "max": 222.0,
+     "mean": 67.4222,
+     "sd": 64.259
+    },
+    "fresh_chars": {
+     "n": 45,
+     "min": 1.0,
+     "q1": 23.0,
+     "median": 51.0,
+     "q3": 126.0,
+     "max": 2466.0,
+     "mean": 132.4,
+     "sd": 361.2571
+    },
+    "served_chars": {
+     "n": 45,
+     "min": 1.0,
+     "q1": 23.0,
+     "median": 51.0,
+     "q3": 126.0,
+     "max": 1098.0,
+     "mean": 95.8222,
+     "sd": 162.654
+    },
+    "log2_ratio_fresh_over_dataset": {
+     "n": 45,
+     "min": -1.8074,
+     "q1": -0.3599,
+     "median": -0.1069,
+     "q3": 1.2016,
+     "max": 6.8762,
+     "mean": 0.7105,
+     "sd": 1.8573
+    },
+    "n_fresh_shorter": 24,
+    "n_fresh_longer": 20,
+    "n_fresh_near_empty_lt10": 1,
+    "n_dataset_empty": 2
+   },
+   "normal": {
+    "dataset_chars": {
+     "n": 104,
+     "min": 0.0,
+     "q1": 34.0,
+     "median": 100.5,
+     "q3": 185.0,
+     "max": 312.0,
+     "mean": 112.3173,
+     "sd": 87.2828
+    },
+    "fresh_chars": {
+     "n": 104,
+     "min": 6.0,
+     "q1": 46.25,
+     "median": 111.0,
+     "q3": 178.5,
+     "max": 2093.0,
+     "mean": 145.2404,
+     "sd": 220.3065
+    },
+    "served_chars": {
+     "n": 104,
+     "min": 3.0,
+     "q1": 43.25,
+     "median": 107.0,
+     "q3": 167.25,
+     "max": 316.0,
+     "mean": 115.9519,
+     "sd": 81.8284
+    },
+    "log2_ratio_fresh_over_dataset": {
+     "n": 104,
+     "min": -3.3219,
+     "q1": -0.2353,
+     "median": -0.1273,
+     "q3": 0.4062,
+     "max": 7.4094,
+     "mean": 0.5591,
+     "sd": 1.8736
+    },
+    "n_fresh_shorter": 62,
+    "n_fresh_longer": 40,
+    "n_fresh_near_empty_lt10": 1,
+    "n_dataset_empty": 5
+   }
+  },
+  "degeneracy_and_gate": {
+   "all": {
+    "gzip_ratio_fresh": {
+     "n": 149,
+     "min": 0.0476,
+     "q1": 0.9083,
+     "median": 1.22,
+     "q3": 1.4112,
+     "max": 30.2576,
+     "mean": 1.5658,
+     "sd": 2.6666
+    },
+    "gzip_ratio_dataset": {
+     "n": 142,
+     "min": 0.0476,
+     "q1": 0.9124,
+     "median": 1.1796,
+     "q3": 1.3942,
+     "max": 1.9026,
+     "mean": 1.0929,
+     "sd": 0.3806
+    },
+    "loop_frac_fresh": {
+     "n": 23,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 1.0,
+     "mean": 0.159,
+     "sd": 0.3148
+    },
+    "loop_frac_dataset": {
+     "n": 130,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 0.8,
+     "mean": 0.007,
+     "sd": 0.07
+    },
+    "max_char_run_fresh": {
+     "n": 149,
+     "min": 1.0,
+     "q1": 1.0,
+     "median": 2.0,
+     "q3": 2.0,
+     "max": 620.0,
+     "mean": 7.5705,
+     "sd": 53.5012
+    },
+    "distinct_char_ratio_fresh": {
+     "n": 149,
+     "min": 0.0118,
+     "q1": 0.5238,
+     "median": 0.6279,
+     "q3": 0.7288,
+     "max": 1.0,
+     "mean": 0.6081,
+     "sd": 0.2033
+    },
+    "frac_bracket_or_nonspeech_tag": 0.1745,
+    "frac_loop_frac_over_0p5": 0.0336,
+    "collapse_shrink": {
+     "n": 149,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 0.9006,
+     "mean": 0.0173,
+     "sd": 0.1072
+    },
+    "n_collapse_shrink_gt_0p2": 4,
+    "edit_norm_vs_dataset": {
+     "n": 149,
+     "min": 0.0,
+     "q1": 0.2214,
+     "median": 0.4279,
+     "q3": 0.8182,
+     "max": 1.0,
+     "mean": 0.5097,
+     "sd": 0.3163
+    },
+    "vad_speech_frac": {
+     "n": 149,
+     "min": 0.0,
+     "q1": 0.1958,
+     "median": 0.6368,
+     "q3": 0.8819,
+     "max": 0.9978,
+     "mean": 0.5416,
+     "sd": 0.3576
+    },
+    "outcomes": {
+     "accepted": 147,
+     "rejected": 2
+    }
+   },
+   "hateful": {
+    "gzip_ratio_fresh": {
+     "n": 45,
+     "min": 0.0476,
+     "q1": 0.7326,
+     "median": 1.1357,
+     "q3": 1.3392,
+     "max": 7.8925,
+     "mean": 1.2967,
+     "sd": 1.2331
+    },
+    "gzip_ratio_dataset": {
+     "n": 43,
+     "min": 0.1667,
+     "q1": 0.6511,
+     "median": 0.9804,
+     "q3": 1.2984,
+     "max": 1.5376,
+     "mean": 0.972,
+     "sd": 0.3997
+    },
+    "loop_frac_fresh": {
+     "n": 8,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.1397,
+     "max": 0.5941,
+     "mean": 0.1441,
+     "sd": 0.2498
+    },
+    "loop_frac_dataset": {
+     "n": 34,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 0.0,
+     "mean": 0.0,
+     "sd": 0.0
+    },
+    "max_char_run_fresh": {
+     "n": 45,
+     "min": 1.0,
+     "q1": 1.0,
+     "median": 2.0,
+     "q3": 2.0,
+     "max": 222.0,
+     "mean": 6.6,
+     "sd": 32.4848
+    },
+    "distinct_char_ratio_fresh": {
+     "n": 45,
+     "min": 0.0174,
+     "q1": 0.5338,
+     "median": 0.623,
+     "q3": 0.7391,
+     "max": 1.0,
+     "mean": 0.6068,
+     "sd": 0.201
+    },
+    "frac_bracket_or_nonspeech_tag": 0.0889,
+    "frac_loop_frac_over_0p5": 0.0444,
+    "collapse_shrink": {
+     "n": 45,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 0.5953,
+     "mean": 0.0256,
+     "sd": 0.1186
+    },
+    "n_collapse_shrink_gt_0p2": 2,
+    "edit_norm_vs_dataset": {
+     "n": 45,
+     "min": 0.0,
+     "q1": 0.3333,
+     "median": 0.5,
+     "q3": 0.8865,
+     "max": 1.0,
+     "mean": 0.5816,
+     "sd": 0.3149
+    },
+    "vad_speech_frac": {
+     "n": 45,
+     "min": 0.0,
+     "q1": 0.0939,
+     "median": 0.6269,
+     "q3": 0.8279,
+     "max": 0.9582,
+     "mean": 0.4783,
+     "sd": 0.3567
+    },
+    "outcomes": {
+     "accepted": 45
+    }
+   },
+   "normal": {
+    "gzip_ratio_fresh": {
+     "n": 104,
+     "min": 0.3333,
+     "q1": 0.9982,
+     "median": 1.29,
+     "q3": 1.428,
+     "max": 30.2576,
+     "mean": 1.6822,
+     "sd": 3.0797
+    },
+    "gzip_ratio_dataset": {
+     "n": 99,
+     "min": 0.0476,
+     "q1": 0.9726,
+     "median": 1.2458,
+     "q3": 1.4115,
+     "max": 1.9026,
+     "mean": 1.1454,
+     "sd": 0.3596
+    },
+    "loop_frac_fresh": {
+     "n": 15,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 1.0,
+     "mean": 0.1669,
+     "sd": 0.3443
+    },
+    "loop_frac_dataset": {
+     "n": 96,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 0.8,
+     "mean": 0.0095,
+     "sd": 0.0814
+    },
+    "max_char_run_fresh": {
+     "n": 104,
+     "min": 1.0,
+     "q1": 1.0,
+     "median": 2.0,
+     "q3": 2.0,
+     "max": 620.0,
+     "mean": 7.9904,
+     "sd": 60.3632
+    },
+    "distinct_char_ratio_fresh": {
+     "n": 104,
+     "min": 0.0118,
+     "q1": 0.5158,
+     "median": 0.633,
+     "q3": 0.7273,
+     "max": 1.0,
+     "mean": 0.6086,
+     "sd": 0.2042
+    },
+    "frac_bracket_or_nonspeech_tag": 0.2115,
+    "frac_loop_frac_over_0p5": 0.0288,
+    "collapse_shrink": {
+     "n": 104,
+     "min": 0.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 0.9006,
+     "mean": 0.0138,
+     "sd": 0.1017
+    },
+    "n_collapse_shrink_gt_0p2": 2,
+    "edit_norm_vs_dataset": {
+     "n": 104,
+     "min": 0.0,
+     "q1": 0.2061,
+     "median": 0.4,
+     "q3": 0.7466,
+     "max": 1.0,
+     "mean": 0.4786,
+     "sd": 0.3118
+    },
+    "vad_speech_frac": {
+     "n": 104,
+     "min": 0.0,
+     "q1": 0.2435,
+     "median": 0.6736,
+     "q3": 0.8959,
+     "max": 0.9978,
+     "mean": 0.569,
+     "sd": 0.3545
+    },
+    "outcomes": {
+     "accepted": 102,
+     "rejected": 2
+    }
+   }
+  }
+ },
+ "score_movement": {
+  "role": "the videos whose 8B raw z moved most between the control and the C2 arm, characterized by what changed in their judge input. Statistics only; no ids and no text.",
+  "top_decile_by_abs_dz": {
+   "n": 14,
+   "abs_dz8": {
+    "n": 14,
+    "min": 3.5,
+    "q1": 3.75,
+    "median": 4.375,
+    "q3": 5.6875,
+    "max": 10.0,
+    "mean": 4.9107,
+    "sd": 1.7285
+   },
+   "edit_norm": {
+    "n": 14,
+    "min": 0.1008,
+    "q1": 0.4572,
+    "median": 0.5095,
+    "q3": 0.9354,
+    "max": 1.0,
+    "mean": 0.6372,
+    "sd": 0.275
+   },
+   "log2_len_ratio": {
+    "n": 14,
+    "min": -3.3219,
+    "q1": -0.2333,
+    "median": 0.225,
+    "q3": 1.1338,
+    "max": 7.0,
+    "mean": 1.0613,
+    "sd": 2.7807
+   },
+   "fresh_chars": {
+    "n": 14,
+    "min": 22.0,
+    "q1": 40.5,
+    "median": 85.5,
+    "q3": 115.75,
+    "max": 628.0,
+    "mean": 130.5714,
+    "sd": 152.7882
+   },
+   "dataset_chars": {
+    "n": 14,
+    "min": 1.0,
+    "q1": 16.25,
+    "median": 53.5,
+    "q3": 119.75,
+    "max": 239.0,
+    "mean": 77.0714,
+    "sd": 71.8018
+   },
+   "han_frac": {
+    "n": 14,
+    "min": 0.0,
+    "q1": 1.0,
+    "median": 1.0,
+    "q3": 1.0,
+    "max": 1.0,
+    "mean": 0.8716,
+    "sd": 0.3067
+   },
+   "whisper_non_zh_frac": 0.0,
+   "loop_frac_fresh": {
+    "n": 2,
+    "min": 0.0,
+    "q1": 0.1431,
+    "median": 0.2863,
+    "q3": 0.4294,
+    "max": 0.5726,
+    "mean": 0.2863,
+    "sd": 0.2863
+   },
+   "vad": {
+    "n": 14,
+    "min": 0.0,
+    "q1": 0.1835,
+    "median": 0.4494,
+    "q3": 0.7112,
+    "max": 0.9924,
+    "mean": 0.4462,
+    "sd": 0.3174
+   },
+   "prevalence_hateful": 0.2143
+  },
+  "remaining_nine_deciles": {
+   "n": 135,
+   "abs_dz8": {
+    "n": 135,
+    "min": 0.0,
+    "q1": 0.25,
+    "median": 0.75,
+    "q3": 1.5,
+    "max": 3.5,
+    "mean": 0.9796,
+    "sd": 0.8022
+   },
+   "edit_norm": {
+    "n": 135,
+    "min": 0.0,
+    "q1": 0.2078,
+    "median": 0.4146,
+    "q3": 0.7936,
+    "max": 1.0,
+    "mean": 0.4965,
+    "sd": 0.3173
+   },
+   "log2_len_ratio": {
+    "n": 135,
+    "min": -2.0,
+    "q1": -0.268,
+    "median": -0.1288,
+    "q3": 0.4464,
+    "max": 7.4094,
+    "mean": 0.5574,
+    "sd": 1.7418
+   },
+   "fresh_chars": {
+    "n": 135,
+    "min": 1.0,
+    "q1": 30.0,
+    "median": 91.0,
+    "q3": 156.0,
+    "max": 2466.0,
+    "mean": 142.4815,
+    "sd": 280.1718
+   },
+   "dataset_chars": {
+    "n": 135,
+    "min": 0.0,
+    "q1": 31.5,
+    "median": 76.0,
+    "q3": 168.5,
+    "max": 312.0,
+    "mean": 101.0074,
+    "sd": 84.4144
+   },
+   "han_frac": {
+    "n": 135,
+    "min": 0.0,
+    "q1": 0.9859,
+    "median": 1.0,
+    "q3": 1.0,
+    "max": 1.0,
+    "mean": 0.8244,
+    "sd": 0.3638
+   },
+   "whisper_non_zh_frac": 0.0,
+   "loop_frac_fresh": {
+    "n": 21,
+    "min": 0.0,
+    "q1": 0.0,
+    "median": 0.0,
+    "q3": 0.0,
+    "max": 1.0,
+    "mean": 0.1469,
+    "sd": 0.3147
+   },
+   "vad": {
+    "n": 135,
+    "min": 0.0,
+    "q1": 0.1962,
+    "median": 0.6475,
+    "q3": 0.8859,
+    "max": 0.9978,
+    "mean": 0.5515,
+    "sd": 0.3601
+   },
+   "prevalence_hateful": 0.3111
+  },
+  "spearman_abs_dz_vs": {
+   "edit_norm_vs_dataset": 0.1543,
+   "abs_log2_len_ratio": 0.0269,
+   "fresh_chars": 0.0039,
+   "dataset_chars": -0.0138,
+   "han_frac_fresh": 0.1822,
+   "loop_frac_fresh": -0.076,
+   "vad_speech_frac": 0.0589,
+   "note": "Spearman rank correlation between an input statistic and how far that video's 8B raw z moved. Read as: which axis of input change the judge is actually sensitive to."
+  }
+ },
+ "forced_zh_arm": {
+  "role": "Whisper re-run over the same 149 wavs with the decoding language forced to zh, then the same frozen gate and the same 8B judge. This isolates the language-mismatch channel.",
+  "trigger": {
+   "rule": "run this arm only if at least 10 percent of clips auto-detect a non-Chinese language",
+   "whisper_vote": "unavailable: the pipeline returned no per-chunk language for any of the 149 videos",
+   "proxy_used": "the Unicode script profile of the auto-detected transcript, which is independent of Whisper's vote",
+   "observed_non_han_dominant": 24,
+   "observed_frac": 0.1611,
+   "fired": true
+  },
+  "effect_on_the_transcript": {
+   "n_auto_non_han_dominant": 24,
+   "n_of_those_now_han_dominant": 20,
+   "rescue_rate": 0.8333,
+   "script_dominant_forced": {
+    "han": 145,
+    "latin": 4
+   },
+   "han_frac_auto": {
+    "n": 149,
+    "min": 0.0,
+    "q1": 0.9865,
+    "median": 1.0,
+    "q3": 1.0,
+    "max": 1.0,
+    "mean": 0.8289,
+    "sd": 0.3591
+   },
+   "han_frac_forced": {
+    "n": 149,
+    "min": 0.0,
+    "q1": 1.0,
+    "median": 1.0,
+    "q3": 1.0,
+    "max": 1.0,
+    "mean": 0.9755,
+    "sd": 0.1186
+   },
+   "chars_auto": {
+    "n": 149,
+    "min": 1.0,
+    "q1": 31.0,
+    "median": 91.0,
+    "q3": 155.0,
+    "max": 2466.0,
+    "mean": 141.3624,
+    "sd": 270.7882
+   },
+   "chars_forced": {
+    "n": 149,
+    "min": 6.0,
+    "q1": 30.0,
+    "median": 88.0,
+    "q3": 155.0,
+    "max": 787.0,
+    "mean": 111.5302,
+    "sd": 109.5904
+   },
+   "gate_outcomes_forced": {
+    "accepted": 146,
+    "rejected": 3
+   }
+  },
+  "effect_on_the_score": {
+   "8b": {
+    "auc": 0.857692,
+    "boot95": [
+     0.791026,
+     0.912393
+    ],
+    "n_pos": 45,
+    "n_neg": 104,
+    "n_scored": 149
+   },
+   "vs_auto_language_c2": {
+    "dz": {
+     "n": 149,
+     "min": -10.0,
+     "q1": 0.0,
+     "median": 0.0,
+     "q3": 0.0,
+     "max": 5.0,
+     "mean": 0.0839,
+     "sd": 1.153
+    },
+    "spearman": 0.9917
+   },
+   "restricted_to_the_auto_non_han_videos": {
+    "n": 24,
+    "dz_vs_auto": {
+     "n": 24,
+     "min": -10.0,
+     "q1": -0.25,
+     "median": 0.625,
+     "q3": 2.0625,
+     "max": 5.0,
+     "mean": 0.5312,
+     "sd": 2.8269
+    },
+    "note": "if language mismatch were the causal channel, the videos whose auto transcript was not Chinese are where forcing zh should move the score"
+   }
+  }
+ },
+ "verdict": {
+  "a_restoration_vs_split": {
+   "restoration_hurt": "no, not measurably. On the same 149 test videos the fresh Whisper transcript moves the 8B AUC by -0.0118, paired bootstrap [-0.0334, +0.0083], which straddles zero. The 2B moves +0.0047, [-0.0362, +0.0458].",
+   "split_is_different": "no. Reading the dataset transcript in both splits, the 8B scores 0.8555 on 579 train videos and 0.8665 on 149 test videos, a difference of +0.0110 with heavily overlapping intervals.",
+   "what_actually_happened": "one truncated JPEG aborted the judge loop at video 14 of 149. The published 0.675 was an AUC over 5 positives and 8 negatives with a bootstrap interval of [0.35, 0.95], wide enough to contain both the true value and the 2B's. At full coverage the 8B scores 0.8547 and the 2B 0.7917, so the scale inversion disappears and MHClip_ZH matches the ordering of the other three benchmarks."
+  },
+  "b_causal_channel": {
+   "conclusion": "there is no harmful channel to find: the effect being explained is itself within noise. The candidate channels were nevertheless measured and all are small.",
+   "language_mismatch": "24 of 149 auto-detected transcripts (16.1 percent) are not Han-dominant. Forcing zh rescues 20 of those 24 and lifts the median Han fraction to 1.0, but moves the 8B AUC by +0.0030, [-0.0078, +0.0140]. The mechanism is real and the consequence is nil.",
+   "asr_quality": "median normalized edit distance to the dataset transcript is 0.43, so the fresh text is genuinely different text rather than a copy, yet the 8B raw z ranks the two arms at Spearman 0.974. The judge is reading the same evidence either way.",
+   "length_shift": "the fresh transcript is shorter than the dataset one for 86 of 149 videos and longer for 60; the median log2 length ratio is -0.13. Absolute z movement correlates with the length ratio at Spearman 0.03.",
+   "degeneracy": "the gate rejected 2 of 149 under auto language and 3 of 149 under forced zh. 3.4 percent of transcripts have more than half their text in repeated clauses and 17.5 percent carry a non-speech or subscribe-and-like tag, but none of it reaches the score: loop fraction correlates with absolute z movement at Spearman -0.08.",
+   "strongest_axis": "Han fraction of the fresh transcript, at Spearman 0.18 against absolute z movement. That is the largest of the seven axes measured and it is still weak, which is consistent with the forced-zh arm changing nothing."
+  },
+  "c_recommendation": {
+   "keep_automatic_language_detection": "forcing zh buys +0.003 AUC, inside noise, and costs a per-corpus language decision that the method would then have to make correctly for every new corpus. Automatic detection is the more honest default and the measurement says it is not costing anything.",
+   "restoration_on_non_english": "channel restoration is neutral on MHClip_ZH rather than helpful. The starvation premise it runs on is weaker here: the dataset transcript already has a median of 76 characters and only 1.3 percent of videos exceed the 300-character window, so there is little starvation left to relieve. Report it as a neutral result on this corpus, not as evidence against the mechanism, and do not tune the ASR to chase it.",
+   "infrastructure": "add an input-integrity precondition. One unreadable frame silently cost 91 percent of a held-out measurement and the run still reported DONE with a plausible-looking AUC. The judge should skip and record an unreadable frame rather than abort, and the analysis should refuse to write a report when coverage is far below the split size instead of quietly reporting the subset."
+  }
+ },
+ "provenance": {
+  "judge": "src/duplex/extract_duplex_readout.py, unmodified. All four arms: frozen prag reader, 16 frames from frames_16, max_pixels 100352, transcript-limit 0, single forward pass.",
+  "arms": {
+   "judge_8b / judge_2b": "--transcript-override-json c2_overrides.json (gated fresh Whisper large-v3)",
+   "judge_8b_ctrl / judge_2b_ctrl": "no override map, so resolve_transcript returns the dataset transcript for every video"
+  },
+  "runner": "scripts/duplex/zh_anomaly_diag.sh, then scripts/duplex/zh_forced_lang_arm.sh",
+  "forensics": "scripts/duplex/zh_anomaly_forensics.py",
+  "gpu_seconds_total": 470,
+  "asr": "the frozen auto-language transcripts were reused unchanged. The forced-zh arm re-ran Whisper over the same wavs into a separate file; crossbench_asr.py gained --language and --asr-name, both defaulting to the frozen behaviour."
+ }
+}
