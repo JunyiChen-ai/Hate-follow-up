@@ -124,17 +124,23 @@ def write_status(st, poll_n, note=""):
     os.replace(tmp, STATUS)
 
 
+# Stages that are CPU and network bound. Only these block the next dataset from
+# starting: once a run reaches the GPU stages it is serialised by the flock
+# anyway, so the next dataset may as well be downloading and extracting audio
+# meanwhile. Holding it back until the whole run finished would idle the network
+# for hours behind a GPU queue.
+PRE_GPU_STAGES = ("pull", "audio")
+
+
 def busy():
-    """Slug of the watcher-launched run that is still going, or None."""
+    """Slug of a watcher-launched run still in its CPU-bound stages, or None."""
     for slug in WATCHED:
         rs = run_status(slug)
-        if rs and not rs.startswith(("DONE", "FAILED")):
-            if os.path.exists(os.path.join(TESTRUNS, slug, "STATUS")):
-                # only counts if a process is actually alive for it
-                p = subprocess.run(["pgrep", "-f", f"run_testrun.sh {slug}"],
-                                   capture_output=True)
-                if p.returncode == 0:
-                    return slug
+        if rs in PRE_GPU_STAGES:
+            p = subprocess.run(["pgrep", "-f", f"run_testrun.sh {slug}"],
+                               capture_output=True)
+            if p.returncode == 0:
+                return slug
     return None
 
 
