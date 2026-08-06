@@ -66,6 +66,12 @@ Of the 1283 judged videos, 1263 were judged on a gated fresh transcript and 20 o
 
 662 videos were scored in both this run and the kill-test C2 run under a byte-identical judge input. 662 of them reproduce their score exactly; the largest absolute difference is 0.0.
 
+## Contrast arm: Qwen3-VL-2B-Instruct
+
+The same full-corpus C2 inputs judged by the smaller model, as a boundary condition on where the pipeline stops working.
+
+AUC hateful vs NH is 0.9230 (IM vs NH 0.8928, EX vs NH 0.9531). The label-free valley lands at 0.7269999999999994 and yields macro-F1 0.8330 with 47 false negatives and 165 false positives.
+
 ## Scope
 
 Every figure is on `train_clean`. The ImpliHateVid test split has not been scored and is reserved. Published supervised numbers on that dataset are test-split results under full supervision, so nothing here licenses a comparison against them. Gold EX/IM/NH prefixes were consumed by the evaluation only: the transcription, the gate, the judge, and the threshold are all label-free.

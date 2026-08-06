@@ -1,0 +1,356 @@
+{
+ "title": "Full-corpus C2 measurement, Qwen3-VL-2B-Instruct",
+ "status": "method-development measurement on train_clean; NOT a kill-test; no pre-registration governs it and none is claimed",
+ "dataset": "ImpliHateVid train_clean, 1283 videos (test split untouched)",
+ "condition": "C2 = original mp4 audio re-transcribed with Whisper large-v3, gated, fed uncapped to the judge",
+ "config_provenance": {
+  "asr": "scripts/duplex/channel_restoration_asr.py, unmodified: openai/whisper-large-v3, transformers ASR pipeline, fp16 on cuda (asserted), language auto, chunk_length_s=30 long-form, batch_size=8, 30-minute audio cap applied at wav extraction",
+  "audio": "scripts/duplex/channel_restoration_audio.py, unmodified: ffmpeg 16 kHz mono, 1800 s cap, silero-VAD speech fraction",
+  "gate": "scripts/duplex/channel_restoration_gate.py, unmodified: clause-level repetition collapse (max_ngram 8), reject iff vad_speech_frac < 0.05 AND gzip ratio of raw fresh text > 7",
+  "judge": "src/duplex/extract_duplex_readout.py, unmodified: frozen prag reader, 16 frames from frames_16, max_pixels 100352, single forward pass, raw unclipped z = logsumexp(Yes ids) - logsumexp(No ids)",
+  "threshold_recipe": "docs/duplex/reports/rawz_detector_train.json, estimator b_kde_valley, reimplemented here and verified against that document's C0 value",
+  "c0_baseline": "/home/jehc223/Hate-follow-up/results/duplex_readout/ImpliHateVid_Qwen3-VL-2B-Instruct/scores.jsonl"
+ },
+ "mllm_calls_per_video": 1,
+ "coverage": {
+  "n_train_clean": 1283,
+  "n_scored_C2": 1283,
+  "n_hateful": 649,
+  "n_NH": 634,
+  "n_EX": 325,
+  "n_IM": 324,
+  "n_missing": 0
+ },
+ "c0_recipe_selfcheck": {
+  "note": "the same code path applied to the C0 scores must reproduce the frozen valley in rawz_detector_train.json",
+  "recomputed_valley": 0.374625,
+  "frozen_valley": 0.374625,
+  "matches": true,
+  "recomputed_bandwidth": 0.19714810334367067,
+  "c0_trough_depth": 0.04766454543989607,
+  "c0_stability_bootstrap": {
+   "n_boot": 1000,
+   "n_without_valley": 74,
+   "median": 0.37781250000000055,
+   "q1": 0.2667343750000003,
+   "q3": 0.472375,
+   "ci95": [
+    0.06437500000000007,
+    0.6904453125000002
+   ],
+   "sd": 0.1689663725711999
+  },
+  "why": "the C0 valley's own sampling spread is the reference against which the C2 valley's stability is read; neither is a bar"
+ },
+ "gate_stats": {
+  "full_corpus": {
+   "n": 1283,
+   "accepted": 1263,
+   "rejected": 20,
+   "no_fresh_pass": 0,
+   "reject_rate": 0.015588,
+   "hit_30min_cap": 4,
+   "asr_error": 0,
+   "median_old_chars": 952,
+   "median_fresh_raw_chars": 1146,
+   "median_gated_chars": 1008,
+   "median_edit_norm_vs_dataset": 0.1045,
+   "median_collapse_shrink": 0.0
+  },
+  "by_label": {
+   "hateful": {
+    "n": 649,
+    "accepted": 633,
+    "rejected": 16,
+    "no_fresh_pass": 0,
+    "reject_rate": 0.024653,
+    "hit_30min_cap": 3,
+    "asr_error": 0,
+    "median_old_chars": 905,
+    "median_fresh_raw_chars": 1314,
+    "median_gated_chars": 1038,
+    "median_edit_norm_vs_dataset": 0.2499,
+    "median_collapse_shrink": 0.0033
+   },
+   "NH": {
+    "n": 634,
+    "accepted": 630,
+    "rejected": 4,
+    "no_fresh_pass": 0,
+    "reject_rate": 0.006309,
+    "hit_30min_cap": 1,
+    "asr_error": 0,
+    "median_old_chars": 973.5,
+    "median_fresh_raw_chars": 1008.5,
+    "median_gated_chars": 996.0,
+    "median_edit_norm_vs_dataset": 0.0447,
+    "median_collapse_shrink": 0.0
+   }
+  },
+  "by_provenance": {
+   "reused_from_killtest": {
+    "n": 662,
+    "accepted": 655,
+    "rejected": 7,
+    "no_fresh_pass": 0,
+    "reject_rate": 0.010574,
+    "hit_30min_cap": 1,
+    "asr_error": 0,
+    "median_old_chars": 973.5,
+    "median_fresh_raw_chars": 1029.5,
+    "median_gated_chars": 1005,
+    "median_edit_norm_vs_dataset": 0.0523,
+    "median_collapse_shrink": 0.0
+   },
+   "newly_transcribed": {
+    "n": 621,
+    "accepted": 608,
+    "rejected": 13,
+    "no_fresh_pass": 0,
+    "reject_rate": 0.020934,
+    "hit_30min_cap": 3,
+    "asr_error": 0,
+    "median_old_chars": 905,
+    "median_fresh_raw_chars": 1246,
+    "median_gated_chars": 1011.0,
+    "median_edit_norm_vs_dataset": 0.2109,
+    "median_collapse_shrink": 0.0
+   }
+  },
+  "transcript_source_in_judge_input": {
+   "override_gated_fresh": 1263,
+   "fallback_dataset_transcript": 20
+  }
+ },
+ "auc": {
+  "C2_full_corpus": {
+   "hateful_vs_NH": 0.922968,
+   "IM_vs_NH": 0.892791,
+   "EX_vs_NH": 0.953053
+  },
+  "C2_hateful_vs_NH_boot95": [
+   0.908273,
+   0.936444
+  ],
+  "C0_baseline": {
+   "hateful_vs_NH": 0.891382,
+   "IM_vs_NH": 0.862691,
+   "EX_vs_NH": 0.919985
+  },
+  "delta_C2_minus_C0": {
+   "hateful_vs_NH": 0.031586,
+   "IM_vs_NH": 0.0301,
+   "EX_vs_NH": 0.033068
+  }
+ },
+ "threshold_label_free": {
+  "definition": "Gaussian KDE of the C2 raw-z values, Scott bandwidth, 4001-point grid over [min-2, max+2]; the two highest grid local maxima are the modes and the threshold is the minimum-density grid point strictly between them. Labels are not used.",
+  "computed_on": "the real full-corpus C2 distribution",
+  "bandwidth_scott": 0.24126806181761276,
+  "n_grid_local_maxima": 2,
+  "grid_points": 4001,
+  "grid_span": [
+   -3.75,
+   5.5
+  ],
+  "value": 0.7269999999999994,
+  "mode_locations": [
+   0.5327500000000001,
+   1.249625
+  ],
+  "mode_densities": [
+   0.31021845803813114,
+   0.3366307218361089
+  ],
+  "valley_density": 0.30817838246709767,
+  "valley_over_lower_mode": 0.9934237453698428,
+  "valley_over_higher_mode": 0.9154790768536465,
+  "relative_trough_depth": 0.006576254630157208,
+  "stability_bootstrap": {
+   "n_boot": 1000,
+   "n_without_valley": 271,
+   "median": 0.7679999999999998,
+   "q1": 0.7015624999999996,
+   "q3": 0.8289999999999997,
+   "ci95": [
+    0.24831249999999994,
+    1.1117999999999981
+   ],
+   "sd": 0.18848332760153633
+  },
+  "distance_from_frozen_C0_valley": 0.3524
+ },
+ "operating_points": {
+  "METHOD_self_computed_valley": {
+   "label_free": true,
+   "role": "the method number: threshold computed from this run's own score distribution, no labels",
+   "threshold": 0.7269999999999994,
+   "tp": 602,
+   "fp": 165,
+   "fn": 47,
+   "tn": 469,
+   "precision": 0.7848761408083442,
+   "recall": 0.9275808936825886,
+   "f1_hateful": 0.8502824858757062,
+   "precision_normal": 0.9089147286821705,
+   "recall_normal": 0.7397476340694006,
+   "f1_normal": 0.8156521739130435,
+   "accuracy": 0.8347622759158223,
+   "macro_f1": 0.8329673298943748
+  },
+  "diagnostic_frozen_C0_valley": {
+   "label_free": true,
+   "role": "diagnostic only: the valley frozen from the C0 distribution, carried over unchanged",
+   "threshold": 0.374625,
+   "tp": 631,
+   "fp": 250,
+   "fn": 18,
+   "tn": 384,
+   "precision": 0.7162315550510783,
+   "recall": 0.9722650231124808,
+   "f1_hateful": 0.8248366013071895,
+   "precision_normal": 0.9552238805970149,
+   "recall_normal": 0.6056782334384858,
+   "f1_normal": 0.7413127413127414,
+   "accuracy": 0.7911145752143414,
+   "macro_f1": 0.7830746713099654
+  },
+  "diagnostic_oracle_f1max_NOT_label_free": {
+   "label_free": false,
+   "role": "diagnostic upper bound: chosen against gold labels. The method does not use it.",
+   "threshold": 1.0,
+   "tp": 569,
+   "fp": 112,
+   "fn": 80,
+   "tn": 522,
+   "precision": 0.8355359765051396,
+   "recall": 0.8767334360554699,
+   "f1_hateful": 0.8556390977443609,
+   "precision_normal": 0.867109634551495,
+   "recall_normal": 0.8233438485804416,
+   "f1_normal": 0.8446601941747574,
+   "accuracy": 0.8503507404520655,
+   "macro_f1": 0.8501496459595591
+  },
+  "diagnostic_zero": {
+   "label_free": true,
+   "role": "diagnostic: the model's own Yes/No boundary",
+   "threshold": 0.0,
+   "tp": 647,
+   "fp": 417,
+   "fn": 2,
+   "tn": 217,
+   "precision": 0.6080827067669173,
+   "recall": 0.9969183359013868,
+   "f1_hateful": 0.7553998832457677,
+   "precision_normal": 0.9908675799086758,
+   "recall_normal": 0.3422712933753943,
+   "f1_normal": 0.5087924970691676,
+   "accuracy": 0.6734216679657054,
+   "macro_f1": 0.6320961901574677
+  }
+ },
+ "oracle_gap": {
+  "macro_f1_method": 0.8329673298943748,
+  "macro_f1_oracle": 0.8501496459595591,
+  "gap": 0.017182,
+  "threshold_method": 0.7269999999999994,
+  "threshold_oracle": 1.0
+ },
+ "c0_baseline_operating_point": {
+  "role": "the published C0 label-free number this run is measured against",
+  "threshold": 0.374625,
+  "tp": 570,
+  "fp": 154,
+  "fn": 79,
+  "tn": 480,
+  "precision": 0.787292817679558,
+  "recall": 0.8782742681047766,
+  "f1_hateful": 0.8302986161689732,
+  "precision_normal": 0.8586762075134168,
+  "recall_normal": 0.7570977917981072,
+  "f1_normal": 0.8046940486169321,
+  "accuracy": 0.818394388152767,
+  "macro_f1": 0.8174963323929526
+ },
+ "error_anatomy_at_method_threshold": {
+  "threshold": 0.7269999999999994,
+  "false_negatives": {
+   "n": 47,
+   "by_group": {
+    "EX": 10,
+    "IM": 37
+   },
+   "share_IM": 0.7872,
+   "recall_loss_within_group": {
+    "EX": 0.0308,
+    "IM": 0.1142
+   },
+   "z": {
+    "n": 47,
+    "min": -0.5,
+    "q1": 0.25,
+    "median": 0.5,
+    "q3": 0.5,
+    "max": 0.5
+   },
+   "step0_no_meaningful_speech_residuals": {
+    "definition": "the 8 videos Step 0 established have no transcribable speech, so C2 has nothing to restore for them",
+    "n_subgroup": 8,
+    "n_still_FN": 5
+   },
+   "step0_fragile_language": {
+    "n_subgroup": 3,
+    "n_still_FN": 1
+   },
+   "gate_outcome": {
+    "fell_back_to_dataset_transcript": 4,
+    "used_gated_fresh_transcript": 43
+   },
+   "surface_cue_in_seen_transcript": {
+    "n": 29,
+    "frac": 0.617
+   },
+   "was_FN_under_C0": 21
+  },
+  "false_positives": {
+   "n": 165,
+   "all_NH_by_construction": true,
+   "z": {
+    "n": 165,
+    "min": 0.75,
+    "q1": 0.75,
+    "median": 1.0,
+    "q3": 1.25,
+    "max": 2.25
+   },
+   "surface_cue_in_seen_transcript": {
+    "note": "the frozen regex cue family from the kill-test analysis, applied to the C2 transcript the judge read. A text-locating device only: never an input to any model or threshold.",
+    "n": 125,
+    "frac": 0.7576,
+    "true_negative_baseline_n": 240,
+    "true_negative_baseline_frac": 0.5117,
+    "fisher_p": 1.12489127742193e-08
+   },
+   "by_marker_family": {
+    "identity": 112,
+    "slur_or_profanity": 20,
+    "violence": 39,
+    "meta_hate": 15
+   },
+   "gate_outcome": {
+    "fell_back_to_dataset_transcript": 2,
+    "used_gated_fresh_transcript": 163
+   },
+   "was_FP_under_C0": 116
+  }
+ },
+ "determinism_vs_killtest_c2_8b": {
+  "note": "these videos received a byte-identical judge input in both runs, so their z must be exactly equal",
+  "reference_run": "skipped: no prior run",
+  "n_common": 0,
+  "n_exactly_equal": 0,
+  "max_abs_delta": null,
+  "all_equal": false
+ }
+}
