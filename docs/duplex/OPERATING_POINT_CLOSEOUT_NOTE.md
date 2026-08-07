@@ -85,3 +85,24 @@ completed autopsy, the HateMM false-positive audit, is what produced the
 last confirmed mechanism). The next step is a ranking-error autopsy on
 those two corpora: what the misranked videos are, in aggregate terms, and
 which attributable hypotheses survive contact with them.
+
+## Addendum, same day: the open front resolved
+
+The autopsy ran (`RANKING_AUTOPSY_NOTE.md`) and its two central claims were
+then CONFIRMED by a preregistered blind audit
+(`PREREG_annotation_validity_audit.md`, `ANNOTATION_VALIDITY_NOTE.md`) with
+score-blind cross-family coders and a model-independent duplicate-transcript
+check. Blind rates: 36.4% of HateClipSeg's clean-normal stratum contains
+protected-group hostility or extremist glorification (CI 0.22–0.52, floor
+0.20); 69.4% of MHClip-EN's union positives contain no protected-group
+target (CI 0.55–0.82, floor 0.40), while coders still endorse the shipped
+positive label on 84% of them — the class is offensive on an axis the
+judge does not measure, not benign. Corrected AUC: HateClipSeg 0.754 →
+0.895; MHClip-EN restricted to blind protected-target positives 0.785 →
+0.866. Together with the regime map above, the weak-corpus story closes:
+the judge is a construct-consistent ranker of protected-group hate; the
+residual gaps on these two corpora are substantially properties of their
+labels (contamination and construct mixing), not of the model. The
+evidence-delivery search stays closed, and no method component is licensed
+by this finding — what it licenses is label-corrected evaluation reporting
+alongside shipped-label numbers.
