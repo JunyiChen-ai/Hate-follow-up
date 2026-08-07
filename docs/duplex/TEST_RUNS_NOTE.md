@@ -94,6 +94,50 @@ The first MHClip-ZH test run reported 0.675 for the 8B against 0.8125 for the 2B
 
 Full statistics, including the transcript forensics and the score-movement anatomy: `docs/duplex/reports/test_zh_anomaly_diag.json`.
 
+## Stance-axis gate diagnostic (2026-08-07)
+
+A diagnostic, not a kill-test, and not a method. The error anatomy of the ImpliHateVid train run locates half the error budget in topic-versus-stance confusion: the false positives carry surface cues at a much higher rate than true negatives do, so the judge is reacting to what a video is about rather than to what it asserts. This test asks whether that distinction is *available* on the current substrate at all -- whether a probe pointed directly at stance separates cue-sharing false positives from true positives better than the joint call does. It gates whether an assertion-structure mechanism is worth designing; it is not one.
+
+Three probes, each one extra call over the cohorts only, all occupying the frozen prompt's existing reader slot so the question line, the answer position and the raw-z readout are unchanged: `stance_v1` asks what the video itself asserts or endorses and explicitly separates asserting from mentioning, quoting, reporting and countering; `stance_para` is a semantically equivalent paraphrase giving the wording-noise floor; `effort_ctrl` is the frozen thoroughness placebo reused verbatim. The joint-z comparison arm needs no call and is read off the source runs. Cohorts are built with labels because this is error diagnosis: no threshold, probe or decision rule reads one.
+
+The decision rule below was frozen before the probes were scored. On the primary arm: `A_stance` at least 0.65, `A_stance - A_joint` at least 0.05, `A_stance - A_effort` at least 0.05, and wording noise at most 0.05.
+
+| arm | valley | FP | cue-matched TP | cue-carrying TN | cue-carrying TP pool | cue-carrying TN pool |
+|---|---|---|---|---|---|---|
+| ImpliHateVid train (primary) | -4.854 | 105 | 105 | 105 | 555/600 | 282/529 |
+| HateMM test | -2.346 | 70 | 70 | 16 | 79/83 | 16/59 |
+
+AUC is cue-matched TP against FP: 0.5 is a probe that cannot tell the two piles apart. The last column is the same probe asked to separate cue-carrying true negatives from false positives, which a live stance axis should also decline to flag.
+
+| arm | A_joint | A_stance | A_stance_para | A_effort | wording noise | AUC(TN vs FP) by stance_v1 |
+|---|---|---|---|---|---|---|
+| ImpliHateVid train | 0.8508 | 0.8249 | 0.8226 | 0.8655 | 0.0655 | 0.0099 |
+| HateMM test | 0.9117 | 0.9040 | 0.9061 | 0.9126 | 0.0017 | 0.0089 |
+
+`A_joint` is a demanding bar and part of that is cohort geometry rather than judge skill: every false positive sits just above the valley by construction, while the true positives are sampled from the whole range above it, most of which sits far higher. A probe reading a genuinely different axis would not have to beat the joint call on the joint call's own favourable ground -- it would only have to rank differently. The correlations below are therefore the load-bearing measurement, not the AUC deltas.
+
+The rank correlations say what the AUCs only imply. Over all cohort videos, each probe against the joint z the source run already produced:
+
+| arm | stance_v1 | stance_para | effort_ctrl | stance_v1 vs effort_ctrl |
+|---|---|---|---|---|
+| ImpliHateVid train | 0.977 | 0.976 | 0.988 | 0.976 |
+| HateMM test | 0.976 | 0.969 | 0.992 | 0.973 |
+
+**Verdict: FAIL.** Clauses on the primary arm:
+
+- PASS — `a_stance_ge_0.65`: 0.8249 against a bar of 0.65
+- FAIL — `a_stance_minus_a_joint_ge_0.05`: -0.0259 against a bar of 0.05
+- FAIL — `a_stance_minus_a_effort_ge_0.05`: -0.0407 against a bar of 0.05
+- FAIL — `noise_le_0.05`: 0.0655 against a bar of 0.05
+
+Read the clauses in the order they failed, because the first one passing is what makes the rest damning. The stance probe separates the two piles perfectly respectably in absolute terms. It simply does not separate them any better than the joint call already did, and it separates them slightly worse than a placebo that says nothing about stance at all and only asks for care. A statistic a thoroughness placebo reproduces is not measuring the thing it names; that is the same failure the duplex reading kill-test died on, reached from a different direction.
+
+The rank correlations settle what the probe is actually doing. It is not reading a weak stance axis: it is re-reading the joint call, at a correlation high enough that the two orderings are near-substitutable. The probe also reproduces the joint call's ordering of cue-carrying true negatives against false positives, when an axis orthogonal to hatefulness would be near-indifferent between two piles that are both non-hateful. Asking the model what a video asserts rather than what it contains does not give a different reading of the video; it gives the same reading under a different name.
+
+This closes the input-side assertion-structure mechanism at its first step. A mechanism that reshapes the input to make assertion structure legible needs the judge to read that structure differently once it is legible. This test measures exactly that capability, with the input already in its best available state and the question pointed directly at it, and finds the judge's reading unmoved. The remaining live possibility is narrower and more expensive than a prompt: not asking the model to attend to assertion structure, but changing what evidence reaches it so that structure is a property of the input rather than of the instruction -- the shape channel restoration had. Nothing here licenses that, and it should not be attempted on the strength of this result.
+
+Full statistics, cohort composition and the verbatim probe blocks: `docs/duplex/reports/stance_gate_diag.json`.
+
 ## Context
 
 Two reference points, neither of them a like-for-like comparison.

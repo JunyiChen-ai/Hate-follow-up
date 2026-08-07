@@ -320,6 +320,164 @@ def main():
           "`docs/duplex/reports/test_zh_anomaly_diag.json`.")
         W("")
 
+    # ---------------------------------------------------- stance-axis gate
+    sg_path = os.path.join(REPORTS, "stance_gate_diag.json")
+    if os.path.exists(sg_path):
+        sg = json.load(open(sg_path))
+        bars = get(sg, "decision_rule_frozen_before_run", "bars", default={})
+        arms_sg = sg.get("arms", {})
+        primary = sg.get("primary_arm")
+
+        W(f"## Stance-axis gate diagnostic ({sg.get('date')})")
+        W("")
+        W("A diagnostic, not a kill-test, and not a method. The error anatomy "
+          "of the ImpliHateVid train run locates half the error budget in "
+          "topic-versus-stance confusion: the false positives carry surface "
+          "cues at a much higher rate than true negatives do, so the judge is "
+          "reacting to what a video is about rather than to what it asserts. "
+          "This test asks whether that distinction is *available* on the "
+          "current substrate at all -- whether a probe pointed directly at "
+          "stance separates cue-sharing false positives from true positives "
+          "better than the joint call does. It gates whether an "
+          "assertion-structure mechanism is worth designing; it is not one.")
+        W("")
+        W("Three probes, each one extra call over the cohorts only, all "
+          "occupying the frozen prompt's existing reader slot so the question "
+          "line, the answer position and the raw-z readout are unchanged: "
+          "`stance_v1` asks what the video itself asserts or endorses and "
+          "explicitly separates asserting from mentioning, quoting, reporting "
+          "and countering; `stance_para` is a semantically equivalent "
+          "paraphrase giving the wording-noise floor; `effort_ctrl` is the "
+          "frozen thoroughness placebo reused verbatim. The joint-z comparison "
+          "arm needs no call and is read off the source runs. Cohorts are "
+          "built with labels because this is error diagnosis: no threshold, "
+          "probe or decision rule reads one.")
+        W("")
+        W("The decision rule below was frozen before the probes were scored. "
+          f"On the primary arm: `A_stance` at least {bars.get('a_stance_min')}, "
+          f"`A_stance - A_joint` at least {bars.get('delta_joint_min')}, "
+          f"`A_stance - A_effort` at least {bars.get('delta_effort_min')}, and "
+          f"wording noise at most {bars.get('noise_max')}.")
+        W("")
+        W("| arm | valley | FP | cue-matched TP | cue-carrying TN | "
+          "cue-carrying TP pool | cue-carrying TN pool |")
+        W("|---|---|---|---|---|---|---|")
+        for name, a in arms_sg.items():
+            cs, pl = a.get("cohort_sizes", {}), a.get("cue_carrying_pools", {})
+            tag = " (primary)" if name == primary else ""
+            W(f"| {a.get('dataset')} {a.get('split')}{tag} | "
+              f"{f(a.get('valley'), 3)} | {cs.get('fp')} | {cs.get('tp')} | "
+              f"{cs.get('tn')} | {pl.get('tp_cue_carrying')}/"
+              f"{pl.get('tp_total')} | {pl.get('tn_cue_carrying')}/"
+              f"{pl.get('tn_total')} |")
+        W("")
+        W("AUC is cue-matched TP against FP: 0.5 is a probe that cannot tell "
+          "the two piles apart. The last column is the same probe asked to "
+          "separate cue-carrying true negatives from false positives, which a "
+          "live stance axis should also decline to flag.")
+        W("")
+        W("| arm | A_joint | A_stance | A_stance_para | A_effort | "
+          "wording noise | AUC(TN vs FP) by stance_v1 |")
+        W("|---|---|---|---|---|---|---|")
+        for name, a in arms_sg.items():
+            h = a.get("headline", {})
+            tvf = get(a, "per_probe", "stance_v1", "auc_tn_vs_fp")
+            W(f"| {a.get('dataset')} {a.get('split')} | {f(h.get('A_joint'))} | "
+              f"{f(h.get('A_stance'))} | {f(h.get('A_stance_para'))} | "
+              f"{f(h.get('A_effort'))} | {f(h.get('noise'))} | "
+              f"{f(tvf) if tvf is not None else '--'} |")
+        W("")
+        W("`A_joint` is a demanding bar and part of that is cohort geometry "
+          "rather than judge skill: every false positive sits just above the "
+          "valley by construction, while the true positives are sampled from "
+          "the whole range above it, most of which sits far higher. A probe "
+          "reading a genuinely different axis would not have to beat the "
+          "joint call on the joint call's own favourable ground -- it would "
+          "only have to rank differently. The correlations below are "
+          "therefore the load-bearing measurement, not the AUC deltas.")
+        W("")
+        W("The rank correlations say what the AUCs only imply. Over all "
+          "cohort videos, each probe against the joint z the source run "
+          "already produced:")
+        W("")
+        W("| arm | stance_v1 | stance_para | effort_ctrl | "
+          "stance_v1 vs effort_ctrl |")
+        W("|---|---|---|---|---|")
+        for name, a in arms_sg.items():
+            r = a.get("redundancy", {})
+            sv = r.get("spearman_vs_joint", {})
+            W(f"| {a.get('dataset')} {a.get('split')} | "
+              f"{f(sv.get('stance_v1'), 3)} | {f(sv.get('stance_para'), 3)} | "
+              f"{f(sv.get('effort_ctrl'), 3)} | "
+              f"{f(r.get('spearman_stance_v1_vs_effort_ctrl'), 3)} |")
+        W("")
+        prim = arms_sg.get(primary, {})
+        W(f"**Verdict: {sg.get('verdict')}.** Clauses on the primary arm:")
+        W("")
+        for k, c in (prim.get("clauses") or {}).items():
+            W(f"- {'PASS' if c.get('pass') else 'FAIL'} — `{k}`: "
+              f"{f(c.get('value'))} against a bar of {c.get('bar')}")
+        W("")
+        if sg.get("verdict") == "FAIL":
+            cl = prim.get("clauses") or {}
+            absolute_ok = get(cl, "a_stance_ge_0.65", "pass", default=False)
+            if absolute_ok:
+                W("Read the clauses in the order they failed, because the "
+                  "first one passing is what makes the rest damning. The "
+                  "stance probe separates the two piles perfectly respectably "
+                  "in absolute terms. It simply does not separate them any "
+                  "better than the joint call already did, and it separates "
+                  "them slightly worse than a placebo that says nothing about "
+                  "stance at all and only asks for care. A statistic a "
+                  "thoroughness placebo reproduces is not measuring the thing "
+                  "it names; that is the same failure the duplex reading "
+                  "kill-test died on, reached from a different direction.")
+                W("")
+                W("The rank correlations settle what the probe is actually "
+                  "doing. It is not reading a weak stance axis: it is "
+                  "re-reading the joint call, at a correlation high enough "
+                  "that the two orderings are near-substitutable. The probe "
+                  "also reproduces the joint call's ordering of cue-carrying "
+                  "true negatives against false positives, when an axis "
+                  "orthogonal to hatefulness would be near-indifferent "
+                  "between two piles that are both non-hateful. Asking the "
+                  "model what a video asserts rather than what it contains "
+                  "does not give a different reading of the video; it gives "
+                  "the same reading under a different name.")
+            else:
+                W("The probe cannot separate asserting from mentioning on "
+                  "these videos even when asked to do nothing else, so no "
+                  "downstream combination rule can recover the distinction "
+                  "from it.")
+            W("")
+            W("This closes the input-side assertion-structure mechanism at "
+              "its first step. A mechanism that reshapes the input to make "
+              "assertion structure legible needs the judge to read that "
+              "structure differently once it is legible. This test measures "
+              "exactly that capability, with the input already in its best "
+              "available state and the question pointed directly at it, and "
+              "finds the judge's reading unmoved. The remaining live "
+              "possibility is narrower and more expensive than a prompt: not "
+              "asking the model to attend to assertion structure, but "
+              "changing what evidence reaches it so that structure is a "
+              "property of the input rather than of the instruction -- the "
+              "shape channel restoration had. Nothing here licenses that, and "
+              "it should not be attempted on the strength of this result.")
+        else:
+            W("The axis is alive: the model can make a separation the joint "
+              "call does not make, and it is not bought by thoroughness or by "
+              "wording. That licenses *designing* an assertion-structure "
+              "mechanism; it does not license the mechanism. The prior record "
+              "closes the obvious next steps -- a hard conjunction over "
+              "elicited axes died twice, and a post-hoc recombination of two "
+              "deliberately narrowed calls died once with its own motivating "
+              "phenomenon confirmed. Any design must still beat the single "
+              "joint call at its own operating point.")
+        W("")
+        W("Full statistics, cohort composition and the verbatim probe blocks: "
+          "`docs/duplex/reports/stance_gate_diag.json`.")
+        W("")
+
     # -------------------------------------------------------------- context
     W("## Context")
     W("")

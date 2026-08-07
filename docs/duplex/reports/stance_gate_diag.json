@@ -1,0 +1,554 @@
+{
+  "test": "stance-axis gate (diagnostic)",
+  "date": "2026-08-07",
+  "model": "Qwen3-VL-8B-Instruct",
+  "substrate": "8B, raw unclipped z, gated fresh transcripts, frames_16",
+  "question": "Does a stance-oriented probe separate cue-sharing false positives from true positives, the separation the joint judge fails to make?",
+  "status": "Diagnostic, not a kill-test. Cohorts are built with labels because this is error diagnosis; no threshold, probe or decision rule reads a label. One extra call per cohort video, on the cohorts only.",
+  "calls_per_video": {
+    "source_run": 1,
+    "this_diagnostic": 3,
+    "note": "Three probes are three arms of one diagnostic, not a method: any surviving mechanism would carry one of them. The 2-call cap applies to a method, not to a diagnostic run over 471 videos."
+  },
+  "primary_arm": "ihv_train",
+  "decision_rule_frozen_before_run": {
+    "bars": {
+      "a_stance_min": 0.65,
+      "delta_joint_min": 0.05,
+      "delta_effort_min": 0.05,
+      "noise_max": 0.05
+    },
+    "definition": {
+      "A_stance": "AUC(cue-matched TP vs FP) by stance_v1 raw z",
+      "A_joint": "the same pairs by the source run's joint raw z",
+      "A_effort": "the same pairs by effort_ctrl raw z",
+      "noise": "|AUC(TP vs FP) by (z_stance_v1 - z_stance_para) - 0.5|"
+    },
+    "pass_condition": "all four clauses on the primary arm, plus A_stance > A_joint on the HateMM arm",
+    "authority": "point estimates decide; bootstrap intervals are context and were not part of the frozen rule"
+  },
+  "verdict": "FAIL",
+  "verdict_detail": {
+    "primary_all_clauses_pass": false,
+    "failed_clauses": [
+      "a_stance_minus_a_joint_ge_0.05",
+      "a_stance_minus_a_effort_ge_0.05",
+      "noise_le_0.05"
+    ],
+    "secondary_directionally_consistent": false
+  },
+  "probe_blocks_verbatim": {
+    "stance_v1": "Judgment mode: stance attribution. Judge only the position the video itself takes toward hostility directed at a group defined by a protected characteristic. The video asserts that hostility when its own voice -- its narration, its on-screen text, its title, or its framing -- puts it forward, endorses it, or celebrates it, including when the editing lends approval to a speaker. The video merely mentions that hostility when the material is quoted, reported, documented, examined, argued against, or attributed to someone else. A rule is violated only if the video asserts or endorses the hostility itself; mentioning, quoting, reporting, or countering it violates no rule, however hostile the referenced material is.",
+    "stance_para": "Judgment mode: attribution of viewpoint. Assess only where the video stands on hostility aimed at a group defined by a protected characteristic. It advances that hostility when it speaks in its own voice -- through narration, text on screen, the title, or its framing -- to advocate it, support it, or applaud it, including when the edit signals approval of a speaker. It only refers to that hostility when the material is cited, relayed, recorded, analysed, rebutted, or ascribed to another party. A rule is broken only where the video advances or supports the hostility itself; citing, relaying, reporting, or rebutting it breaks no rule, no matter how hostile the referenced material is.",
+    "effort_ctrl": "Judgment mode: thorough reading. Examine the video with maximum care: inspect every frame closely, read the title and the entire transcript word by word, check all on-screen text against each rule, and weigh every piece of evidence systematically before deciding. Review the complete material and let nothing escape your attention. A rule is violated if any part of the carefully reviewed material violates it."
+  },
+  "probe_block_provenance": {
+    "slot": "all three occupy the frozen DUPLEX_PROMPT {reader_block} slot; the skeleton, rules, system message, Yes/No token id sets, pixel budget and frame set are unchanged",
+    "effort_ctrl": "READER_BLOCKS['effort'] from the frozen src/duplex/score_duplex_probe.py, verbatim",
+    "stance_blocks": "written once, before scoring; category language only, no group names and no lexicon terms",
+    "length_caveat": "the stance blocks run longer than the frozen effort block; effort_ctrl is thoroughness-matched by construction, not length-matched"
+  },
+  "arms": {
+    "ihv_train": {
+      "dataset": "ImpliHateVid",
+      "split": "train",
+      "source_report": "docs/duplex/reports/c2_fullcorpus_8b.json",
+      "valley": -4.854375000000001,
+      "confusion_at_valley": {
+        "tp": 600,
+        "fp": 105,
+        "fn": 49,
+        "tn": 529
+      },
+      "cohort_sizes": {
+        "fp": 105,
+        "tp": 105,
+        "tn": 105
+      },
+      "cue_carrying_pools": {
+        "tp_cue_carrying": 555,
+        "tn_cue_carrying": 282,
+        "tp_total": 600,
+        "tn_total": 529
+      },
+      "cue_family_counts": {
+        "identity": {
+          "fp": 75,
+          "tp": 75,
+          "tn": 90
+        },
+        "slur_or_profanity": {
+          "fp": 17,
+          "tp": 65,
+          "tn": 8
+        },
+        "violence": {
+          "fp": 24,
+          "tp": 42,
+          "tn": 24
+        },
+        "meta_hate": {
+          "fp": 15,
+          "tp": 25,
+          "tn": 2
+        }
+      },
+      "sample_seed": 0,
+      "headline": {
+        "A_stance": 0.8248526077097506,
+        "A_joint": 0.8507936507936508,
+        "A_effort": 0.8655328798185941,
+        "A_stance_para": 0.8226303854875283,
+        "noise": 0.06553287981859413
+      },
+      "clauses": {
+        "a_stance_ge_0.65": {
+          "value": 0.8248526077097506,
+          "bar": 0.65,
+          "pass": true
+        },
+        "a_stance_minus_a_joint_ge_0.05": {
+          "value": -0.025941043083900217,
+          "bar": 0.05,
+          "pass": false,
+          "boot95": [
+            -0.04925170068027207,
+            -0.002902494331065819
+          ]
+        },
+        "a_stance_minus_a_effort_ge_0.05": {
+          "value": -0.04068027210884351,
+          "bar": 0.05,
+          "pass": false,
+          "boot95": [
+            -0.06625850340136052,
+            -0.01727891156462591
+          ]
+        },
+        "noise_le_0.05": {
+          "value": 0.06553287981859413,
+          "bar": 0.05,
+          "pass": false
+        }
+      },
+      "all_clauses_pass": false,
+      "directional_consistency_a_stance_gt_a_joint": false,
+      "redundancy": {
+        "spearman_vs_joint": {
+          "stance_v1": 0.9773571973862972,
+          "stance_para": 0.9760833692524041,
+          "effort_ctrl": 0.9882048599077771
+        },
+        "spearman_stance_v1_vs_effort_ctrl": 0.9759506368876342,
+        "spearman_stance_v1_vs_stance_para": 0.9918975431050489,
+        "note": "a probe that separates the same pairs the joint call already separates, in the same order, is re-reading the joint call"
+      },
+      "per_probe": {
+        "joint": {
+          "auc_tp_vs_fp": 0.8507936507936508,
+          "auc_tp_vs_fp_boot95": [
+            0.7978231292517007,
+            0.9019047619047619
+          ],
+          "auc_tn_vs_fp": 0.0,
+          "z_by_cell": {
+            "fp": {
+              "n": 105,
+              "mean": 3.3142857142857145,
+              "median": 2.75,
+              "q25": -1.5,
+              "q75": 7.75
+            },
+            "tp": {
+              "n": 105,
+              "mean": 11.130952380952381,
+              "median": 12.0,
+              "q25": 9.25,
+              "q75": 14.75
+            },
+            "tn": {
+              "n": 105,
+              "mean": -15.173809523809524,
+              "median": -15.0,
+              "q25": -18.25,
+              "q75": -12.5
+            }
+          }
+        },
+        "stance_v1": {
+          "auc_tp_vs_fp": 0.8248526077097506,
+          "auc_tp_vs_fp_boot95": [
+            0.7675283446712018,
+            0.8826303854875284
+          ],
+          "auc_tn_vs_fp": 0.009931972789115647,
+          "z_by_cell": {
+            "fp": {
+              "n": 105,
+              "mean": -2.357142857142857,
+              "median": -4.0,
+              "q25": -8.0,
+              "q75": 3.0
+            },
+            "tp": {
+              "n": 105,
+              "mean": 6.8238095238095235,
+              "median": 7.5,
+              "q25": 3.0,
+              "q75": 12.25
+            },
+            "tn": {
+              "n": 105,
+              "mean": -16.409523809523808,
+              "median": -16.5,
+              "q25": -18.5,
+              "q75": -14.25
+            }
+          }
+        },
+        "stance_para": {
+          "auc_tp_vs_fp": 0.8226303854875283,
+          "auc_tp_vs_fp_boot95": [
+            0.7636281179138322,
+            0.8804535147392291
+          ],
+          "auc_tn_vs_fp": 0.013197278911564626,
+          "z_by_cell": {
+            "fp": {
+              "n": 105,
+              "mean": -3.3285714285714287,
+              "median": -4.5,
+              "q25": -8.75,
+              "q75": 0.75
+            },
+            "tp": {
+              "n": 105,
+              "mean": 5.511904761904762,
+              "median": 6.25,
+              "q25": 0.75,
+              "q75": 11.0
+            },
+            "tn": {
+              "n": 105,
+              "mean": -16.188095238095237,
+              "median": -16.5,
+              "q25": -18.5,
+              "q75": -14.25
+            }
+          }
+        },
+        "effort_ctrl": {
+          "auc_tp_vs_fp": 0.8655328798185941,
+          "auc_tp_vs_fp_boot95": [
+            0.8094331065759637,
+            0.9159183673469388
+          ],
+          "auc_tn_vs_fp": 0.005034013605442177,
+          "z_by_cell": {
+            "fp": {
+              "n": 105,
+              "mean": -1.3214285714285714,
+              "median": -2.75,
+              "q25": -7.0,
+              "q75": 3.25
+            },
+            "tp": {
+              "n": 105,
+              "mean": 9.719047619047618,
+              "median": 11.0,
+              "q25": 6.5,
+              "q75": 14.5
+            },
+            "tn": {
+              "n": 105,
+              "mean": -17.803571428571427,
+              "median": -18.0,
+              "q25": -20.5,
+              "q75": -16.0
+            }
+          }
+        },
+        "stance_v1_minus_stance_para": {
+          "auc_tp_vs_fp": 0.5655328798185941,
+          "z_by_cell": {
+            "fp": {
+              "n": 105,
+              "mean": 0.9714285714285714,
+              "median": 0.75,
+              "q25": -0.25,
+              "q75": 2.0
+            },
+            "tp": {
+              "n": 105,
+              "mean": 1.311904761904762,
+              "median": 1.0,
+              "q25": 0.5,
+              "q75": 2.25
+            },
+            "tn": {
+              "n": 105,
+              "mean": -0.22142857142857142,
+              "median": -0.25,
+              "q25": -0.75,
+              "q75": 0.25
+            }
+          }
+        }
+      }
+    },
+    "hatemm_test": {
+      "dataset": "HateMM",
+      "split": "test",
+      "source_report": "docs/duplex/reports/test_c2_hatemm_8b.json",
+      "valley": -2.3455000000000013,
+      "confusion_at_valley": {
+        "tp": 83,
+        "fp": 70,
+        "fn": 3,
+        "tn": 59
+      },
+      "cohort_sizes": {
+        "fp": 70,
+        "tp": 70,
+        "tn": 16
+      },
+      "cue_carrying_pools": {
+        "tp_cue_carrying": 79,
+        "tn_cue_carrying": 16,
+        "tp_total": 83,
+        "tn_total": 59
+      },
+      "cue_family_counts": {
+        "identity": {
+          "fp": 47,
+          "tp": 56,
+          "tn": 14
+        },
+        "slur_or_profanity": {
+          "fp": 29,
+          "tp": 54,
+          "tn": 0
+        },
+        "violence": {
+          "fp": 16,
+          "tp": 34,
+          "tn": 7
+        },
+        "meta_hate": {
+          "fp": 10,
+          "tp": 10,
+          "tn": 1
+        }
+      },
+      "sample_seed": 0,
+      "headline": {
+        "A_stance": 0.9039795918367347,
+        "A_joint": 0.911734693877551,
+        "A_effort": 0.9125510204081633,
+        "A_stance_para": 0.9061224489795918,
+        "noise": 0.0017346938775509857
+      },
+      "clauses": {
+        "a_stance_ge_0.65": {
+          "value": 0.9039795918367347,
+          "bar": 0.65,
+          "pass": true
+        },
+        "a_stance_minus_a_joint_ge_0.05": {
+          "value": -0.0077551020408163085,
+          "bar": 0.05,
+          "pass": false,
+          "boot95": [
+            -0.02602040816326523,
+            0.010000000000000009
+          ]
+        },
+        "a_stance_minus_a_effort_ge_0.05": {
+          "value": -0.008571428571428563,
+          "bar": 0.05,
+          "pass": false,
+          "boot95": [
+            -0.02989795918367344,
+            0.012448979591836773
+          ]
+        },
+        "noise_le_0.05": {
+          "value": 0.0017346938775509857,
+          "bar": 0.05,
+          "pass": true
+        }
+      },
+      "all_clauses_pass": false,
+      "directional_consistency_a_stance_gt_a_joint": false,
+      "redundancy": {
+        "spearman_vs_joint": {
+          "stance_v1": 0.9763855004489869,
+          "stance_para": 0.9687396729329715,
+          "effort_ctrl": 0.9922507103230875
+        },
+        "spearman_stance_v1_vs_effort_ctrl": 0.9731350300598146,
+        "spearman_stance_v1_vs_stance_para": 0.9874154641122214,
+        "note": "a probe that separates the same pairs the joint call already separates, in the same order, is re-reading the joint call"
+      },
+      "per_probe": {
+        "joint": {
+          "auc_tp_vs_fp": 0.911734693877551,
+          "auc_tp_vs_fp_boot95": [
+            0.8580612244897959,
+            0.9553061224489796
+          ],
+          "auc_tn_vs_fp": 0.0,
+          "z_by_cell": {
+            "fp": {
+              "n": 70,
+              "mean": 7.746428571428571,
+              "median": 8.25,
+              "q25": 4.125,
+              "q75": 11.9375
+            },
+            "tp": {
+              "n": 70,
+              "mean": 15.114285714285714,
+              "median": 15.375,
+              "q25": 14.3125,
+              "q75": 16.75
+            },
+            "tn": {
+              "n": 16,
+              "mean": -11.796875,
+              "median": -12.75,
+              "q25": -14.25,
+              "q75": -9.0
+            }
+          }
+        },
+        "stance_v1": {
+          "auc_tp_vs_fp": 0.9039795918367347,
+          "auc_tp_vs_fp_boot95": [
+            0.8498979591836735,
+            0.950204081632653
+          ],
+          "auc_tn_vs_fp": 0.008928571428571428,
+          "z_by_cell": {
+            "fp": {
+              "n": 70,
+              "mean": 2.125,
+              "median": 2.625,
+              "q25": -3.6875,
+              "q75": 8.25
+            },
+            "tp": {
+              "n": 70,
+              "mean": 12.628571428571428,
+              "median": 13.25,
+              "q25": 11.3125,
+              "q75": 15.25
+            },
+            "tn": {
+              "n": 16,
+              "mean": -13.78125,
+              "median": -13.75,
+              "q25": -15.5625,
+              "q75": -12.75
+            }
+          }
+        },
+        "stance_para": {
+          "auc_tp_vs_fp": 0.9061224489795918,
+          "auc_tp_vs_fp_boot95": [
+            0.8508163265306122,
+            0.9507142857142857
+          ],
+          "auc_tn_vs_fp": 0.007142857142857143,
+          "z_by_cell": {
+            "fp": {
+              "n": 70,
+              "mean": 1.2464285714285714,
+              "median": 1.0,
+              "q25": -5.5,
+              "q75": 7.4375
+            },
+            "tp": {
+              "n": 70,
+              "mean": 11.957142857142857,
+              "median": 12.75,
+              "q25": 10.5,
+              "q75": 14.4375
+            },
+            "tn": {
+              "n": 16,
+              "mean": -14.15625,
+              "median": -14.125,
+              "q25": -15.8125,
+              "q75": -13.3125
+            }
+          }
+        },
+        "effort_ctrl": {
+          "auc_tp_vs_fp": 0.9125510204081633,
+          "auc_tp_vs_fp_boot95": [
+            0.860204081632653,
+            0.9558163265306122
+          ],
+          "auc_tn_vs_fp": 0.0026785714285714286,
+          "z_by_cell": {
+            "fp": {
+              "n": 70,
+              "mean": 5.128571428571429,
+              "median": 6.0,
+              "q25": 0.5,
+              "q75": 10.75
+            },
+            "tp": {
+              "n": 70,
+              "mean": 14.892857142857142,
+              "median": 15.5,
+              "q25": 14.25,
+              "q75": 17.0
+            },
+            "tn": {
+              "n": 16,
+              "mean": -14.796875,
+              "median": -15.0,
+              "q25": -17.6875,
+              "q75": -12.25
+            }
+          }
+        },
+        "stance_v1_minus_stance_para": {
+          "auc_tp_vs_fp": 0.501734693877551,
+          "z_by_cell": {
+            "fp": {
+              "n": 70,
+              "mean": 0.8785714285714286,
+              "median": 0.5,
+              "q25": 0.0,
+              "q75": 1.6875
+            },
+            "tp": {
+              "n": 70,
+              "mean": 0.6714285714285714,
+              "median": 0.75,
+              "q25": 0.25,
+              "q75": 1.25
+            },
+            "tn": {
+              "n": 16,
+              "mean": 0.375,
+              "median": 0.25,
+              "q25": -0.0625,
+              "q75": 0.75
+            }
+          }
+        }
+      }
+    }
+  },
+  "caveats": {
+    "A_joint_is_partly_a_cohort_artifact": "A_joint is not a clean measure of 'the joint judge fails to separate these piles'. The FP cohort is every false positive, so it sits just above the valley by construction, while the TP cohort is sampled from the whole true-positive range, most of which sits far above it. Some of A_joint is that spread. This inflates the bar the stance probe had to clear, and the stance probe still landed below it, so the direction of the verdict is unaffected: a probe that were reading a genuinely different axis would not need to beat the joint call on the joint call's own favourable geometry, it would merely need to rank differently, and the rank correlations show it does not.",
+    "TN_vs_FP_is_near_definitional_for_joint": "AUC(TN vs FP) by joint z is exactly 0 by construction: TN are below the valley and FP above it. It is reported so the probe columns can be read against it. The informative fact is that the probes reproduce that ordering to within 0.01 rather than moving toward 0.5, which is what an axis orthogonal to hatefulness would do on two piles that are both non-hateful.",
+    "one_prompt_family_one_model": "One stance framing and its paraphrase, one model, one token position. The result bounds what this elicitation recovers, not what the concept of assertion structure could ever support.",
+    "cohort_sizes": "The HateMM cue-carrying TN pool is 16 of 59, so that arm's TN column is descriptive at best."
+  },
+  "content_policy": "statistics only: no transcript text, no video ids"
+}
