@@ -1,0 +1,790 @@
+{
+ "schema": {
+  "n_videos_annotated": 435,
+  "n_segments_annotated": 11714,
+  "n_videos_with_media": 395,
+  "n_segments_with_media": 10604,
+  "per_dim": {
+   "normal": {
+    "segments_all": 6491,
+    "videos_all": 418,
+    "segments_media": 5864,
+    "videos_media": 379
+   },
+   "hateful": {
+    "segments_all": 2363,
+    "videos_all": 194,
+    "segments_media": 2209,
+    "videos_media": 180
+   },
+   "insulting": {
+    "segments_all": 2920,
+    "videos_all": 280,
+    "segments_media": 2620,
+    "videos_media": 252
+   },
+   "sexual": {
+    "segments_all": 372,
+    "videos_all": 69,
+    "segments_media": 307,
+    "videos_media": 59
+   },
+   "violence": {
+    "segments_all": 1281,
+    "videos_all": 192,
+    "segments_media": 1146,
+    "videos_media": 170
+   },
+   "harm": {
+    "segments_all": 39,
+    "videos_all": 18,
+    "segments_media": 31,
+    "videos_media": 13
+   }
+  },
+  "offensive_union": {
+   "segments_all": 5223,
+   "videos_all": 380,
+   "segments_media": 4740,
+   "videos_media": 345
+  },
+  "ann_vs_container_duration": {
+   "n": 395,
+   "median_rel_err": 7.892036934725677e-05,
+   "frac_within_5pct": 0.9974683544303797
+  }
+ },
+ "definitions": {
+  "offensive_union": {
+   "definition": "offensive_union",
+   "samplers": {
+    "uniform_8": {
+     "n_videos": 345,
+     "video_hit_rate": 0.9246376811594202,
+     "n_segments": 4740,
+     "segment_hit_rate": 0.28607594936708863
+    },
+    "uniform_16": {
+     "n_videos": 345,
+     "video_hit_rate": 0.9681159420289855,
+     "n_segments": 4740,
+     "segment_hit_rate": 0.55042194092827
+    },
+    "uniform_32": {
+     "n_videos": 345,
+     "video_hit_rate": 1.0,
+     "n_segments": 4740,
+     "segment_hit_rate": 0.879957805907173
+    },
+    "shot_0.05": {
+     "n_videos": 345,
+     "video_hit_rate": 0.9478260869565217,
+     "n_segments": 4740,
+     "segment_hit_rate": 0.479957805907173
+    },
+    "shot_0.1": {
+     "n_videos": 345,
+     "video_hit_rate": 0.9652173913043478,
+     "n_segments": 4740,
+     "segment_hit_rate": 0.490295358649789
+    },
+    "shot_0.15": {
+     "n_videos": 345,
+     "video_hit_rate": 0.9739130434782609,
+     "n_segments": 4740,
+     "segment_hit_rate": 0.5059071729957806
+    },
+    "random_16": {
+     "n_videos": 345,
+     "video_hit_rate": 0.9526666666666667,
+     "n_segments": 4740,
+     "segment_hit_rate": 0.4310632911392399
+    }
+   },
+   "n_videos": 345,
+   "n_segments": 4740
+  },
+  "hateful_strict": {
+   "definition": "hateful_strict",
+   "samplers": {
+    "uniform_8": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9277777777777778,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.2870076957899502
+    },
+    "uniform_16": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9666666666666667,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.5500226346763242
+    },
+    "uniform_32": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9944444444444445,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.885921231326392
+    },
+    "shot_0.05": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9388888888888889,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.46627433227704845
+    },
+    "shot_0.1": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9444444444444444,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.47351742870076957
+    },
+    "shot_0.15": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9444444444444444,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.48981439565414214
+    },
+    "random_16": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9281111111111111,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.4297170665459482
+    }
+   },
+   "n_videos": 180,
+   "n_segments": 2209
+  }
+ },
+ "per_dim": {
+  "hateful": {
+   "definition": "hateful",
+   "samplers": {
+    "uniform_8": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9277777777777778,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.2870076957899502
+    },
+    "uniform_16": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9666666666666667,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.5500226346763242
+    },
+    "uniform_32": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9944444444444445,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.885921231326392
+    },
+    "shot_0.05": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9388888888888889,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.46627433227704845
+    },
+    "shot_0.1": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9444444444444444,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.47351742870076957
+    },
+    "shot_0.15": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9444444444444444,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.48981439565414214
+    },
+    "random_16": {
+     "n_videos": 180,
+     "video_hit_rate": 0.9281111111111111,
+     "n_segments": 2209,
+     "segment_hit_rate": 0.4297170665459482
+    }
+   },
+   "n_videos": 180,
+   "n_segments": 2209
+  },
+  "insulting": {
+   "definition": "insulting",
+   "samplers": {
+    "uniform_8": {
+     "n_videos": 252,
+     "video_hit_rate": 0.8611111111111112,
+     "n_segments": 2620,
+     "segment_hit_rate": 0.28587786259541986
+    },
+    "uniform_16": {
+     "n_videos": 252,
+     "video_hit_rate": 0.9444444444444444,
+     "n_segments": 2620,
+     "segment_hit_rate": 0.5549618320610687
+    },
+    "uniform_32": {
+     "n_videos": 252,
+     "video_hit_rate": 0.996031746031746,
+     "n_segments": 2620,
+     "segment_hit_rate": 0.8820610687022901
+    },
+    "shot_0.05": {
+     "n_videos": 252,
+     "video_hit_rate": 0.8968253968253969,
+     "n_segments": 2620,
+     "segment_hit_rate": 0.4908396946564885
+    },
+    "shot_0.1": {
+     "n_videos": 252,
+     "video_hit_rate": 0.9087301587301587,
+     "n_segments": 2620,
+     "segment_hit_rate": 0.49580152671755723
+    },
+    "shot_0.15": {
+     "n_videos": 252,
+     "video_hit_rate": 0.9246031746031746,
+     "n_segments": 2620,
+     "segment_hit_rate": 0.5083969465648855
+    },
+    "random_16": {
+     "n_videos": 252,
+     "video_hit_rate": 0.4385515873015872,
+     "n_segments": 2620,
+     "segment_hit_rate": 0.43269274809160346
+    }
+   },
+   "n_videos": 252,
+   "n_segments": 2620
+  },
+  "sexual": {
+   "definition": "sexual",
+   "samplers": {
+    "uniform_8": {
+     "n_videos": 59,
+     "video_hit_rate": 0.7966101694915254,
+     "n_segments": 307,
+     "segment_hit_rate": 0.3289902280130293
+    },
+    "uniform_16": {
+     "n_videos": 59,
+     "video_hit_rate": 0.9152542372881356,
+     "n_segments": 307,
+     "segment_hit_rate": 0.5798045602605864
+    },
+    "uniform_32": {
+     "n_videos": 59,
+     "video_hit_rate": 1.0,
+     "n_segments": 307,
+     "segment_hit_rate": 0.8469055374592834
+    },
+    "shot_0.05": {
+     "n_videos": 59,
+     "video_hit_rate": 0.847457627118644,
+     "n_segments": 307,
+     "segment_hit_rate": 0.504885993485342
+    },
+    "shot_0.1": {
+     "n_videos": 59,
+     "video_hit_rate": 0.9322033898305084,
+     "n_segments": 307,
+     "segment_hit_rate": 0.495114006514658
+    },
+    "shot_0.15": {
+     "n_videos": 59,
+     "video_hit_rate": 0.8813559322033898,
+     "n_segments": 307,
+     "segment_hit_rate": 0.511400651465798
+    },
+    "random_16": {
+     "n_videos": 59,
+     "video_hit_rate": 0.3588135593220339,
+     "n_segments": 307,
+     "segment_hit_rate": 0.44874592833876215
+    }
+   },
+   "n_videos": 59,
+   "n_segments": 307
+  },
+  "violence": {
+   "definition": "violence",
+   "samplers": {
+    "uniform_8": {
+     "n_videos": 170,
+     "video_hit_rate": 0.7764705882352941,
+     "n_segments": 1146,
+     "segment_hit_rate": 0.2879581151832461
+    },
+    "uniform_16": {
+     "n_videos": 170,
+     "video_hit_rate": 0.9470588235294117,
+     "n_segments": 1146,
+     "segment_hit_rate": 0.5636998254799301
+    },
+    "uniform_32": {
+     "n_videos": 170,
+     "video_hit_rate": 0.9941176470588236,
+     "n_segments": 1146,
+     "segment_hit_rate": 0.8848167539267016
+    },
+    "shot_0.05": {
+     "n_videos": 170,
+     "video_hit_rate": 0.8823529411764706,
+     "n_segments": 1146,
+     "segment_hit_rate": 0.5034904013961605
+    },
+    "shot_0.1": {
+     "n_videos": 170,
+     "video_hit_rate": 0.8941176470588236,
+     "n_segments": 1146,
+     "segment_hit_rate": 0.5069808027923212
+    },
+    "shot_0.15": {
+     "n_videos": 170,
+     "video_hit_rate": 0.9058823529411765,
+     "n_segments": 1146,
+     "segment_hit_rate": 0.5174520069808028
+    },
+    "random_16": {
+     "n_videos": 170,
+     "video_hit_rate": 0.47441176470588237,
+     "n_segments": 1146,
+     "segment_hit_rate": 0.4448036649214659
+    }
+   },
+   "n_videos": 170,
+   "n_segments": 1146
+  },
+  "harm": {
+   "definition": "harm",
+   "samplers": {
+    "uniform_8": {
+     "n_videos": 13,
+     "video_hit_rate": 0.46153846153846156,
+     "n_segments": 31,
+     "segment_hit_rate": 0.3225806451612903
+    },
+    "uniform_16": {
+     "n_videos": 13,
+     "video_hit_rate": 0.8461538461538461,
+     "n_segments": 31,
+     "segment_hit_rate": 0.6774193548387096
+    },
+    "uniform_32": {
+     "n_videos": 13,
+     "video_hit_rate": 1.0,
+     "n_segments": 31,
+     "segment_hit_rate": 0.9354838709677419
+    },
+    "shot_0.05": {
+     "n_videos": 13,
+     "video_hit_rate": 0.7692307692307693,
+     "n_segments": 31,
+     "segment_hit_rate": 0.7096774193548387
+    },
+    "shot_0.1": {
+     "n_videos": 13,
+     "video_hit_rate": 0.7692307692307693,
+     "n_segments": 31,
+     "segment_hit_rate": 0.7741935483870968
+    },
+    "shot_0.15": {
+     "n_videos": 13,
+     "video_hit_rate": 0.6153846153846154,
+     "n_segments": 31,
+     "segment_hit_rate": 0.6774193548387096
+    },
+    "random_16": {
+     "n_videos": 13,
+     "video_hit_rate": 0.4926923076923077,
+     "n_segments": 31,
+     "segment_hit_rate": 0.5448387096774193
+    }
+   },
+   "n_videos": 13,
+   "n_segments": 31
+  }
+ },
+ "stratification_uniform16_offensive_union": {
+  "by_segment_duration_s": {
+   "0-2": {
+    "segments": 194,
+    "hit": 62,
+    "segment_hit_rate": 0.31958762886597936
+   },
+   "10-20": {
+    "segments": 1067,
+    "hit": 764,
+    "segment_hit_rate": 0.7160262417994376
+   },
+   "2-5": {
+    "segments": 330,
+    "hit": 109,
+    "segment_hit_rate": 0.3303030303030303
+   },
+   "20-60": {
+    "segments": 204,
+    "hit": 204,
+    "segment_hit_rate": 1.0
+   },
+   "5-10": {
+    "segments": 2932,
+    "hit": 1459,
+    "segment_hit_rate": 0.497612551159618
+   },
+   "60-inf": {
+    "segments": 11,
+    "hit": 11,
+    "segment_hit_rate": 1.0
+   },
+   "neg-0": {
+    "segments": 2,
+    "hit": 0,
+    "segment_hit_rate": 0.0
+   }
+  },
+  "by_video_duration_s": {
+   "0-199.574": {
+    "segments": 728,
+    "seg_hit_rate": 0.679945054945055,
+    "videos": 69,
+    "video_hit_rate": 0.9420289855072463
+   },
+   "199.574-226.2": {
+    "segments": 887,
+    "seg_hit_rate": 0.608793686583991,
+    "videos": 69,
+    "video_hit_rate": 0.9855072463768116
+   },
+   "226.2-249.816": {
+    "segments": 977,
+    "seg_hit_rate": 0.5414534288638689,
+    "videos": 69,
+    "video_hit_rate": 0.9855072463768116
+   },
+   "249.816-275.135": {
+    "segments": 1118,
+    "seg_hit_rate": 0.5089445438282647,
+    "videos": 69,
+    "video_hit_rate": 0.9710144927536232
+   },
+   "275.135-inf": {
+    "segments": 1030,
+    "seg_hit_rate": 0.4621359223300971,
+    "videos": 69,
+    "video_hit_rate": 0.9565217391304348
+   }
+  },
+  "by_segment_count": {
+   "0-10": {
+    "segments": 11,
+    "seg_hit_rate": 0.8181818181818182,
+    "videos": 3,
+    "video_hit_rate": 1.0
+   },
+   "10-20": {
+    "segments": 325,
+    "seg_hit_rate": 0.7292307692307692,
+    "videos": 38,
+    "video_hit_rate": 1.0
+   },
+   "20-40": {
+    "segments": 4271,
+    "seg_hit_rate": 0.5408569421681105,
+    "videos": 295,
+    "video_hit_rate": 0.9627118644067797
+   },
+   "40-inf": {
+    "segments": 133,
+    "seg_hit_rate": 0.39849624060150374,
+    "videos": 9,
+    "video_hit_rate": 1.0
+   }
+  }
+ },
+ "budget_ceiling": {
+  "offensive_union": {
+   "K8": {
+    "oracle_segment_hit_rate": 0.4932489451476793,
+    "note": "K frames land in at most K of the contiguous annotation segments"
+   },
+   "K16": {
+    "oracle_segment_hit_rate": 0.8069620253164557,
+    "note": "K frames land in at most K of the contiguous annotation segments"
+   },
+   "K32": {
+    "oracle_segment_hit_rate": 0.9962025316455696,
+    "note": "K frames land in at most K of the contiguous annotation segments"
+   }
+  },
+  "hateful_strict": {
+   "K8": {
+    "oracle_segment_hit_rate": 0.517428700769579,
+    "note": "K frames land in at most K of the contiguous annotation segments"
+   },
+   "K16": {
+    "oracle_segment_hit_rate": 0.8134902670891806,
+    "note": "K frames land in at most K of the contiguous annotation segments"
+   },
+   "K32": {
+    "oracle_segment_hit_rate": 0.9954730647351743,
+    "note": "K frames land in at most K of the contiguous annotation segments"
+   }
+  }
+ },
+ "segments_per_video": {
+  "median": 27.0,
+  "mean": 26.845569620253166
+ },
+ "videos_fully_missed_by_uniform16": {
+  "n": 11,
+  "median_n_offensive_segments": 1.0,
+  "median_offensive_time_share": 0.0413,
+  "cases": [
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 38,
+    "offensive_seconds": 3.48,
+    "duration": 280.74,
+    "offensive_time_share": 0.0124,
+    "voiced_frac": 0.91615935063548
+   },
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 29,
+    "offensive_seconds": 4.48,
+    "duration": 193.99,
+    "offensive_time_share": 0.0231,
+    "voiced_frac": 0.9373646767708012
+   },
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 22,
+    "offensive_seconds": 10.0,
+    "duration": 191.08,
+    "offensive_time_share": 0.0523,
+    "voiced_frac": 0.8931825322023248
+   },
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 29,
+    "offensive_seconds": 7.64,
+    "duration": 198.1,
+    "offensive_time_share": 0.0386,
+    "voiced_frac": 0.915
+   },
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 28,
+    "offensive_seconds": 10.0,
+    "duration": 223.23,
+    "offensive_time_share": 0.0448,
+    "voiced_frac": 0.8383974186609303
+   },
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 23,
+    "offensive_seconds": 9.0,
+    "duration": 252.0,
+    "offensive_time_share": 0.0357,
+    "voiced_frac": 0.8894047619047619
+   },
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 29,
+    "offensive_seconds": 10.0,
+    "duration": 242.38,
+    "offensive_time_share": 0.0413,
+    "voiced_frac": 0.9581683168316831
+   },
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 26,
+    "offensive_seconds": 10.32,
+    "duration": 182.92,
+    "offensive_time_share": 0.0564,
+    "voiced_frac": 0.7678100263852242
+   },
+   {
+    "n_offensive_segments": 2,
+    "n_segments": 33,
+    "offensive_seconds": 16.0,
+    "duration": 260.63,
+    "offensive_time_share": 0.0614,
+    "voiced_frac": 0.995280847145488
+   },
+   {
+    "n_offensive_segments": 2,
+    "n_segments": 37,
+    "offensive_seconds": 15.0,
+    "duration": 294.13,
+    "offensive_time_share": 0.051,
+    "voiced_frac": 0.95093839249286
+   },
+   {
+    "n_offensive_segments": 1,
+    "n_segments": 36,
+    "offensive_seconds": 10.0,
+    "duration": 305.76,
+    "offensive_time_share": 0.0327,
+    "voiced_frac": 0.9546703296703297
+   }
+  ]
+ },
+ "missed_segment_durations": {
+  "n_missed": 2131,
+  "n_hit": 2609,
+  "missed_percentiles_s": {
+   "p5": 1.0,
+   "p25": 5.880000000000003,
+   "p50": 7.960000000000008,
+   "p75": 9.0,
+   "p95": 10.0
+  },
+  "hit_percentiles_s": {
+   "p5": 4.0,
+   "p25": 7.760000000000019,
+   "p50": 9.0,
+   "p75": 10.0,
+   "p95": 27.0
+  },
+  "missed_mean_s": 7.1773251994368845,
+  "hit_mean_s": 10.82232656190111,
+  "frac_missed_under_5s": 0.1665884561238855,
+  "frac_missed_under_10s": 0.8578132332238386,
+  "missed_duration_share_of_offensive_time": 0.35136145303745686
+ },
+ "transcript_proxy": {
+  "n_with_vad": 344,
+  "n_videos": 345,
+  "voiced_frac_quartile_edges": [
+   0.8796792657704323,
+   0.9420682944699423,
+   0.9735354535518057
+  ],
+  "by_voiced_quartile": {
+   "Q1_lowest": {
+    "videos": 86,
+    "segments": 1129,
+    "segment_hit_rate": 0.5287865367581931,
+    "frac_videos_fully_covered": 0.023255813953488372
+   },
+   "Q2": {
+    "videos": 86,
+    "segments": 1125,
+    "segment_hit_rate": 0.5653333333333334,
+    "frac_videos_fully_covered": 0.06976744186046512
+   },
+   "Q3": {
+    "videos": 86,
+    "segments": 1221,
+    "segment_hit_rate": 0.5561015561015561,
+    "frac_videos_fully_covered": 0.03488372093023256
+   },
+   "Q4_highest": {
+    "videos": 86,
+    "segments": 1256,
+    "segment_hit_rate": 0.5517515923566879,
+    "frac_videos_fully_covered": 0.05813953488372093
+   }
+  },
+  "voiced_frac_mean_videos_with_missed_segment": 0.9061068575182868,
+  "voiced_frac_mean_videos_fully_covered": 0.9291809789787527,
+  "n_videos_with_missed_segment": 328,
+  "n_videos_fully_covered": 16,
+  "video_level_miss_vs_voiced": {
+   "n_missed_videos": 11,
+   "n_hit_videos": 333,
+   "voiced_frac_mean_missed": 0.9105796956999895,
+   "voiced_frac_mean_hit": 0.907067772603478,
+   "voiced_frac_median_missed": 0.91615935063548,
+   "voiced_frac_median_hit": 0.9452012857798867,
+   "permutation_p_two_sided": 0.9067
+  }
+ },
+ "annotation_anomalies": {
+  "n_segments_with_nonpositive_duration": 22,
+  "note": "start >= end in the shipped timestamps; excluded from no analysis, they simply can never be hit"
+ },
+ "shot_detector_diagnostics": {
+  "0.05": {
+   "n_videos": 345,
+   "median_shots": 43.0,
+   "mean_shots": 63.40869565217391,
+   "frac_videos_ge16_shots": 0.6811594202898551,
+   "frac_videos_1_shot": 0.19130434782608696,
+   "p10_p90": [
+    1.0,
+    165.80000000000007
+   ]
+  },
+  "0.1": {
+   "n_videos": 345,
+   "median_shots": 22.0,
+   "mean_shots": 38.72463768115942,
+   "frac_videos_ge16_shots": 0.5623188405797102,
+   "frac_videos_1_shot": 0.22608695652173913,
+   "p10_p90": [
+    1.0,
+    107.60000000000002
+   ]
+  },
+  "0.15": {
+   "n_videos": 345,
+   "median_shots": 14.0,
+   "mean_shots": 26.3536231884058,
+   "frac_videos_ge16_shots": 0.4782608695652174,
+   "frac_videos_1_shot": 0.25217391304347825,
+   "p10_p90": [
+    1.0,
+    73.0
+   ]
+  }
+ },
+ "kill_bars": {
+  "bar1_uniform16_video_hit_ge_0.95": {
+   "offensive_union": {
+    "value": 0.9681159420289855,
+    "KILLED": true
+   },
+   "hateful_strict": {
+    "value": 0.9666666666666667,
+    "KILLED": true
+   }
+  },
+  "bar2_shot_minus_uniform_segment_hit_lt_10pp": {
+   "offensive_union": {
+    "uniform_16": 0.55042194092827,
+    "shot_16": 0.490295358649789,
+    "delta_pp": -6.0126582278481,
+    "KILLED": true
+   },
+   "hateful_strict": {
+    "uniform_16": 0.5500226346763242,
+    "shot_16": 0.47351742870076957,
+    "delta_pp": -7.65052059755546,
+    "KILLED": true
+   }
+  }
+ },
+ "frozen_params": {
+  "uniform_rule": "np.linspace(0, n_frames-1, K, dtype=int) / fps",
+  "K": [
+   8,
+   16,
+   32
+  ],
+  "shot_fps": 4.0,
+  "shot_size": [
+   64,
+   36
+  ],
+  "taus": [
+   0.05,
+   0.1,
+   0.15
+  ],
+  "primary_tau": 0.1,
+  "min_shot_sec": 1.0,
+  "n_random_draws": 200,
+  "seed": 20260807,
+  "vad_aggressiveness": 2,
+  "lexicons_json": "quarantined, not downloaded, not read"
+ }
+}

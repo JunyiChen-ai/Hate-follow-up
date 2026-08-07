@@ -1,0 +1,59 @@
+{
+ "generated": "2026-08-08",
+ "n_candidates": 35,
+ "clusters": {
+  "A visual-text channel restoration": [
+   "onscreen-text-hires-tiles",
+   "ocr-routed-pixel-budget",
+   "visual-token-budget-allocation",
+   "foveated-packing(codex3)",
+   "burst-text-superres(codex4)"
+  ],
+  "B temporal evidence coverage": [
+   "uniform16-frame-coverage",
+   "shot-coverage-frame-budget",
+   "temporal-frame-reallocation",
+   "clause-synchronous-storyboard(codex1)",
+   "rare-event-sampling(codex2)"
+  ],
+  "C provenance/speaker restoration": [
+   "speaker-turn-restoration",
+   "speaker-provenance-restoration",
+   "provenance-ledger(codex5)",
+   "referent-neutralization-counterfactual"
+  ],
+  "D non-lexical audio": [
+   "asr-drops-delivery",
+   "nonspeech-audio-tags",
+   "speech-separation-first(codex6)"
+  ],
+  "E score-distribution geometry": [
+   "mixture-posterior-operating-point",
+   "pu-mixture-proportion-operating-point",
+   "persistent-valley(codex8)",
+   "phenotype-thresholds(codex9)",
+   "violence-residualization(codex10)",
+   "commitment-geometry-certificate",
+   "commitment-geometry-decomposition",
+   "valley-prior-sensitivity+prevalence-purity-stress",
+   "cross-corpus-policy-offset-ceiling"
+  ],
+  "F causal input-deletion axes": [
+   "mute-counterfactual-axis",
+   "counterfactual-null-calibration",
+   "carrier-redundancy-fp-signature",
+   "judge-modality-weight-audit",
+   "causal-evidence-locus-accounting",
+   "commitment-as-evidence-objective",
+   "starvation-dose-response-census"
+  ],
+  "G evidence-budget router": [
+   "evidence-budget-router(codex7)"
+  ]
+ },
+ "notes": [
+  "E1 CPU pilot label-peeked: HateMM mF1 0.797/0.817 vs valley 0.643/0.656 \u2014 hypothesis-generating only",
+  "owner in-flight temporal-attribution pilot collides with B4; sequence after",
+  "GPU occupied by owner; zero-GPU candidates start first"
+ ]
+}

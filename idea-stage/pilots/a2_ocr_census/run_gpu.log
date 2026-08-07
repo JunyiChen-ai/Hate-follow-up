@@ -1,0 +1,61 @@
+[detect] 850 videos (MH split=550, IHV pool=1283), nproc=1 threads/proc=4 gpu=True
+[detect] resuming: 163 done, 687 to go
+[detect] 20/687 el=0.3m eta=10.0m
+[detect] 40/687 el=0.6m eta=9.8m
+[detect] 60/687 el=1.1m eta=11.8m
+[detect] 80/687 el=1.5m eta=11.7m
+[detect] 100/687 el=1.8m eta=10.9m
+[detect] 120/687 el=2.0m eta=9.6m
+[detect] 140/687 el=2.2m eta=8.8m
+[detect] 160/687 el=2.4m eta=7.9m
+[detect] 180/687 el=2.7m eta=7.5m
+[detect] 200/687 el=2.9m eta=7.1m
+[detect] 220/687 el=3.2m eta=6.7m
+[detect] 240/687 el=3.3m eta=6.2m
+[detect] 260/687 el=3.6m eta=5.9m
+[detect] 280/687 el=3.8m eta=5.5m
+[detect] 300/687 el=4.0m eta=5.1m
+[detect] 320/687 el=4.2m eta=4.9m
+[detect] 340/687 el=4.4m eta=4.5m
+[detect] 360/687 el=4.7m eta=4.3m
+[detect] 380/687 el=4.9m eta=4.0m
+[detect] 400/687 el=5.1m eta=3.7m
+[detect] 420/687 el=5.2m eta=3.3m
+[detect] 440/687 el=5.3m eta=3.0m
+[detect] 460/687 el=5.4m eta=2.7m
+[detect] 480/687 el=5.5m eta=2.4m
+[detect] 500/687 el=5.6m eta=2.1m
+[detect] 520/687 el=5.7m eta=1.8m
+[detect] 540/687 el=5.8m eta=1.6m
+[detect] 560/687 el=5.8m eta=1.3m
+[detect] 580/687 el=5.9m eta=1.1m
+[detect] 600/687 el=5.9m eta=0.9m
+[detect] 620/687 el=6.0m eta=0.6m
+[detect] 640/687 el=6.0m eta=0.4m
+[detect] 660/687 el=6.1m eta=0.2m
+[detect] 680/687 el=6.1m eta=0.1m
+[detect] complete in 6.2 min
+[agg] 854 lines -> 850 unique videos
+{
+  "rule": ">= 25% of MHClip-EN train_clean videos have >= 2 substantive frames",
+  "observed_pct": 84.0,
+  "verdict": "PROCEED"
+}
+{
+  "pct_qualifying_videos": [
+    84.0,
+    78.33
+  ],
+  "frac_frames_substantive": [
+    0.6845,
+    0.6135
+  ],
+  "mean_boxes_per_frame": [
+    4.039,
+    4.391
+  ],
+  "mean_union_frac_per_frame": [
+    0.05641,
+    0.06646
+  ]
+}
