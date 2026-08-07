@@ -27,7 +27,8 @@ from data_utils import (  # noqa: E402
 )
 
 NUM_FRAMES = 16
-ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid"]
+ALL_DATASETS = ["MHClip_EN", "MHClip_ZH", "HateMM", "ImpliHateVid",
+                "HateClipSeg"]
 
 
 def extract_one(vid, dataset, force=False):

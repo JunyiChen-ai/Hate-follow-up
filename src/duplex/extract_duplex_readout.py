@@ -158,7 +158,8 @@ def load_done_ids(scores_path, hidden_dir, expected_shape):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="ImpliHateVid",
-                        choices=["ImpliHateVid", "MHClip_EN", "MHClip_ZH", "HateMM"])
+                        choices=["ImpliHateVid", "MHClip_EN", "MHClip_ZH",
+                                 "HateMM", "HateClipSeg"])
     parser.add_argument("--split", default="train")
     parser.add_argument("--model", default="Qwen/Qwen3-VL-8B-Instruct")
     parser.add_argument("--num-frames", type=int, default=16)

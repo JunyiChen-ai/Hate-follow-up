@@ -20,6 +20,7 @@ DATASET_ROOTS = {
     "MHClip_ZH": os.path.join(_DATA_ROOT, "Multihateclip", "Chinese"),
     "HateMM": os.path.join(_DATA_ROOT, "HateMM"),
     "ImpliHateVid": os.path.join(_DATA_ROOT, "ImpliHateVid"),
+    "HateClipSeg": os.path.join(_DATA_ROOT, "HateClipSeg"),
 }
 
 SPLIT_ALIASES = {
@@ -35,6 +36,7 @@ RAW_VALIDATION_SPLITS = {
     "MHClip_ZH": "valid.csv",
     "HateMM": "valid.csv",
     "ImpliHateVid": "val.csv",
+    "HateClipSeg": "validation.csv",
 }
 
 MP4_SUBDIRS = {
@@ -42,6 +44,7 @@ MP4_SUBDIRS = {
     "MHClip_ZH": "video",
     "HateMM": "video",
     "ImpliHateVid": "video",
+    "HateClipSeg": "video",
 }
 
 # Videos to unconditionally skip across every scoring pipeline. These 8
@@ -65,6 +68,10 @@ SKIP_VIDEOS = {
     },
     "HateMM": set(),
     "ImpliHateVid": set(),
+    # HateClipSeg needs no hard-coded skips: undecodable source files are
+    # pruned from its media directory by scripts/duplex/hateclipseg_prep.py,
+    # so they are excluded here through the ordinary missing-media path.
+    "HateClipSeg": set(),
 }
 
 _EXTRA_SKIP_FILE = os.environ.get("EXTRA_SKIP_VIDEOS_FILE")
