@@ -1,0 +1,365 @@
+{
+ "title": "Self-trained readout kill test: commitment-extreme pseudo-labels supervising a layer-27 hidden-state head",
+ "preregistration": "docs/duplex/PREREG_selftrained_readout_killtest.md",
+ "status": "preregistered kill test, run once; CPU only; no model call",
+ "frozen_constants": {
+  "band_positive": 13.0,
+  "band_negative": -13.0,
+  "min_band_size": 10,
+  "layer": 27,
+  "l2_lambda": 1.0,
+  "decision_rule": "predict hateful iff head posterior >= 0.5",
+  "n_placebo_permutations": 20,
+  "seed": 20260808,
+  "standardisation": "per-dimension mean and standard deviation of that corpus's own layer-27 hidden states over every scored video, no label read",
+  "clause_floors": {
+   "clause1_head_macro_f1": 0.75,
+   "clause2_head_auc": 0.9132,
+   "clause3_margin_over_z_only": 0.03,
+   "clause4_margin_over_placebo": 0.1,
+   "guard_implihatevid_macro_f1": 0.8523
+  }
+ },
+ "inputs": "results/testruns/{hatemm,implihatevid,mhclip_en,mhclip_zh}/judge_8b/{hidden,scores.jsonl} and results/hateclipseg/judge_8b/{hidden,scores.jsonl}; 8B only",
+ "label_collapse": {
+  "MHClip_EN": "Offensive maps to 1 (union collapse)",
+  "MHClip_ZH": "Offensive maps to 1 (union collapse)",
+  "HateClipSeg": "strict: only the hateful category maps to 1"
+ },
+ "decision_rule_verdict": {
+  "clause_1_performance": {
+   "rule": "HateMM head macro-F1 >= 0.75",
+   "head_macro_f1": 0.6959907763927865,
+   "result": "FAIL"
+  },
+  "clause_2_ranking_preserved": {
+   "rule": "HateMM head posterior AUC >= 0.9132",
+   "head_auc": 0.8893095366864973,
+   "judge_z_auc": 0.923246800072111,
+   "result": "FAIL"
+  },
+  "clause_3_hidden_space_load_bearing": {
+   "rule": "head macro-F1 >= z-only + 0.03",
+   "head_macro_f1": 0.6959907763927865,
+   "z_only_macro_f1": 0.6561808582882429,
+   "delta": 0.039809918104543596,
+   "result": "PASS"
+  },
+  "clause_4_signal_not_band_arithmetic": {
+   "rule": "placebo mean macro-F1 <= head - 0.1",
+   "head_macro_f1": 0.6959907763927865,
+   "placebo_mean_macro_f1": 0.4248036590504364,
+   "placebo_sd": 0.07492850552413571,
+   "delta": 0.2711871173423501,
+   "result": "PASS"
+  },
+  "regression_guard_implihatevid": {
+   "rule": "ImpliHateVid head macro-F1 >= 0.8523",
+   "head_macro_f1": 0.8522330960297038,
+   "result": "FAIL"
+  },
+  "overall": "DEAD"
+ },
+ "summary": {
+  "HateMM": {
+   "applicable": true,
+   "n_band_positive": 81,
+   "n_band_negative": 25,
+   "head_macro_f1": 0.6959907763927865,
+   "head_auc": 0.8893095366864973,
+   "z_only_macro_f1": 0.6561808582882429,
+   "z_only_auc": 0.923246800072111,
+   "placebo_mean_macro_f1": 0.4248036590504364,
+   "placebo_sd_macro_f1": 0.07492850552413571,
+   "valley_macro_f1": 0.6561808582882429,
+   "judge_z_auc": 0.923246800072111
+  },
+  "ImpliHateVid": {
+   "applicable": true,
+   "n_band_positive": 70,
+   "n_band_negative": 144,
+   "head_macro_f1": 0.8522330960297038,
+   "head_auc": 0.9382984574614366,
+   "z_only_macro_f1": 0.8674594094441423,
+   "z_only_auc": 0.9472736818420461,
+   "placebo_mean_macro_f1": 0.4873833429004481,
+   "placebo_sd_macro_f1": 0.08237141917698743,
+   "valley_macro_f1": 0.8823345329369425,
+   "judge_z_auc": 0.9472736818420461
+  },
+  "HateClipSeg": {
+   "applicable": false,
+   "valley_macro_f1": 0.4478965766634523,
+   "n_band_positive": 183,
+   "n_band_negative": 7
+  },
+  "MHClip_EN": {
+   "applicable": false,
+   "valley_macro_f1": 0.6962264150943396,
+   "n_band_positive": 5,
+   "n_band_negative": 43
+  },
+  "MHClip_ZH": {
+   "applicable": false,
+   "valley_macro_f1": 0.7255985267034991,
+   "n_band_positive": 2,
+   "n_band_negative": 17
+  }
+ },
+ "verdict": "DEAD",
+ "per_corpus": {
+  "HateMM": {
+   "n_scored": 215,
+   "n_hateful": 86,
+   "n_normal": 129,
+   "prevalence_hateful": 0.4,
+   "z_min": -21.75,
+   "z_median": 9.75,
+   "z_max": 18.75,
+   "n_band_positive": 81,
+   "n_band_negative": 25,
+   "band_positive_fraction": 0.3767,
+   "band_negative_fraction": 0.1163,
+   "valley_baseline": {
+    "tp": 83,
+    "fp": 70,
+    "fn": 3,
+    "tn": 59,
+    "macro_f1": 0.6561808582882429,
+    "threshold": -2.3455000000000013
+   },
+   "valley_selfcheck": {
+    "recomputed": 0.6561808582882429,
+    "committed": 0.6561808582882429,
+    "abs_diff": 0.0
+   },
+   "judge_z_auc": 0.923246800072111,
+   "applicable": true,
+   "pseudo_label_purity": {
+    "positive_band_gold_hateful_rate": 0.8765432098765432,
+    "negative_band_gold_normal_rate": 0.96,
+    "pseudo_label_accuracy": 0.8962264150943396
+   },
+   "n_zero_variance_dims": 0,
+   "head": {
+    "tp": 83,
+    "fp": 62,
+    "fn": 3,
+    "tn": 67,
+    "f1_hateful": 0.7186147186147187,
+    "f1_normal": 0.6733668341708543,
+    "accuracy": 0.6976744186046512,
+    "macro_f1": 0.6959907763927865,
+    "auc": 0.8893095366864973,
+    "predicted_positive_rate": 0.6744186046511628,
+    "converged": true,
+    "lbfgs_iterations": 31
+   },
+   "z_only_control": {
+    "tp": 83,
+    "fp": 70,
+    "fn": 3,
+    "tn": 59,
+    "f1_hateful": 0.6945606694560669,
+    "f1_normal": 0.6178010471204188,
+    "accuracy": 0.6604651162790698,
+    "macro_f1": 0.6561808582882429,
+    "auc": 0.923246800072111,
+    "predicted_positive_rate": 0.7116279069767442,
+    "converged": true,
+    "lbfgs_iterations": 12
+   },
+   "placebo": {
+    "n_permutations": 20,
+    "seed": 20260808,
+    "macro_f1_mean": 0.4248036590504364,
+    "macro_f1_sd": 0.07492850552413571,
+    "macro_f1_min": 0.30194805194805197,
+    "macro_f1_max": 0.5487981653361027,
+    "auc_mean": 0.4598972417522985,
+    "auc_sd": 0.12059037506463408
+   },
+   "valley_movement": {
+    "n_valley_false_positives": 70,
+    "n_valley_false_positives_head_calls_normal": 8,
+    "n_valley_false_negatives": 3,
+    "n_valley_false_negatives_head_recovers": 0,
+    "agreement_head_vs_valley": 0.9627906976744186,
+    "n_head_positive": 145,
+    "n_valley_positive": 153,
+    "n_new_false_positives_head_only": 0,
+    "n_new_false_negatives_head_only": 0
+   }
+  },
+  "ImpliHateVid": {
+   "n_scored": 400,
+   "n_hateful": 199,
+   "n_normal": 201,
+   "prevalence_hateful": 0.4975,
+   "z_min": -21.25,
+   "z_median": -1.125,
+   "z_max": 19.0,
+   "n_band_positive": 70,
+   "n_band_negative": 144,
+   "band_positive_fraction": 0.175,
+   "band_negative_fraction": 0.36,
+   "valley_baseline": {
+    "tp": 184,
+    "fp": 32,
+    "fn": 15,
+    "tn": 169,
+    "macro_f1": 0.8823345329369425,
+    "threshold": -4.454812500000003
+   },
+   "valley_selfcheck": {
+    "recomputed": 0.8823345329369425,
+    "committed": 0.8823345329369425,
+    "abs_diff": 0.0
+   },
+   "judge_z_auc": 0.9472736818420461,
+   "applicable": true,
+   "pseudo_label_purity": {
+    "positive_band_gold_hateful_rate": 0.9714285714285714,
+    "negative_band_gold_normal_rate": 0.9791666666666666,
+    "pseudo_label_accuracy": 0.9766355140186916
+   },
+   "n_zero_variance_dims": 0,
+   "head": {
+    "tp": 162,
+    "fp": 22,
+    "fn": 37,
+    "tn": 179,
+    "f1_hateful": 0.8459530026109662,
+    "f1_normal": 0.8585131894484412,
+    "accuracy": 0.8525,
+    "macro_f1": 0.8522330960297038,
+    "auc": 0.9382984574614366,
+    "predicted_positive_rate": 0.46,
+    "converged": true,
+    "lbfgs_iterations": 30
+   },
+   "z_only_control": {
+    "tp": 170,
+    "fp": 24,
+    "fn": 29,
+    "tn": 177,
+    "f1_hateful": 0.8651399491094148,
+    "f1_normal": 0.8697788697788698,
+    "accuracy": 0.8675,
+    "macro_f1": 0.8674594094441423,
+    "auc": 0.9472736818420461,
+    "predicted_positive_rate": 0.485,
+    "converged": true,
+    "lbfgs_iterations": 12
+   },
+   "placebo": {
+    "n_permutations": 20,
+    "seed": 20260808,
+    "macro_f1_mean": 0.4873833429004481,
+    "macro_f1_sd": 0.08237141917698743,
+    "macro_f1_min": 0.4008462701299777,
+    "macro_f1_max": 0.6074779206330356,
+    "auc_mean": 0.49649866246656166,
+    "auc_sd": 0.09439051150411971
+   },
+   "valley_movement": {
+    "n_valley_false_positives": 32,
+    "n_valley_false_positives_head_calls_normal": 10,
+    "n_valley_false_negatives": 15,
+    "n_valley_false_negatives_head_recovers": 0,
+    "agreement_head_vs_valley": 0.92,
+    "n_head_positive": 184,
+    "n_valley_positive": 216,
+    "n_new_false_positives_head_only": 0,
+    "n_new_false_negatives_head_only": 22
+   }
+  },
+  "HateClipSeg": {
+   "n_scored": 394,
+   "n_hateful": 180,
+   "n_normal": 214,
+   "prevalence_hateful": 0.4569,
+   "z_min": -19.0,
+   "z_median": 12.5,
+   "z_max": 19.5,
+   "n_band_positive": 183,
+   "n_band_negative": 7,
+   "band_positive_fraction": 0.4645,
+   "band_negative_fraction": 0.0178,
+   "valley_baseline": {
+    "tp": 179,
+    "fp": 185,
+    "fn": 1,
+    "tn": 29,
+    "macro_f1": 0.4478965766634523,
+    "threshold": -5.4449999999999985
+   },
+   "valley_selfcheck": {
+    "recomputed": 0.4478965766634523,
+    "committed": 0.4478965766634523,
+    "abs_diff": 0.0
+   },
+   "judge_z_auc": 0.7708592938733125,
+   "applicable": false,
+   "abstain_reason": "a saturation band holds fewer than 10 videos (183 positive, 7 negative); the frozen protocol abstains with no fallback tuning"
+  },
+  "MHClip_EN": {
+   "n_scored": 161,
+   "n_hateful": 49,
+   "n_normal": 112,
+   "prevalence_hateful": 0.3043,
+   "z_min": -22.25,
+   "z_median": -6.0,
+   "z_max": 16.75,
+   "n_band_positive": 5,
+   "n_band_negative": 43,
+   "band_positive_fraction": 0.0311,
+   "band_negative_fraction": 0.2671,
+   "valley_baseline": {
+    "tp": 33,
+    "fp": 28,
+    "fn": 16,
+    "tn": 84,
+    "macro_f1": 0.6962264150943396,
+    "threshold": -0.5032500000000013
+   },
+   "valley_selfcheck": {
+    "recomputed": 0.6962264150943396,
+    "committed": 0.6962264150943396,
+    "abs_diff": 0.0
+   },
+   "judge_z_auc": 0.7847120991253644,
+   "applicable": false,
+   "abstain_reason": "a saturation band holds fewer than 10 videos (5 positive, 43 negative); the frozen protocol abstains with no fallback tuning"
+  },
+  "MHClip_ZH": {
+   "n_scored": 149,
+   "n_hateful": 45,
+   "n_normal": 104,
+   "prevalence_hateful": 0.302,
+   "z_min": -17.75,
+   "z_median": -0.5,
+   "z_max": 13.5,
+   "n_band_positive": 2,
+   "n_band_negative": 17,
+   "band_positive_fraction": 0.0134,
+   "band_negative_fraction": 0.1141,
+   "valley_baseline": {
+    "tp": 39,
+    "fp": 33,
+    "fn": 6,
+    "tn": 71,
+    "macro_f1": 0.7255985267034991,
+    "threshold": 0.6068749999999987
+   },
+   "valley_selfcheck": {
+    "recomputed": 0.7255985267034991,
+    "committed": 0.7255985267034991,
+    "abs_diff": 0.0
+   },
+   "judge_z_auc": 0.8547008547008547,
+   "applicable": false,
+   "abstain_reason": "a saturation band holds fewer than 10 videos (2 positive, 17 negative); the frozen protocol abstains with no fallback tuning"
+  }
+ }
+}
