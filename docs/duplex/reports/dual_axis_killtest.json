@@ -1,0 +1,48 @@
+{
+  "protocol": "docs/duplex/PREREG_dual_axis_killtest.md",
+  "corpus": "MHClip_EN test_clean",
+  "n_videos": 161,
+  "clause1_separability": {
+    "rule": "Spearman(z_off, z_hate) < 0.95",
+    "spearman": 0.9349140123609461,
+    "spearman_p": 1.955501366559863e-73,
+    "pearson": 0.9294056920241508,
+    "passes": true
+  },
+  "clause2_axis_validity": {
+    "rule": "AUC(z_off) >= AUC(z_hate) + 0.05 on no-protected-target positives vs shipped Normals",
+    "n": 146,
+    "n_pos": 34,
+    "n_neg": 112,
+    "auc_z_off": 0.7901785714285714,
+    "auc_z_hate": 0.7488182773109243,
+    "gain_off_minus_hate": 0.04136029411764708,
+    "passes": false
+  },
+  "descriptive_protected_target_stratum": {
+    "note": "expected LOWER for z_off than z_hate; a match means the axis is not construct-specific",
+    "n": 127,
+    "n_pos": 15,
+    "n_neg": 112,
+    "auc_z_off": 0.8663690476190476,
+    "auc_z_hate": 0.8660714285714286,
+    "gain_off_minus_hate": 0.00029761904761904656,
+    "joint_reference_quoted_in_prereg": 0.983,
+    "joint_reference_caveat": "the 0.983 quoted in the prereg body is the ranking autopsy's narrower 7-video explicit-hostility subset, not this blind-coded 15-video protected-target stratum; the like-for-like joint-judge number on this stratum is auc_z_hate below, which matches the audit's 0.866"
+  },
+  "descriptive_full_union_task": {
+    "n": 161,
+    "n_pos": 49,
+    "auc_z_hate": 0.7847120991253644,
+    "auc_z_off": 0.8135021865889213,
+    "auc_max_rank_composition": 0.8005648688046647,
+    "joint_baseline_reference": 0.785,
+    "composition_minus_baseline": 0.015564868804664678
+  },
+  "descriptive_sign_agreement": {
+    "frac_same_sign": 0.8571428571428571,
+    "n_off_positive": 81,
+    "n_hate_positive": 58
+  },
+  "verdict": "DEAD"
+}
