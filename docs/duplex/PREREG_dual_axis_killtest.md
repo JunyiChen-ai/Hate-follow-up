@@ -73,8 +73,51 @@ construct-specific even if clause 1 passes).
   axis does not measure offensiveness better than the old one — the extra
   call buys noise, not a construct; dead under the ≤2-call discipline.
 
-## Appendix — frozen offensiveness prompt (filled before scoring)
+## Appendix — frozen offensiveness prompt
 
-To be inserted by the implementing run before the first judge call,
-following the baseline prompt's structure with only the construct
-definition swapped.
+Frozen 2026-08-09, committed before the first offensiveness judge call. The
+implementation is `scripts/duplex/dual_axis_offensiveness_score.py`, which
+imports the system message, the judgment-mode block, the media path, the
+transcript-override logic, the pixel budget, and the Yes/No token-id sets from
+the same frozen modules the joint judge uses. The only substitution is the
+construct: the policy sentence and the rule list. The judgment-mode block, the
+question sentence, and the answer instruction are byte-identical to the joint
+judge's.
+
+Rule list (replaces `YOUTUBE_RULES`):
+
+```
+1. Insulting or demeaning language aimed at any person, group, or thing
+2. Degrading, humiliating, or shaming portrayal of anyone
+3. Vulgar, obscene, or crude language, gestures, or imagery
+4. Aggressive, hostile, threatening, or abusive speech or behaviour
+5. Mockery, ridicule, or contemptuous framing of anyone
+6. Profanity, name-calling, or personal attacks
+7. Gratuitously shocking, disgusting, or distasteful material
+```
+
+Prompt skeleton (`{reader_block}` is the frozen `prag` block, unchanged):
+
+```
+You are a content moderation analyst. Observe this video's visual frames, title, and transcript.
+
+Title: {title}
+Transcript: {transcript}
+
+Based on this platform's offensive-content policy, the following types of content are prohibited:
+{rules}
+
+These rules are about offensiveness alone and apply no matter who or what is targeted. Content violates them even when it targets no protected group (such as race, religion, ethnicity, national origin, gender, sexual orientation, or disability), and even when it targets one individual, an institution, or nobody at all.
+
+{reader_block}
+
+Does this video contain content that violates any of the above rules?
+
+Answer "Yes" or "No".
+```
+
+The scope sentence after the rule list is part of the construct definition: the
+offensiveness axis is defined to be target-agnostic, and the joint judge's rule
+list carries "based on protected status" inside nearly every item, so a silent
+substitution would leave the protected-group requirement implicit. Stating it
+removes the ambiguity rather than adding a new instruction type.
