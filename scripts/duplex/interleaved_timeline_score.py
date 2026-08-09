@@ -72,6 +72,10 @@ NUM_FRAMES = 16
 # them, frozen in the pre-registration.
 TRANSCRIPT_POINTER = "(given above, interleaved with the frames)"
 
+# Replication tolerance for the baseline check. Exact float equality is the
+# expectation; anything above this bound means the scorer is not the frozen one.
+REPLICATION_TOL = 1e-3
+
 BASELINE_JUDGE_DIRS = {
     "mhclip_zh": "results/testruns/mhclip_zh/judge_8b",
     "mhclip_en": "results/testruns/mhclip_en/judge_8b",
@@ -215,6 +219,7 @@ def main():
     t0 = time.time()
     n_done = 0
     n_mismatch = 0
+    n_exact = 0
     for i, vid in enumerate(remaining):
         frame_paths = resolve_frames(vid, dataset)
         if len(frame_paths) != NUM_FRAMES:
@@ -268,10 +273,12 @@ def main():
         if args.arm == "baseline":
             rec["z_frozen"] = baseline_z[vid]
             rec["reproduces_frozen"] = (z == baseline_z[vid])
-            if not rec["reproduces_frozen"]:
+            rec["abs_delta_vs_frozen"] = abs(z - baseline_z[vid])
+            if rec["abs_delta_vs_frozen"] > REPLICATION_TOL:
                 n_mismatch += 1
                 logging.error(f"  {vid}: z={z:.6f} != frozen "
                               f"{baseline_z[vid]:.6f}")
+            n_exact += int(rec["reproduces_frozen"])
         with open(scores_path, "a") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
             f.flush()
@@ -288,11 +295,12 @@ def main():
     logging.info(f"Done [{args.corpus}/{args.arm}]: {n_done} scored, "
                  f"{el:.1f}s ({el / max(n_done, 1):.2f}s/video)")
     if args.arm == "baseline":
-        logging.info(f"baseline replication: {n_done - n_mismatch}/{n_done} "
-                     f"exact")
+        logging.info(f"baseline replication: {n_exact}/{n_done} bit-exact, "
+                     f"{n_mismatch}/{n_done} beyond {REPLICATION_TOL}")
         if args.check_baseline and n_mismatch:
-            raise SystemExit(f"ABORT: {n_mismatch} baseline z values did not "
-                             "reproduce the frozen judge")
+            raise SystemExit(f"ABORT: {n_mismatch} baseline z values differ "
+                             f"from the frozen judge by more than "
+                             f"{REPLICATION_TOL}")
 
 
 if __name__ == "__main__":

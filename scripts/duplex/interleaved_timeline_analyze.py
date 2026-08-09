@@ -279,6 +279,24 @@ def main():
             f[a]["rank_corr_vs_baseline"] = round(float(
                 np.corrcoef(rb, rn)[0, 1]), 4)
             del f[a]["spearman_like_rank_corr"]
+        # How close the two interleaved arms are to each other. If the pairing
+        # were the load-bearing part, correct and rotated pairings would
+        # disagree more than either disagrees with the baseline.
+        if all(v in arm_z["interleaved"] and v in arm_z["misaligned"]
+               for v in ids):
+            zi = np.array([arm_z["interleaved"][v] for v in ids])
+            zm = np.array([arm_z["misaligned"][v] for v in ids])
+            zb = np.array([arm_z["baseline"][v] for v in ids])
+            rk = lambda a: np.argsort(np.argsort(a))  # noqa: E731
+            f["arm_agreement"] = {
+                "rank_corr_interleaved_vs_misaligned": round(float(
+                    np.corrcoef(rk(zi), rk(zm))[0, 1]), 4),
+                "mean_abs_z_interleaved_minus_misaligned": round(float(
+                    np.mean(np.abs(zi - zm))), 4),
+                "mean_abs_z_interleaved_minus_baseline": round(float(
+                    np.mean(np.abs(zi - zb))), 4),
+                "n_decision_disagreements": int(np.sum((zi > 0) != (zm > 0))),
+            }
         res["flips"][corpus] = f
 
     # -------------------------------------------------------------- verdicts
