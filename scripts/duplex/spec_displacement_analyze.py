@@ -605,6 +605,38 @@ def main():
                 } for layer in layers_all}
     res["layer_sweep_flip_auc"] = sweep
 
+    # ---- post-hoc diagnostic, added after the clauses were computed -------
+    # The shuffled placebo replaces h_i^union by h_pi(i)^union and leaves
+    # h_i^strict alone, so c1 under the placebo still contains the per-video
+    # term -<h_i^strict, d>. If that single term already separates the strata,
+    # then c1 is a re-reading of the strict arm rather than an interaction
+    # between the two specs. This split is diagnostic, not clause-bearing, and
+    # was written after the verdict was fixed.
+    posthoc = {}
+    for slug, cp in corpora.items():
+        d_unit = store[(slug, "real", PRIMARY_LAYER)]["d"]
+        s_strict = -(cp["arms"]["strict"][:, PRIMARY_LAYER] @ d_unit)
+        s_union = cp["arms"]["union"][:, PRIMARY_LAYER] @ d_unit
+        z_only = cp["z"]["strict"]
+        if slug == "mhclip_en":
+            f = lambda s: auc_pos_neg(np.asarray(s)[i_no_pt], np.asarray(s)[i_pt])
+        else:
+            f = lambda s: auc_pos_neg(np.asarray(s)[i_flip], np.asarray(s)[i_strictpos])
+        posthoc[slug] = {
+            "auc_strict_term_only": f(s_strict),
+            "auc_union_term_only": f(s_union),
+            "auc_c1_full": f(store[(slug, "real", PRIMARY_LAYER)]["c1"]),
+            "auc_z_strict_only": f(z_only),
+            "spearman_c1_vs_strict_term":
+                float(spearmanr(store[(slug, "real", PRIMARY_LAYER)]["c1"],
+                                s_strict)[0]),
+        }
+    res["post_hoc_diagnostics"] = {
+        "note": ("computed after the clause verdicts were fixed; descriptive "
+                 "only, no clause depends on it"),
+        "carrier_projection_split": posthoc,
+    }
+
     # ---- descriptive: cosine with the supervised probe direction ---------
     Hp = en["arms"]["strict"][:, PRIMARY_LAYER]
     Xp = np.concatenate([Hp[i_no_pt], Hp[i_pt]], axis=0)
