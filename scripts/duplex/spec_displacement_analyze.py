@@ -226,21 +226,30 @@ def decompose(H_a, H_b, keep_directions):
     d_unit = m / nm if nm > 0 else m
     r = dh - m
     c1 = dh @ d_unit
-    U, S, Vt = np.linalg.svd(r - r.mean(axis=0), full_matrices=False)
-    pc1 = U[:, 0] * S[0]
-    var = (S ** 2) / max(r.shape[0] - 1, 1)
+    # PC1 of the residuals through the n x n Gram matrix. With n << 4096 this
+    # is the same top component as a full SVD at a fraction of the cost, and it
+    # never forms the 4096-column right-singular matrix.
+    G = r @ r.T
+    evals, evecs = np.linalg.eigh(G)
+    lam1 = float(max(evals[-1], 0.0))
+    u1 = evecs[:, -1]
+    s1 = math.sqrt(lam1)
+    pc1 = u1 * s1
+    tot = float(np.sum(np.maximum(evals, 0.0)))
     out = dict(
         norm_m=nm,
         c1=c1,
         c2_raw=pc1,
-        c2_evr=float(var[0] / var.sum()) if var.sum() > 0 else 0.0,
+        c2_evr=float(lam1 / tot) if tot > 0 else 0.0,
         carrier_energy=float(nm ** 2),
-        mean_residual_energy=float(np.mean(np.sum(r ** 2, axis=1))),
+        mean_residual_energy=float(np.mean(np.diag(G))),
         mean_displacement_norm=float(np.mean(np.linalg.norm(dh, axis=1))),
     )
     if keep_directions:
         out["d"] = d_unit
-        out["c2_loading"] = Vt[0]
+        loading = (r.T @ u1) / s1 if s1 > 0 else np.zeros(r.shape[1])
+        n_l = float(np.linalg.norm(loading))
+        out["c2_loading"] = loading / n_l if n_l > 0 else loading
     return out
 
 
@@ -556,6 +565,33 @@ def main():
                 float(spearmanr(c2, cp["n_tokens"])[0]),
         }
     res["correlations"] = corr
+
+    # The hypothesis is middle-peaked: c large on the flip stratum, small on
+    # both protected-target hate and benign content. These profiles show it
+    # directly and are descriptive, not clause-bearing.
+    def profile(s, idx):
+        v = np.asarray(s)[idx]
+        return {"n": int(len(v)), "mean": float(v.mean()),
+                "sd": float(v.std(ddof=1)) if len(v) > 1 else None,
+                "median": float(np.median(v))}
+
+    d_en = store[("mhclip_en", "real", PRIMARY_LAYER)]
+    d_hcs = store[("hateclipseg", "real", PRIMARY_LAYER)]
+    i_hcs_clean = np.where(~y_union)[0]
+    res["stratum_profiles"] = {
+        "mhclip_en": {
+            r: {"no_protected_target_positive": profile(sc, i_no_pt),
+                "protected_target_positive": profile(sc, i_pt),
+                "shipped_normal": profile(sc, i_norm)}
+            for r, sc in (("c1", d_en["c1"]),
+                          ("c2", d_en["c2_raw"] * d_en["c2_sign_by_z"] * c2_dir))},
+        "hateclipseg": {
+            r: {"flip_union_pos_strict_neg": profile(sc, i_flip),
+                "strict_positive": profile(sc, i_strictpos),
+                "clean_normal": profile(sc, i_hcs_clean)}
+            for r, sc in (("c1", d_hcs["c1"]),
+                          ("c2", d_hcs["c2_raw"] * d_hcs["c2_sign_by_z"] * c2_dir))},
+    }
 
     sweep = {}
     for slug in corpora:
