@@ -98,6 +98,9 @@ def main():
     parser.add_argument("--min-pixels", type=int, default=MIN_PIXELS)
     parser.add_argument("--out-dir", default=None)
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--device", default="cuda:0",
+                        help="Smoke tests may set cpu; every reported result "
+                             "comes from cuda:0.")
     parser.add_argument("--verify-full", type=int, default=0,
                         help="For the first N videos, recompute both arms with "
                              "a full uncached forward and report the maximum "
@@ -168,7 +171,7 @@ def main():
                  f"({tokenizer.decode([tok_no])!r})")
 
     model = AutoModelForImageTextToText.from_pretrained(
-        args.model, dtype=torch.bfloat16, device_map="cuda:0")
+        args.model, dtype=torch.bfloat16, device_map=args.device)
     model.eval()
     yes_idx = torch.tensor(yes_ids, device=model.device)
     no_idx = torch.tensor(no_ids, device=model.device)
@@ -254,14 +257,25 @@ def main():
                     ).to(torch.float16).cpu().numpy())
                     del out
                 ref = np.stack(ref, axis=0)
-                d = np.abs(arr.astype(np.float32) - ref.astype(np.float32))
-                scale = np.abs(ref.astype(np.float32)).mean()
+                a32, r32 = arr.astype(np.float32), ref.astype(np.float32)
+                d = np.abs(a32 - r32)
+                rel = float(np.linalg.norm(d) / max(np.linalg.norm(r32), 1e-9))
+                # The decision-relevant quantity is the layer-27 difference of
+                # the two arms, so it is checked directly.
+                dc = a32[0, 27] - a32[1, 27]
+                dr = r32[0, 27] - r32[1, 27]
+                cos = float(dc @ dr / (np.linalg.norm(dc)
+                                       * np.linalg.norm(dr) + 1e-9))
                 verify_reports.append(
                     {"max_abs_diff": float(d.max()),
                      "mean_abs_diff": float(d.mean()),
-                     "mean_abs_value": float(scale)})
-                logging.info(f"  verify {vid}: max|Δ|={d.max():.4g} "
-                             f"mean|Δ|={d.mean():.4g} scale={scale:.4g}")
+                     "mean_abs_value": float(np.abs(r32).mean()),
+                     "relative_frobenius_error": rel,
+                     "cosine_delta_layer27": cos,
+                     "delta_norm_cached": float(np.linalg.norm(dc)),
+                     "delta_norm_full": float(np.linalg.norm(dr))})
+                logging.info(f"  verify {vid}: rel_fro={rel:.4g} "
+                             f"cos(Δh27)={cos:.6f} max|Δ|={d.max():.4g}")
 
             del pre, cache, last_logits, inputs
 
@@ -294,7 +308,8 @@ def main():
                 f"  [{n_done}/{len(remaining)}] {vid} z={z:+.3f} "
                 f"{time.time() - t_vid:.2f}s/video, "
                 f"{n_done / max(elapsed, 1e-9):.2f} vid/s, "
-                f"peak_vram={torch.cuda.max_memory_allocated() / 2**30:.2f} GiB")
+                f"peak_vram="
+                f"{torch.cuda.max_memory_allocated() / 2**30 if torch.cuda.is_available() else 0:.2f} GiB")
 
     elapsed = time.time() - t0
     if verify_reports:

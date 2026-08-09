@@ -66,6 +66,18 @@ of 0.70 was fixed before this was measured and is **not** changed; it now
 carries the stronger meaning of beating both the in-band scalar (0.6472) and
 band-conditioned PCA (0.6348), rather than beating chance.
 
+**Second recorded fact, same origin, no bar changed.** Stage A also measured
+the supervised ceiling of the C1 arena: an L2 logistic probe on the frozen
+judge's layer-27 states, leave-one-out over the 183 in-band videos, reaches AUC
+**0.6253**, which is *below* the in-band scalar's 0.6472. With labels and 4096
+features, the strict versus non-strict distinction is not linearly present in
+the state at the last prompt position. C1 therefore asks the answer-side
+contrast to carry construct information that the prompt-side state does not
+carry. That is exactly the pilot's hypothesis, so the clause stays as written
+and at 0.70; but the clause is now known to be a demanding one rather than a
+routine one, and a failure at C1 must be read against this ceiling rather than
+as a bare shortfall.
+
 ## Frozen extraction protocol
 
 1. **Prompt.** Byte-identical to the frozen judge. `SYSTEM_MESSAGE`,
