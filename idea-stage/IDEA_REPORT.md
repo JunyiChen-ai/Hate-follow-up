@@ -110,6 +110,16 @@ Generic post-hoc calibration (temperature scaling, isotonic regression, bias cor
 | A2 OCR census pre-gate | CPU | ready to run | — |
 | A2 / C1 / D3 GPU arms | GPU | BLOCKED: GPU occupied by owner | needs scheduling |
 
+### Follow-up: symmetric saturation-anchor replication
+
+The post-hoc E7 four-state regularity received a separate held-out mechanism
+pilot on the previously excluded stance-reader score conditions. **Verdict:
+FAIL.** The positive tail replicated near `+15.0` and extreme states were less
+reader-sensitive than the interior, but the negative tail moved to about
+`-15.1` in two HateMM reader conditions, outside the frozen `-18.1 +/- 2.5`
+bar. The symmetric two-anchor mechanism is retired; no threshold-performance
+experiment is licensed. See `docs/duplex/SATURATION_ANCHOR_PILOT_NOTE.md`.
+
 ## Suggested Execution Order
 
 1. **E7 + B1 pilots** (running) — they gate ideas 2 and 4 for free.
@@ -124,3 +134,344 @@ Generic post-hoc calibration (temperature scaling, isotonic regression, bias cor
 - [ ] /research-refine-pipeline on the surviving top idea (proposal + experiment plan + prereg)
 - [ ] GPU scheduling with the owner for A2 arms
 
+# Round 2 — Post-attribution idea discovery (2026-08-09/10)
+
+**Date**: 2026-08-09/10. **Primary context**: `RESEARCH_BRIEF.md` rev 2 (commit
+802996e). **Pipeline**: targeted literature survey → three specialist lens
+agents with full repo access → cluster merge with a ten-idea GPT-5.6-Sol seed →
+cross-model jury (GPT-5.6-Sol xhigh via Codex, thread
+`019fe631-f21e-7c43-a64a-0b70255b36b2`) → three preregistered pilots.
+
+Round 1 asked which evidence channel to restore. Round 2 asked a different
+question, and this section records the answer.
+
+## 1. What this round asked
+
+The five-corpus error attribution closed the previous round's premise. No
+model-side blind spot survived its controls, the decision boundary was shown to
+be annotation-owned, and the owner vetoed further data-preprocessing-shaped
+contributions. The brief therefore replaced "which channel is starved" with a
+constraint question: **which of the project's own standing constraints should be
+relaxed to buy mechanism-level novelty, and at what cost to the label-free
+claim?** The brief listed five relaxations. R1 is a second call with a role that
+is not in the falsified family. R2 is label-free training or adaptation at the
+representation level rather than on the answer posterior. R3 is a readout wider
+than one scalar. R4 is task specification as a first-class input rather than as a
+prompt. R5 is the judge backbone, admissible only if a scale or architecture
+phenomenon is itself the claim.
+
+Every idea generated this round was required to name which relaxation it spends
+and to say what it would cost if the relaxation is refused.
+
+## 2. Landscape delta against round 1
+
+The survey was run against R1 through R5 rather than against the hateful-video
+topic, and it changed three things. Latent handoff between calls is now claimed
+prior art: LatentMAS (2511.20639, ICML 2026 Spotlight, search-result-only)
+passes last-layer hidden states and key-value caches between agents without
+text, so "we pass hidden states between two calls" is no longer novel on its
+own and only the *role* of the second call can be. The project's own scalar
+readout is now independently derived in the literature: "When Does a Language
+Model Commit?" (2605.06723, abstract-verified) defines the finite-answer
+projection as the Yes-minus-No log-odds difference, shows it stabilises 17 to 31
+tokens before the answer is parseable, and recovers it from compact hidden
+states, which strengthens the base mechanism's theoretical footing while
+removing any claim to the readout quantity itself. Specification-conditioned
+weight generation appeared during the round: Compliance2LoRA (2607.27594,
+abstract-verified) treats safety policies as inputs to a LoRA generator, which
+closes the "hypernetwork emits an adapter from policy text" door and leaves only
+"specification conditions the readout geometry of a frozen judge" open. Three
+further papers frame the neighbourhood without occupying it: CLIPTTA
+(2507.14312, search-result-only) argues that entropy minimisation is misaligned
+with contrastive vision-language pretraining and replaces it, which is the
+project's own saturation finding one architecture generation earlier; NExT-Guard
+(2603.02219, abstract-verified) uses off-the-shelf sparse autoencoders as a
+training-free text safety readout; FBHM (2605.31349, abstract-verified) steers a
+vision-language model for hateful memes with roughly 500 supervised samples. GMP
+(2603.01724, abstract-verified) is the empirical form of this project's
+ill-posedness proof, showing that language-model moderation degrades when
+guidelines are unstable or context-dependent. One negative result from the
+survey is worth recording: a search synthesis attributed bimodal decision
+projections to "Geometry of Decision Making in Language Models" (2511.20315),
+the abstract does not contain that claim, and no published paper was located
+that reports the bimodal logit-contrast phenomenon this project measures.
+
+**Competitor alert.** LELA, "Towards Training-free Multimodal Hate Localisation
+with Large Language Models" (2602.09637, 10 February 2026, abstract-verified),
+claims to be the first training-free large-language-model framework for hate
+video localisation, decomposes video into five modalities, and evaluates on
+HateMM and MultiHateClip, which are two of this project's five corpora. It
+appears to be a multi-stage prompting cascade and therefore almost certainly
+exceeds the two-call cap, and it targets localisation rather than a video-level
+operating point. It nonetheless removes the round-1 claim that nobody occupies
+training-free hateful video. SafeLens (2605.17610, abstract-verified) takes the
+adjacent slot on the guardrail side with a trained fast-and-slow video
+architecture. The single-call frozen-judge label-free position is still
+unoccupied, but novelty must now be argued at the mechanism layer and never at
+the "training-free" layer.
+
+## 3. The five clusters and the jury verdict
+
+Three lens agents (R4 specification-conditioned readout; the R1-by-R3 empty cell
+of a second call that manufactures a contrast; R2 combined with R5) were run
+with full repository access, and one of them ran zero-GPU measurements. Their
+output was merged with a ten-idea cross-model seed into five clusters. The jury
+ranked them 2 > 1 > 3 > 5 > 4.
+
+**Cluster 2, specification-conditioned readout geometry (jury rank 1).** Judge
+each video twice under two rule lists that already exist verbatim in the
+repository, discard both scalars, and read the layer-27 displacement between the
+two states as a predictor of which videos change class when the policy changes.
+The jury called this the strongest of the five and the only one that addresses
+the ill-posedness proof directly, because HateClipSeg supplies the same corpus
+under two label collapses and therefore a rare decisive falsification. Its
+predicted laboratory failure was named in advance and is exactly what happened:
+almost all displacement energy sits in a constant rule-list carrier, a
+length-matched off-construct policy produces an equally strong direction, and
+the per-video interaction residual is too weak to predict flips.
+
+**Cluster 1, answer-side contrast readout (jury rank 2).** Hold the prompt
+byte-identical, append the first token of "Yes" in one forward and of "No" in
+the other off a shared key-value cache, and read the leading direction of the
+per-video difference after the corpus-mean answer direction is removed. The jury
+judged this conditionally defensible and named its collision precisely: the
+commitment paper already theorises the Yes-versus-No separation and reads it
+from hidden states, so the claim cannot be that the two states differ but only
+that the per-video interaction residual carries construct information the scalar
+discards. The predicted failure was that mean subtraction leaves a residual
+whose first component still correlates with the scalar.
+
+**Cluster 3, scale emergence with geometry distillation (jury rank 3).** The 2B
+judge holds the construct as linearly as the 8B and ranks nearly as well, but its
+residual stream does not rotate toward the answer direction, so no label-free
+operating point exists at that scale. The jury rated the finding strong and the
+method half weak, demoted the ridge distillation from claimed novelty to a cost
+demonstration pending the owner's ruling on cross-model supervision, and warned
+that two model sizes do not establish emergence.
+
+**Cluster 5, illocution and endorsement axis (jury rank 4, parked).** A second
+call under a non-evaluative role restates the speaker's claim, the generated
+text is discarded, and the difference between the judge-role state and the
+author-role state is read as an endorsement axis aimed at the measured MHClip-ZH
+failure where a keyword in the title is treated as an assertion. The jury's
+objection is that the role change is not an identifiable endorsement
+intervention, because it alters perspective, task, and generation behaviour at
+once, and that asking the model to restate a mentioned claim may manufacture the
+very endorsement it aims to measure. Parked, not killed.
+
+**Cluster 4, cross-modal redundancy direction (jury rank 5, killed).**
+Canonical correlation between a video-only forward and a transcript-only
+forward, after the scalar is projected out, was proposed as a label-free
+criterion that selects the construct because modality-specific nuisance does not
+transfer across views. The jury killed it as a submission direction on two
+grounds. Canonical analysis finds shared identity and topic rather than hate,
+and, decisively for this project, the contribution depends on creating narrowed
+modality views, which is input restructuring as measurement apparatus and falls
+under the owner's veto whether or not it happens offline.
+
+## 4. Pilot results
+
+Three preregistered pilots ran. All three are dead. Each preregistration was
+committed before any judge call, and each verdict note reports every clause
+including the ones that passed.
+
+| Idea | Prereg commit | Verdict commit | One-line death cause |
+|---|---|---|---|
+| Cluster 2, specification displacement | `34fbdc3` | `b2b0f05` | Displacement is genuine but too small on MHClip-EN (0.710 against a 0.72 floor) and on HateClipSeg is a single-arm readout in disguise (placebo 0.665 against 0.724, second arm contributes 0.003). |
+| Cluster 1, answer-side contrast | `0271a68` | `030d310` | The Yes-minus-No leading direction correlates with the scalar at Spearman 0.983, firing the preregistered renaming abort at 0.90 on all four evaluation corpora. |
+| Interleaved timeline (owner's parallel kill test) | `c78955e` | `4f962d1` | The misaligned control captured the whole gain (+0.038 against +0.033 on the binding stratum, ratio 1.16), so the judge does not bind text to adjacent frames. |
+
+**Specification displacement, detail.** The carrier-aligned readout passed two of
+five frozen clauses and the residual axis passed none. On MHClip-EN the pairing
+is load-bearing (the shuffled placebo falls to 0.492, chance) but the separation
+is 0.710 against a 0.72 floor. On HateClipSeg the separation clears its 0.70
+floor at 0.724, and then the shuffled placebo reaches 0.665, because the score
+is reproduced to within 0.003 by the strict arm's projection alone at 0.721. The
+off-construct control separated the two readouts and killed the residual axis
+outright: a length-matched spam-and-copyright policy reached 0.720 on MHClip-EN,
+above the real construct swap's own 0.663 on the same stratum. Both directions
+are close to orthogonal to the direction that carries the distinction, at cosine
+0.034 for the residual component and 0.037 for the carrier against the
+supervised probe refitted on the same videos.
+
+**Answer-side contrast, detail.** The mechanism half of the story survived and
+the readout half did not. The degeneracy abort did not fire, at median cosine
+0.902 between each video's difference and the corpus mean, and the pairing
+placebo margin of 0.092 cleared its 0.05 bar, so the manufactured contrast is
+genuinely evidence-conditioned. The renaming abort fired at 0.983, 0.979, 0.949
+and 0.946 on the four evaluation corpora. Manufacturing the contrast made the
+problem worse rather than better: the prompt-side component tracked the scalar
+at 0.992 with 46 percent of the variance, and the answer-side component tracks
+it at 0.983 with 64 percent. Layer 18 is the only depth that escapes the
+renaming abort, at 0.860, and it escapes by being degenerate instead, at median
+cosine 0.996.
+
+**Stage A of that pilot corrected two premises and is the more durable result.**
+Inside the frozen saturation band the scalar is not flat: its in-band range is
++13.000 to +19.500 with a standard deviation of 1.50, and it reaches AUC 0.6472
+on the in-band arena. The band-conditioned principal-component control, run as a
+free rescue of the earlier corpus-wide failure, reached only 0.6348 against a
+0.70 floor. Most importantly, a leave-one-out supervised probe on the same 183
+in-band videos reaches 0.6253, which is *below* the scalar it was meant to beat,
+while the same probe reaches 0.837 on the MHClip-EN construct stratum. The
+saturation band is therefore not a hidden arena where the information waits to
+be found; it is close to label-unseparable at layer 27 even with labels. Any
+future work that chooses that arena should suspect the arena as much as the
+method, particularly given that HateClipSeg's negative class is already known to
+contain protected-group hostility at 36 percent.
+
+## 5. Synthesis: unsupervised readout access is now falsified from both sides
+
+The single most important thing this round produced is a closed statement, not a
+method.
+
+The supervised probe at layer 27 separates no-protected-target offence from
+protected-target hate at leave-one-out AUC 0.837, where the scalar reads 0.321
+in the same direction. The information exists in the representation. Every
+attempt to reach it without labels has now failed, and the failures cover the
+space rather than sampling it:
+
+1. **Corpus-wide principal components** rename the scalar. The first component
+   correlates with it at 0.992 and 0.995 at layers 27 and 36 and reaches only
+   0.746 against a 0.799 floor, with cross-corpus replication at 0.617.
+2. **Band-conditioned principal components**, which remove the scalar's variance
+   by construction, reach 0.6348 against a 0.70 floor, and the arena itself has
+   a supervised ceiling of 0.6253.
+3. **Extreme-pseudo-label heads** buy 0.0398 over the scalar on HateMM while
+   losing ranking (0.8893 against 0.9232) and require two-sided saturation
+   occupancy that three of five corpora lack.
+4. **Specification-displacement directions**, which draw the direction from
+   outside the corpus, are near-orthogonal to the working direction at cosine
+   0.034 and 0.037, and their off-construct placebo outperforms the real
+   construct swap.
+5. **Forced-answer contrasts**, which manufacture the contrast on the answer
+   side with the prompt held byte-identical, concentrate 64 percent of the
+   variance onto the scalar.
+
+Stated precisely: **every unsupervised summary of a single judge call's hidden
+states either renames the scalar readout or points somewhere orthogonal to the
+construct, while supervised access at 0.837 proves the information is present.**
+The two failure modes are not independent accidents. Both places where the answer
+lives, namely the state that produces the logits and the difference between the
+states that follow the two answers, have their dominant variance aligned with the
+logit contrast, because the logit contrast is a linear functional of very nearly
+that difference read through the unembedding. Unsupervised variance answers the
+question it is asked, and the question it is being asked is the readout.
+
+What follows is a fork rather than a next experiment. Either the single call
+must be relaxed, or the source of the direction must come from outside the
+model's own unlabeled variance. Section 7 states the second option and the
+ruling it needs.
+
+## 6. Surviving assets
+
+**The scale-emergence finding (Cluster 3).** The following are **round-2
+measurements, hypothesis-generating, not preregistered**. They were run on CPU
+over ImpliHateVid `train_clean`, 1,283 videos, comparing the 8B judge against
+the 2B on artifacts already on disk.
+
+| Quantity | 2B | 8B | Ratio |
+|---|---:|---:|---:|
+| Linear probe AUC on hidden states (layer 21 on 2B, layer 27 on 8B, ridge, five-fold) | 0.9655 | 0.9647 | 1.00× |
+| Ranking AUC, hateful against normal | 0.898 | 0.934 | 1.04× |
+| Standard deviation of the raw logit contrast | 0.82 | 11.89 | 14.5× |
+| Relative KDE trough depth, stored bf16 | 0.0477 | 0.4043 | 8.5× |
+| Relative KDE trough depth, de-quantized fp32 | 0.0315 | 0.4011 | 12.7× |
+| Standard deviation of the cosine between the state and the Yes-minus-No unembedding direction | 0.0032 | 0.0295 | 9.1× |
+| Norm of the Yes-minus-No unembedding direction | 1.545 | 1.654 | 1.07× |
+| State norm after the final normalisation | 142.6 | 226.5 | 1.59× |
+
+Three readings follow. The bf16 quantization confound that the readout postmortem
+suspected is refuted: with exact fp32 logits the 2B's trough gets *shallower*,
+not deeper, and relative trough depth is affine-invariant, so no temperature or
+rescaling fix can exist either. The de-quantization is exact, with a maximum
+deviation from the stored value of 0.2525, which is one grid step, and it
+reproduces the committed 8B trough depth of 0.4043 from the E7 pilot. The
+dissociation is clean: the 2B holds the construct as linearly as the 8B and
+ranks nearly as well, and what it lacks is angular commitment, with the 9.1-fold
+gap in cosine spread accounting for essentially the whole 14.5-fold
+dynamic-range gap while the unembedding geometry is effectively identical.
+
+What remains before this can be claimed as emergence rather than as a two-point
+artifact: a 4B checkpoint as a third scale point, a non-instruct control at the
+same scale to test whether instruction tuning rather than scale creates the
+rotation, and cross-corpus replication on the 2B states already on disk. The
+jury's warning stands, that depth, tokenizer differences, and normalisation are
+live alternative explanations and that layer comparisons must use normalised
+depth. The estimated cost is about one GPU-hour. The practical corollary, if it
+holds, is sharp for the moderation community: a small guardrail model can rank
+almost as well as a large one and still be impossible to threshold without
+labels, so small-model guardrail deployment inherits a hidden labelling cost.
+
+**A second round-2 measurement, same caveat.** The corpus-mean displacement
+caused by the project's own confirmed transcript-restoration intervention has
+cosine +0.090 with the readout direction, so the restoration direction is
+genuinely not the readout direction, and the intervention's asymmetry on that
+paired set is +3.487 in the score. Read as a readout the corpus-mean version
+fails: on the coarse ImpliHateVid task the restoration axis reaches 0.725
+against the scalar's 0.951, and after residualising the scalar it falls to
+0.458. The coarse task is not where the bottleneck lives, so this is a partial
+negative rather than a closed door, but it was not promoted to a pilot.
+
+**The ill-posedness proof and the attribution corpus.** These are the round's
+most reusable non-method assets and they are already committed. Same corpus,
+same scores, two label collapses, and the optimal label-free rule flips. Five
+corpora have blind-audited strata on disk. Any future method must be argued
+against them, and any claim that a corpus is "weak" now has to survive them.
+
+**Reusable controls produced by the dead pilots.** The off-construct
+spam-and-copyright policy is a working negative control for any policy-swap
+experiment, and it separated two readouts where the pairing placebo alone would
+not have. The layer-0 identity check, which must read exactly 0.500 because the
+final prompt token is identical across arms, and the exact reproduction of the
+frozen scores are a pair of cheap integrity tests worth keeping in later runs.
+The answer-contrast pre-flight caught a transcript-configuration mismatch at
+Spearman 0.827 and forced a full re-extraction of 3,197 videos before any clause
+was computed, which is the gate working as designed.
+
+**Timestamped ASR, a side-product with independent value.** The interleaved
+kill test re-transcribed 45.0 audio-hours under the frozen Whisper
+configuration to recover chunk timestamps. In 1,105 of 1,105 videos the
+re-transcription reproduced the stored text byte for byte, so the timestamps
+apply to the exact characters the judge reads, and 1,067 of the 1,105 took the
+timestamped route rather than any fallback. Any future design needing a
+temporal index over the judged transcript now has one, at no further cost.
+
+## 7. The fork that needs an owner ruling
+
+Section 5 leaves exactly one door in the R3 direction that has not been tried:
+**obtain the readout direction from supervision that is not human and not
+hate-specific**, for example a general-purpose language model labelling the
+project's own unlabeled corpus once, offline, to define a direction that is then
+applied by a frozen linear readout at inference. The owner has to rule on
+whether this remains label-free. Both sides are stated here and neither is
+adopted.
+
+**The case that it stays label-free.** The charter bans human hate labels, not
+supervision as such, and it explicitly permits general-purpose pretrained models
+because they carry world knowledge rather than task-specific hate supervision.
+Nothing about the target corpus is annotated by a person at any point. The
+project already depends on such models for the judge itself and for the speech
+transcription, so the line, if it exists, has already been crossed in the base
+method. The information is provably present at 0.837 and every route that avoids
+outside supervision has now been closed, so refusing this door is equivalent to
+accepting that the scalar readout is the ceiling.
+
+**The case that it does not.** A general-purpose model's notion of hate is
+itself distilled from human annotation, so the supervision is human hate labels
+laundered through a model rather than absent. The choice of teacher is a free
+parameter with no principled answer, which is the same objection that killed
+cross-dataset pooling under Anti-pattern 3, and a reviewer will ask what changes
+under a different teacher. Choosing a teacher *because* it is good at hate is
+the anti-pattern in its pure form. The honest framing would become "no human
+labels at our end", which is weaker than the current claim and invites the
+reader to compare against ordinary distillation baselines rather than against
+label-free ones.
+
+**What the ruling decides.** A yes reopens R3 with a concrete first experiment
+and turns Cluster 3's ridge map from a demoted cost demonstration into an
+admissible method component. A no closes R3 and leaves R1 (a second call with a
+role not yet tried) and R5 (the scale phenomenon as the claim in its own right)
+as the surviving relaxations, with the scale-emergence finding as the nearest
+publishable object. The three preregistered deaths in this round do not depend
+on the ruling either way.
