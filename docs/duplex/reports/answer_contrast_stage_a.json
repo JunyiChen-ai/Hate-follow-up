@@ -1,0 +1,270 @@
+{
+ "title": "Answer-contrast pilot, Stage A: band-conditioned PCA control",
+ "preregistration": "docs/duplex/PREREG_answer_contrast_pilot.md",
+ "status": "frozen control, CPU only, no model call",
+ "frozen_constants": {
+  "band": "z >= 13.0",
+  "layers": [
+   18,
+   27,
+   36
+  ],
+  "n_components": 3,
+  "standardisation": "per dimension over band members only, that corpus's own hidden states, no label read",
+  "sign_rule": "sign-free scoring, max(AUC, 1 - AUC)",
+  "primary_candidates": "3 layers x 3 components, HateClipSeg self-fit",
+  "control_floor": 0.7,
+  "probe_l2_lambda": 1.0
+ },
+ "decision_rule": "best sign-free AUC over the 9 primary candidates >= 0.7 -> CONTROL-SUCCEEDED, stop before Stage B; otherwise proceed to Stage B",
+ "band_facts": {
+  "HateClipSeg": {
+   "n_in_band": 183,
+   "z_min": 13.0,
+   "z_max": 19.5,
+   "z_sd": 1.497961876919912,
+   "z_iqr": 2.25
+  },
+  "HateMM": {
+   "n_in_band": 81,
+   "z_min": 13.0,
+   "z_max": 18.75,
+   "z_sd": 1.3823164105012447,
+   "z_iqr": 2.0
+  },
+  "ImpliHateVid": {
+   "n_in_band": 70,
+   "z_min": 13.0,
+   "z_max": 19.0,
+   "z_sd": 1.527507139500333,
+   "z_iqr": 2.75
+  }
+ },
+ "arena": {
+  "corpus": "HateClipSeg, in-band only",
+  "n_strict_hate": 126,
+  "n_non_strict": 57,
+  "z_auc_in_band": 0.6471734892787524,
+  "z_auc_note": "the incumbent scalar's ordering power inside the band; the band was cut so that this is near chance"
+ },
+ "primary_axes": [
+  {
+   "fit": "self",
+   "layer": 18,
+   "pc": 1,
+   "explained_variance_ratio": 0.1784565634043573,
+   "spearman_with_in_band_z": 0.04105285426314195,
+   "auc_raw": 0.449874686716792,
+   "auc_signfree": 0.550125313283208,
+   "n_zero_variance_dims": 0
+  },
+  {
+   "fit": "self",
+   "layer": 18,
+   "pc": 2,
+   "explained_variance_ratio": 0.12464117789070742,
+   "spearman_with_in_band_z": 0.09604533735886718,
+   "auc_raw": 0.565998329156224,
+   "auc_signfree": 0.565998329156224,
+   "n_zero_variance_dims": 0
+  },
+  {
+   "fit": "self",
+   "layer": 18,
+   "pc": 3,
+   "explained_variance_ratio": 0.08547587649112735,
+   "spearman_with_in_band_z": -0.07994100539980546,
+   "auc_raw": 0.4650515176830966,
+   "auc_signfree": 0.5349484823169034,
+   "n_zero_variance_dims": 0
+  },
+  {
+   "fit": "self",
+   "layer": 27,
+   "pc": 1,
+   "explained_variance_ratio": 0.19881270106409574,
+   "spearman_with_in_band_z": 0.8009430993023982,
+   "auc_raw": 0.63213589529379,
+   "auc_signfree": 0.63213589529379,
+   "n_zero_variance_dims": 0
+  },
+  {
+   "fit": "self",
+   "layer": 27,
+   "pc": 2,
+   "explained_variance_ratio": 0.12342279299361746,
+   "spearman_with_in_band_z": 0.39314029749040935,
+   "auc_raw": 0.5265942634363687,
+   "auc_signfree": 0.5265942634363687,
+   "n_zero_variance_dims": 0
+  },
+  {
+   "fit": "self",
+   "layer": 27,
+   "pc": 3,
+   "explained_variance_ratio": 0.08581044970791399,
+   "spearman_with_in_band_z": 0.011119727840908858,
+   "auc_raw": 0.5270119743803955,
+   "auc_signfree": 0.5270119743803955,
+   "n_zero_variance_dims": 0
+  },
+  {
+   "fit": "self",
+   "layer": 36,
+   "pc": 1,
+   "explained_variance_ratio": 0.1876243280501167,
+   "spearman_with_in_band_z": 0.8561121327210803,
+   "auc_raw": 0.6347813979392927,
+   "auc_signfree": 0.6347813979392927,
+   "n_zero_variance_dims": 0
+  },
+  {
+   "fit": "self",
+   "layer": 36,
+   "pc": 2,
+   "explained_variance_ratio": 0.11106617444225747,
+   "spearman_with_in_band_z": 0.27268099297197057,
+   "auc_raw": 0.504594820384294,
+   "auc_signfree": 0.504594820384294,
+   "n_zero_variance_dims": 0
+  },
+  {
+   "fit": "self",
+   "layer": 36,
+   "pc": 3,
+   "explained_variance_ratio": 0.07166703643161543,
+   "spearman_with_in_band_z": 0.12689750629560423,
+   "auc_raw": 0.556390977443609,
+   "auc_signfree": 0.556390977443609,
+   "n_zero_variance_dims": 0
+  }
+ ],
+ "secondary_axes_descriptive": [
+  {
+   "fit": "pooled",
+   "layer": 18,
+   "pc": 1,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.19008542114052454,
+   "spearman_with_in_band_z": -0.0467456213433779,
+   "auc_raw": 0.5476190476190477,
+   "auc_signfree": 0.5476190476190477
+  },
+  {
+   "fit": "pooled",
+   "layer": 18,
+   "pc": 2,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.09577820041530667,
+   "spearman_with_in_band_z": 0.09448580950608028,
+   "auc_raw": 0.5544416597048176,
+   "auc_signfree": 0.5544416597048176
+  },
+  {
+   "fit": "pooled",
+   "layer": 18,
+   "pc": 3,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.06975778210060027,
+   "spearman_with_in_band_z": 0.02559096931261824,
+   "auc_raw": 0.5176830966304651,
+   "auc_signfree": 0.5176830966304651
+  },
+  {
+   "fit": "pooled",
+   "layer": 27,
+   "pc": 1,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.2019653073567598,
+   "spearman_with_in_band_z": -0.789060281732264,
+   "auc_raw": 0.3714842662211083,
+   "auc_signfree": 0.6285157337788917
+  },
+  {
+   "fit": "pooled",
+   "layer": 27,
+   "pc": 2,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.09757561625929108,
+   "spearman_with_in_band_z": -0.09895253267689255,
+   "auc_raw": 0.4884433305485937,
+   "auc_signfree": 0.5115566694514063
+  },
+  {
+   "fit": "pooled",
+   "layer": 27,
+   "pc": 3,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.08598434727284812,
+   "spearman_with_in_band_z": -0.46913049899648795,
+   "auc_raw": 0.4693678641047062,
+   "auc_signfree": 0.5306321358952938
+  },
+  {
+   "fit": "pooled",
+   "layer": 36,
+   "pc": 1,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.1872674675169994,
+   "spearman_with_in_band_z": -0.8422392006771696,
+   "auc_raw": 0.3684210526315789,
+   "auc_signfree": 0.631578947368421
+  },
+  {
+   "fit": "pooled",
+   "layer": 36,
+   "pc": 2,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.08726735122182831,
+   "spearman_with_in_band_z": -0.3011840617782519,
+   "auc_raw": 0.5213032581453634,
+   "auc_signfree": 0.5213032581453634
+  },
+  {
+   "fit": "pooled",
+   "layer": 36,
+   "pc": 3,
+   "n_pooled_rows": 334,
+   "explained_variance_ratio": 0.06929548360482655,
+   "spearman_with_in_band_z": -0.19864363420482195,
+   "auc_raw": 0.44764689501531607,
+   "auc_signfree": 0.5523531049846839
+  }
+ ],
+ "best_primary": {
+  "fit": "self",
+  "layer": 36,
+  "pc": 1,
+  "explained_variance_ratio": 0.1876243280501167,
+  "spearman_with_in_band_z": 0.8561121327210803,
+  "auc_raw": 0.6347813979392927,
+  "auc_signfree": 0.6347813979392927,
+  "n_zero_variance_dims": 0
+ },
+ "best_secondary_descriptive": {
+  "fit": "pooled",
+  "layer": 36,
+  "pc": 1,
+  "n_pooled_rows": 334,
+  "explained_variance_ratio": 0.1872674675169994,
+  "spearman_with_in_band_z": -0.8422392006771696,
+  "auc_raw": 0.3684210526315789,
+  "auc_signfree": 0.631578947368421
+ },
+ "descriptive_supervised_ceiling": {
+  "note": "decision-irrelevant; states whether the in-band arena is linearly separable at all at layer 27",
+  "layer": 27,
+  "loo_auc": 0.62531328320802,
+  "in_sample_auc": 0.9996519075466443,
+  "n_folds": 183,
+  "all_folds_converged": true,
+  "median_lbfgs_iterations": 384.0
+ },
+ "stage_a_verdict": {
+  "best_primary_signfree_auc": 0.6347813979392927,
+  "floor": 0.7,
+  "verdict": "PROCEED",
+  "meaning": "band-conditioned PCA does not recover the construct; Stage B proceeds"
+ },
+ "wall_clock_seconds": 1594.3
+}
