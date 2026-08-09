@@ -53,7 +53,12 @@ NORM_CONTROL_SLACK = 0.03      # DEAD if norm AUC >= score AUC - slack
 PREFLIGHT_RHO = 0.999
 PREFLIGHT_MEDIAN_ABS = 0.05
 
-AC = os.path.join(ROOT, "results", "answer_contrast")
+# ANSWER_CONTRAST_ROOT exists so that the pipeline can be dry-run on synthetic
+# arm arrays before the real extraction finishes. Every reported result comes
+# from the default path.
+AC = os.environ.get("ANSWER_CONTRAST_ROOT",
+                    os.path.join(ROOT, "results", "answer_contrast"))
+OUT_OVERRIDE = os.environ.get("ANSWER_CONTRAST_OUT")
 # The preregistered fallback (fit on HateMM train only) is selected by setting
 # ANSWER_CONTRAST_FIT=hatemm, never by editing this list after a result.
 FIT_SETS = ([("HateMM", "train")]
@@ -77,8 +82,8 @@ EXPECTED_N = {"ImpliHateVid_train": 1283, "HateMM_train": 744,
               "HateMM_test": 215, "HateClipSeg_test": 394,
               "MHClip_EN_test": 161, "ImpliHateVid_test": 400}
 
-OUT = os.path.join(ROOT, "docs", "duplex", "reports",
-                   "answer_contrast_pilot.json")
+OUT = OUT_OVERRIDE or os.path.join(ROOT, "docs", "duplex", "reports",
+                                   "answer_contrast_pilot.json")
 
 
 def tag(dataset, split):
@@ -377,8 +382,11 @@ def main():
         s = pc[t]["score"][idx]
         y = arenas["C5"]["y"]
         rep = valley_report(s, y)
+        # A score distribution with no KDE valley cannot supply an operating
+        # point at all, which is a C5 failure rather than a missing number.
         v["C5_macro_f1"] = rep["macro_f1"]
         v["C5_threshold"] = rep["threshold"]
+        v["C5_valley_found"] = rep["threshold"] is not None
         v["C5_auc"] = auc(s, y)
         v["max_abs_spearman_score_z"] = max(
             abs(pc[k]["spearman_score_z"]) for k in pc)
@@ -393,8 +401,7 @@ def main():
     real = run_layer(LAYER_PRIMARY, permuted=False)
     real_v = clause_values(real)
     print(f"  C1 {real_v['C1_auc']:.4f} C2 {real_v['C2_auc_signfree']:.4f} "
-          f"C3 {real_v['C3_auc']:.4f} C5 {real_v['C5_macro_f1']:.4f}",
-          flush=True)
+          f"C3 {real_v['C3_auc']:.4f} C5 {real_v['C5_macro_f1']}", flush=True)
 
     print(f"[layer {LAYER_PRIMARY}] pairing placebo", flush=True)
     plac = run_layer(LAYER_PRIMARY, permuted=True)
@@ -419,8 +426,13 @@ def main():
     }
 
     # ---- controls and clauses --------------------------------------------
-    norm_dead = real_v["C1_norm_auc"] >= real_v["C1_auc"] - NORM_CONTROL_SLACK
     c1 = real_v["C1_auc"] >= C1_FLOOR
+    # The norm control asks whether a passing score is really commitment
+    # magnitude. It can only take a verdict away, never add one, so it is
+    # evaluated but only becomes the cause of death when C1 has passed.
+    # Clarified during the synthetic dry run, before any real arm existed.
+    norm_fires = real_v["C1_norm_auc"] >= real_v["C1_auc"] - NORM_CONTROL_SLACK
+    norm_dead = bool(norm_fires and c1)
     c2 = real_v["C2_auc_signfree"] >= C2_FLOOR
     c3 = real_v["C3_auc"] >= C3_FLOOR
     c4 = real_v["C1_auc"] >= plac_v["C1_auc"] + C4_MARGIN
@@ -439,7 +451,11 @@ def main():
                     "on the C1 arena",
             "score_c1_auc": real_v["C1_auc"],
             "norm_c1_auc": real_v["C1_norm_auc"],
-            "fires": bool(norm_dead)},
+            "condition_met": bool(norm_fires),
+            "fires": bool(norm_dead),
+            "note": ("the control is decisive only when C1 passes; with C1 "
+                     "failed there is no passing score for it to explain "
+                     "away")},
     }
     res["clauses"] = {
         "C1_primary_hateclipseg_band": {
@@ -464,6 +480,7 @@ def main():
             "result": "PASS" if c4 else "FAIL"},
         "C5_implihatevid_regression_guard": {
             "bar": C5_FLOOR, "value": real_v["C5_macro_f1"],
+            "valley_found": real_v["C5_valley_found"],
             "incumbent_valley_macro_f1": arenas["C5"]["valley_macro_f1"],
             "score_auc": real_v["C5_auc"],
             "result": "PASS" if c5 else "FAIL"},
@@ -506,7 +523,7 @@ def main():
             "median_cos_to_mean": st["axis"]["median_cos_to_mean"],
         }
         print(f"  C1 {sv['C1_auc']:.4f} C2 {sv['C2_auc_signfree']:.4f} "
-              f"C3 {sv['C3_auc']:.4f}", flush=True)
+              f"C3 {sv['C3_auc']:.4f} C5 {sv['C5_macro_f1']}", flush=True)
     res["secondary_layers_descriptive"] = secondary
 
     res["wall_clock_seconds"] = round(time.time() - t0, 1)
