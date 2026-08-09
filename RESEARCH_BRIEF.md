@@ -1,48 +1,39 @@
 # Research Brief — Label-Free MLLM Hateful Video Detection (Follow-Up Project)
 
-Date: 2026-08-08. Owner: Junyi Chen. This brief is the primary context for idea discovery. Detailed evidence lives in the referenced repo docs; this file stays under two pages.
+Date: 2026-08-09 (rev 2, post attribution program). Owner: Junyi Chen. This brief is the primary context for idea discovery. Detailed evidence lives in docs/duplex/ and docs/analysis/; this file stays under two pages.
 
 ## Problem statement
 
-Detect hateful videos with a multimodal LLM using **zero human hate labels** at training, adaptation, and threshold-selection time. The deliverable is a method that is (a) mechanistically novel with an explainable, falsifiable story specific to hateful video, and (b) strong on held-out test splits across benchmarks. Paper writing is on hold; method discovery is the current phase.
+Detect hateful videos with a multimodal LLM using **zero human hate labels** at training, adaptation, and threshold-selection time. The deliverable is a method that is (a) **mechanistically novel** — the owner explicitly rejects further data-preprocessing-shaped contributions — and (b) strong on held-out test splits. Paper writing is on hold; method discovery is the current phase. The owner's standing question: **which constraint should be relaxed to buy real novelty, and how?**
 
-## What is already established (do not re-derive)
+## Established base (do not re-derive)
 
-**Confirmed mechanism — channel restoration** (the only mechanism to survive a pre-registered kill-test in two projects): hateful evidence is often carried by speech that the dataset transcript missed (ASR failure) or that a fixed transcript budget truncated. Restoring the channel (fresh Whisper large-v3, full length, degeneracy-gated) causally flips dismissed-hateful videos (flip asymmetry +0.486, p=1.3e-35) while leaving normals alone, with a clean three-way dissociation across starvation routes. Method form: **fresh full transcript → single frozen 8B judge call (Qwen3-VL-8B) → raw logit z = logsumexp(Yes)−logsumexp(No) → label-free KDE-valley threshold on the corpus's own z distribution**. One MLLM call per video.
+**Confirmed mechanism — channel restoration**: fresh full Whisper transcript → single frozen Qwen3-VL-8B call → raw logit z = logsumexp(Yes)−logsumexp(No) → label-free KDE-valley threshold. Causal flip asymmetry +0.486 (p=1.3e-35), three-way dissociation. One call per video.
 
-**Held-out test results (all committed):**
+**Held-out test (5 corpora, committed):** ImpliHateVid AUC 0.947 / valley macro-F1 0.882; HateMM 0.923 / 0.656; MHClip-EN 0.785 / 0.696; MHClip-ZH 0.855 / 0.726; HateClipSeg 0.754 union / 0.771 strict. Labeled-oracle mean over the first four = 0.8175 — threshold selection, even solved perfectly, gains ≈1 point over the base project (TRIAGE 0.808 at 1.73 calls/video).
 
-| dataset | AUC | label-free macro-F1 | reading |
-|---|---|---|---|
-| ImpliHateVid (401) | 0.9473 | 0.8823 | method holds; supervised SOTA (IARE, SIGIR'26) is 91.75 F1 |
-| HateMM (215) | 0.9232 | 0.6562 | ranking strong; valley picks a bad operating point (oracle gap 0.23) — its "normal" class is violence-saturated |
-| MHClip-EN (161) | 0.7847 | 0.6962 | judge ceiling low; threshold blameless |
-| MHClip-ZH (149) | 0.8547 | 0.7256 | restoration neutral — no starvation there (median transcript 76 chars), mechanism-consistent |
+**Behavioral laws (all preregistered):** (1) question-insensitive, evidence-sensitive — same-construct rewordings correlate ≥0.97; construct-swapped questions decorrelate slightly (0.935) but measure nothing new. (2) Answer-posterior saturation: 82% of videos sit at entropy ≈ 0 — any label-free training objective on the answer posterior has no gradient. (3) Layer-27 hidden states DO hold construct information the scalar readout discards (supervised probe separates no-target-offense from protected-target-hate at 0.837 where z scores 0.321) — but unsupervised access failed (PCA axes = z renamed or noise) and extreme-pseudo-label access yields only +0.04 and needs two-sided saturation occupancy that 3 of 5 corpora lack. (4) 2B judge: no commitment bimodality — label-free operating point unusable below ~8B scale.
 
-**Scale boundary condition:** the 2B judge gains ranking from restored evidence but its z distribution is near-unimodal (valley collapses; 2B label-free operating point unusable). Commitment bimodality emerges with scale and is what makes label-free thresholding work.
+**Five-corpus error attribution (autopsies + blind audits, completed):** no model-side blind spot survives controls. HateClipSeg "normal" class: 36% contains protected-group hostility/extremist content (blind-confirmed; byte-identical duplicate transcripts with contradictory labels exist). MHClip-EN positives: 69% carry no protected-group target (blind-confirmed) — construct mixing. MHClip-ZH: 42% of titles embed the harvester's offensive query keyword; keyword-bearing normals score median z +2.25 vs −6.5 for plain normals — collection artifact, and simultaneously a real judge failure mode: **surface keyword in title triggers z despite benign content (mention treated as assertion)**. Gender-stereotype content: judge ranks it 0.970 where annotators call it hateful; low elsewhere because corpora file it as insulting — construct disagreement, not deficit.
 
-**Model behavioral law (three independent confirmations):** the 8B judge is **question-insensitive and evidence-sensitive**. Prompt-level re-readings (literal vs pragmatic; stance-directed probes) correlate ≥0.97 with the joint judgment and never beat effort-matched placebos; input-level evidence changes flip decisions causally. Any new mechanism must act on the **input/evidence side**, not on how the question is asked.
+**Ill-posedness (proved):** same corpus, same scores, two label collapses → the optimal label-free rule flips (valley 0.652 vs anchored 0.547 under union; 0.448 vs 0.677 under strict). The decision boundary is annotation-owned; no z-only rule can be universal. Task/policy specification is the missing input.
 
-## Hard constraints (violating any of these disqualifies an idea)
+## Falsified families (17 prior + 8 new; docs/analysis/prior_falsification_map.md + docs/duplex/*_NOTE.md)
 
-1. **≤2 MLLM calls per video**, each with a distinct named role; single-pass preferred. No ensembling, no self-consistency sampling, no multi-prompt pooling, no CoT-sample-and-vote.
-2. **No external hate-specific resources**: no auxiliary hate datasets, no hate lexicons, no retrieval over hate examples. General-purpose pretrained models (CLIP, Whisper, the MLLM itself) are fine.
-3. **Label-free end to end**: no labeled dev set may tune anything, including thresholds.
-4. Every idea needs the 4-part story: phenomenon (specific to hateful video) → mechanism (falsifiable) → prediction (with a disconfirming outcome) → counterfactual ablation.
-5. **Falsified designs may not be rerun** (see docs/analysis/prior_falsification_map.md for all 22): observe-then-judge text cascades; target×stance products or boolean conjunctions; post-hoc fusion of deliberately narrowed calls (loses to the model's own cross-modal attention); per-rule readouts; self-assessed confidence gating at any level (text, logprob, activation probe); prompt-difference statistics that cannot beat a matched placebo; boundary-rescue second opinions; multi-model judging.
-6. Published no-fly zones: MARS (adversarial dual-stance), MATCH-HVD (evidence agents + judge), Pro-Cap (attribute-probe captioning), LoReHM (re-ask with disclosed prior), ALARM (confidence + self-improvement + retrieval).
+Prior: observe-then-judge cascades; target×stance products; narrowed-call fusion; per-rule readouts; confidence gating (all levels); prompt-difference statistics; boundary-rescue second opinions; multi-model judging. New (all preregistered FAILs, 2026-08-08/09): saturation-anchored threshold (unconditional + occupancy-gated); commitment-state semantic interpretation; text-region pixel-budget rerouting (text already legible); construct-swapped second axis (dual-axis); unsupervised hidden-state axes (PCA); entropy/posterior-objective adaptation (no gradient); extreme-pseudo-label readout refitting (+0.04, insufficient, occupancy-limited). Also dead: temporal frame coverage (uniform-16 covers 96.8%); speaker-provenance tag injection; prosody channel; generic-harm 2-D fusion; evidence-volume account of implicit-content deficits (wrong sign).
 
-## Where the open performance headroom is (the error budget)
+## Constraint-relaxation menu (the owner's live question — ideas should target these)
 
-- **FP half (largest)**: surface-evidence/stance misattribution — the judge fires on hate-adjacent surface features in non-hateful context (IHV: 79% of FPs cue-carrying vs 53% of TNs, p=3e-7; HateMM: 70 FPs, all high-z, on violent-but-not-hateful normals that also bend the valley). Prompt-side fixes are dead (see behavioral law); an input-side fix is unexplored.
-- **Judge-ceiling datasets**: MHClip-EN AUC 0.78 with threshold blameless — evidence needed by the judge is plausibly not reaching it (candidate channels: on-screen text/OCR at 91-token frame resolution; temporal sparsity under 16 uniform frames).
-- **Residual FN**: videos with no transcribable speech (7 of 8 confirmed no-speech residuals stay FN) — evidence must come from a non-speech channel if at all.
-- **Threshold geometry**: the KDE valley assumes the z-distribution's two modes align with the class boundary; on corpora whose normal class shares surface features with hate (HateMM), the geometric valley and the label boundary diverge. A label-free operating-point principle robust to this is open.
+R1. **Second call with a genuinely new role** — the ≤2-call budget has an unspent slot; every falsified second-call design reused the same scalar-judgment paradigm. What role is NOT in the falsified family?
+R2. **Label-free training/adaptation** — charter-legal (only human labels are banned; target-corpus unlabeled data explicitly allowed). Posterior objectives are dead (no gradient); representation-level or cross-modal objectives are open.
+R3. **Readout wider than one scalar** — the representation provably holds more (probe 0.837); the open problem is label-free access. Cross-model distillation (a general-purpose LLM supplies the supervision signal once, offline) would relax "no supervision" to "no human/hate-specific supervision" — owner ruling needed on whether this stays label-free.
+R4. **Task-specification as first-class input** — the ill-posedness proof says the boundary must be injected. CAUTION: per-dataset definition PROMPTS are the base project's territory (policy conditioning); only structurally different uses (e.g., spec-conditioned readout geometry or spec-conditioned training) are candidate novelty.
+R5. **Judge backbone** — currently pinned to Qwen3-VL-8B by execution constraint; relaxing it is engineering unless a scale/architecture phenomenon is the claim (the 2B boundary condition shows such phenomena exist).
 
-## Resources and constraints
+## Hard constraints that stay
 
-Single RTX 5090 (currently occupied by the owner's own runs — **no GPU pilots without explicit scheduling**). All four benchmarks local with frames_16 + fresh Whisper transcripts + raw mp4s on B2. A 5th resource: HateClipSeg (395 videos, 11,714 segment-level annotations with timestamps, no splits) — usable as analysis-side ground truth for temporal-sparsity phenomenon validation only; its bundled hate lexicon is quarantined. Frozen instruments (scorer, extractor, gate, threshold recipe) must not be modified; new work wraps them.
+≤2 MLLM calls/video with distinct named roles; no ensembling/self-consistency; no external hate-specific resources (datasets, lexicons, retrieval); no human hate labels anywhere; 4-part story (phenomenon → mechanism → prediction → counterfactual) mandatory; falsified designs may not rerun; no-fly: MARS, MATCH-HVD, Pro-Cap, LoReHM, ALARM. **Owner veto: no more data-preprocessing-shaped contributions; the novelty must live in the model/mechanism layer.**
 
-## Non-goals
+## Resources
 
-Supervised or few-shot methods; methods whose gain is inference-compute scaling; benchmark-specific prompt engineering; paper writing (on hold).
+Single RTX 5090, currently free. Five benchmarks local with frames_16, fresh transcripts, per-layer hidden states for all scored videos, raw mp4s on B2. HateClipSeg segment-level annotations available as analysis-side gold. Blind-audit corrected strata on disk for EN/HCS/ZH.
