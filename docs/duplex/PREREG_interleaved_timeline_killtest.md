@@ -92,10 +92,11 @@ Frame *i* of the sixteen (0-indexed) is taken to cover
 
 The transcript the judge sees is the frozen one: the C2-gated fresh Whisper
 transcript where the gate accepted it, the dataset transcript otherwise. It is
-split into clause units by the frozen `split_units` routine of
-`scripts/duplex/channel_restoration_gate.py`, and each unit is assigned to the
-frame slot containing its own midpoint in time. Three routes to that time, in
-priority order:
+cut into atomic pieces at clause boundaries (the frozen `split_units` routine of
+`scripts/duplex/channel_restoration_gate.py`), at Whisper chunk boundaries where
+those exist, and at whitespace runs; each piece is assigned to the frame slot
+containing its own midpoint in time. Three routes to that time, in priority
+order:
 
 1. **Timestamped route.** Whisper large-v3 is re-run on the same wav files with
    the frozen ASR configuration, storing the chunk timestamps the original run
@@ -105,15 +106,27 @@ priority order:
    from the accepted fresh route.
 2. **Proportional route (documented fallback).** Where route 1 is unavailable —
    the gate fell back to the dataset transcript, the video had no usable audio,
-   or the re-run did not reproduce the stored text byte-for-byte — a unit at
+   or the re-run did not reproduce the stored text byte-for-byte — a piece at
    character midpoint *p* of a transcript of length *L* is assigned to slot
    `floor(16·p/L)`. Per-corpus counts of videos on this route are reported.
 3. **Empty.** A video with no transcript text contributes no segments; its
    INTERLEAVED and MISALIGNED inputs are the frames plus the trailing block.
 
-The unit-to-slot map is monotone in character position under both routes, so
-reading the segments in frame order recovers the transcript in its original
-order under INTERLEAVED.
+The piece-to-slot map is forced monotone in character position under both routes
+by a running maximum, so reading the segments in frame order recovers the
+transcript in its original order under INTERLEAVED, and the concatenation of the
+sixteen slots rebuilds the judged transcript character for character. That
+identity is asserted per video.
+
+**Amendment, 2026-08-09, before any judge call under any arm.** The
+segmentation granularity was raised from the clause to the atomic piece
+(clause, Whisper chunk, or whitespace-delimited token, whichever cuts finer).
+The clause is the wrong unit here for a reason that has nothing to do with the
+hypothesis: Whisper emits Mandarin without punctuation, so an entire MHClip-ZH
+transcript is one clause, and clause-granular interleaving would have placed the
+whole transcript beside a single frame in most of that corpus — testing nothing.
+The finer cut changes no character of the transcript and applies identically to
+both new arms. No score existed when this was written.
 
 Repetition collapse is handled by tracking which clause units survive the
 frozen `collapse_repeats`; surviving units keep their own character offsets in
