@@ -1,0 +1,445 @@
+{
+  "protocol": "docs/duplex/PREREG_scale_emergence.md",
+  "compute": "CPU only for this analysis; no model call. Per-video z and hidden states written by the frozen judge are read from disk, together with the unembedding rows and the final RMSNorm weight of each checkpoint.",
+  "frozen_constants": {
+    "yes_ids": [
+      7414,
+      9454,
+      9693,
+      9834,
+      14004,
+      14080
+    ],
+    "no_ids": [
+      902,
+      2152,
+      2308,
+      2753,
+      5664,
+      8996
+    ],
+    "final_state": "hidden_states[-1] is pre-final-norm; the model's own RMSNorm with eps=1e-6 is applied before any geometry is read",
+    "answer_direction": "mean(W[yes_ids]) - mean(W[no_ids])",
+    "kde": {
+      "n_grid": 4001,
+      "grid_pad": 2.0,
+      "bandwidth": "scott",
+      "trough": "1 - density(valley)/min(density of the two modes)"
+    },
+    "probe": {
+      "layer_rule": "round(0.75 * n_layers)",
+      "folds": 5,
+      "l2_lambda": 1.0,
+      "seed": 0,
+      "standardisation": "per fold, training-half statistics"
+    },
+    "d1_ratio": 0.7,
+    "d2_margin": 0.05
+  },
+  "cells": {
+    "implihatevid|2b": {
+      "arm": "2b",
+      "checkpoint": "Qwen/Qwen3-VL-2B-Instruct",
+      "corpus": "ImpliHateVid",
+      "n_videos": 400,
+      "n_pos": 199,
+      "n_neg": 201,
+      "unembedding_key": "model.language_model.embed_tokens.weight",
+      "tied_embeddings": true,
+      "n_layers": 28,
+      "probe_layer": 21,
+      "z_distribution": {
+        "sd_dequantized": 0.9989946759963215,
+        "sd_stored_bf16": 1.0029709938658948,
+        "dynamic_range_dequantized": 4.510284423828125,
+        "min": -1.3750228881835938,
+        "max": 3.1352615356445312,
+        "max_abs_dequantization_shift": 0.24188995361328125,
+        "n_modes_dequantized": 2,
+        "relative_trough_depth_dequantized": 0.07801843430050459,
+        "relative_trough_depth_stored_bf16": 0.04503238243834029,
+        "valley_dequantized": 0.44396724700927725,
+        "n_modes_stored_bf16": 2
+      },
+      "angular_commitment": {
+        "cos_sd": 0.0038838391604142306,
+        "cos_mean": 0.004469468455777132,
+        "cos_min": -0.005170077085494995,
+        "cos_max": 0.013169437646865845,
+        "answer_direction_norm": 1.5448362827301025,
+        "mean_final_state_norm": 143.49499183654785
+      },
+      "ranking_auc": 0.9213730343258582,
+      "probe": {
+        "auc": 0.9213730343258582,
+        "layer": 21,
+        "n_folds": 5,
+        "l2_lambda": 1.0,
+        "seed": 0
+      },
+      "operating_point": {
+        "valley_macro_f1_label_free": 0.8083299791079677,
+        "valley_errors": {
+          "fn": 7,
+          "fp": 68
+        },
+        "oracle_macro_f1": 0.8424911401266322,
+        "oracle_threshold": 1.0503482818603516,
+        "gap": 0.03416116101866451
+      }
+    },
+    "implihatevid|4b": {
+      "arm": "4b",
+      "checkpoint": "Qwen/Qwen3-VL-4B-Instruct",
+      "corpus": "ImpliHateVid",
+      "n_videos": 400,
+      "n_pos": 199,
+      "n_neg": 201,
+      "unembedding_key": "model.language_model.embed_tokens.weight",
+      "tied_embeddings": true,
+      "n_layers": 36,
+      "probe_layer": 27,
+      "z_distribution": {
+        "sd_dequantized": 12.389051425128903,
+        "sd_stored_bf16": 12.38417008851737,
+        "dynamic_range_dequantized": 37.574283599853516,
+        "min": -19.697179794311523,
+        "max": 17.877103805541992,
+        "max_abs_dequantization_shift": 0.2278900146484375,
+        "n_modes_dequantized": 2,
+        "relative_trough_depth_dequantized": 0.3615409388019244,
+        "relative_trough_depth_stored_bf16": 0.3637257864804385,
+        "valley_dequantized": -1.585620102882384,
+        "n_modes_stored_bf16": 2
+      },
+      "angular_commitment": {
+        "cos_sd": 0.048348935951215415,
+        "cos_mean": -0.0081520198400176,
+        "cos_min": -0.07341036945581436,
+        "cos_max": 0.07399754971265793,
+        "answer_direction_norm": 1.096988558769226,
+        "mean_final_state_norm": 218.14904644012452
+      },
+      "ranking_auc": 0.9410235255881397,
+      "probe": {
+        "auc": 0.9377484437110928,
+        "layer": 27,
+        "n_folds": 5,
+        "l2_lambda": 1.0,
+        "seed": 0
+      },
+      "operating_point": {
+        "valley_macro_f1_label_free": 0.8568477626184303,
+        "valley_errors": {
+          "fn": 41,
+          "fp": 16
+        },
+        "oracle_macro_f1": 0.8623546120589872,
+        "oracle_threshold": -7.668493270874023,
+        "gap": 0.005506849440556905
+      }
+    },
+    "implihatevid|8b": {
+      "arm": "8b",
+      "checkpoint": "Qwen/Qwen3-VL-8B-Instruct",
+      "corpus": "ImpliHateVid",
+      "n_videos": 400,
+      "n_pos": 199,
+      "n_neg": 201,
+      "unembedding_key": "lm_head.weight",
+      "tied_embeddings": false,
+      "n_layers": 36,
+      "probe_layer": 27,
+      "z_distribution": {
+        "sd_dequantized": 13.395971435584606,
+        "sd_stored_bf16": 13.39199088259467,
+        "dynamic_range_dequantized": 40.12689971923828,
+        "min": -21.236621856689453,
+        "max": 18.890277862548828,
+        "max_abs_dequantization_shift": 0.22861480712890625,
+        "n_modes_dequantized": 2,
+        "relative_trough_depth_dequantized": 0.6040622055816955,
+        "relative_trough_depth_stored_bf16": 0.6042868783495953,
+        "valley_dequantized": -4.515784650802612,
+        "n_modes_stored_bf16": 2
+      },
+      "angular_commitment": {
+        "cos_sd": 0.03321727824968764,
+        "cos_mean": 0.00037197021792962915,
+        "cos_min": -0.04806230217218399,
+        "cos_max": 0.04974408447742462,
+        "answer_direction_norm": 1.654447078704834,
+        "mean_final_state_norm": 226.83799121856688
+      },
+      "ranking_auc": 0.9473736843421086,
+      "probe": {
+        "auc": 0.9480487012175305,
+        "layer": 27,
+        "n_folds": 5,
+        "l2_lambda": 1.0,
+        "seed": 0
+      },
+      "operating_point": {
+        "valley_macro_f1_label_free": 0.8823345329369425,
+        "valley_errors": {
+          "fn": 15,
+          "fp": 32
+        },
+        "oracle_macro_f1": 0.8924670680395871,
+        "oracle_threshold": -2.2857532501220703,
+        "gap": 0.010132535102644558
+      }
+    },
+    "hatemm|2b": {
+      "arm": "2b",
+      "checkpoint": "Qwen/Qwen3-VL-2B-Instruct",
+      "corpus": "HateMM",
+      "n_videos": 215,
+      "n_pos": 86,
+      "n_neg": 129,
+      "unembedding_key": "model.language_model.embed_tokens.weight",
+      "tied_embeddings": true,
+      "n_layers": 28,
+      "probe_layer": 21,
+      "z_distribution": {
+        "sd_dequantized": 1.034790616587211,
+        "sd_stored_bf16": 1.0449356001687558,
+        "dynamic_range_dequantized": 5.464637756347656,
+        "min": -1.6369247436523438,
+        "max": 3.8277130126953125,
+        "max_abs_dequantization_shift": 0.23440933227539062,
+        "n_modes_dequantized": 1,
+        "relative_trough_depth_dequantized": null,
+        "relative_trough_depth_stored_bf16": null,
+        "valley_dequantized": null,
+        "n_modes_stored_bf16": 1
+      },
+      "angular_commitment": {
+        "cos_sd": 0.0043264110722629175,
+        "cos_mean": 0.006007330305544392,
+        "cos_min": -0.007066437043249607,
+        "cos_max": 0.015325089916586876,
+        "answer_direction_norm": 1.5448362827301025,
+        "mean_final_state_norm": 143.9057933008948
+      },
+      "ranking_auc": 0.893095366864972,
+      "probe": {
+        "auc": 0.8251307012799711,
+        "layer": 21,
+        "n_folds": 5,
+        "l2_lambda": 1.0,
+        "seed": 0
+      },
+      "operating_point": {
+        "valley_macro_f1_label_free": null,
+        "valley_errors": null,
+        "oracle_macro_f1": 0.8208333333333333,
+        "oracle_threshold": 1.8911266326904297,
+        "gap": null
+      }
+    },
+    "hatemm|4b": {
+      "arm": "4b",
+      "checkpoint": "Qwen/Qwen3-VL-4B-Instruct",
+      "corpus": "HateMM",
+      "n_videos": 215,
+      "n_pos": 86,
+      "n_neg": 129,
+      "unembedding_key": "model.language_model.embed_tokens.weight",
+      "tied_embeddings": true,
+      "n_layers": 36,
+      "probe_layer": 27,
+      "z_distribution": {
+        "sd_dequantized": 12.125998836271368,
+        "sd_stored_bf16": 12.124076870508116,
+        "dynamic_range_dequantized": 38.250362396240234,
+        "min": -19.917694091796875,
+        "max": 18.33266830444336,
+        "max_abs_dequantization_shift": 0.23267745971679688,
+        "n_modes_dequantized": 2,
+        "relative_trough_depth_dequantized": 0.34987293706089095,
+        "relative_trough_depth_stored_bf16": 0.3476377712495805,
+        "valley_dequantized": 1.8058843936920184,
+        "n_modes_stored_bf16": 2
+      },
+      "angular_commitment": {
+        "cos_sd": 0.04660722689566288,
+        "cos_mean": 0.018544189724529724,
+        "cos_min": -0.0746767669916153,
+        "cos_max": 0.0759005919098854,
+        "answer_direction_norm": 1.096988558769226,
+        "mean_final_state_norm": 219.2337312210438
+      },
+      "ranking_auc": 0.9120245177573463,
+      "probe": {
+        "auc": 0.8839012078601045,
+        "layer": 27,
+        "n_folds": 5,
+        "l2_lambda": 1.0,
+        "seed": 0
+      },
+      "operating_point": {
+        "valley_macro_f1_label_free": 0.7904074868395399,
+        "valley_errors": {
+          "fn": 5,
+          "fp": 40
+        },
+        "oracle_macro_f1": 0.8612254891050324,
+        "oracle_threshold": 10.389163970947266,
+        "gap": 0.07081800226549251
+      }
+    },
+    "hatemm|8b": {
+      "arm": "8b",
+      "checkpoint": "Qwen/Qwen3-VL-8B-Instruct",
+      "corpus": "HateMM",
+      "n_videos": 215,
+      "n_pos": 86,
+      "n_neg": 129,
+      "unembedding_key": "lm_head.weight",
+      "tied_embeddings": false,
+      "n_layers": 36,
+      "probe_layer": 27,
+      "z_distribution": {
+        "sd_dequantized": 11.665949052848116,
+        "sd_stored_bf16": 11.667009470129532,
+        "dynamic_range_dequantized": 40.31688690185547,
+        "min": -21.595901489257812,
+        "max": 18.720985412597656,
+        "max_abs_dequantization_shift": 0.2452850341796875,
+        "n_modes_dequantized": 2,
+        "relative_trough_depth_dequantized": 0.28345911568555293,
+        "relative_trough_depth_stored_bf16": 0.28307686041091273,
+        "valley_dequantized": -2.3459542198181147,
+        "n_modes_stored_bf16": 2
+      },
+      "angular_commitment": {
+        "cos_sd": 0.02783648023261599,
+        "cos_mean": 0.01794284703250606,
+        "cos_min": -0.05008680745959282,
+        "cos_max": 0.04952872544527054,
+        "answer_direction_norm": 1.654447078704834,
+        "mean_final_state_norm": 230.56164536587028
+      },
+      "ranking_auc": 0.923021453037678,
+      "probe": {
+        "auc": 0.8717324680007211,
+        "layer": 27,
+        "n_folds": 5,
+        "l2_lambda": 1.0,
+        "seed": 0
+      },
+      "operating_point": {
+        "valley_macro_f1_label_free": 0.6561808582882429,
+        "valley_errors": {
+          "fn": 3,
+          "fp": 70
+        },
+        "oracle_macro_f1": 0.8878913600399011,
+        "oracle_threshold": 12.663036346435547,
+        "gap": 0.2317105017516582
+      }
+    }
+  },
+  "disconfirmers": {
+    "D1_smooth_scaling": {
+      "rule": "fires iff the 4B de-quantized relative trough depth is >= 0.7x the 8B's on BOTH corpora; firing collapses emergence to smooth capability scaling",
+      "rows": [
+        {
+          "corpus": "implihatevid",
+          "trough_4b": 0.3615409388019244,
+          "trough_8b": 0.6040622055816955,
+          "ratio": 0.5985160724527869,
+          "at_or_above_0.7x": false
+        },
+        {
+          "corpus": "hatemm",
+          "trough_4b": 0.34987293706089095,
+          "trough_8b": 0.28345911568555293,
+          "ratio": 1.2342977089119698,
+          "at_or_above_0.7x": true
+        }
+      ],
+      "fires": false,
+      "verdict": "NOT DISCONFIRMED: the 4B trough does not reach 0.7x the 8B's on both corpora"
+    },
+    "D2_construct_absent_at_4b": {
+      "rule": "fires iff the 4B probe AUC is more than 0.05 below the 8B's on either corpus",
+      "rows": [
+        {
+          "corpus": "implihatevid",
+          "probe_4b": 0.9377484437110928,
+          "probe_8b": 0.9480487012175305,
+          "delta": -0.010300257506437704,
+          "materially_below": false
+        },
+        {
+          "corpus": "hatemm",
+          "probe_4b": 0.8839012078601045,
+          "probe_8b": 0.8717324680007211,
+          "delta": 0.012168739859383382,
+          "materially_below": false
+        }
+      ],
+      "fires": false,
+      "verdict": "NOT DISCONFIRMED: the construct is present at 4B to within the frozen margin"
+    },
+    "D3_angular_mechanism": {
+      "rule": "fires iff the ascending rank order of cosine spread differs from the ascending rank order of trough depth on either corpus",
+      "rows": [
+        {
+          "corpus": "implihatevid",
+          "cos_sd": {
+            "2b": 0.0038838391604142306,
+            "4b": 0.048348935951215415,
+            "8b": 0.03321727824968764
+          },
+          "trough": {
+            "2b": 0.07801843430050459,
+            "4b": 0.3615409388019244,
+            "8b": 0.6040622055816955
+          },
+          "cos_sd_ascending": [
+            "2b",
+            "8b",
+            "4b"
+          ],
+          "trough_ascending": [
+            "2b",
+            "4b",
+            "8b"
+          ],
+          "orders_agree": false
+        },
+        {
+          "corpus": "hatemm",
+          "cos_sd": {
+            "2b": 0.0043264110722629175,
+            "4b": 0.04660722689566288,
+            "8b": 0.02783648023261599
+          },
+          "trough": {
+            "2b": null,
+            "4b": 0.34987293706089095,
+            "8b": 0.28345911568555293
+          },
+          "cos_sd_ascending": [
+            "2b",
+            "8b",
+            "4b"
+          ],
+          "trough_ascending": [
+            "2b",
+            "8b",
+            "4b"
+          ],
+          "orders_agree": true
+        }
+      ],
+      "fires": true,
+      "verdict": "MECHANISM DIES"
+    }
+  },
+  "descriptive_arms": {},
+  "descriptive_arms_note": "The pre-registered non-instruct control could not be run: no base Qwen3-VL checkpoint is published, only Instruct, Thinking, FP8 and GGUF variants. The declared substitute, Qwen3-VL-8B-Thinking, was checked and rejected before it was scored: its chat template appends '<think>\\n' to the generation prompt, so the final prompt position is the opening of a reasoning block rather than the Yes-or-No answer position, and its z would not be the same measurement. No descriptive arm ran."
+}
