@@ -1,0 +1,195 @@
+{
+ "title": "Answer-contrast readout pilot, Stage B",
+ "preregistration": "docs/duplex/PREREG_answer_contrast_pilot.md",
+ "status": "preregistered kill test, run once; analysis is CPU only",
+ "frozen_constants": {
+  "layer_primary": 27,
+  "layers_secondary": [
+   18,
+   36
+  ],
+  "n_components": 1,
+  "seed": 20260808,
+  "abort_a1_cos_floor": 0.99,
+  "abort_a2_rho_floor": 0.9,
+  "clause_bars": {
+   "C1": 0.7,
+   "C2": 0.72,
+   "C3": 0.65,
+   "C4_margin": 0.05,
+   "C5": 0.852
+  },
+  "norm_control_slack": 0.03
+ },
+ "preflight_z_reproduction": {
+  "ImpliHateVid_train": {
+   "n_common": 1283,
+   "spearman": 1.0,
+   "median_abs_diff": 0.0,
+   "max_abs_diff": 0.0,
+   "passes": true
+  },
+  "HateMM_test": {
+   "n_common": 215,
+   "spearman": 0.9999999999999999,
+   "median_abs_diff": 0.0,
+   "max_abs_diff": 0.0,
+   "passes": true
+  },
+  "HateClipSeg_test": {
+   "n_common": 394,
+   "spearman": 1.0,
+   "median_abs_diff": 0.0,
+   "max_abs_diff": 0.0,
+   "passes": true
+  },
+  "MHClip_EN_test": {
+   "n_common": 161,
+   "spearman": 1.0,
+   "median_abs_diff": 0.0,
+   "max_abs_diff": 0.0,
+   "passes": true
+  },
+  "ImpliHateVid_test": {
+   "n_common": 400,
+   "spearman": 1.0,
+   "median_abs_diff": 0.0,
+   "max_abs_diff": 0.0,
+   "passes": true
+  }
+ },
+ "arenas": {
+  "C1": {
+   "corpus": "HateClipSeg in-band",
+   "n_strict": 126,
+   "n_non_strict": 57
+  },
+  "C2": {
+   "corpus": "MHClip_EN",
+   "n_no_target": 34,
+   "n_protected": 15
+  },
+  "C3": {
+   "corpus": "HateMM",
+   "n_valley_fp": 70,
+   "n_valley_tp": 83,
+   "valley_threshold": -2.3455000000000013
+  },
+  "C5": {
+   "corpus": "ImpliHateVid",
+   "n": 400,
+   "incumbent_valley_macro_f1": 0.8823345329369425
+  }
+ },
+ "aborts": {
+  "A1_degeneracy": {
+   "rule": "median cos(delta h, mean delta h) on the fit set >= 0.99 -> DEAD",
+   "value": 0.9022230505943298,
+   "fires": false
+  },
+  "A2_z_renaming": {
+   "rule": "|Spearman(score, z)| >= 0.9 on any eval corpus -> DEAD",
+   "value": 0.9832692379529764,
+   "per_corpus": {
+    "HateMM_test": 0.9793531183624321,
+    "HateClipSeg_test": 0.9487272129638351,
+    "MHClip_EN_test": 0.9460462681242605,
+    "ImpliHateVid_test": 0.9832692379529764
+   },
+   "fires": true
+  }
+ },
+ "controls": {
+  "pairing_placebo": {
+   "rule": "real C1 AUC >= placebo C1 AUC + 0.05",
+   "real_c1_auc": 0.6255917571707046,
+   "placebo_c1_auc": 0.5335561125034809,
+   "margin": 0.09203564466722369,
+   "passes": true
+  },
+  "norm_control": {
+   "rule": "DEAD if ||r|| AUC >= score AUC - 0.03 on the C1 arena",
+   "score_c1_auc": 0.6255917571707046,
+   "norm_c1_auc": 0.6535783904204957,
+   "condition_met": true,
+   "fires": false,
+   "note": "the control is decisive only when C1 passes; with C1 failed there is no passing score for it to explain away"
+  }
+ },
+ "clauses": {
+  "C1_primary_hateclipseg_band": {
+   "bar": 0.7,
+   "value": 0.6255917571707046,
+   "reference_in_band_z": 0.6471734892787524,
+   "reference_band_conditioned_pca": 0.6348,
+   "result": "FAIL"
+  },
+  "C2_mhclip_en_construct": {
+   "bar": 0.72,
+   "value_signfree": 0.6764705882352942,
+   "value_directional": 0.3235294117647059,
+   "reference_z_signfree": 0.679,
+   "supervised_ceiling": 0.837,
+   "result": "FAIL"
+  },
+  "C3_hatemm_midband": {
+   "bar": 0.65,
+   "value": 0.923235800344234,
+   "reference_z_auc": 0.9036144578313253,
+   "descriptive_zmatched_auc": 0.9091836734693878,
+   "descriptive_zmatched_pairs": 70,
+   "result": "PASS"
+  },
+  "C4_pairing_placebo": {
+   "bar": 0.05,
+   "value": 0.09203564466722369,
+   "result": "PASS"
+  },
+  "C5_implihatevid_regression_guard": {
+   "bar": 0.852,
+   "value": 0.8664777200440875,
+   "valley_found": true,
+   "incumbent_valley_macro_f1": 0.8823345329369425,
+   "score_auc": 0.9534738368459211,
+   "result": "PASS"
+  }
+ },
+ "verdict": "DEAD",
+ "verdict_reason": "abort A2 fired: the readout is z under a new name",
+ "axis_facts": {
+  "primary_layer": {
+   "evr": 0.6393224000930786,
+   "fit_spearman_with_z": -0.984546321423388,
+   "sign": -1.0,
+   "median_cos_to_mean": 0.9022230505943298
+  },
+  "explained_variance_ratio_pc1": 0.6393224000930786,
+  "median_cos_to_mean_per_eval_corpus": {
+   "HateMM_test": 0.9167957305908203,
+   "HateClipSeg_test": 0.9716917276382446,
+   "MHClip_EN_test": 0.9622105956077576,
+   "ImpliHateVid_test": 0.8934706449508667
+  }
+ },
+ "secondary_layers_descriptive": {
+  "18": {
+   "C1_auc": 0.6125034809245335,
+   "C2_auc_signfree": 0.692156862745098,
+   "C3_auc": 0.8724612736660929,
+   "C5_macro_f1": 0.8423808004803632,
+   "max_abs_spearman_score_z": 0.8597948950554999,
+   "pc1_explained_variance_ratio": 0.214824378490448,
+   "median_cos_to_mean": 0.9960750937461853
+  },
+  "36": {
+   "C1_auc": 0.6342244500139237,
+   "C2_auc_signfree": 0.6823529411764706,
+   "C3_auc": 0.919104991394148,
+   "C5_macro_f1": 0.8665919917438063,
+   "max_abs_spearman_score_z": 0.9870176778918358,
+   "pc1_explained_variance_ratio": 0.6277031302452087,
+   "median_cos_to_mean": 0.8026893138885498
+  }
+ },
+ "wall_clock_seconds": 2.6
+}

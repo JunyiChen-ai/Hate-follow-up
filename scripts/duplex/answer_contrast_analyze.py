@@ -61,13 +61,19 @@ AC = os.environ.get("ANSWER_CONTRAST_ROOT",
 OUT_OVERRIDE = os.environ.get("ANSWER_CONTRAST_OUT")
 # The preregistered fallback (fit on HateMM train only) is selected by setting
 # ANSWER_CONTRAST_FIT=hatemm, never by editing this list after a result.
-FIT_SETS = ([("HateMM", "train")]
-            if os.environ.get("ANSWER_CONTRAST_FIT") == "hatemm"
-            else [("ImpliHateVid", "train"), ("HateMM", "train")])
+# Preregistered fit set: ImpliHateVid train plus HateMM train. HateMM train is
+# dropped because the frozen judge's input for that split does not exist -- the
+# fresh Whisper transcripts the judge reads were only ever produced for the
+# test splits and for the ImpliHateVid full corpus, so HateMM train cannot be
+# extracted byte-identically. Recorded at pre-flight, before any clause was
+# computed; the fit set is narrowed by data availability, never by a result.
+FIT_SETS = [("ImpliHateVid", "train")]
 EVAL_SETS = [("HateMM", "test"), ("HateClipSeg", "test"),
              ("MHClip_EN", "test"), ("ImpliHateVid", "test")]
 
 FROZEN_SCORES = {
+    "ImpliHateVid_train": os.path.join(ROOT, "results", "c2_fullcorpus",
+                                       "judge_8b", "scores.jsonl"),
     "HateMM_test": os.path.join(ROOT, "results", "testruns", "hatemm",
                                 "judge_8b", "scores.jsonl"),
     "HateClipSeg_test": os.path.join(ROOT, "results", "hateclipseg",
@@ -78,7 +84,7 @@ FROZEN_SCORES = {
                                       "implihatevid", "judge_8b",
                                       "scores.jsonl"),
 }
-EXPECTED_N = {"ImpliHateVid_train": 1283, "HateMM_train": 744,
+EXPECTED_N = {"ImpliHateVid_train": 1283,
               "HateMM_test": 215, "HateClipSeg_test": 394,
               "MHClip_EN_test": 161, "ImpliHateVid_test": 400}
 

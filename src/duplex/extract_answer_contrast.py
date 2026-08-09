@@ -94,6 +94,9 @@ def main():
     parser.add_argument("--model", default="Qwen/Qwen3-VL-8B-Instruct")
     parser.add_argument("--num-frames", type=int, default=16)
     parser.add_argument("--transcript-limit", type=int, default=300)
+    parser.add_argument("--transcript-override-json", default=None,
+                        help="JSON mapping video_id to the fresh transcript, "
+                             "exactly as the frozen judge run used it")
     parser.add_argument("--max-pixels", type=int, default=MAX_PIXELS)
     parser.add_argument("--min-pixels", type=int, default=MIN_PIXELS)
     parser.add_argument("--out-dir", default=None)
@@ -120,6 +123,12 @@ def main():
     rules_text = BILIBILI_RULES if platform == "bilibili" else YOUTUBE_RULES
 
     annotations = load_annotations(args.dataset)
+    overrides = None
+    if args.transcript_override_json:
+        with open(args.transcript_override_json) as f:
+            overrides = json.load(f)
+        logging.info(f"Transcript overrides: {len(overrides)} ids from "
+                     f"{args.transcript_override_json}")
     split_ids = load_clean_split_ids(args.dataset, args.split)
     seen, ordered = set(), []
     for v in split_ids:
@@ -195,7 +204,8 @@ def main():
             continue
 
         images = [Image.open(p).convert("RGB") for p in frame_paths]
-        transcript = resolve_transcript(ann, vid, None, args.transcript_limit)
+        transcript = resolve_transcript(ann, vid, overrides,
+                                        args.transcript_limit)
         messages = build_messages(ann, frame_paths, rules_text, transcript)
         text = processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True)
@@ -292,6 +302,9 @@ def main():
         delta = arr[0].astype(np.float32) - arr[1].astype(np.float32)
         rec = {"video_id": vid, "z": z,
                "n_tokens_total": prefill_len,
+               "n_transcript_chars": len(transcript),
+               "transcript_source": ("override" if overrides is not None
+                                     and vid in overrides else "dataset"),
                "delta_norm_layer27": float(np.linalg.norm(delta[27])),
                "yes_norm_layer27": float(np.linalg.norm(arr[0, 27].astype(np.float32))),
                "no_norm_layer27": float(np.linalg.norm(arr[1, 27].astype(np.float32)))}
