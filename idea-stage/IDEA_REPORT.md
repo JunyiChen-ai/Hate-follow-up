@@ -475,3 +475,32 @@ role not yet tried) and R5 (the scale phenomenon as the claim in its own right)
 as the surviving relaxations, with the scale-emergence finding as the nearest
 publishable object. The three preregistered deaths in this round do not depend
 on the ruling either way.
+
+---
+
+# Round 3 — Post-veto regeneration (2026-08-10)
+
+**Trigger:** owner rulings after round 2: cross-model supervision VETOED (no mechanism story); channel restoration ruled preprocessing; negative-results framing rejected. Brief updated to rev 3 (commit dead875) with the vetoes and a new anchor phenomenon: **assertion-vs-mention confusion** — the one replicated, model-owned failure (MHClip-ZH keyword titles +8 logits on benign videos; 11/70 HateMM valley FPs are quoted/reported hate; MHClip-EN counter-speech scored hateful).
+
+## Literature delta (two parallel scans, 2026-08-10)
+
+Scan A (speech act / use-mention): phenomenon named in text-only moderation (2404.01651 NAACL24, fix = prompting); **never shown in video, never fixed at representation level, never probed as a hidden-state direction anywhere**. Adjacent linear-direction templates exist and are causally steerable: knowledge-source attribution 2602.22787 (self-supervised, 0.96), contextual-truth direction 2608.03035, faithfulness direction 2507.23221 (its low extreme = quoted content). Competitors: FBHM steering vectors need 500 labels; JUSSA legitimizes steering-the-judge. Cautions: probes may read surface format (2606.02907); steering entanglement (2509.13450).
+
+Scan B (label-free representation access): label-free representation-level readout/adaptation of a *generative* MLLM judge is unclaimed (all TTA work is CLIP dual-encoder); "spec text → activation-space readout object" unclaimed (instruction vectors only steer generation); SAE precedent on Qwen3-VL exists (CSAE) but no VL SAE released and spec-driven feature selection unclaimed; published law 2312.10029 (unsupervised consistency finds the most prominent feature) matches our PCA≡z death, remedy 2407.18712 (cluster-norm) untried. 2026 hateful-video competitors (LELA, MARS) are all multi-call prompt orchestration; activation space uncontested.
+
+## Candidates (GPT-5.6-Sol xhigh, bundle v3) and adversarial verdicts
+
+| # | Idea | Jury kill-risk (self-adversarial pass) | Status |
+|---|---|---|---|
+| 1 | Factorial Illocution Gate: commitment subspace from researcher-authored speech-act instrument (benign propositions only), gates z | Synthetic AUC high but natural transfer ≈0.55; residual syntax confound | **PILOT FIRST** |
+| 2 | Illocution×Hostility low-rank tensor readout | Needs authored hostile cells → veto-adjacent (mini hate dataset); OOD noise amplifier | HOLD |
+| 5 | Policy Grassmann trajectory readout | Trajectory alignment likely ≡ z again (0.95–0.99); "decorative PCA" | HOLD (cheap second) |
+| 8 | Spec-selected SAE readout | Text-selected features may not fire on video states (modality split); punctuation features | HOLD (needs 9's bridge if text→video fails) |
+| 3/7 | Input-conditioned transport field / Jacobian policy contribution | High cost; only if fixed subspace fails but construct present | QUEUE |
+| 4/10 | Causal head editor / SAE leak editor | Escalation after a speech-act signal is proven | QUEUE |
+| 6 | Cluster-normalized policy separator | Corpus-identity confound | QUEUE |
+| 9 | Causal-fingerprint modality bridge | Only if 8 fails with the text-fires/video-doesn't signature | QUEUE |
+
+## Round-3 selection
+
+**Pilot: instrument-to-natural-transfer audit for the speech-act (assertion-vs-mention) subspace** — Idea 1 reframed as a decisive family-level test, per jury: researcher-authored factorial instrument with NO hostile content (benign/abstract propositions; speech act {assert/report/quote/reject} crossed with quote marks and carrier families; EN+ZH banks); fit commitment readout on instrument activations; test zero-shot transfer to the three sealed natural strata (ZH keyword-title normals, HateMM quoted-hate FPs, EN counter-speech), residualized against z. Veto compliance: no hostile propositions authored (hostility handled by existing z); no corpus input touched; no other model; single stored call per video. Numeric survive/die rule to be frozen in PREREG before any instrument text is written.
