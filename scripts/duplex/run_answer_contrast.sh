@@ -26,12 +26,24 @@ export HVD_DATA_ROOT=/home/jehc223/data
 mkdir -p "$OUTROOT"
 echo "waiting for GPU: $(date -Is)" > "$STATUS"
 
+# Pilot 1 signals completion in one of two ways. Its driver was expected to
+# write a DONE file; the driver as shipped ends at SCORING_DONE in its STATUS
+# and exits without writing one. Either signal counts, and in both cases the
+# GPU must also be idle. Nothing is ever killed.
+pilot1_finished () {
+  [ -f "$ROOT/results/spec_displacement/DONE" ] && return 0
+  if grep -qiE "^(SCORING_)?DONE$" "$ROOT/results/spec_displacement/STATUS" 2>/dev/null; then
+    pgrep -f run_spec_displacement >/dev/null 2>&1 || return 0
+  fi
+  return 1
+}
+
 while true; do
   gpu_busy=$(nvidia-smi --query-compute-apps=pid --format=csv,noheader | wc -l)
-  if [ -f "$ROOT/results/spec_displacement/DONE" ] && [ "$gpu_busy" -eq 0 ]; then
+  if pilot1_finished && [ "$gpu_busy" -eq 0 ]; then
     break
   fi
-  echo "waiting: pilot1_done=$([ -f "$ROOT/results/spec_displacement/DONE" ] && echo yes || echo no) gpu_procs=$gpu_busy $(date -Is)" >> "$STATUS"
+  echo "waiting: pilot1_done=$(pilot1_finished && echo yes || echo no) gpu_procs=$gpu_busy $(date -Is)" >> "$STATUS"
   sleep 300
 done
 
