@@ -48,3 +48,38 @@ Precondition probe relevant to 1 and 3 (CPU, cheap): test whether
 activation-space neighborhoods of the stored video states are organized
 by harm or by topic/corpus nuisance — this decides whether any
 graph/cluster-based signal can work before spending GPU.
+
+## Closure addendum (same day, 2026-08-10 evening)
+
+All three "alive" entries above are now closed:
+
+- **DAPT (family 5): dead at precondition** (DAPT_PRECONDITION_NOTE.md).
+  HateMM's congested mid-band is exactly as predictable as its poles
+  (AUC 0.503); the familiarity lever does not exist there. The effect
+  exists only on ImpliHateVid, where the operating point already works.
+- **ICM (family 4): degraded on feasibility** — the in-context form
+  needs thousands of ~33k-token multi-video forwards (infeasible on one
+  5090); the feasible activation-space form reduces to corpus-geometry
+  search, the family with six recorded deaths (prominence law).
+- **Cross-modal agreement (family 6): REDUCIBLE — closed by design
+  analysis** (external adversarial review, this thread). Every
+  construction either (a) fuses modality-restricted judgments = PP-v4,
+  dead; (b) uses agreement as pseudo-label = confidence family, dead;
+  (c) is consistency-under-view-dropping = augmentation family,
+  excluded; or (d) yields an unsigned interaction signal with no
+  label-free orientation: cross-modal disagreement says the channels
+  differ, not who commits to which proposition — juxtaposition covers
+  asserted hate AND news AND quotation AND counter-speech. Synergy
+  formalisms need a target Y, and every available Y collapses to a dead
+  family (z → self-distillation of the wrong boundary; h → view-drop
+  reconstruction; T/V → predict-withheld-input; hate → labels).
+
+**Program-level conclusion: all seven label-free substitute signals in
+the literature are now measured-dead, excluded by constraint, vetoed, or
+closed by reducibility FOR THIS PROBLEM. Under the current constraint
+set there is no untried label-free training philosophy left to apply.
+Remaining moves are owner decisions: (i) the 50–100-video speech-act
+(non-hate) annotation door; (ii) accepting the scoped method (works
+where annotation = protected-target hate and commitment is bimodal;
+impossibility theorem covers the rest); (iii) relaxing a charter
+constraint (backbone, spec-as-input, or the label-free perimeter).**
