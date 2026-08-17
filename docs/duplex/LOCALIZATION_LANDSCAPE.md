@@ -59,3 +59,29 @@ local; 316 timestamped-routed; 159 with chunk-text exactly matching the
 frozen collapsed transcript). Chunk-level timestamped ASR for 1105
 videos (no HateMM). HateMM upstream span annotations NOT yet
 downloaded (evaluation-side gold, charter-legal to fetch).
+
+## Capability map on Qwen3-VL-8B / HateClipSeg (descriptive diagnostics, 2026-08-12)
+
+All label-free access modes to WITHIN-VIDEO local judgment, measured
+(80-video sample unless noted; segment gold used for evaluation only):
+
+| Access mode | Statistic | Result |
+|---|---|---|
+| Attribution of the global verdict (direction 1, preregistered) | segment AUC | 0.525 ≈ token-density control — DEAD |
+| In-context local elicitation (direction 2, preregistered; sentinel + packed questions) | segment AUC | 0.499 / 0.519, both ≈ chance; model stamps every segment with the global verdict — DEAD |
+| Isolated text chunk (median 9–12 tokens), one call each | chunk AUC | 0.533 pooled / 0.571 macro; score tracks length (ρ 0.50) |
+| Isolated text window (45–270 s) | window AUC | 0.690 pooled — but max-pooling the chunk scores gives 0.695: coarsening the unit, no new capability |
+| Fixed-window granularity curve (max-pooled chunks) | window AUC | 15 s 0.601 · 30 s 0.617 · 60 s 0.637 · 90 s 0.675 |
+| Increment of sentinel margins (exploratory reanalysis) | segment AUC | 0.499 — chance |
+| Isolated single frame, one call each | frame AUC | 0.584 pooled but **0.542 macro** (within-video); frame-index-only baseline 0.537 |
+
+Reading: the judge holds ONE global, evidence-driven verdict per video;
+no access mode yields a usable per-unit local verdict on either channel
+of this corpus. Open question in flight: does isolated-chunk judgment
+work on HateMM (higher-contrast hate spans; LELA's own benchmark, its
+multi-call ceiling frame AUC 0.726) — upstream span gold + timestamped
+ASR + diagnostic chain running. If yes → direction 3 = single-call
+parallel isolation via block-diagonal attention masking (mechanism
+motivated by the measured contamination), evaluated head-to-head with
+LELA. If no → the goal (label-free localization, ≤8B, novel + works)
+has a complete measured impossibility chain for owner review.
