@@ -104,10 +104,39 @@ at only 0.62. Saturation persists at chunk level (72.8% |z|>13);
 length correlation ρ 0.364. Notable: the cross-video 0.720 lands on
 LELA's reported HateMM frame AUC 0.726 — a single text-only pass over
 isolated transcript chunks reaches the published multi-call number IF
-that number is computed on the pooled (cross-video) contrast. Whether
-LELA's 72.6 is pooled or within-video is now the decisive question for
-direction 3 (single-call parallel isolation via block-diagonal
-attention masking): verification in progress. If pooled → direction 3
-proceeds (novelty check → prereg → pilot vs LELA). If within-video →
-the honest ceiling for any isolation-based method is 0.62 and the
-impossibility chain closes for owner review.
+that number is computed on the pooled (cross-video) contrast.
+
+## LELA protocol verification (2026-08-18, full text read)
+
+arXiv 2602.09637v1 = "Towards Training-free Multimodal Hate
+Localisation with Large Language Models" (Sun et al.). Facts
+established from the paper itself:
+
+- **Metric population not stated** — no setup section, no split, no
+  video count, no frame rate, no span-to-frame gold rule, and the
+  promised appendix does not exist. The ONLY protocol statement:
+  "follows the established practice introduced in [48]" = LAVAD (CVPR
+  2024), whose convention is frame AUC POOLED over all test videos
+  with normal videos contributing all-negative frames. Qualitative
+  figures include non-hate videos. Verdict: pooled by inheritance;
+  never stated explicitly.
+- **Calls per frame: 12–16**, not ~5 (4 modality summarisation calls +
+  4 × 3-stage prompting; the "5" is modalities). Backbone GPT-4o Mini.
+- **Open-weight numbers (HateMM ROC-AUC):** DeepSeek-R1-7B 64.73,
+  Qwen2.5-7B 62.14, LLaMA-2-7B 60.97, Qwen2.5-3B 57.49. GPT-4o Mini
+  72.64, Gemini-2.0 Flash 70.28.
+- Internal inconsistency: Table 1 vs Table 3 swap ROC-AUC/PR-AUC
+  labels for the same two numbers (72.64/67.56); prose says 72.64 is
+  ROC-AUC. No mAP/tIoU/segment metric anywhere. No within-video
+  analysis anywhere. No code/data release.
+
+Consequence for direction 3: the published comparison target is the
+POOLED frame AUC. Our sequential isolated-chunk scores already reach
+0.720 (span chunks vs non-hate-video chunks) on that contrast with ONE
+text-only 8B call per chunk — level with the 12–16-calls-per-frame
+GPT-4o-mini number and above every open 7B they report. Direction 3
+(single-call parallel isolation via block-diagonal attention masking)
+proceeds to novelty check → prereg → pilot. The within-video weakness
+(0.624) is reported honestly as the capability boundary — the
+benchmark's operative metric does not measure it, and no published
+system demonstrates it either.
