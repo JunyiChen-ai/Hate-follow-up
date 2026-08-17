@@ -504,3 +504,48 @@ Scan B (label-free representation access): label-free representation-level reado
 ## Round-3 selection
 
 **Pilot: instrument-to-natural-transfer audit for the speech-act (assertion-vs-mention) subspace** — Idea 1 reframed as a decisive family-level test, per jury: researcher-authored factorial instrument with NO hostile content (benign/abstract propositions; speech act {assert/report/quote/reject} crossed with quote marks and carrier families; EN+ZH banks); fit commitment readout on instrument activations; test zero-shot transfer to the three sealed natural strata (ZH keyword-title normals, HateMM quoted-hate FPs, EN counter-speech), residualized against z. Veto compliance: no hostile propositions authored (hostility handled by existing z); no corpus input touched; no other model; single stored call per video. Numeric survive/die rule to be frozen in PREREG before any instrument text is written.
+
+---
+
+# Localization goal loop — direction 3 novelty check (2026-08-18)
+
+**Candidate:** single-call parallel isolation for temporal localization — one
+packed forward pass: shared rules prefix + timestamped transcript chunks under a
+block-diagonal attention mask (each chunk attends only to the prefix and
+itself), per-chunk Yes/No logit margin at each chunk's answer position.
+Empirical basis: measured global-verdict contamination (all in-context
+per-segment probes ≈0.50) vs isolated-chunk capability (HateMM pooled frame
+contrast 0.720 ≈ LELA's 72.6 at 12–16 GPT-4o-mini calls per frame; best open 7B
+in LELA: 64.7).
+
+**Dual check:** adversarial web scan (20 neighbors verified) + GPT-5.6-Sol xhigh
+cross-examination. Agreed verdict: **NOVEL-with-caveats.**
+
+- **The mask primitive is NOT novel — concede it outright.** Published ≥3×:
+  SingGuard RI-Mask (2606.22873, multimodal moderation, isolates RULE branches
+  over shared content — the candidate transposed); InvariRank (2604.27599,
+  SIGIR'26, identical mechanism for reranking order-invariance); T3S
+  (2511.17945, same construction inside a video MLLM but averages the per-block
+  logits = ensembling, our anti-pattern 1). General-inference precedent:
+  Hydragen, SpecInfer/Medusa tree masks, sequence packing (2107.02027),
+  Prepacking (2404.09529).
+- **What is unclaimed:** (i) the contamination FINDING — per-segment moderation
+  probes under causal attention collapse to the global verdict at chance AUC;
+  external corroboration 2605.20194 ("carryover effect", fixed by N separate
+  calls — masked single-pass fix unclaimed); (ii) isolation as the falsifiable
+  remedy for it, with the counterfactual (same packed prompt, full attention →
+  collapse); (iii) temporal-localization output for moderation at one-pass cost
+  vs LELA's ~15 calls/frame; (iv) You Only Judge Once (2604.10966) makes the
+  OPPOSITE design choice (deliberate full attention across responses) without
+  ever testing isolation — the axis is live and untested in public.
+- **Framing requirement (binding):** lead with the phenomenon + remedy +
+  localization; cite SingGuard/InvariRank/T3S as mechanism precedent. Lead with
+  the mask as the invention and SingGuard sinks the paper.
+- **Codex technical caveats (both adopted as prereg requirements):** (1)
+  branch-local position IDs must restart after the shared prefix so packed
+  position does not change branch logits — target is exact equivalence to
+  sequential isolated calls; (2) "one call" must be decomposed honestly against
+  N-serial / plain-batch / prefix-cached regimes in any efficiency claim.
+
+**Goal-loop status:** novelty check PASSED (same grade as directions 1–2).
+Proceeds to prereg + pilot: PREREG_masked_parallel_isolation_pilot.md.
