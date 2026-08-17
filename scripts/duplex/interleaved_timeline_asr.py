@@ -42,6 +42,11 @@ CORPORA = {
     "mhclip_en": ("MHClip_EN", "results/testruns/mhclip_en"),
     "implihatevid": ("ImpliHateVid", "results/testruns/implihatevid"),
     "hateclipseg": ("HateClipSeg", "results/hateclipseg"),
+    # HateMM test_clean, for the HateMM isolated-chunk localization diagnostic.
+    # Same frozen working directory (wav/, audio_meta.jsonl, fresh_transcripts.jsonl)
+    # as every other HateMM run; the key doubles as the output sub-directory, so
+    # `--out-root results` writes results/hatemm_localization/timestamped_chunks.jsonl.
+    "hatemm_localization": ("HateMM", "results/testruns/hatemm"),
 }
 
 
