@@ -149,5 +149,13 @@ frozen clauses passed: fidelity Spearman 0.9989 (packed masked forward
 ≡ N isolated calls, 3.9× faster, prefix once); counterfactual gap
 0.0575 ≥ 0.05 (unmasking collapses within-video macro 0.620 → 0.562
 while INFLATING cross-video 0.720 → 0.850 — the global-verdict smear
-mechanism showing both faces). First surviving localization direction;
-method-stage prereg is the next gate.
+mechanism showing both faces). First surviving localization direction.
+
+Endpoint 1 (frame-level, prereg febf147, note FRAME_LEVEL_EVAL_NOTE.md):
+**PASS** — pooled frame ROC-AUC 0.7451 (covered-only 0.7957) vs bar
+0.65; above every number LELA reports (GPT-4o Mini 72.64 at 12–16
+calls/frame, best open 7B 64.73). Honesty findings recorded in the
+note: the pooled metric is mask-insensitive (causal 0.7461) because
+cross-video inflation cancels within-video collapse — the mask's value
+is score semantics + within-video discrimination + call-equivalence;
+within-video stays the measured boundary (frame macro 0.571).
