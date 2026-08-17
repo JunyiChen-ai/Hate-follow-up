@@ -77,11 +77,37 @@ All label-free access modes to WITHIN-VIDEO local judgment, measured
 
 Reading: the judge holds ONE global, evidence-driven verdict per video;
 no access mode yields a usable per-unit local verdict on either channel
-of this corpus. Open question in flight: does isolated-chunk judgment
-work on HateMM (higher-contrast hate spans; LELA's own benchmark, its
-multi-call ceiling frame AUC 0.726) — upstream span gold + timestamped
-ASR + diagnostic chain running. If yes → direction 3 = single-call
-parallel isolation via block-diagonal attention masking (mechanism
-motivated by the measured contamination), evaluated head-to-head with
-LELA. If no → the goal (label-free localization, ≤8B, novel + works)
-has a complete measured impossibility chain for owner review.
+of this corpus.
+
+## HateMM isolated-chunk diagnostic (2026-08-18, scripts 455f669)
+
+Upstream span gold obtained (Zenodo 7799469; 85/86 test hate videos
+usable; spans are COARSE — median 70% of audio covered, opposite regime
+from HateClipSeg). Timestamped Whisper ASR reproduced the frozen
+transcripts exactly (215/215). 2281 chunks over 212 videos, one
+text-only isolated call each (prompts byte-identical to
+`isolated_chunk_diag.py`):
+
+| Contrast | AUC |
+|---|---|
+| Within-hate-video, pooled (span vs non-span chunks, same videos) | **0.624** |
+| Within-hate-video, macro (54 videos with both classes) | 0.624 (sd 0.261) |
+| Within-hate-video, strict (overlap ≥0.9 vs 0) | 0.674 |
+| Cross-video: span chunks vs non-hate-video chunks | **0.720** |
+| Video-level max-z over chunks (84 vs 128) | 0.901 |
+
+Reading: isolated judgment is NOT dead on HateMM (HateClipSeg's 0.533
+was partly a corpus-contrast artifact), but most of the strength is
+video-level discrimination leaking through the chunk: the same scores
+separate videos at 0.72–0.90 while separating moments within a video
+at only 0.62. Saturation persists at chunk level (72.8% |z|>13);
+length correlation ρ 0.364. Notable: the cross-video 0.720 lands on
+LELA's reported HateMM frame AUC 0.726 — a single text-only pass over
+isolated transcript chunks reaches the published multi-call number IF
+that number is computed on the pooled (cross-video) contrast. Whether
+LELA's 72.6 is pooled or within-video is now the decisive question for
+direction 3 (single-call parallel isolation via block-diagonal
+attention masking): verification in progress. If pooled → direction 3
+proceeds (novelty check → prereg → pilot vs LELA). If within-video →
+the honest ceiling for any isolation-based method is 0.62 and the
+impossibility chain closes for owner review.
