@@ -134,9 +134,20 @@ Consequence for direction 3: the published comparison target is the
 POOLED frame AUC. Our sequential isolated-chunk scores already reach
 0.720 (span chunks vs non-hate-video chunks) on that contrast with ONE
 text-only 8B call per chunk — level with the 12–16-calls-per-frame
-GPT-4o-mini number and above every open 7B they report. Direction 3
-(single-call parallel isolation via block-diagonal attention masking)
-proceeds to novelty check → prereg → pilot. The within-video weakness
-(0.624) is reported honestly as the capability boundary — the
-benchmark's operative metric does not measure it, and no published
-system demonstrates it either.
+GPT-4o-mini number and above every open 7B they report. The
+within-video weakness (0.624) is reported honestly as the capability
+boundary — the benchmark's operative metric does not measure it, and
+no published system demonstrates it either.
+
+## Direction 3 status (2026-08-18): SURVIVED its pilot
+
+Novelty check NOVEL-with-caveats (IDEA_REPORT.md f0deb1f: mask
+primitive conceded to SingGuard/InvariRank/T3S; contamination finding
++ isolation remedy + localization output unclaimed). Prereg 7928b9b;
+pilot script aa403cb; note MASKED_PARALLEL_ISOLATION_NOTE.md. Both
+frozen clauses passed: fidelity Spearman 0.9989 (packed masked forward
+≡ N isolated calls, 3.9× faster, prefix once); counterfactual gap
+0.0575 ≥ 0.05 (unmasking collapses within-video macro 0.620 → 0.562
+while INFLATING cross-video 0.720 → 0.850 — the global-verdict smear
+mechanism showing both faces). First surviving localization direction;
+method-stage prereg is the next gate.
