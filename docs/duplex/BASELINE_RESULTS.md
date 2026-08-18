@@ -345,3 +345,275 @@ every frame identical, so a frame-wise classifier must return one value. Within
 the within-hate macro cohort this affects 4 of 85 videos on hatemm, 5 of 44 on
 mhclip_en and 2 of 7 on mhclip_zh, and those videos drop out of the text
 branch's macro. No fused-branch array is constant anywhere in the macro cohort.
+
+---
+
+# MACIL-SD (ACM MM 2022) and its two uni-modal ablations
+
+MACIL-SD ported by `scripts/reproduction_baselines/` (port commit `6d3ca64`,
+patch list in `scripts/reproduction_baselines/PATCHES.md`, MACIL-SD section),
+trained and scored on all three corpora in three modality settings. Nine
+train / score / evaluate cycles ran strictly one after another on a single
+RTX 5090 through `scripts/reproduction_baselines/run_all_macilsd.sh`, started
+2026-08-19 05:17 NZST and finished 05:28, eleven minutes of wall time: the I3D
+and VGGish features are precomputed, so an epoch is two or three seconds.
+
+Every hyperparameter is the published default. `run_all_macilsd.sh` passes
+nothing, so `macilsd/option.py` is what ran: seed 2333, lr 4e-4, batch size 128,
+50 epochs, `max-seqlen` 200, EMA momentum 0.91, the three CMA lambdas at
+1.5 / 1.5 / 0.1, `--grid snippet` (the alignment argued for in PATCHES.md A1),
+`--crop-repeat 5`. Model selection is on a seeded, label-stratified 10 %
+validation carve-out by video-level average precision; the test split is never
+opened during training (patch M7, which removes upstream's test-selected
+checkpointing).
+
+## Results
+
+Columns as in the VadCLIP / DSANet table above. The `macilsd` rows are the
+audio-visual model, which exposes three readouts from one training run: `av` is
+the fused score the paper headlines, `audio` and `visual` are the two branches
+of that same fused model. The `macilsd_audio` and `macilsd_visual` rows are
+separate trainings of upstream's own `Single_Model` on one modality alone, at
+upstream's own lr/5 (patch M11) -- these are the honest uni-modal comparators,
+not branches of the fused model.
+
+| method | corpus | branch | pooled ROC-AUC | pooled PR-AUC | within-hate macro (n) | video AUC |
+| --- | --- | --- | --- | --- | --- | --- |
+| MACIL-SD | hatemm | score_av | 0.7282 | 0.5127 | 0.5383 (85) | 0.7611 |
+| MACIL-SD | hatemm | score_audio | 0.7290 | 0.4501 | 0.5419 (85) | 0.7379 |
+| MACIL-SD | hatemm | score_visual | 0.6552 | 0.4447 | 0.5012 (85) | 0.7059 |
+| MACIL-SD | mhclip_en | score_av | 0.6764 | 0.4664 | 0.5383 (44) | 0.7112 |
+| MACIL-SD | mhclip_en | score_audio | 0.6575 | 0.4453 | 0.5284 (44) | 0.7240 |
+| MACIL-SD | mhclip_en | score_visual | 0.6759 | 0.4530 | 0.5397 (44) | 0.6858 |
+| MACIL-SD | mhclip_zh | score_av | 0.7757 | 0.5233 | 0.4588 (7) | 0.7685 |
+| MACIL-SD | mhclip_zh | score_audio | 0.7774 | 0.5301 | 0.5256 (7) | 0.7808 |
+| MACIL-SD | mhclip_zh | score_visual | 0.7387 | 0.4834 | 0.4258 (7) | 0.7321 |
+| MACIL-SD audio-only | hatemm | score_mil | 0.7667 | 0.4939 | 0.5966 (85) | 0.7814 |
+| MACIL-SD audio-only | mhclip_en | score_mil | 0.7142 | 0.4987 | 0.5142 (44) | 0.7141 |
+| MACIL-SD audio-only | mhclip_zh | score_mil | 0.6320 | 0.3254 | 0.5269 (7) | 0.6725 |
+| MACIL-SD visual-only | hatemm | score_mil | 0.6398 | 0.4073 | 0.4966 (85) | 0.7046 |
+| MACIL-SD visual-only | mhclip_en | score_mil | 0.6340 | 0.3670 | 0.5104 (44) | 0.6632 |
+| MACIL-SD visual-only | mhclip_zh | score_mil | 0.6860 | 0.4085 | 0.4995 (7) | 0.7262 |
+
+Chance is 0.5 for every ROC column; for PR-AUC it is the frame positive rate,
+0.2419 on hatemm, 0.2505 on mhclip_en, 0.2327 on mhclip_zh. The scored cohort is
+the gold cohort in all nine cells.
+
+Three things stand out.
+
+**MACIL-SD is the strongest baseline in the study on pooled frame ROC.** Its
+best cell per corpus is 0.7290 on hatemm, 0.6764 on mhclip_en and 0.7774 on
+mhclip_zh, against DSANet's 0.7063 / 0.6684 / 0.5904. The margin is largest on
+mhclip_zh, where every CLIP-based baseline sat near or below chance and
+MACIL-SD is nineteen points higher.
+
+**Audio carries the signal, and fusion does not add to it.** The standalone
+audio-only model beats the full audio-visual model on hatemm (0.7667 against
+0.7282 pooled, 0.7814 against 0.7611 video) and on mhclip_en (0.7142 against
+0.6764), and it beats the standalone visual-only model on both. The one corpus
+where that reverses is mhclip_zh, where audio-only drops to 0.6320 while the
+fused model reaches 0.7757. Since these corpora are hate-speech corpora whose
+offending content is largely spoken, an audio-dominant result is expected; what
+the fused model buys over its own audio branch is close to nothing on two of
+three corpora.
+
+**Localisation inside a hateful video remains unsolved here too.** The
+within-hate macro sits between 0.43 and 0.60 in every cell, so the frame ranking
+inside a hateful video is near chance even where the pooled and video-level
+numbers are strong. The best localiser in the nine cells is the audio-only model
+on hatemm at 0.5966. This is the same pattern the VadCLIP and DSANet rows show:
+these methods separate hateful videos from non-hateful ones, and then spread
+that verdict fairly flatly over the timeline.
+
+## Loss evidence
+
+The MIL classification loss (`cls`) at the first and last epoch, with the
+selected epoch and its validation video AP. Fifty epochs everywhere.
+
+| cell | cls first | cls last | selected epoch | val video AP at selection |
+| --- | --- | --- | --- | --- |
+| MACIL-SD / hatemm | 0.5990 | 0.3689 | 1 | 0.8586 |
+| MACIL-SD / mhclip_en | 0.6035 | 0.5624 | 15 | 0.4823 |
+| MACIL-SD / mhclip_zh | 0.6097 | 0.6029 | 15 | 0.5369 |
+| audio-only / hatemm | 0.6788 | 0.1752 | 18 | 0.8598 |
+| audio-only / mhclip_en | 0.6793 | 0.2272 | 16 | 0.5013 |
+| audio-only / mhclip_zh | 0.6723 | 0.2856 | 49 | 0.4091 |
+| visual-only / hatemm | 0.6632 | 0.1042 | 13 | 0.8012 |
+| visual-only / mhclip_en | 0.6437 | 0.1358 | 24 | 0.5430 |
+| visual-only / mhclip_zh | 0.6304 | 0.0992 | 12 | 0.5325 |
+
+The loss decreased first to last in all nine cells, but two of them deserve to
+be flagged rather than buried.
+
+**The audio-visual model's `cls` loss barely moves on MultiHateClip**: 0.6035 to
+0.5624 on EN and 0.6097 to 0.6029 on ZH, against 0.6788 to 0.1752 for the
+uni-modal model on the same features. This is not a stalled run -- the four CMA
+terms and the uni-modal distillation term all fall by roughly a factor of five
+over the same fifty epochs, and validation AP rises -- but the fused MIL head
+itself is close to flat on both MultiHateClip corpora. The uni-modal ablations,
+which optimise a plain MIL head at lr/5, drive their loss down by a factor of
+four to six on every corpus. Reported as measured; no rerun was performed and no
+hyperparameter was changed, since nothing in the published preset was tuned here.
+
+**MACIL-SD on hatemm selects epoch 1.** Validation AP peaks at 0.8586 on the
+first epoch and never recovers it across the remaining forty-nine, ending at
+0.7810. The reported hatemm audio-visual row is therefore a one-epoch model. The
+number is what the frozen selection rule returns and is left as it stands, but
+it should not be read as a converged result.
+
+## Sanity checks
+
+Run for every branch of every cell.
+
+Score-to-gold length: zero mismatches in all fifteen branch-cells; zero gold
+videos missing from any score file and zero scored videos absent from the gold.
+`eval_baseline_scores.py` raises on either condition and did not. Finiteness:
+all scores finite.
+
+Non-constant scores: nine of the fifteen branch-cells have no constant video at
+all. The exceptions are the same handful of videos in each case -- 4 of 214 on
+hatemm (`score_audio` of the fused model, and the audio-only model), 3 of 214 on
+hatemm for the visual columns, and 1 of 153 on mhclip_zh for the audio columns.
+These are videos short enough to occupy a single snippet after the 16-frame
+grid, so a per-snippet score has one value to give. Score ranges are wide
+everywhere: the uni-modal MIL heads span roughly 2e-6 to 0.999 with a standard
+deviation near 0.28 on hatemm, and the fused model's branches span 0.09 to 0.83.
+
+---
+
+# Ours (zero-label locator) on MultiHateClip
+
+The masked packed locator, Arm M of
+`scripts/duplex/masked_parallel_isolation_pilot.py`, carried to MultiHateClip EN
+and ZH by `scripts/duplex/masked_parallel_isolation_mhclip.py`. **One MLLM
+forward pass per video**, no labels, no training: the shared rules prefix and
+all of a video's transcript chunks are packed into a single sequence, a
+block-diagonal attention mask cuts every cross-chunk path, and each chunk's
+position ids restart at the end of the prefix, so one pass computes what N
+isolated per-chunk calls would compute. The score of a chunk is the frozen
+judge's own answer margin, `logsumexp(logits[Yes ids]) - logsumexp(logits[No
+ids])`, read from logits with nothing generated.
+
+Scored by the same `scripts/duplex/frame_eval_common.py` against the same frozen
+gold arrays as every baseline above. Chunk z is spread over its `[start, end)`;
+frames no scored chunk covers take `(corpus-min chunk z) - 1`, the floor
+convention frozen in `docs/duplex/PREREG_frame_level_evaluation_hatemm.md`,
+applied per corpus.
+
+## Results
+
+| method | corpus | pooled ROC-AUC | pooled PR-AUC | within-hate macro (n) | video AUC |
+| --- | --- | --- | --- | --- | --- |
+| Ours (1 pass/video, zero labels) | mhclip_en | 0.6198 | 0.4141 | 0.6154 (44) | 0.7015 |
+| Ours (1 pass/video, zero labels) | mhclip_zh | 0.6004 | 0.3813 | 0.6076 (7) | 0.6153 |
+
+Cohort: all 158 EN and 153 ZH gold videos, 5600 and 4817 frames, positive rates
+0.2505 and 0.2327 -- the same cohort the baselines are scored on. 818 EN and
+1171 ZH chunks were scored, one packed forward per video, 157 and 152 videos
+respectively; runtime 33 s and 42 s in total for the locator pass.
+
+The comparison that matters is the within-hate macro, because that is the column
+every trained baseline fails. **The locator is the best localiser in the study on
+both MultiHateClip corpora**: 0.6154 on EN against 0.5397 for the best MACIL-SD
+cell and 0.7230 / 0.3844 for DSANet's two branches, and 0.6076 on ZH against
+0.5269 for the best MACIL-SD cell. It does this with no labels and no training,
+where the baselines each consumed the full labelled train split. On the pooled
+and video-level columns it is behind the trained baselines, which is the
+expected shape: a transcript-only locator has no evidence on the 656 EN and 441
+ZH frames no chunk covers, and those frames all sit at the floor.
+
+Two caveats carry over from the baseline table. The ZH within-hate macro rests
+on 7 videos, for the reason given above -- 36 of 43 hateful ZH videos are
+annotated hateful end to end -- and should not be read as a stable measurement.
+The DSANet mhclip_en alignment-branch macro of 0.7230 is higher than the
+locator's 0.6154, but that same branch scores 0.5602 pooled against the
+locator's 0.6198 and drops to 0.3844 on its own MIL branch.
+
+## Prompt provenance
+
+The prompt is the frozen judge's, reassembled per corpus rather than re-authored.
+The frozen judge uses BILIBILI_RULES on MHClip_ZH and YOUTUBE_RULES elsewhere
+(`src/duplex/score_duplex_probe.py:161-162`,
+`src/our_method/score_holistic_2b.py:467`); that convention is replicated and
+everything else -- lead-in sentence, system message, question, template layout --
+is byte-identical across the two corpora and to the HateMM pilot. sha256, from
+`results/reproduction/ours/<corpus>/prompt_fingerprints.json`:
+
+| component | mhclip_en | mhclip_zh |
+| --- | --- | --- |
+| rules block | `e23dd329b55122ae…` | `b3fceb3631267398…` |
+| question | `f45673af42da76b5…` | `f45673af42da76b5…` |
+| system message | `e6addb7b869ede44…` | `e6addb7b869ede44…` |
+| user-text template | `9442091c90445103…` | `3f24f4122dabaeab…` |
+| packed prefix | `5aab1929792c022c…` | `316581c8e5e620cf…` |
+| packed suffix | `4d7644e75cf868e7…` | `4d7644e75cf868e7…` |
+
+The EN rules block and user-text template hashes equal the HateMM diagnostic's
+frozen values (`isolated_chunk_diag.FROZEN_TEXT_SHA`), which is asserted at
+runtime, not merely observed: the EN template is compared against
+`isolated_chunk_diag.user_text` on three probe strings before the model loads.
+Only the rules block and therefore the prefix differ on ZH, which is the intended
+per-corpus difference.
+
+## Fidelity: does one packed pass really reproduce N isolated calls
+
+Checked on **every chunk of both corpora**, not a sample: each chunk was scored a
+second time with a genuine isolated call and the two columns compared.
+
+| | mhclip_en | mhclip_zh |
+| --- | --- | --- |
+| chunks compared | 818 | 1171 |
+| Spearman(masked, sequential) | 0.99776 | 0.99809 |
+| Pearson | 0.99944 | 0.99961 |
+| max abs delta z | 0.75 | 0.75 |
+| mean abs delta z | 0.175 | 0.163 |
+| chunks bit-identical | 42.9 % | 43.9 % |
+| pooled ROC from the isolated calls | 0.6203 | 0.5999 |
+| **endpoint delta, packed minus isolated** | **-0.00051 ROC, -0.00117 PR** | **+0.00047 ROC, +0.00583 PR** |
+
+Both corpora clear the 0.99 Spearman bar, and the endpoint moves by at most
+0.0006 ROC, so nothing in the table above depends on which way the chunks were
+scored.
+
+The residual is bf16 arithmetic, and this was measured rather than assumed.
+Packing a **single** branch is **bit-identical** to the isolated call on both
+corpora, which shows the seam tokenisation, the block mask and the position
+restart are exact -- and the prompt-identity assertion (`concat(prefix_ids,
+branch_ids)` must equal the isolated prompt's ids, chunk by chunk) runs before
+every packed forward and passed throughout. The difference appears only once
+several branches share a sequence, where attention over the longer packed
+sequence tiles its reduction differently. The model itself is deterministic: the
+same call repeated returns the identical value.
+
+One nuisance worth recording, because it cost a false alarm. An all-ones 2-D
+`attention_mask` and an explicit 4-D additive mask send HuggingFace to different
+SDPA kernels, and they disagree by the same 0.25 to 0.5 logit; the no-mask path
+and the packed path agree with the 4-D path bit for bit. `score_sequential`
+therefore takes the mask form as an explicit argument, so the comparison
+measures the packing mechanism rather than a kernel dispatch.
+
+**A three-video spot check is not enough on this corpus, and the reason is
+instructive.** The first run stopped on a spot Spearman of 0.9802 (EN) and 0.9694
+(ZH) over three videos. Those spot sets are tie-dominated -- 17 distinct z values
+across the 75 EN spot chunks, largest tie group 24 -- and Spearman under heavy
+ties converts sub-quantum noise into rank swaps: Pearson on the same 75 chunks
+was 0.9987, and every discordant pair was separated by at most 0.25 in the
+reference, one quantum of the score grid. Over the full cohort, where z takes 122
+and 148 distinct values, the same comparison reads 0.998. The spot bar is kept in
+the script as a cheap tripwire but is recorded as advisory when
+`--sequential-reference` runs the complete comparison.
+
+## Coverage and sanity
+
+Zero gold videos lack a chunk record on either corpus, and every gold video's
+frame grid matches its chunk record's duration, so no video is missing from the
+score file and none is scored outside the gold. Frame coverage is 4944 of 5600 EN
+and 4376 of 4817 ZH; uncovered frames take the floor, -24.50 on EN and -23.25 on
+ZH.
+
+One video per corpus is scored all-floor and is reported rather than dropped:
+`uPJtlBAOT_U` (EN), whose last Whisper chunk carries a null start and end, and
+`BV1Ts4y1A7XN` (ZH), whose single chunk carries null timestamps. Both fail the
+frozen `usable_spans` helper, which refuses a record it cannot place on the
+timeline; neither was special-cased. Every chunk with text was scored -- zero
+chunks were dropped for empty text on either corpus.
