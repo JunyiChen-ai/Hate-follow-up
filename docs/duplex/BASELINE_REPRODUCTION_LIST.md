@@ -110,3 +110,51 @@ Repo github.com/mmilabuk/multihateloc announced in the paper but
 contains ONLY a LICENSE file (single commit 2026-01-27). Consequence:
 its HateMM 0.645 mAP / 0.799 AUC is not reproducible from the paper
 alone; any reimplementation must freeze its own frame grid and say so.
+
+## Addendum 2 (2026-08-18): 2025+ scan + final consolidated lineup
+
+Owner constraint: prefer 2025+ open-source, cheap to adapt. Scan
+verified every repo via GitHub API file trees (empty shells detected
+by tree, not README).
+
+### 2025+ entries that pass (ranked by adaptation cost)
+
+| Method | Venue | Regime | Repo (verified) | Cost to adapt to HateMM |
+|---|---|---|---|---|
+| DSANet | AAAI'26 CCF-A | weakly-sup (video labels) | lessiYin/DSANet 40★ 2026-03 | LOWEST: consumes VadCLIP's exact CLIP ViT-B/16 features + CSV manifests; pure PyTorch, no apex; ships mAP@IoU eval code. Caveat: class-name contrastive branch collapses on binary labels (coarse branch survives) |
+| Fed-WSVAD | AAAI'25 CCF-A | weakly-sup | wbfwonderful/Fed-WSVAD 27★ torch 2.1 | Same features as DSANet; --clients_num 1 degenerates to centralized, but client partition = free parameter reviewers will attack |
+| Vad-R1 | NeurIPS'25 CCF-A | released ckpt, zero-shot inference only | wbfwonderful/Vad-R1 32★ 2026-01 | Qwen2.5-VL + vLLM path; ONE pass/video (fits ≤2-call cap); output = single span/video, needs span→frame rasterizer; retraining out of reach (4×A100) and would import external supervision — inference only |
+| EventVAD | MM'25 CCF-A | training-free | YihuaJerry/EventVAD 536★ | Event-boundary discovery paradigm (orthogonal to fixed grids); costs: RAFT flow over 43 h (hours–tens of hours), scoring prompt is a PLACEHOLDER in released code (reconstruct from paper), VideoLLaMA2-7B per event |
+| VADTree | NeurIPS'25 CCF-A | training-free | wenlongli10/VADTree 19★ 573 files | Complete but 4-model stack (EfficientGEBD + LLaVA-Video-7B + DeepSeek-14B + ImageBind); multi-day setup — not recommended |
+| AnyAnomaly | WACV'26 (CORE A, below bar) | zero-shot | SkiddieAhn/Paper-AnyAnomaly 75★ | Cleanest Qwen2.5-VL+vLLM engineering; listed as below-venue-bar option |
+
+### 2025-2026 verified exclusions (empty shells / no code)
+
+LAVIDA (CVPR'26: dir skeleton, train/inference code NOT released),
+PANDA (NeurIPS'25: LICENSE+README), DualExplore (CVPR'26: README
+only), RefineVAD (AAAI'26: README+figure), LEC-VAD (ICML'25:
+re-checked, no repo), PI-VAD (CVPR'25: no code + 5 aux modalities),
+Anomize (CVPR'25: no repo), TLMA (CVPR'26: no code), STPrompt/TPWNG
+(re-checked: still none). WTAL 2025-2026: NO A-venue entry with code
+exists — the WTAL line is stale, freshest with code is PVLR (MM'24).
+
+### FINAL CONSOLIDATED LINEUP (proposal to owner)
+
+Core (do these):
+1. **DSANet** (AAAI'26) — modern weakly-supervised SOTA. [2025+]
+2. **VadCLIP** (AAAI'24) — feature pipeline shared with DSANet/Fed-WSVAD + classic CLIP-MIL baseline; pre-2025 but load-bearing infrastructure.
+3. **Vad-R1** (NeurIPS'25) — zero-shot reasoning-MLLM point, 1 call/video. [2025+]
+4. **EventVAD** (MM'25) — training-free event-segmentation paradigm. [2025+]
+5. **MultiHateLoc reimplementation** — the direct competitor; no code (LICENSE-only repo), frame grid unstated → reimplement under our frozen protocol, email authors in parallel.
+
+Optional second ring: UR-DMU (AAAI'23; classic MIL anchor with own
+I3D extraction code — the community-expected representative of the
+pre-CLIP MIL era), HL-Net/MACIL-SD (only audio-visual weakly-sup
+options; both pre-2023 — NO 2025+ audio-visual replacement exists),
+VERA (CVPR'25; verbalized-rules MLLM, expensive per-segment calls),
+Fed-WSVAD (near-free but partition free-parameter), LAVAD (CVPR'24
+training-free anchor).
+
+Supervision-regime coverage of the core five: video-label MIL
+(DSANet, VadCLIP, MultiHateLoc-reimpl) / zero-shot MLLM (Vad-R1) /
+training-free segmentation (EventVAD) / zero-label single-pass (ours).
