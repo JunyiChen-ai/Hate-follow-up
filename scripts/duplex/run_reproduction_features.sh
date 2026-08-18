@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Reproduction study, Phase 2 tasks 2 and 3: the shared frozen features.
+# Reproduction study, Phase 2: the shared frozen features.
 #
 #   bash scripts/duplex/run_reproduction_features.sh clip
 #   bash scripts/duplex/run_reproduction_features.sh vggish
+#   bash scripts/duplex/run_reproduction_features.sh vit
+#   bash scripts/duplex/run_reproduction_features.sh i3d
 #
 # One corpus at a time on the single GPU, resumable (a video with its .npy
 # already on disk is skipped). Detached use:
@@ -15,7 +17,7 @@ export HVD_DATA_ROOT=/home/jehc223/data
 export TOKENIZERS_PARALLELISM=false
 PY=/home/jehc223/venvs/SafetyContradiction/bin/python
 
-STAGE=${1:?usage: run_reproduction_features.sh clip OR vggish}
+STAGE=${1:?usage: run_reproduction_features.sh clip|vggish|vit|i3d}
 EXTRA=()
 case "$STAGE" in
   clip)   SCRIPT=scripts/duplex/extract_clip_features.py
@@ -27,6 +29,18 @@ case "$STAGE" in
           EXTRA=(--tmp-dir "$TMP") ;;
   vggish) SCRIPT=scripts/duplex/extract_vggish_features.py
           OUT=results/reproduction/features/vggish_1s ;;
+  vit)    SCRIPT=scripts/duplex/extract_vit_features.py
+          OUT=results/reproduction/features/vit_b16_imagenet_1fps
+          TMP=results/reproduction/features/.ffmpeg_scratch
+          mkdir -p "$TMP"
+          EXTRA=(--tmp-dir "$TMP") ;;
+  i3d)    SCRIPT=scripts/duplex/extract_i3d_features.py
+          OUT=results/reproduction/features/i3d_rgb_5crop
+          # Every video goes through the system ffmpeg here (24 fps decode),
+          # and a long video's frames do not fit in the 31 GB tmpfs /tmp.
+          TMP=results/reproduction/features/.ffmpeg_scratch
+          mkdir -p "$TMP"
+          EXTRA=(--tmp-dir "$TMP") ;;
   *) echo "unknown stage: $STAGE"; exit 2 ;;
 esac
 
