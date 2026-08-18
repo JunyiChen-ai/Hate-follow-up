@@ -748,3 +748,81 @@ trained to answer a different question about a different corpus, and the failure
 observed here is that its interval head collapses to the trivial answer, which is
 a statement about domain transfer rather than about the ceiling of anomaly-based
 localisation.
+
+---
+
+# CONSOLIDATED TABLES (2026-08-19, all runs complete)
+
+All numbers under the frozen protocol (FRAME_EVAL_PROTOCOL.md): 1 fps
+grid, shared GT arrays (SHA-pinned), same evaluator, val-carve
+checkpoint selection for every trained baseline (upstream test-selection
+removed). Supervision column is the honest axis.
+
+## HateMM test (214 gold videos, 29,266 frames)
+
+| Method | Supervision | Pooled ROC | Pooled PR | Within-hate macro | Video AUC |
+|---|---|---|---|---|---|
+| MultiHateLoc reimpl (fused) | video labels | **0.7504** | 0.4856 | **0.6008** | 0.8622 |
+| — its audio branch | video labels | 0.7777 | — | — | — |
+| **Ours (masked locator, 1 fwd)** | **zero labels** | 0.7451 | **0.5601** | 0.5706 | **0.9010** |
+| Audio-only MIL (VGGish) | video labels | 0.7667 | 0.4939 | 0.5966 | 0.7814 |
+| MACIL-SD (av) | video labels | 0.7282 | 0.5127 | 0.5383 | 0.7611 |
+| DSANet | video labels | 0.7063 | 0.4824 | 0.5453 | 0.7470 |
+| VadCLIP | video labels | 0.6855 | 0.4457 | 0.4848 | 0.7242 |
+| Vad-R1 (zero-shot ckpt) | none (trained on own VAD data) | 0.5696 | 0.2722 | 0.5000 | 0.5288 (balanced acc) |
+
+## MHC EN test (158 gold videos)
+
+| Method | Supervision | Pooled ROC | Pooled PR | Within-hate macro | Video AUC |
+|---|---|---|---|---|---|
+| Audio-only MIL | video labels | 0.7142 | 0.4987 | 0.5142 | 0.7141 |
+| MACIL-SD (av) | video labels | 0.6764 | 0.4664 | 0.5383 | 0.7112 |
+| MultiHateLoc reimpl | video labels | 0.6740 | 0.3700 | 0.4611 | 0.6498 |
+| DSANet | video labels | 0.6684 | 0.4354 | 0.3844 (align branch: 0.7230) | 0.6768 |
+| VadCLIP | video labels | 0.6281 | 0.3611 | 0.3331 | 0.6405 |
+| **Ours** | **zero labels** | 0.6198 | 0.4141 | **0.6154** | 0.7015 |
+| Vad-R1 | none | 0.5427 | 0.2699 | 0.5000 | 0.5247 |
+
+## MHC ZH test (153 gold videos; within-macro n=7 — UNSTABLE, do not lean on that column)
+
+| Method | Supervision | Pooled ROC | Pooled PR | Within-hate macro | Video AUC |
+|---|---|---|---|---|---|
+| MACIL-SD (audio) | video labels | 0.7774 | 0.5301 | 0.5256 | 0.7808 |
+| MACIL-SD (av) | video labels | 0.7757 | 0.5233 | 0.4588 | 0.7685 |
+| MultiHateLoc reimpl | video labels | 0.6749 | 0.4032 | 0.4126 | 0.7382 |
+| Audio-only MIL | video labels | 0.6320 | 0.3254 | 0.5269 | 0.6725 |
+| **Ours** | **zero labels** | 0.6004 | 0.3813 | **0.6076** | 0.6153 |
+| Vad-R1 | none | 0.5987 | 0.2838 | 0.5000 | 0.6427 |
+| DSANet | video labels | 0.5749 | 0.2921 | 0.3557 | 0.5588 |
+| VadCLIP | video labels | 0.5676 | 0.2705 | 0.3562 | 0.3981 |
+
+## Readings the paper must carry
+
+1. **The pooled frame metric is dominated by video-level discrimination**
+   — trained baselines win it where training data matches (MHC), our
+   zero-label method ties/leads it on HateMM; the decomposition
+   (pooled vs within-video) is itself a finding no prior work reports.
+2. **Within-video localization is weak for everyone** (≤0.62 everywhere;
+   we lead on both MHC corpora, MultiHateLoc's fused branch leads on
+   HateMM at 0.6008 vs our 0.5706; DSANet's text-alignment branch hits
+   0.7230 on MHC EN while its pooled is weak — branch-level dissociation
+   worth analysis). The field's operative metric hides all of this.
+3. **Audio is the strongest single trained channel** on HateMM and MHC
+   ZH — consistent with hate being carried by speech; our locator reads
+   the same speech through transcripts at zero labels.
+4. **Vad-R1 (the zero-shot MLLM competitor) does not localize at all**:
+   every positive prediction spans the whole clip (525/525 videos);
+   its frame row is a broadcast video verdict.
+5. Caveats bound to specific rows: MACIL-SD/hatemm selected epoch 1
+   (not converged); ZH within-macro n=7; Vad-R1 scores are binary
+   (one interior ROC point); our MHC pooled is depressed by uncovered
+   (non-speech) frames sitting at the floor — a transcript-only
+   locator has no evidence there, and we do not impute any.
+
+## Cost row (HateMM, per video)
+
+Ours: 1 packed forward, 0.11 s (prefix shared), zero labels.
+Trained baselines: minutes of training + feature extraction
+(CLIP/I3D/VGGish/ViT/BERT pipelines), video labels required.
+Vad-R1: 3.7 s/video, 16 frames, 7B, no labels but trained on its own
+VAD corpus. LELA (cited only): 12–16 GPT-4o-mini calls PER FRAME.
