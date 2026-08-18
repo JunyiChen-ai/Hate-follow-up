@@ -1,19 +1,25 @@
-# Reproduction baselines: VadCLIP, DSANet and MACIL-SD
+# Reproduction baselines
 
-Three weakly-supervised video-anomaly-detection baselines, ported to the
-hateful-video corpora of the reproduction study. All train on video-level
-labels only and predict a score per temporal unit; the study reads those scores
-as frame-level hate localisation on the 1 fps grid.
+Video-anomaly-detection baselines, ported to the hateful-video corpora of the
+reproduction study. Each predicts a score per temporal unit; the study reads
+those scores as frame-level hate localisation on the 1 fps grid.
 
-| method | venue | modality | features | upstream | commit |
+| method | venue | supervision | modality | upstream | commit |
 | --- | --- | --- | --- | --- | --- |
-| VadCLIP | AAAI 2024 | visual | CLIP ViT-B/16, 1 fps | https://github.com/nwpu-zxr/VadCLIP | `c41067f` |
-| DSANet | AAAI 2026 | visual | CLIP ViT-B/16, 1 fps | https://github.com/lessiYin/DSANet | `eb335b2` |
-| MACIL-SD | ACM MM 2022 | audio-visual | I3D 5-crop + VGGish | https://github.com/JustinYuu/MACIL_SD | `c20943f` |
+| VadCLIP | AAAI 2024 | weak, video-level | CLIP ViT-B/16, 1 fps | https://github.com/nwpu-zxr/VadCLIP | `c41067f` |
+| DSANet | AAAI 2026 | weak, video-level | CLIP ViT-B/16, 1 fps | https://github.com/lessiYin/DSANet | `eb335b2` |
+| MACIL-SD | ACM MM 2022 | weak, video-level | I3D 5-crop + VGGish | https://github.com/JustinYuu/MACIL_SD | `c20943f` |
+| EventVAD | ACM MM 2025 | **training free** | CLIP + RAFT, VideoLLaMA2 7B | https://github.com/YihuaJerry/EventVAD | `25cacd8` |
 
-Everything below the "Layout" heading describes the two CLIP baselines. The
-MACIL-SD port is documented in **its own section at the end of this file**,
-because it shares no code with the other two and consumes different features.
+The three weakly-supervised ports train on video-level labels only. EventVAD
+trains nothing and runs on the test cohorts alone.
+
+Everything between here and the "MACIL-SD" heading describes the two CLIP
+baselines. **MACIL-SD and EventVAD each have their own section at the end of
+this file**, because neither shares code with the CLIP pair and each consumes
+different inputs. EventVAD additionally has `DESIGN_EVENTVAD.md`, because its
+released code cannot be run and two of its components had to be reconstructed
+from the paper.
 
 DSANet's README says it consumes VadCLIP's released features, and the code
 bears that out: the two repositories carry byte-identical copies of
@@ -437,3 +443,149 @@ write. The score branches differ:
 `train_meta.json` additionally records `grid`, `row_seconds` and
 `n_train_items`, so the alignment a checkpoint was trained under is recoverable
 from its own metadata.
+
+---
+
+# EventVAD
+
+Training-Free Event-Aware Video Anomaly Detection, ACM MM 2025,
+https://github.com/YihuaJerry/EventVAD @ `25cacd8`, paper arXiv:2504.13092.
+The study's training-free event-segmentation baseline. It trains nothing, so
+it runs on the **test cohorts only** and there is no train split to carve a
+validation set out of; the model-selection question the other three ports
+answer does not arise.
+
+Two stages. Stage 1 turns each video into events: CLIP ViT-B/16 and RAFT
+optical flow per frame, a dynamic spatiotemporal graph over frames with a
+temporal decay, training-free graph attention propagation, then statistical
+boundary detection on the propagated features. Stage 2 hands each event's 16
+frames to VideoLLaMA2.1-7B-16F once and reads an anomaly score out of the
+answer.
+
+## Read DESIGN_EVENTVAD.md first
+
+EventVAD is the one baseline in this study whose released code **cannot be
+run**. `src/event_seg/uniseg_processor.py` imports `graph_propagation` from
+`graph_operations`, and `graph_operations.py` is a byte-identical duplicate of
+`video_processing.py` that defines only `process_video`. The function exists
+nowhere in the release, so the pipeline raises `ImportError` before decoding a
+frame. Two further gaps follow from the same state: the scoring prompt is the
+literal string `"prompt"`, and the RAFT checkpoint path is `/path/raft-things.pth`.
+`src/evaluate.py` does not compile.
+
+`DESIGN_EVENTVAD.md` reconstructs the missing propagation module from the
+paper's Eq. (5)-(8) and the missing prompt from its Figure 2 and section 3.4,
+quotes the sources, and lists every choice that is an inference together with
+the flag that reverses it. `PATCHES.md` covers the porting changes.
+`smoke_cpu_eventvad.py` re-checks every mechanical claim in both, including
+that the three gaps are still present in the pinned clone.
+
+Because the release was never executed, its `config.py` is not a tested preset:
+the paper's published values are the defaults, and `--preset upstream` selects
+the config literals.
+
+| | paper | `config.py` | default here |
+| --- | --- | --- | --- |
+| α, semantic-motion fusion | 0.75 | 0.8 | **0.75** |
+| γ, time decay | 0.6 | 0.05 | **0.6** |
+| CLIP L2-normalised in the node feature | yes | no | **yes** |
+| moving average | centred | trailing | **trailing** |
+| Savitzky-Golay width / MAD multiplier | 60 @ 30 fps / 3 | 2.0 s / 3.0 | 2.0 s / 3.0 |
+| GAT iterations / projection dim | 1 / 64 | 1 / 64 | 1 / 64 |
+
+The moving average is the one row where the code wins over the paper, and the
+reason is measured rather than argued: a centred window of width w cannot
+detect a change whose smoothed width is also w, because it averages over the
+peak it is being compared against. On the synthetic in the selftest the centred
+ratio reaches 1.194 against a threshold of 1.281 and detects nothing, while the
+trailing window reaches 1.602 against 1.577 and fires. `--ma-mode centered`
+keeps the claim checkable.
+
+## Setup
+
+```bash
+bash scripts/reproduction_baselines/clone_upstream.sh
+```
+
+now also clones EventVAD, `princeton-vl/RAFT` and `DAMO-NLP-SG/VideoLLaMA2` at
+the commit EventVAD's own requirements pin, fetches `raft-things.pth` from
+RAFT's Dropbox release (sha256 `fcfa4125...a7e1`) into
+`/home/jehc223/data/checkpoints/raft/`, and downloads VideoLLaMA2.1-7B-16F
+(~16 GB) into `/home/jehc223/data/checkpoints/videollama2/`.
+
+**Environment.** The existing `/home/jehc223/venvs/SafetyContradiction` runs
+both stages; no second environment. One package was added, `timm`, installed
+`--no-deps` so torch and torchvision are untouched -- VideoLLaMA2's
+`stc_connector_v35` projector needs `RegStage`. Upstream's other pins are not
+needed: `flash-attn` is replaced by `sdpa` (patch E1), `deepspeed` and
+`bitsandbytes` are training-only or quantisation-only, and LAVIS resolves to
+the OpenAI CLIP ViT-B/16 this repository already vendors and caches (patch E2,
+asserted bit-identical in the smoke test).
+
+## Running
+
+CPU smoke first -- it touches no GPU and takes about a minute:
+
+```bash
+CUDA_VISIBLE_DEVICES="" /home/jehc223/venvs/SafetyContradiction/bin/python \
+    scripts/reproduction_baselines/smoke_cpu_eventvad.py
+```
+
+All three corpora, sequentially, one GPU:
+
+```bash
+cd /home/jehc223/Hate-follow-up
+setsid nohup bash scripts/reproduction_baselines/run_all_eventvad.sh \
+    > results/reproduction/baselines/run_all_eventvad.log 2>&1 &
+```
+
+Corpora are ordered shortest-first (`mhclip_zh mhclip_en hatemm`, 4817 s /
+5600 s / 29266 s of video) so a configuration problem surfaces in the first
+hour rather than the tenth. Restrict with `CORPORA` and `STAGES`; both GPU
+stages are resumable and skip video ids already recorded without an error.
+
+One corpus, one stage at a time:
+
+```bash
+PY=/home/jehc223/venvs/SafetyContradiction/bin/python
+EV=scripts/reproduction_baselines/eventvad
+$PY $EV/segment_events.py --corpus hatemm --device cuda        # GPU: CLIP + RAFT
+$PY $EV/score_events.py   --corpus hatemm --arm paper           # GPU: VideoLLaMA2 7B
+CUDA_VISIBLE_DEVICES="" $PY $EV/rasterize_and_eval.py --corpus hatemm --arm paper
+```
+
+The two GPU stages are separate processes on purpose. Stage 1 holds CLIP and
+RAFT, about 0.3 GB, and is bound by RAFT's per-frame-pair forward. Stage 2
+holds VideoLLaMA2 in fp16, about 16 GB, and is bound by generation. Fusing them
+would pin 16 GB through the whole of stage 1 for nothing.
+
+`--arm` defaults to `paper`, the Figure 2 prompt, which is the result to quote.
+`no_thinking` is the paper's own Table 5 ablation -- the `#Instruction` line
+removed -- and `bounded` states the score range the paper leaves unstated. Both
+are second conditions on the same test split and need owner approval.
+
+## Outputs
+
+Under `results/reproduction/baselines/eventvad/<corpus>/`:
+
+| file | contents |
+| --- | --- |
+| `events.jsonl` | per video: probe, `n_frames`, `decode_fps`, `n_edges`, the `[start, end)` event partition, the raw boundaries, the detector's median/MAD/threshold, per-stage timings |
+| `segment_meta.json` | resolved config, cohort size, split ids without gold |
+| `event_scores.jsonl` | per video: one record per event with the model's full text, the parsed number, the normalised score, the parse rule and the range rule |
+| `score_meta.json` | the exact prompt, model path, attention implementation, decode settings |
+| `scores.jsonl` | per video: `video_id`, `n_frames`, `score_event` on the 1 fps grid |
+| `frame_eval.json` | the evaluator's result dict, plus `n_events`, `events_per_video_{mean,median,max}`, `n_events_unparsed`, `frac_frames_unparsed` and the parse/range histograms |
+
+Read the number against `frac_frames_unparsed` and `range_rules`. An event
+whose answer carried no number scores 0.0 and is counted rather than dropped,
+because dropping would change the cohort between arms.
+
+## One thing to know before comparing
+
+EventVAD makes **one MLLM call per event**, not per video, so its inference
+cost scales with how finely the segmenter cuts. `events_per_video_median` and
+`events_per_video_max` are reported for exactly that reason. As a reproduced
+baseline that is fine; it is worth stating that the same profile would not
+satisfy this project's own two-calls-per-video cap if EventVAD were being
+proposed as a method rather than measured as a comparison.

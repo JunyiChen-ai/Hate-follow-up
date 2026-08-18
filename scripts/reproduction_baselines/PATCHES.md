@@ -547,3 +547,288 @@ Upstream applies no padding mask in the temporal transformer. Kept. It matters
 less here than in the other two ports, because `avce_train` truncates each batch
 to `max(seq_len)` before the forward, so padding is bounded by the longest real
 sequence in the batch rather than by `--max-seqlen`.
+
+---
+
+# EventVAD
+
+Training-Free Event-Aware Video Anomaly Detection, ACM MM 2025,
+https://github.com/YihuaJerry/EventVAD @ `25cacd8`, paper arXiv:2504.13092.
+The study's training-free event-segmentation baseline, and the second of its
+two MLLM baselines beside Vad-R1.
+
+**Read PATCHES.md's sibling, DESIGN_EVENTVAD.md, first.** EventVAD is the one
+port in this study whose upstream **cannot be run at all**: the release imports
+a `graph_propagation` it never defines, so `main.py` raises `ImportError`
+before decoding a frame. The design note records the four gaps in the release,
+reconstructs the missing module and the missing prompt from the paper with the
+quotes they rest on, and lists every choice that is an inference. This section
+records only the porting patches -- the changes made to run the method on this
+study's corpora, not the changes made to make it exist.
+
+Nothing under `third_party/` is edited. Unlike the VadCLIP and DSANet ports,
+no upstream file is vendored: with the graph propagation missing and the
+prompt a placeholder, there is no file worth copying. `eventvad/` is written
+against the paper, and each module's docstring names the upstream file it
+replaces.
+
+## File map
+
+| path | replaces | state |
+| --- | --- | --- |
+| `eventvad/config.py` | `src/event_seg/config.py` | rewritten, paper values |
+| `eventvad/video_io.py` | `src/event_seg/utils.py` | rewritten, patch E4/E7 |
+| `eventvad/features.py` | `src/event_seg/feature_extractor.py` | rewritten, patches E2, E3, E4 |
+| `eventvad/graph.py` | `src/event_seg/uniseg_processor.py` + the missing `graph_propagation` | reconstructed, DESIGN G1 |
+| `eventvad/boundary.py` | `src/event_seg/boundary_detection.py` | ported, DESIGN G7 |
+| `eventvad/prompt.py` | `src/score/event_score.py:23` | reconstructed, DESIGN G2 |
+| `eventvad/segment_events.py` | `src/event_seg/main.py` + `video_processing.py` | rewritten, patch E5 |
+| `eventvad/score_events.py` | `src/score/event_score.py` | rewritten, patches E1, E6 |
+| `eventvad/rasterize_and_eval.py` | `src/evaluate.py` | rewritten, patch E8 |
+| `run_all_eventvad.sh`, `smoke_cpu_eventvad.py` | -- | new |
+
+Upstream files with no role here: none -- the release is ten Python files and
+every one of them is either replaced above or is the duplicate
+`graph_operations.py`.
+
+## Dependency decisions
+
+EventVAD ships two `requirements.txt` files pinning two conda environments,
+between them 300-odd packages including torch 2.1/2.2 on CUDA 11.8, a jupyter
+stack, spacy, open3d and streamlit. This port adds **one** package to the
+existing `/home/jehc223/venvs/SafetyContradiction` and creates no new
+environment.
+
+| pinned upstream | needed? | decision |
+| --- | --- | --- |
+| `torch==2.1.0+cu121` / `2.2.0+cu118` | -- | the venv's torch 2.8.0+cu128 is used; nothing in either stage touches a removed API |
+| `flash-attn==2.5.8` | **no** | patch E1: `sdpa` instead |
+| `deepspeed==0.13.1` | **no** | training only; `load_pretrained_model` never imports it for inference |
+| `bitsandbytes==0.43.0` | **no** | reached only through `load_8bit` / `load_4bit`, both off. `from transformers import BitsAndBytesConfig` resolves without the package |
+| `decord==0.6.0` | present | imported by `videollama2.mm_utils` at module scope, so it must import; it is never called, because patch E6 hands `process_video` a decoded array |
+| `salesforce-lavis` | **no** | patch E2: resolves to OpenAI CLIP ViT-B/16, which this repo already vendors and caches |
+| `timm` | **yes** | `videollama2/model/projector.py` needs `RegStage` for the `stc_connector_v35` projector. Installed with `--no-deps` so torch and torchvision are untouched; timm 1.0.28 still aliases the deprecated `timm.models.layers` path the projector imports |
+| `transformers==4.33.2` / `4.40.0` | -- | 4.57.1 is used. `videollama2` imports and builds under it; the checkpoint's stale `transformers_version: 4.40.0` needs no processor fix-up, unlike Vad-R1's |
+| `opencv`, `imageio`, `einops`, `sentencepiece`, `accelerate`, `scipy`, `networkx` | present | already in the venv |
+
+`networkx` is present but **not used**: see patch E9.
+
+## E1 -- the SigLIP tower demands flash-attn unconditionally
+
+`videollama2/model/encoder.py` line 96, inside `SiglipVisionTower.__init__`:
+
+```python
+config._attn_implementation = 'flash_attention_2'
+```
+
+`load_pretrained_model`'s `use_flash_attn` flag defaults to False and governs
+only the language model; the vision tower ignores it. flash-attn 2.5.8 does
+not build against torch 2.8 / CUDA 12.8 on Blackwell in any reasonable time,
+and it is not needed here: SigLIP's encoder is a plain bidirectional
+transformer over the patch tokens of 16 frames, with no causal mask and no
+sequence long enough for the memory argument to bite, so `sdpa` computes the
+same attention. `score_events.patch_siglip_attention` replaces the tower's
+`__init__` at import time with a copy of upstream's body, lines 86-100,
+differing in that one string. `--attn` selects, so `flash_attention_2` is
+still reachable on a machine that has it.
+
+## E2 -- LAVIS is dropped for the CLIP already in this repository
+
+`feature_extractor.py` loads CLIP through
+`lavis.models.load_model_and_preprocess(name="clip", model_type="ViT-B-16")`.
+LAVIS's `configs/models/clip_vit_base16.yaml` resolves that to
+`pretrained: openai` with `vis_processor.eval: clip_image_eval, image_size:
+224`, i.e. the OpenAI CLIP ViT-B/16 checkpoint this study already caches at
+`~/.cache/clip/ViT-B-16.pt` (sha256 `5806e77c...`, fetched by
+`clone_upstream.sh` for VadCLIP and DSANet), preprocessed by
+
+```
+Resize(224, BICUBIC) -> CenterCrop(224) -> convert("RGB") -> ToTensor()
+    -> Normalize((0.48145466, 0.4578275, 0.40821073),
+                 (0.26862954, 0.26130258, 0.27577711))
+```
+
+which is step for step the transform `hate_common/clip/clip.py:_transform(224)`
+builds -- LAVIS's mean and std come from `BlipImageBaseProcessor`'s defaults
+and are the same six constants. `smoke_cpu_eventvad.py` rebuilds LAVIS's
+transform from those definitions and asserts it produces a **bit-identical**
+tensor to the vendored one on a random image, so the substitution is checked
+rather than argued. Installing LAVIS would pin an old transformers against the
+same venv VideoLLaMA2 runs in.
+
+`Config.fp16_enabled` is False and upstream calls `.float()` on the loaded
+model; the port does the same, so CLIP runs in fp32 as published.
+
+## E3 -- the RAFT checkpoint path
+
+Upstream's `'/path/raft-things.pth'` resolved to
+`/home/jehc223/data/checkpoints/raft/raft-things.pth`, sha256
+`fcfa4125...a7e1`, from `princeton-vl/RAFT`'s own `download_models.sh`.
+`clone_upstream.sh` fetches and checksums it. Upstream's import,
+`from RAFT.core.raft import RAFT`, does not work as written either -- RAFT's
+`core/raft.py` does `from update import ...`, so `core/` has to be on
+`sys.path`, which is what `features.py` does.
+
+## E4 -- extraction streams instead of materialising the video
+
+`utils.video_to_frames` returns `np.array(frames)` over **every** decoded
+frame. For the longest HateMM test video, 1000 s at 30 fps and 1280x720, that
+is 83 GB. The features derived from those frames are (n, 640) float32, 77 MB;
+the frames are the only thing that does not fit. CLIP is a per-frame function
+and RAFT a per-adjacent-pair function, so `FeatureExtractor.extract` consumes
+a frame iterator and interleaves them in one pass, holding one `chunk_size`
+buffer. The two feature arrays are the arrays upstream's whole-array code
+would have produced.
+
+## E7 -- one ffmpeg decode path, and the frame rate
+
+Upstream decodes with `cv2.VideoCapture`. The OpenCV build here has no AV1
+decoder and 2 of 12 sampled MultiHateClip English test videos and 2 of 12
+Chinese ones are AV1, with HEVC also present in the Chinese split. Elsewhere in
+this study that is handled by an ffmpeg fallback beside an OpenCV main path;
+here there is no reason to keep two, because the stage wants a whole decoded
+stream rather than indexed frames and the system ffmpeg reads all three codecs.
+Pixels are matched to upstream's: `rgb24` is the channel order
+`cv2.cvtColor(..., BGR2RGB)` produces, `scale=...:flags=bilinear` is
+`cv2.resize`'s default `INTER_LINEAR` rather than ffmpeg's bicubic default, and
+`EventVADConfig.output_size` is upstream's cap-then-round-to-even rule
+character for character.
+
+**Rate (P2).** Upstream reads every frame; the paper fixes "FPS = 30". These
+corpora run at 24, 25, 29.97, 30, 59.94 and 60. `max_fps` **caps** rather than
+resamples: a 60 fps file decodes at 30, a 25 fps file stays at 25. Upsampling
+25 to 30 would insert duplicated frames, and a duplicate frame has optical flow
+exactly zero and cosine dissimilarity exactly zero -- a stretch of perfect
+event continuity the video does not contain, fed straight into the boundary
+detector.
+
+**Time decay (P3).** `ema_window` and `min_segment_gap` are already written in
+seconds upstream and multiplied by fps where they are used, so they carry over
+untouched. γ does not: it multiplies a **frame-index** difference, so the
+paper's γ = 0.6 at 30 fps is a decay of 18 per second, and reproducing that
+decay at rate f needs `γ · 30 / f`. `gamma_mode = per_second` does that;
+`per_frame` uses γ literally. This is the same adaptation the VadCLIP and
+DSANet ports make when they re-read snippet-counted hyperparameters in seconds.
+
+## E5 -- events are carried as boundaries, not as re-encoded video
+
+`video_processing.process_video` writes every segment to its own
+`segment_XXXX.mp4` with `cv2.VideoWriter`, trying `mp4v`, `avc1`, `xvid` in
+turn, and hands the paths to the scorer. Three reasons the port writes a JSON
+boundary list instead. The re-encode is a lossy generation between the frames
+the segmenter measured and the frames the scorer sees. `cv2.VideoWriter`
+cannot write the AV1 inputs back out, and its `mp4v` fallback would silently
+change the pixels for a large minority of MultiHateClip. And 525 test videos
+cut into events would write tens of thousands of files to serve 16 frames
+each, which the scorer can seek in the source. The boundaries are the entire
+information content of upstream's segment directory.
+
+`events_from_boundaries` reproduces upstream's arithmetic -- consecutive
+merged boundaries, a final segment `min_segment_gap * fps` long, a prepended
+`(0, first)` and an appended `(last, end)` -- with two departures, both
+recorded in the returned diagnostics. Ends are half-open so the events
+partition `range(n_frames)` exactly, which is what the rasteriser needs; and
+upstream's "drop a segment shorter than two frames" rule can in principle
+leave a hole, so any hole is closed by extending the previous event and
+counted in `n_gaps_closed`. Merging already forces boundaries
+`min_segment_gap * fps` apart, so it should never fire; it is a guarantee, not
+a correction.
+
+## E6 -- 16 frames per event, from the source
+
+Upstream calls `processor['video'](segment_path)`, which decodes the segment
+file with decord and samples 16 frames from it. With no segment files, the
+port applies VideoLLaMA2's own index rule --
+`mm_utils.frame_sample(duration, mode='uniform', num_frames=16)`, reproduced
+verbatim in `score_events.frame_sample_uniform` and asserted equal to the
+upstream function in the selftest -- to the event's frame range, pulls those
+absolute indices out of the source, and hands `process_video` the resulting
+`np.ndarray`, which its own dispatch accepts. The model therefore sees the
+frames upstream's sampler would have picked out of that segment, without the
+re-encode. `collect_event_frames` makes **one** decode pass per video and
+emits each event's 16 frames as the stream reaches them, so a video with many
+events costs one decode, not one per event.
+
+## E8 -- the evaluator
+
+`src/evaluate.py` does not compile (`for line in f:s`, line 44) and targets a
+UCF-Crime `tag.txt`. `rasterize_and_eval.py` maps events onto the 1 fps gold
+grid and hands the result to `eval_baseline_scores.evaluate_scores`, so
+EventVAD's number and every other baseline's come out of one implementation of
+`frame_eval_common.evaluate`.
+
+**The mapping.** An event covers decoded frames `[s, e)`, i.e. seconds
+`[s/fps, e/fps)`; gold second `i` takes the score of the event containing its
+midpoint `i + 0.5`, clamped to the last event. That is the convention the
+MACIL-SD port already uses to cross a non-integer grid ratio, and it is a
+lookup rather than upstream's `scores[s:e] = score` because `fps` is 29.97 as
+often as 30 here.
+
+**Unparsed events (P5).** An event whose text carried no number scores 0.0 and
+is counted. Dropping the video instead would change the cohort between prompt
+arms and make two arms' pooled numbers incomparable. `frame_eval.json` reports
+`n_events_unparsed`, `frac_events_unparsed` and `frac_frames_unparsed`, so a
+number can be read against how much of it was filled in.
+
+## E9 -- scipy.sparse instead of networkx
+
+Upstream builds a `networkx.Graph`. Its edge count is not the kNN fan-out it
+looks like: the top-k is taken **per block pair**, so a node collects `init_k`
+edges against each of the `ceil(n / 200)` column blocks. On a 30 000-frame
+video that is `5 x 150 = 750` edges per node, 22.5 M edges, tens of GB in
+networkx. The same edges as a CSR matrix are about 270 MB, and the propagation
+becomes one sparse-dense product instead of a Python loop over adjacency
+lists. The edge set and the weights are unchanged. Upstream's `combined_sim`
+is symmetric in (i, j) -- each of its three terms is -- so networkx's
+last-write-wins on a repeated unordered pair and this port's de-duplication by
+maximum agree by construction, and the smoke test asserts the resulting matrix
+is symmetric.
+
+## E10 -- RAFT does not run unpadded, and has a resolution floor
+
+`feature_extractor.extract_flow_features` calls
+`self.raft_model(prev_frame, curr_frame, iters=...)` directly, with no
+`InputPadder`. RAFT's `forward` sizes its coordinate grid as `H // 8, W // 8`
+while its encoder produces `ceil(H / 8), ceil(W / 8)`, so on any side that is
+not a multiple of 8 the two disagree and `bilinear_sampler` raises:
+
+    RuntimeError: grid_sampler(): expected grid and input to have same batch
+    size, but got input with sizes [6420, 1, 60, 107] and grid with sizes
+    [6360, 9, 9, 2]
+
+That is 854x480, which is 108 of the 214 HateMM test videos. RAFT's own
+`demo.py` wraps every call in `InputPadder`, which replicate-pads to the next
+multiple of 8; `features._mean_flow` does the same and crops the flow back with
+`padder.unpad` before averaging, so the mean covers exactly the original frame.
+This is not a choice between readings -- the stage cannot run without it.
+
+RAFT also has a **floor**. Its correlation pyramid halves the `H/8` feature map
+four times, so a side under about 128 px collapses the coarsest level to width
+1, where `bilinear_sampler` normalises by `W - 1` and every output is NaN.
+Measured across all 525 gold videos, the smallest decoded side is **144 px**
+(`non_hate_video_197`, 176x144), so the corpora clear the floor -- but not by
+much, and `smoke_cpu_eventvad.py` asserts it on every video it probes rather
+than leaving it to chance.
+
+## Deliberately not patched
+
+`dynamic_k = max(3, init_k - (i // (n // 10)))` shrinks the fan-out from 5 to 3
+as the row-block sweep advances, a positional asymmetry the paper describes
+nowhere. Kept, because it is what the released code does. The only change is a
+guard: `n // 10` is zero for a video under ten frames and upstream divides by
+it.
+
+`extract_features` applies `clip_weight` to the CLIP half and then
+`build_dynamic_graph` applies it again inside `combined_sim`, so upstream
+weights the semantic branch twice in the similarity while the flow branch
+enters the distance already scaled by `1 - alpha`. The port follows Eq. (4),
+which weights each branch once, and `--preset upstream` does not restore the
+double weighting -- that one is a straightforward inconsistency with the
+paper's own equation rather than a defensible alternative reading.
+
+The flow branch is two numbers per frame. `f_flow = P^T E[o]` averages the
+whole RAFT field to a single 2-vector before lifting it to 128 dimensions
+through a matrix with orthonormal rows, which is an isometry -- the smoke test
+asserts it. So the 128-dimensional motion branch carries exactly two degrees
+of freedom. That is upstream's design and the paper's Eq. (2), kept as is, and
+it is worth knowing before reading Table 5's `+1.42` for RAFT alone.
