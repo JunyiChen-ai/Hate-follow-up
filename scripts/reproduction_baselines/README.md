@@ -1,15 +1,19 @@
-# Reproduction baselines: VadCLIP and DSANet
+# Reproduction baselines: VadCLIP, DSANet and MACIL-SD
 
-Two weakly-supervised video-anomaly-detection baselines, ported to the
-hateful-video corpora of the reproduction study. Both take frozen CLIP
-ViT-B/16 features, train on video-level labels only, and predict a score per
-temporal unit; the study reads those scores as frame-level hate localisation
-on the 1 fps grid.
+Three weakly-supervised video-anomaly-detection baselines, ported to the
+hateful-video corpora of the reproduction study. All train on video-level
+labels only and predict a score per temporal unit; the study reads those scores
+as frame-level hate localisation on the 1 fps grid.
 
-| method | venue | upstream | commit |
-| --- | --- | --- | --- |
-| VadCLIP | AAAI 2024 | https://github.com/nwpu-zxr/VadCLIP | `c41067f` |
-| DSANet | AAAI 2026 | https://github.com/lessiYin/DSANet | `eb335b2` |
+| method | venue | modality | features | upstream | commit |
+| --- | --- | --- | --- | --- | --- |
+| VadCLIP | AAAI 2024 | visual | CLIP ViT-B/16, 1 fps | https://github.com/nwpu-zxr/VadCLIP | `c41067f` |
+| DSANet | AAAI 2026 | visual | CLIP ViT-B/16, 1 fps | https://github.com/lessiYin/DSANet | `eb335b2` |
+| MACIL-SD | ACM MM 2022 | audio-visual | I3D 5-crop + VGGish | https://github.com/JustinYuu/MACIL_SD | `c20943f` |
+
+Everything below the "Layout" heading describes the two CLIP baselines. The
+MACIL-SD port is documented in **its own section at the end of this file**,
+because it shares no code with the other two and consumes different features.
 
 DSANet's README says it consumes VadCLIP's released features, and the code
 bears that out: the two repositories carry byte-identical copies of
@@ -237,3 +241,199 @@ are **not** required: `hate_common/data.py` reads the manifests with the stdlib
 
 The frozen CLIP ViT-B/16 checkpoint (`~/.cache/clip/ViT-B-16.pt`, sha256
 `5806e77c...`) is fetched by `clone_upstream.sh`.
+
+---
+
+# MACIL-SD
+
+Modality-Aware Contrastive Instance Learning with Self-Distillation, ACM MM
+2022, https://github.com/JustinYuu/MACIL_SD @ `c20943f`. The study's
+audio-visual baseline, and the source of its pure-audio row.
+
+MACIL-SD shares no code with VadCLIP or DSANet: it descends from XDVioDet and
+RTFM, not from CLIP. It reads I3D RGB and VGGish instead of CLIP, has no text
+branch, and is already a binary MIL scorer, so the hateful/normal collapse
+touches only the label map. The port reuses `hate_common.data` and
+`hate_common.runtime` read-only and is scored by the same
+`eval_baseline_scores.py`, so its numbers sit on the same grid as the other two.
+
+The audio-visual model plus its self-distillation partner comes to **0.678M
+parameters**, matching the "Ours (full) 0.678M" line in the paper's results
+table.
+
+## Setup
+
+```bash
+git clone https://github.com/JustinYuu/MACIL_SD.git third_party/MACIL_SD
+git -C third_party/MACIL_SD checkout c20943f
+```
+
+No checkpoint download: MACIL-SD trains from frozen features and nothing else,
+so `clone_upstream.sh` is not extended.
+
+## The temporal alignment, which is the whole of the adaptation
+
+MACIL-SD's `Att_MMIL` concatenates the audio and visual sequences on a new
+axis, so it needs **one audio row per visual row, describing the same
+instant**. On XD-Violence that is free; the released arrays come pre-paired.
+Here they do not.
+
+| | rows | unit | coverage |
+| --- | --- | --- | --- |
+| I3D | `(n_snippets, 5, 1024)` | 16 frames at 24 fps = 0.666667 s | drops tail frames that do not fill a snippet |
+| VGGish | `(T, 128)` | 1 s, row `i` = `[i, i+1)` | the whole waveform |
+
+`T` is the gold length: the arrays in `results/reproduction/gt/` have length
+exactly `T` for all 214 + 158 + 153 gold videos. The grids also cover different
+spans -- audio outlives visual in 1042 / 790 / 808 of the 1066 / 792 / 814
+videos, by at most 5.33 s, 1.67 s and 2.00 s.
+
+**The resolution: train on the I3D snippet grid, resample VGGish onto it, map
+the scores back to the second grid at inference.** `--grid snippet`, the
+default. `macilsd/align.py` carries the argument and PATCHES.md section A1
+carries the precise definitions; in brief:
+
+- **Why the snippet grid.** This study's I3D was extracted at 24 fps with
+  16-frame snippets, the same decode rate and snippet length XD-Violence used,
+  so a row is 0.666667 s in both places. Every hyperparameter MACIL-SD counts
+  in rows keeps the physical meaning it was tuned with and **none has to be
+  re-read** -- unlike the VadCLIP and DSANet ports, whose 1 fps features forced
+  `--visual-length` and `--attn-window` to move per corpus. Pooling I3D down to
+  1 s would instead discard a third of the visual resolution the extraction run
+  paid for.
+- **Audio up.** Snippet `j`'s audio row is the overlap-length-weighted mean of
+  the VGGish rows intersecting `[start_j, end_j)` from `<id>.times.json`, i.e.
+  the time-average of the piecewise-constant VGGish signal over the snippet. A
+  snippet straddling a second boundary gets both seconds in proportion.
+- **Scores back down.** Gold second `i` takes the score of the snippet
+  containing its midpoint `i + 0.5`, clamped to the last snippet. The clamp is
+  the hold-last rule for the dropped-tail seconds. This replaces upstream's
+  `np.repeat(scores, 16)`, which targeted a 24 fps frame grid; here the target
+  is 1 fps, the ratio is not an integer, and a lookup is the honest form.
+- **The mirror image.** `--grid second` pools I3D onto the 1 fps grid, leaves
+  VGGish untouched, and makes the back-map the identity. Read the audio-only
+  row against it if you suspect the audio resampling of doing work.
+
+## Five crops
+
+Checked against upstream, because the two ends differ. **Training** uses five
+separate samples per video, one per crop, each paired with that video's single
+VGGish array (`audio_list[index // 5]`), shuffled so the five crops land in
+different batches. **Testing** takes the **crop mean**, not crop `__0`:
+`infer.py` loads the five-crop list at `batch_size=5, shuffle=False` so one
+batch is one video, and `avce_test` averages the sigmoids over that axis.
+`__0` appears only in `list/make_gt.py`, where it iterates videos once while
+rasterising ground truth. Both conventions are replicated.
+
+## The audio-only ablation
+
+`--modality audio` trains **upstream's own `Single_Model`**, at **upstream's own
+lr/5**, on VGGish alone. That module is not something this port introduces: in
+`main.py` it is the uni-modal partner the audio-visual model is distilled from
+every epoch. The only change is its input width, 128 instead of 1024.
+
+This is the honest comparator. "MACIL-SD's audio branch alone" is not well
+defined -- `a_out` is the output of cross-attention *against the video*, so
+removing the video removes the branch -- and a fresh MIL head on VGGish would
+confound modality with architecture.
+
+`--modality visual` is the matched visual-only row, the same network on I3D. It
+costs nothing extra and without it the audio-only number has only the
+audio-visual number to be read against, which confounds "audio is weaker" with
+"one modality is weaker".
+
+`--crop-repeat`, default 5 for every modality, keeps the audio-only run's
+optimiser-step count equal to the audio-visual run's: the audio branch of the
+audio-visual model sees each VGGish array five times per epoch, once per crop.
+`--crop-repeat 1` gives the one-item-per-video reading.
+
+## Hyperparameters
+
+The published preset, verbatim. Nothing had to be adapted -- see PATCHES.md
+patch O2, and the note above on why `--max-seqlen 200` carries over untouched.
+
+| | value | |
+| --- | --- | --- |
+| lr | 4e-4 | uni-modal partner at lr/5 |
+| batch-size | 128 | |
+| max-seqlen | 200 rows | = 133.3 s, as on XD-Violence |
+| max-epoch | 50 | |
+| hid-dim / ffn-dim | 128 / 128 | |
+| nhead / dropout | 4 / 0.1 | |
+| num-classes | 1 | already binary; the collapse touches only the label map |
+| m (EMA base) | 0.91 | `cosine_scheduler(m, 1, epoch, 50)` |
+| lamda_a2b / a2n / cof | 1.5 / 1.5 / 0.1 | ramp `min(lamda, cof * epoch)` |
+| optimiser / schedule | Adam, CosineAnnealingLR T_max 60 | 60 against 50 epochs, as published |
+| seed | 2333 | |
+
+Two published values look like transcription errors and are not, so they are
+flags rather than literals: `--sched-tmax 60` against 50 epochs means the
+cosine never reaches its trough, and `--ema-epochs 50` is a literal in the
+distillation schedule that does not follow `--max-epoch`.
+
+**Model selection is the one substantive protocol change**, the same one the
+other two ports make. `main.py` evaluates the *test* split after every epoch
+and keeps the best-test-AP checkpoint. This port never opens the test split
+during training; it selects on video-level AP over a seeded, stratified 10 %
+carve from train. `--val-frac 0 --select last` restores the last-epoch
+behaviour. PATCHES.md patch M7.
+
+**One upstream quirk, reproduced and flagged.** `AVCE_Model.forward` returns
+`(..., v_out, a_out)` and both call sites unpack it as
+`(audio_rep, visual_rep)`, so each representation reaches the contrastive loss
+under the other modality's name while the logits selecting the top-k positions
+do not. Kept as published, since the reported 83.40 AP was obtained with it.
+`--fix-rep-swap` corrects the pairing; the swap is not cosmetic (the four
+InfoNCE terms sum to 9.4406 as published against 3.2192 corrected on a fixed
+synthetic batch). PATCHES.md patch M13.
+
+## Running
+
+CPU smoke first -- it touches no GPU:
+
+```bash
+CUDA_VISIBLE_DEVICES="" /home/jehc223/venvs/SafetyContradiction/bin/python \
+    scripts/reproduction_baselines/smoke_cpu_macilsd.py
+```
+
+All nine runs (three modalities x three corpora), sequentially, one GPU:
+
+```bash
+cd /home/jehc223/Hate-follow-up
+setsid nohup bash scripts/reproduction_baselines/run_all_macilsd.sh \
+    > results/reproduction/baselines/run_all_macilsd.log 2>&1 &
+```
+
+`run_all_macilsd.sh` is separate from `run_all.sh` on purpose and does not
+touch it. Restrict the sweep with `MODALITIES` and `CORPORA`.
+
+One modality on one corpus:
+
+```bash
+PY=/home/jehc223/venvs/SafetyContradiction/bin/python
+$PY scripts/reproduction_baselines/train_macilsd_hatemm.py \
+    --corpus hatemm --modality av --device cuda
+$PY scripts/reproduction_baselines/test_macilsd_hatemm.py \
+    --corpus hatemm --modality av --device cuda
+$PY scripts/reproduction_baselines/eval_baseline_scores.py --corpus hatemm \
+    --scores results/reproduction/baselines/macilsd/hatemm/scores.jsonl \
+    --json-out results/reproduction/baselines/macilsd/hatemm/frame_eval.json
+```
+
+`--modality` selects both the architecture and the output directory, so it must
+match between train and test.
+
+## Outputs
+
+Under `results/reproduction/baselines/<method>/<corpus>/`, where `<method>` is
+`macilsd`, `macilsd_audio` or `macilsd_visual`. Same four files the other ports
+write. The score branches differ:
+
+| modality | branches in `scores.jsonl` |
+| --- | --- |
+| av | `score_av` (upstream's `pred`, the crop-mean sigmoid of `av_logits`), `score_audio` and `score_visual` (the two per-frame branch probabilities, for inspectability) |
+| audio / visual | `score_mil` (upstream's `pred3`) |
+
+`train_meta.json` additionally records `grid`, `row_seconds` and
+`n_train_items`, so the alignment a checkpoint was trained under is recoverable
+from its own metadata.
