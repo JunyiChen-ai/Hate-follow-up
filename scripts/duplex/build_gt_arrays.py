@@ -144,6 +144,9 @@ def collect_hatemm():
             "n_degenerate_spans": degenerate,
             "duration": durations[vid],
         })
+    # The chunk manifest is the whole test_clean split (215 videos), so
+    # there is no missing-media list to build here; the field is present
+    # so every corpus sidecar has the same shape.
     return {
         "corpus": "hatemm",
         "split": "test_clean",
@@ -152,11 +155,36 @@ def collect_hatemm():
             "durations": os.path.relpath(chunk_path, PROJECT_ROOT),
         },
         "records": records,
+        "split_size": int(gold.get("split_videos") or len(durations)),
+        "upstream_split_size": int(gold.get("split_videos")
+                                   or len(durations)),
+        "absent_from_local_mirror": [],
+        "missing_media": sorted(
+            set() if gold.get("split_videos") in (None, len(durations))
+            else set(spans_by_video) - set(durations)),
         "label_field": "id prefix (hate_video_* / non_hate_video_*)",
     }
 
 
-def collect_mhclip(code):
+def upstream_test_ids(data_root, code):
+    """Video ids in the upstream test TSV, or None if it is not readable.
+
+    span_gold_{en,zh}.json only covers videos the local annotation mirror
+    kept, so it under-reports the true split size. Reading the upstream
+    TSV separates the two losses: videos absent from the mirror, and
+    videos in the mirror whose media has not been fetched yet.
+    """
+    path = os.path.join(data_root, "Multihateclip", "upstream_spans",
+                        "%s_test.tsv" % code)
+    if not os.path.exists(path):
+        return None
+    import csv
+    with open(path, encoding="utf-8", newline="") as handle:
+        return {row["Video_ID"].strip()
+                for row in csv.DictReader(handle, delimiter="\t")}
+
+
+def collect_mhclip(code, data_root):
     """MultiHateClip EN or ZH: majority-vote label from the upstream TSVs."""
     span_path = os.path.join(RESULTS, "mhclip_localization",
                              "span_gold_%s.json" % code)
@@ -165,6 +193,13 @@ def collect_mhclip(code):
     gold = json.load(open(span_path, encoding="utf-8"))
     by_video = {v["video_id"]: v for v in gold["videos"]}
     durations = durations_from_chunks(chunk_path)
+
+    test_ids = {v["video_id"] for v in gold["videos"]
+                if "test" in [v["split"]] + list(v.get("extra_splits") or [])}
+    missing_media = sorted(test_ids - set(durations))
+    upstream_ids = upstream_test_ids(data_root, code)
+    absent_from_mirror = (sorted(upstream_ids - test_ids)
+                          if upstream_ids is not None else None)
 
     records = []
     not_in_gold = []
@@ -199,6 +234,11 @@ def collect_mhclip(code):
         "records": records,
         "not_in_span_gold": not_in_gold,
         "not_in_test_split": not_in_test,
+        "split_size": len(test_ids),
+        "missing_media": missing_media,
+        "upstream_split_size": (len(upstream_ids)
+                                if upstream_ids is not None else None),
+        "absent_from_local_mirror": absent_from_mirror,
         "label_field": "upstream Majority_Voting (Hateful/Offensive/Normal)",
     }
 
@@ -210,7 +250,14 @@ def build(corpus, out_dir, log):
     per_video = {}
     excluded_no_span = []
     normal_with_span = []
+    absent_mirror = corpus.get("absent_from_local_mirror")
     counts = {
+        "upstream_test_split_size": corpus.get("upstream_split_size"),
+        "test_videos_absent_from_local_annotation_mirror":
+            None if absent_mirror is None else len(absent_mirror),
+        "test_split_size_in_span_gold": corpus.get("split_size"),
+        "videos_missing_local_media":
+            len(corpus.get("missing_media") or []),
         "videos_available": len(corpus["records"]),
         "videos_included": 0,
         "videos_excluded_positive_without_span": 0,
@@ -307,6 +354,10 @@ def build(corpus, out_dir, log):
         "npz_bytes": os.path.getsize(npz_path),
         "counts": counts,
         "excluded_positive_without_span": excluded_no_span,
+        "test_split_videos_without_local_media":
+            corpus.get("missing_media") or [],
+        "test_split_videos_absent_from_local_annotation_mirror":
+            absent_mirror,
         "normal_majority_with_leftover_spans_forced_all_negative":
             normal_with_span,
         "videos_absent_from_span_gold": corpus.get("not_in_span_gold", []),
@@ -329,6 +380,12 @@ def build(corpus, out_dir, log):
 
     log("")
     log("=== %s (%s) ===" % (corpus["corpus"], corpus["split"]))
+    log("test split                : upstream %s, in span gold %s, "
+        "%s absent from the annotation mirror, %d without local media"
+        % (counts["upstream_test_split_size"],
+           counts["test_split_size_in_span_gold"],
+           counts["test_videos_absent_from_local_annotation_mirror"],
+           counts["videos_missing_local_media"]))
     log("available videos          : %d" % counts["videos_available"])
     log("included                  : %d  (%s)"
         % (counts["videos_included"],
@@ -363,6 +420,8 @@ def build(corpus, out_dir, log):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out-dir", default=OUT_DIR)
+    ap.add_argument("--data-root", default="/home/jehc223/data",
+                    help="read-only, only for the upstream MHC test TSVs")
     args = ap.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -378,8 +437,8 @@ def main():
 
     sidecars = [
         build(collect_hatemm(), args.out_dir, log),
-        build(collect_mhclip("en"), args.out_dir, log),
-        build(collect_mhclip("zh"), args.out_dir, log),
+        build(collect_mhclip("en", args.data_root), args.out_dir, log),
+        build(collect_mhclip("zh", args.data_root), args.out_dir, log),
     ]
 
     log("")

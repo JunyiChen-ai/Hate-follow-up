@@ -77,7 +77,7 @@ documentation, not here.
 
 ## Per-corpus gold rules
 
-### HateMM (test_clean, 215 videos with local media)
+### HateMM (test_clean, 215 videos, all with local media)
 
 Spans come from the upstream `HateMM_annotation.csv` as parsed by
 `scripts/duplex/hatemm_span_gold.py`. The video-level label is the id
@@ -129,11 +129,23 @@ number computed against one SHA256 is not comparable with a number
 computed against another**, so every reported result names the array
 hash it was scored against.
 
-| Corpus | Test videos with local media | Excluded, rule (b) | Included | All-negative (rule a plus Normal) | Frames | Positive frames |
-|---|---|---|---|---|---|---|
-| HateMM test_clean | 215 | 1 (degenerate span) | 214 | 129 | 29266 | 7080 (24.2%) |
-| MultiHateClip EN test | 161 | 4 | 157 | 112 | 5578 | 1383 (24.8%) |
-| MultiHateClip ZH test | 149 | 4 | 145 | 104 | 4547 | 1074 (23.6%) |
+Two things thin the MultiHateClip cohorts before any gold rule applies.
+The local annotation mirror `annotation(new).json` kept 890 of the 1000
+upstream EN videos and correspondingly fewer ZH, which removes 18 EN and
+24 ZH test videos outright, and media has so far been fetched for 161 of
+the remaining 182 EN and 149 of the remaining 176 ZH. Both losses are
+listed by video id in the sidecars. HateMM loses nothing at this stage:
+all 215 test_clean videos have local media.
+
+| Corpus | Upstream test | In annotation mirror | With local media | Excluded, rule (b) | Included | All-negative | Frames | Positive frames |
+|---|---|---|---|---|---|---|---|---|
+| HateMM test_clean | 215 | 215 | 215 | 1 (degenerate span) | 214 | 129 | 29266 | 7080 (24.2%) |
+| MultiHateClip EN test | 200 | 182 | 161 | 4 | 157 | 112 | 5578 | 1383 (24.8%) |
+| MultiHateClip ZH test | 200 | 176 | 149 | 4 | 145 | 104 | 4547 | 1074 (23.6%) |
+
+The "all-negative" column counts included videos with no positive frame:
+every Normal-majority video, including the 8 EN and 5 ZH whose leftover
+spans rule (a) discards.
 
 Released arrays, built by `scripts/duplex/build_gt_arrays.py`:
 
