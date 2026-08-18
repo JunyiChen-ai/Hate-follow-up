@@ -159,3 +159,37 @@ note: the pooled metric is mask-insensitive (causal 0.7461) because
 cross-video inflation cancels within-video collapse — the mask's value
 is score semantics + within-video discrimination + call-equivalence;
 within-video stays the measured boundary (frame macro 0.571).
+
+## MHC temporal gold + competitor metric verification (2026-08-18)
+
+1. **MultiHateClip temporal annotations EXIST publicly** — GitHub
+   Social-AI-Studio/MultiHateClip, `{English,Chinese}_data/annotation/
+   {train,valid,test}.tsv`, column `Duration` = list of (start_sec,
+   end_sec) tuples. Verified against the paper's Table 2/3 mean span
+   lengths (match to rounding). Our local copy is a third-party
+   repackaging that DROPPED this column; join is clean (all 891 EN +
+   897 ZH local Video_IDs present upstream). Span coverage on our
+   subset: EN Hateful 69/72, Offensive 193/218; ZH Hateful 102/112,
+   Offensive 157/180; plus 29 EN / 40 ZH Normal-majority videos with
+   leftover spans (consolidation artifact — handling must be frozen
+   before use) and some H/O videos with no span at all.
+2. **MHC localization is near-degenerate:** videos capped at 60 s;
+   marked spans average 89–92% of video length; 81% of ZH spans start
+   at t=0. Frame-level evaluation there mostly re-measures video-level
+   discrimination. Weaker temporal gold than HateMM. LELA evaluated
+   MHC-English only.
+3. **MultiHateLoc's "mAP 0.645" is FRAME-level mAP** (per-frame
+   precision-recall area), NOT segment mAP@tIoU — the paper has no
+   tIoU grid, no proposal matching. Its metric family = LELA's
+   (frame ROC-AUC / frame AP). Numbers: HateMM mAP 0.645, AUC 0.799;
+   MHC mAP 0.445, AUC 0.750 — but it is TRAINED on video-level labels
+   (weakly supervised MIL), a different supervision regime from our
+   zero-label setting; split/frame-rate unstated. Consequence: no
+   interval extraction is needed to compare with ANY published hate
+   localization number; interval extraction remains only for
+   HateClipSeg Task-2 tIoU-F1 (ActionFormer 31) if we go there.
+4. LELA reliability flag: duplicated/mangled bibliography entries for
+   both datasets; MultiHateLoc misdescribes MHC (claims even class
+   split and an "audience" field it lacks). Both papers' dataset
+   sections are sloppy; every protocol detail we use must be
+   self-contained.
