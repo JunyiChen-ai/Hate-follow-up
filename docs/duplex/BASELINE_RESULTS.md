@@ -638,9 +638,10 @@ prompt is `cb673111d1b01d00…`, of the system prompt `7bf05ce3b7d79396…`, of 
 assembled chat prompt `2c48af7c71dc56c2…`, recorded per corpus in
 `results/reproduction/baselines/vadr1/<corpus>/run_meta.json` alongside upstream
 commit `8536296b`. A second arm that substitutes hate vocabulary for "abnormal"
-exists in the runner and **was not run**; it is a term-adaptation ablation on the
-same test split and needs its own decision. Everything below is the zero-shot
-arm.
+exists in the runner; it is a term-adaptation ablation on the same test split, it
+was approved by the owner and run on 2026-08-19, and it is reported separately
+under "Vad-R1 term-adaptation arm" below. Everything in this section is the
+zero-shot arm.
 
 ## How a Vad-R1 answer becomes a frame score
 
@@ -748,6 +749,123 @@ trained to answer a different question about a different corpus, and the failure
 observed here is that its interval head collapses to the trivial answer, which is
 a statement about domain transfer rather than about the ceiling of anomaly-based
 localisation.
+
+## Vad-R1 term-adaptation arm (owner-approved)
+
+The second arm named above was approved and run on 2026-08-19, 06:51 to 07:30
+NZST, 39 minutes of wall time on the same single RTX 5090, three corpora strictly
+one after another, 33 minutes of it generation (863 s on hatemm, 558 s on
+mhclip_en, 562 s on mhclip_zh; 4.03, 3.53 and 3.67 s per video). Everything else
+is held fixed: same checkpoint, same 16 frames, same temperature 0.1, top-p 0.9,
+512 max new tokens, seed 0, same rasteriser, same evaluator, same gold arrays.
+Outputs are written to `results/reproduction/baselines/vadr1/<corpus>_hateful/`,
+so the zero-shot arm above is untouched.
+
+The arm rewrites "abnormal" to "hateful" and "normal" to "non-hateful" throughout
+the prompt and in the `<which>` vocabulary the parser reads. The prompt hashes
+move accordingly: binary prompt `6e9caac84945c320…`, system prompt
+`30042787d933e88e…`, assembled chat prompt `5a11072684fa0c6b…`, recorded per
+corpus in `run_meta.json`. The model adopted the substituted vocabulary without
+prompting trouble: every parsed verdict came back as `Hateful` or `Non-hateful`,
+and zero verdicts were non-standard in either arm.
+
+### Both arms side by side
+
+| corpus | arm | pooled ROC | pooled PR | within-hate macro (n) | verdict acc | balanced acc | TPR / TNR |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| hatemm | anomaly | 0.5696 | 0.2722 | 0.5000 (85) | 0.5093 | 0.5288 | 0.6235 / 0.4341 |
+| hatemm | hateful | 0.5750 | 0.2740 | 0.5000 (85) | 0.5000 | 0.5451 | 0.7647 / 0.3256 |
+| mhclip_en | anomaly | 0.5427 | 0.2699 | 0.5000 (44) | 0.6076 | 0.5247 | 0.3261 / 0.7232 |
+| mhclip_en | hateful | 0.6053 | 0.3046 | 0.5005 (44) | 0.6013 | 0.5778 | 0.5217 / 0.6339 |
+| mhclip_zh | anomaly | 0.5987 | 0.2838 | 0.5000 (7) | 0.6797 | 0.6427 | 0.5581 / 0.7273 |
+| mhclip_zh | hateful | 0.7262 | 0.3721 | 0.5000 (7) | 0.6993 | 0.7272 | 0.7907 / 0.6636 |
+
+Confusion counts (tp/fp/fn/tn) are 53/73/32/56 and 65/87/20/42 on hatemm,
+15/31/31/81 and 24/41/22/71 on mhclip_en, 24/30/19/80 and 34/37/9/73 on
+mhclip_zh, anomaly then hateful in each pair. Frame positive rates are unchanged
+because the gold is unchanged: 0.2419, 0.2505, 0.2327.
+
+Interval descriptives, over videos carrying at least one gold positive frame.
+
+| corpus | arm | positive verdicts | whole-clip intervals | whole-clip rate | mean span | frame IoU mean / median | interval IoU mean / median | R@0.3 | R@0.5 | R@0.7 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| hatemm | anomaly | 126 | 126 | 1.000 | 0.9999 | 0.4013 / 0.2461 | 0.4439 / 0.3851 | 0.4824 | 0.4235 | 0.3412 |
+| hatemm | hateful | 152 | 152 | 1.000 | 0.9998 | 0.4630 / 0.4208 | 0.5370 / 0.6668 | 0.5412 | 0.4706 | 0.3882 |
+| mhclip_en | anomaly | 46 | 46 | 1.000 | 0.9998 | 0.2600 / 0.0000 | 0.2640 / 0.0000 | 0.3043 | 0.2826 | 0.2609 |
+| mhclip_en | hateful | 65 | 65 | 1.000 | 0.9996 | 0.4245 / 0.1496 | 0.4304 / 0.1497 | 0.4783 | 0.4565 | 0.4348 |
+| mhclip_zh | anomaly | 54 | 54 | 1.000 | 0.9998 | 0.5173 / 0.5455 | 0.5037 / 0.5468 | 0.5349 | 0.5349 | 0.4884 |
+| mhclip_zh | hateful | 71 | 71 | 1.000 | 0.9997 | 0.7442 / 1.0000 | 0.7278 / 0.9700 | 0.7674 | 0.7674 | 0.7209 |
+
+### The degeneracy is untouched; only the verdict threshold moves
+
+**Substituting hate vocabulary does not recover a single sub-interval.** Across
+all 525 videos in the hateful arm, every positive answer again spans the whole
+clip: 152 of 152 on hatemm, 65 of 65 on mhclip_en, 71 of 71 on mhclip_zh. The
+endpoint distribution is the same two values as before and nothing else — 129
+`[0.0, 1.0]` plus 23 `[0.0, 0.999]` on hatemm, 37 plus 28 on mhclip_en, 48 plus
+23 on mhclip_zh. Mean predicted span is 1.000 of video duration in both arms of
+all three corpora. The within-hate macro therefore stays pinned at the tie value:
+0.5000 with standard deviation 0.0000 on hatemm and mhclip_zh, and 0.5005 with
+standard deviation 0.0036 on mhclip_en, where the handful of `0.999` endpoints
+drop a final frame and make a few arrays non-constant. The interval head answers
+the same trivial answer whichever word the question uses, so the failure is not a
+vocabulary mismatch between "abnormal" and "hateful" — it survives the rename.
+
+**What the substitution does move is the verdict, and it moves it by shifting the
+positive rate.** The model says the positive word more often in every corpus: 126
+to 152 on hatemm, 46 to 65 on mhclip_en, 54 to 71 on mhclip_zh. TPR rises in all
+three (0.6235 to 0.7647, 0.3261 to 0.5217, 0.5581 to 0.7907) and TNR falls in all
+three (0.4341 to 0.3256, 0.7232 to 0.6339, 0.7273 to 0.6636). Balanced accuracy
+still improves everywhere (0.5288 to 0.5451, 0.5247 to 0.5778, 0.6427 to 0.7272),
+so the shift is not purely a threshold slide: on mhclip_zh in particular the word
+"hateful" separates the classes better than "abnormal" does, by 8.5 balanced-
+accuracy points. Plain accuracy does not follow, because the corpora are majority
+non-hateful: on hatemm it falls from 0.5093 to 0.5000 and on mhclip_en from
+0.6076 to 0.6013 even as balanced accuracy rises.
+
+The frame-level columns inherit both effects and should be read with care. Pooled
+ROC rises everywhere (0.5696 to 0.5750, 0.5427 to 0.6053, 0.5987 to 0.7262), and
+the interval IoU numbers rise with it, but neither is evidence of localisation.
+A whole-clip prediction scores frame IoU equal to the annotated hateful fraction
+of that video, so calling more hateful videos hateful mechanically raises the IoU
+mean without the model ever pointing at a moment. The mhclip_zh cell makes this
+plain: its median frame IoU in the hateful arm is exactly 1.0000, which is what a
+degenerate whole-clip prediction earns on a corpus where most hateful videos are
+annotated hateful end to end.
+
+### Sanity checks and anomalies
+
+Coverage is exact in the hateful arm on all three corpora: 214, 158 and 153
+generations read, the same numbers scored, zero videos missing from the score
+files and zero scored videos absent from gold. Frame counts match the zero-shot
+arm exactly (29,266 / 5,600 / 4,817). Generations are non-empty for all 525
+records and there were zero decode errors; the AV1 ffmpeg fallback fired on the
+same 37 mhclip_en and 8 mhclip_zh videos, with no video falling back to a short
+sample.
+
+Parse failures are again one video in 525, but it is a different video, and the
+two arms trade which one fails. `BV19C4y177iH`, the mhclip_zh repetition loop
+that failed under the anomaly prompt, parsed cleanly here, so mhclip_zh has zero
+parse failures in this arm. In its place `hate_video_89` on HateMM degenerated
+into a repetition loop of its own and hit the 512-token cap without closing its
+tags; its output ends in a run of roughly 400 consecutive `H` characters, its
+`which_raw` is null, and it was counted as `unparsed`, contributed an all-zero
+score array and counted as a negative verdict. No video in either arm produced a
+positive verdict without a usable interval.
+
+### What this arm settles
+
+The term-adaptation arm was worth running because it isolates one candidate
+explanation and kills it. If Vad-R1's whole-clip collapse had been an artefact of
+being asked about the wrong concept — "abnormal" rather than "hateful" — then
+naming the right concept should have loosened the interval head. It did not, in
+any corpus, for any of the 288 positive answers. The collapse is a property of
+the model's temporal grounding on this material, not of the question's wording.
+The verdict channel, by contrast, is genuinely sensitive to the wording and reads
+hate better when asked about hate, most clearly on mhclip_zh. That is a
+statement about the model's classifier, not its localiser, and it does not change
+the row this baseline occupies in the consolidated tables: the zero-shot arm with
+the released prompt remains the reported number.
 
 ---
 
