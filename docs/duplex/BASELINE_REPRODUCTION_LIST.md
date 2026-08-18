@@ -75,3 +75,38 @@ Alternative: to skip feature extraction entirely, promote UMIL
   evaluates on HateMM + MHC). Options: email authors (Zeyu Fu, Univ.
   of Exeter) for code, or reimplement from the paper. Reviewers will
   ask for this one.
+
+## Addendum (2026-08-18, owner-directed): user-list filter + PVLR + MultiHateLoc input spec
+
+Owner decision: baselines are trained DIRECTLY on our datasets (HateMM
+first), not reproduced on their original benchmarks.
+
+User-supplied list filtered by "video-level supervision only":
+KEEP VadCLIP, PVLR, P-MIL, DDG-Net, VERA (video labels drive its
+prompt optimization). EXCLUDE TE-TAD / UniMD / DiGIT / DyFADet
+(timestamp supervision), Holmes-VAU (segment/event instructions),
+LAVAD / LAVIDA (training-free — usable as no-training comparisons,
+not as retrained baselines).
+
+**PVLR (MM'24, arXiv 2408.05955):** supervision confirmed video-level
+(class labels). Official repo github.com/sejong-rcv/PVLR — training
+code complete, 13★, dormant since 2024-10, torch 1.7.1/CUDA 10.2
+(needs Blackwell port). Features: I3D two-stream RGB+FLOW (flow =
+expensive) AND CLIP RN50, T=320 segments. Caveat: its mechanism aligns
+action CLASS NAMES with visual distributions via VLP prompts; a binary
+hate label collapses the text side to one class — the paper's story
+mostly evaporates on our task. Usable as WTAL skeleton only.
+
+**MultiHateLoc input spec (extracted from 2512.10408v2, quotes in
+session log):** frames-per-video / fps NOT STATED anywhere; T = "the
+number of frames", abstract. Visual ViT-B/16 per frame 768-d (cited to
+Dosovitskiy — ImageNet, not CLIP; variant unstated). Audio VGGish 1-s
+clips, linearly interpolated to T. Text: Whisper (size unstated) →
+sentence fragments by timestamps → BERT 768-d → repeat-padded over
+each sentence's interval. MIL: top-K with K a PROPORTION (best K=3 =
+top 33%), smoothness + contrastive losses, Adam 1e-4, batch 32, 100
+epochs. Eval frame grid NOT STATED; span→frame gold rule NOT STATED.
+Repo github.com/mmilabuk/multihateloc announced in the paper but
+contains ONLY a LICENSE file (single commit 2026-01-27). Consequence:
+its HateMM 0.645 mAP / 0.799 AUC is not reproducible from the paper
+alone; any reimplementation must freeze its own frame grid and say so.
