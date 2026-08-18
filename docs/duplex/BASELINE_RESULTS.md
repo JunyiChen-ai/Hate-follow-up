@@ -617,3 +617,134 @@ One video per corpus is scored all-floor and is reported rather than dropped:
 frozen `usable_spans` helper, which refuses a record it cannot place on the
 timeline; neither was special-cased. Every chunk with text was scored -- zero
 chunks were dropped for empty text on either corpus.
+
+---
+
+# Vad-R1 (NeurIPS'25, zero-shot, released checkpoint, original prompt)
+
+Vad-R1 is a 7B video-anomaly reasoner released with weights, so unlike every
+other entry above nothing was trained here. The released checkpoint was run once
+per video on all three test splits and its answer was rasterised onto this
+study's 1 fps grid. Run through `scripts/reproduction_baselines/run_all_vadr1.sh`
+on a single RTX 5090, three corpora strictly one after another, started
+2026-08-19 05:57 NZST and finished 06:34: 37 minutes of wall time, of which 30
+minutes is generation (800 s on hatemm, 513 s on mhclip_en, 509 s on mhclip_zh;
+3.74, 3.25 and 3.33 s per video). One vLLM engine at a time, one forward per
+video, 16 sampled frames, temperature 0.1, top-p 0.9, 512 max new tokens, seed 0.
+
+**The prompt is upstream's, verbatim.** Vad-R1 asks the model whether an
+*abnormal event* occurs, and that wording was not touched: sha256 of the binary
+prompt is `cb673111d1b01d00…`, of the system prompt `7bf05ce3b7d79396…`, of the
+assembled chat prompt `2c48af7c71dc56c2…`, recorded per corpus in
+`results/reproduction/baselines/vadr1/<corpus>/run_meta.json` alongside upstream
+commit `8536296b`. A second arm that substitutes hate vocabulary for "abnormal"
+exists in the runner and **was not run**; it is a term-adaptation ablation on the
+same test split and needs its own decision. Everything below is the zero-shot
+arm.
+
+## How a Vad-R1 answer becomes a frame score
+
+The model returns one `<which>` verdict and, when that verdict is positive, one
+`<when>` interval in normalised video coordinates. `rasterize_and_eval.py` maps
+that interval to frames and writes 1 inside it and 0 outside; a negative verdict
+writes all zeros. **The resulting frame score is therefore binary**, which has
+two consequences worth stating before any number is read. The ROC curve has a
+single interior operating point, so the pooled ROC-AUC is coarse by construction
+and is not resolution-comparable to a continuous scorer's AUC. It is reported
+anyway because every method in this study passes through one evaluator. The
+columns that actually characterise a single-interval predictor are the interval
+descriptives below.
+
+## Results
+
+| method | corpus | pooled ROC-AUC | pooled PR-AUC | within-hate macro (n) | verdict acc | verdict AUC |
+| --- | --- | --- | --- | --- | --- | --- |
+| Vad-R1 zero-shot | hatemm | 0.5696 | 0.2722 | 0.5000 (85) | 0.5093 | 0.5288 |
+| Vad-R1 zero-shot | mhclip_en | 0.5427 | 0.2699 | 0.5000 (44) | 0.6076 | 0.5247 |
+| Vad-R1 zero-shot | mhclip_zh | 0.5987 | 0.2838 | 0.5000 (7) | 0.6797 | 0.6427 |
+
+Chance is 0.5 for the ROC columns; for PR-AUC it is the frame positive rate,
+0.2419 on hatemm, 0.2505 on mhclip_en and 0.2327 on mhclip_zh, so the PR column
+sits three to five points above its own base rate. The last two columns come from
+the model's own `<which>` verdict against the corpus video label. That verdict is
+binary, so its "AUC" is the balanced accuracy `(TPR + TNR) / 2` and not a ranking
+statistic; it is written in the table to keep the column readable next to the
+trained baselines, whose video AUC ranks a max-pooled continuous score. TPR and
+TNR are 0.6235 / 0.4341 on hatemm, 0.3261 / 0.7232 on mhclip_en and
+0.5581 / 0.7273 on mhclip_zh, from confusion counts (tp/fp/fn/tn) of
+53/73/32/56, 15/31/31/81 and 24/30/19/80.
+
+Interval quality, over the videos carrying at least one gold positive frame. A
+video the model called normal enters at IoU 0 rather than being dropped.
+
+| corpus | frame IoU mean / median (n) | interval IoU vs gold envelope | R@IoU 0.3 | R@IoU 0.5 | R@IoU 0.7 |
+| --- | --- | --- | --- | --- | --- |
+| hatemm | 0.4013 / 0.2461 (85) | 0.4439 / 0.3851 | 0.4824 | 0.4235 | 0.3412 |
+| mhclip_en | 0.2600 / 0.0000 (46) | 0.2640 / 0.0000 | 0.3043 | 0.2826 | 0.2609 |
+| mhclip_zh | 0.5173 / 0.5455 (43) | 0.5037 / 0.5468 | 0.5349 | 0.5349 | 0.4884 |
+
+## The within-hate macro is exactly 0.5000, and the reason is the finding
+
+Every one of the three macro cells reads 0.5000 with standard deviation 0.0000.
+That is not a coincidence and not an evaluator artefact. **Vad-R1 never once
+predicted a sub-interval.** Across all 525 videos, every positive answer placed
+the abnormal event over the entire clip: 126 of 126 positive intervals on
+hatemm, 46 of 46 on mhclip_en, 54 of 54 on mhclip_zh, all `[0.0, 1.0]` up to the
+rounding that occasionally writes `0.999`. Mean predicted span is 1.000 of video
+duration in all three corpora. A whole-video interval rasterises to a constant
+score array, a constant array has no internal ranking, and the macro therefore
+takes the tie value 0.5 for every hateful video. Exactly one array per corpus on
+hatemm and mhclip_en is non-constant, and only because a `0.999` endpoint drops
+the final frame.
+
+So the frame-level numbers in the first table are not measuring localisation at
+all. They are the video-level verdict broadcast across the timeline, scored on a
+frame grid. The pooled ROC of 0.5696 / 0.5427 / 0.5987 is a restatement of which
+videos got called abnormal, and the interval IoU of 0.40 / 0.26 / 0.52 is a
+restatement of what fraction of each hateful video is annotated hateful. On
+mhclip_zh, where 36 of 43 hateful videos are annotated hateful end to end, a
+degenerate whole-video prediction scores 0.5173 frame IoU for free; that is the
+highest interval number in the table and it carries no localisation content.
+
+**Vad-R1 is the weakest entry in the study on this task, and it fails in a new
+way.** VadCLIP, DSANet and MACIL-SD each separate hateful videos from normal ones
+and then spread that verdict fairly flatly over the timeline. Vad-R1 does not
+spread it flatly; it declines to spread it at all, and its video-level separation
+is also the weakest measured -- 0.5093 verdict accuracy on hatemm is barely above
+calling everything normal. The zero-shot anomaly framing transfers to hateful
+video neither as a detector nor as a localiser.
+
+## Sanity checks
+
+Every check below was run over the full cohort, not a sample.
+
+Coverage is exact on all three corpora. 214, 158 and 153 generations were read
+and 214, 158 and 153 videos were scored, matching the 214 / 158 / 153 gold
+videos; zero videos are missing from the score files and zero scored videos lack
+gold. Every row of `scores.jsonl` has length equal to its gold array, checked per
+video: zero mismatches anywhere. One HateMM split id, `hate_video_427`, has no
+gold and was dropped before inference rather than scored, which is recorded in
+`run_meta.json`.
+
+Generations are non-empty everywhere: 525 of 525 records carry output text, zero
+empty or null. Zero decode errors: the AV1 ffmpeg fallback was exercised on 37
+mhclip_en and 8 mhclip_zh videos and OpenCV handled the remaining 480, with no
+video falling back to a short sample.
+
+Parse failures are one video in 525. HateMM and mhclip_en parsed cleanly (126
+positive-interval plus 88 negative; 46 plus 112). On mhclip_zh, `BV19C4y177iH`
+ran into a repetition loop and hit the 512-token cap without closing its tags --
+the tail of its output is `"火种" (spark)` repeated some forty times — so it
+parsed as `unparsed`, contributed an all-zero score array, and counted as a
+negative verdict. No video produced a positive verdict without a usable interval.
+
+## What this row is for
+
+It is the honest zero-shot reading of a video-anomaly reasoner on hateful video,
+run at its released settings with its released prompt, and it belongs in the
+table because the comparison is one reviewers will ask for. It should not be
+quoted as evidence about hate localisation methods in general: the checkpoint was
+trained to answer a different question about a different corpus, and the failure
+observed here is that its interval head collapses to the trivial answer, which is
+a statement about domain transfer rather than about the ceiling of anomaly-based
+localisation.
