@@ -22,6 +22,8 @@ VADCLIP_URL="https://github.com/nwpu-zxr/VadCLIP.git"
 VADCLIP_SHA="c41067f07d252efcda18008bea367886070c33b0"
 DSANET_URL="https://github.com/lessiYin/DSANet.git"
 DSANET_SHA="eb335b23fd6f01810bcd176c948c10348764a504"
+VADR1_URL="https://github.com/wbfwonderful/Vad-R1.git"
+VADR1_SHA="8536296b748d389dfca2d8f81a9703aa57404bc2"
 
 CLIP_URL="https://openaipublic.azureedge.net/clip/models/5806e77cd80f8b59890b7e101eabd078d9fb84e6937f9e85e4ecb61988df416f/ViT-B-16.pt"
 CLIP_SHA="5806e77cd80f8b59890b7e101eabd078d9fb84e6937f9e85e4ecb61988df416f"
@@ -41,6 +43,12 @@ clone_pinned () {
 mkdir -p "${THIRD_PARTY}"
 clone_pinned VadCLIP "${VADCLIP_URL}" "${VADCLIP_SHA}"
 clone_pinned DSANet  "${DSANET_URL}"  "${DSANET_SHA}"
+# Vad-R1 is read, not run: vadr1/run_vadr1_inference.py carries its own copy of
+# the released prompt and its --verify-prompt flag compares that copy against
+# this clone. No CLIP checkpoint is involved; the model is the released
+# Qwen2.5-VL-7B fine-tune on HuggingFace, fetched separately with
+#     hf download wbfwonderful/Vad-R1 --local-dir /home/jehc223/data/checkpoints/vad_r1
+clone_pinned Vad-R1  "${VADR1_URL}"  "${VADR1_SHA}"
 
 mkdir -p "${CLIP_CACHE}"
 if [ -f "${CLIP_CACHE}/ViT-B-16.pt" ] \
