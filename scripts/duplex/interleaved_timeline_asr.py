@@ -49,6 +49,66 @@ CORPORA = {
     "hatemm_localization": ("HateMM", "results/testruns/hatemm"),
 }
 
+# ---------------------------------------------------------------------------
+# Reproduction-study corpora (baseline reproduction, Phase 2).
+#
+# The entries above all read a *frozen working directory* that already holds
+# `audio_meta.jsonl` (durations) and `fresh_transcripts.jsonl` (the video list
+# plus the text to reproduce). The reproduction study's train splits have
+# neither: they are plain wav directories plus a frozen split manifest. These
+# entries therefore name a wav directory and an explicit id source, and the
+# duration is read straight off the wav header. Nothing about the Whisper
+# configuration changes -- same MODEL_ID, same fp16-on-cuda pipeline, same
+# chunk_length_s=30 / batch_size=8, same automatic language detection (the ZH
+# `forced_zh` arm in results/testruns/mhclip_zh was a separate diagnostic side
+# arm and was never the convention behind the timestamped-chunk manifests the
+# study consumes; those were decoded with language auto-detection).
+DATA_ROOT = os.environ.get("HVD_DATA_ROOT", "/home/jehc223/data")
+SPLITS = os.path.join(ROOT, "results", "reproduction", "splits")
+
+SPLIT_CORPORA = {
+    "hatemm_train": {
+        "dataset": "HateMM",
+        "wav_dir": os.path.join(DATA_ROOT, "HateMM", "wav"),
+        "ids_file": os.path.join(SPLITS, "hatemm_train.txt"),
+    },
+    "mhclip_en_train": {
+        "dataset": "MHClip_EN",
+        "wav_dir": os.path.join(DATA_ROOT, "Multihateclip", "English", "wav"),
+        "ids_file": os.path.join(SPLITS, "mhclip_en_train.txt"),
+    },
+    "mhclip_zh_train": {
+        "dataset": "MHClip_ZH",
+        "wav_dir": os.path.join(DATA_ROOT, "Multihateclip", "Chinese", "wav"),
+        "ids_file": os.path.join(SPLITS, "mhclip_zh_train.txt"),
+    },
+    # Test-split videos whose media only arrived with the Phase 0 pull, so
+    # they are absent from the legacy results/testruns/* manifests.
+    "mhclip_en_test_new": {
+        "dataset": "MHClip_EN",
+        "wav_dir": os.path.join(DATA_ROOT, "Multihateclip", "English", "wav"),
+        "ids": ["hXv7bR9i5Q4"],
+    },
+    "mhclip_zh_test_new": {
+        "dataset": "MHClip_ZH",
+        "wav_dir": os.path.join(DATA_ROOT, "Multihateclip", "Chinese", "wav"),
+        "ids": ["BV16N4y1q7WU", "BV1Gw411E7i2", "BV1KK411P7uJ",
+                "BV1Qx411V7tT", "BV1bA41137we", "BV1du411g7tk",
+                "BV1nJ4m1p7BG", "BV1zD4y1Y7ec"],
+    },
+}
+
+
+def wav_duration_seconds(path):
+    """Duration in seconds, read from the wav header (no decode)."""
+    import wave
+    with wave.open(path, "rb") as handle:
+        frames = handle.getnframes()
+        rate = handle.getframerate()
+    if rate <= 0:
+        raise ValueError("non-positive sample rate in %s" % path)
+    return round(frames / float(rate), 6)
+
 
 def load_jsonl(path, key="video_id"):
     out = {}
@@ -69,29 +129,59 @@ def load_jsonl(path, key="video_id"):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--corpus", required=True, choices=sorted(CORPORA))
+    ap.add_argument("--corpus", required=True,
+                    choices=sorted(CORPORA) + sorted(SPLIT_CORPORA))
     ap.add_argument("--out-root", default=os.path.join(
         ROOT, "results", "interleaved_timeline"))
     ap.add_argument("--limit", type=int, default=None,
                     help="Process at most this many remaining videos (smoke test)")
     args = ap.parse_args()
 
-    dataset, work_rel = CORPORA[args.corpus]
-    work = os.path.join(ROOT, work_rel)
     out_dir = os.path.join(args.out_root, args.corpus)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "timestamped_chunks.jsonl")
+    missing_wav = []
 
-    meta = load_jsonl(os.path.join(work, "audio_meta.jsonl"))
-    frozen = load_jsonl(os.path.join(work, "fresh_transcripts.jsonl"))
-    wav_dir = os.path.join(work, "wav")
+    if args.corpus in CORPORA:
+        dataset, work_rel = CORPORA[args.corpus]
+        work = os.path.join(ROOT, work_rel)
+        meta = load_jsonl(os.path.join(work, "audio_meta.jsonl"))
+        frozen = load_jsonl(os.path.join(work, "fresh_transcripts.jsonl"))
+        wav_dir = os.path.join(work, "wav")
+        wanted = list(frozen)
+    else:
+        spec = SPLIT_CORPORA[args.corpus]
+        dataset = spec["dataset"]
+        wav_dir = spec["wav_dir"]
+        frozen = {}
+        if "ids_file" in spec:
+            with open(spec["ids_file"], encoding="utf-8") as handle:
+                wanted = [ln.strip() for ln in handle if ln.strip()]
+        else:
+            wanted = list(spec["ids"])
+        meta = {}
+        for vid in wanted:
+            wav = os.path.join(wav_dir, vid + ".wav")
+            if not os.path.isfile(wav):
+                missing_wav.append(vid)
+                continue
+            try:
+                meta[vid] = {"wav_duration": wav_duration_seconds(wav),
+                             "container_duration": None}
+            except Exception as exc:  # unreadable header -> report, skip
+                missing_wav.append(vid)
+                print(f"  UNREADABLE WAV {vid}: {type(exc).__name__}: {exc}",
+                      flush=True)
+        if missing_wav:
+            print(f"  MISSING/UNREADABLE WAV ({len(missing_wav)}): "
+                  f"{missing_wav}", flush=True)
 
     done = set(load_jsonl(out_path))
-    todo = [v for v in frozen
+    todo = [v for v in wanted
             if v not in done and os.path.isfile(os.path.join(wav_dir, v + ".wav"))]
     todo.sort(key=lambda v: (meta.get(v, {}).get("wav_duration") or 0.0))
     total_sec = sum(meta.get(v, {}).get("wav_duration") or 0.0 for v in todo)
-    print(f"stage A [{args.corpus}/{dataset}]: {len(frozen)} frozen ASR rows, "
+    print(f"stage A [{args.corpus}/{dataset}]: {len(wanted)} videos wanted, "
           f"{len(done)} already timestamped, {len(todo)} to run "
           f"({total_sec / 3600:.2f} audio-hours)", flush=True)
     if args.limit is not None:
@@ -128,6 +218,7 @@ def main():
     t0 = time.time()
     audio_done = 0.0
     n_match = 0
+    n_error = 0
     fh = open(out_path, "a")
     for i, vid in enumerate(todo, 1):
         wav = os.path.join(wav_dir, vid + ".wav")
@@ -144,17 +235,24 @@ def main():
         except Exception as exc:
             text, chunks = "", []
             err = f"{type(exc).__name__}: {exc}"[:400]
+            n_error += 1
+            print(f"  ASR ERROR {vid}: {err}", flush=True)
 
-        frozen_text = frozen[vid].get("fresh_text") or ""
-        matches = (text == frozen_text)
-        n_match += int(matches)
+        if vid in frozen:
+            frozen_text = frozen[vid].get("fresh_text") or ""
+            matches = (text == frozen_text)
+            frozen_n_chunks = frozen[vid].get("n_chunks")
+        else:
+            # Split-manifest corpora have no frozen transcript to reproduce.
+            matches, frozen_n_chunks = None, None
+        n_match += int(bool(matches))
         rec = {
             "video_id": vid,
             "text": text,
             "chunks": chunks,
             "n_chunks": len(chunks),
             "matches_frozen_text": matches,
-            "frozen_n_chunks": frozen[vid].get("n_chunks"),
+            "frozen_n_chunks": frozen_n_chunks,
             "wav_duration": meta.get(vid, {}).get("wav_duration"),
             "container_duration": meta.get(vid, {}).get("container_duration"),
             "asr_seconds": round(time.time() - tv, 2),
@@ -176,6 +274,7 @@ def main():
     fh.close()
     print(f"stage A [{args.corpus}] done: {len(todo)} clips, "
           f"{n_match}/{len(todo)} reproduced the frozen text, "
+          f"{n_error} errored, {len(missing_wav)} without a readable wav, "
           f"{time.time() - t0:.1f}s", flush=True)
 
 

@@ -129,19 +129,35 @@ number computed against one SHA256 is not comparable with a number
 computed against another**, so every reported result names the array
 hash it was scored against.
 
-Two things thin the MultiHateClip cohorts before any gold rule applies.
-The local annotation mirror `annotation(new).json` kept 890 of the 1000
-upstream EN videos and correspondingly fewer ZH, which removes 18 EN and
-24 ZH test videos outright, and media has so far been fetched for 161 of
-the remaining 182 EN and 149 of the remaining 176 ZH. Both losses are
-listed by video id in the sidecars. HateMM loses nothing at this stage:
-all 215 test_clean videos have local media.
+One thing thins the MultiHateClip cohorts before any gold rule applies:
+media. 162 of the 200 upstream EN test videos and 157 of the 200 ZH have
+been fetched; the rest are unavailable and are listed by video id in the
+sidecars. HateMM loses nothing at this stage: all 215 test_clean videos
+have local media.
 
-| Corpus | Upstream test | In annotation mirror | With local media | Excluded, rule (b) | Included | All-negative | Frames | Positive frames |
-|---|---|---|---|---|---|---|---|---|
-| HateMM test_clean | 215 | 215 | 215 | 1 (degenerate span) | 214 | 129 | 29266 | 7080 (24.2%) |
-| MultiHateClip EN test | 200 | 182 | 161 | 4 | 157 | 112 | 5578 | 1383 (24.8%) |
-| MultiHateClip ZH test | 200 | 176 | 149 | 4 | 145 | 104 | 4547 | 1074 (23.6%) |
+The local annotation mirror `annotation(new).json` no longer thins
+anything. It kept 890 of the 1000 upstream EN videos, which is why
+`span_gold_{en,zh}.json` covers only 182 EN and 176 ZH test videos, but
+the gold itself — the majority vote and the `Duration` spans — comes from
+the upstream TSVs, and the mirror supplies only a cross-check label. A
+test video absent from the mirror therefore still has complete gold, and
+`build_gt_arrays.py` reads it from the upstream TSV rather than dropping
+the video. One EN video (`hXv7bR9i5Q4`, Offensive, span (1, 21)) reaches
+the cohort this way; the sidecar lists it under
+`videos_with_gold_from_upstream_tsv_only`.
+
+Duration comes from the timestamped-chunk manifest where that manifest
+has an entry, and from the wav header otherwise — the same quantity
+either way, since the manifest's `wav_duration` is itself the wav length.
+The nine test videos whose media arrived after the frozen ASR runs (1 EN,
+8 ZH) take the wav-header route; the sidecar records the source per
+video.
+
+| Corpus | Upstream test | With local media | Excluded, rule (b) | Included | All-negative | Frames | Positive frames |
+|---|---|---|---|---|---|---|---|
+| HateMM test_clean | 215 | 215 | 1 (degenerate span) | 214 | 129 | 29266 | 7080 (24.2%) |
+| MultiHateClip EN test | 200 | 162 | 4 | 158 | 112 | 5600 | 1403 (25.1%) |
+| MultiHateClip ZH test | 200 | 157 | 4 | 153 | 110 | 4817 | 1121 (23.3%) |
 
 The "all-negative" column counts included videos with no positive frame:
 every Normal-majority video, including the 8 EN and 5 ZH whose leftover
@@ -152,8 +168,15 @@ Released arrays, built by `scripts/duplex/build_gt_arrays.py`:
 | Array | SHA256 |
 |---|---|
 | `results/reproduction/gt/hatemm_test.npz` | `f4af758acbddd301c4898b1ce1a2436e6b260670ff3fcaedb99025d8a433ba65` |
-| `results/reproduction/gt/mhclip_en_test.npz` | `1c7f4d08c9915d7d15b0cef9245e9b98db8ca745b7270a4e2181661968f59052` |
-| `results/reproduction/gt/mhclip_zh_test.npz` | `b3d5239d45ba265418de3f41e1f21cded097be0fb761d10d3b21201cb99b3655` |
+| `results/reproduction/gt/mhclip_en_test.npz` | `7099195e0a2bbcfb3e9be6e4117d709393beea06b78adf6bcefeba736d8c12c8` |
+| `results/reproduction/gt/mhclip_zh_test.npz` | `1abd4ae620add7e9d45b3895357ece7446a14ee69f2e509b724d3e63b5069cf6` |
+
+The HateMM hash is unchanged from the first build: its cohort did not
+move, and the two MultiHateClip rebuilds are purely additive — no array
+that existed in the first build changed a single byte. The frame-level
+regression (`scripts/duplex/frame_eval_regression_hatemm.py`) still
+recovers the frozen endpoint, 0.7450936536 ROC-AUC and 0.5600748477
+PR-AUC, against the rebuilt HateMM array.
 
 Each npz holds one `uint8` array per video keyed by video id. Each has a
 JSON sidecar carrying the cohort counts, the exclusion lists with

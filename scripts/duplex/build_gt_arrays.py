@@ -53,11 +53,25 @@ from frame_eval_common import build_gt_array, frame_times  # noqa: E402
 
 RESULTS = os.path.join(PROJECT_ROOT, "results")
 OUT_DIR = os.path.join(RESULTS, "reproduction", "gt")
+SPLIT_DIR = os.path.join(RESULTS, "reproduction", "splits")
 
 PROTOCOL_DOC = "docs/duplex/FRAME_EVAL_PROTOCOL.md"
 FPS = 1.0
 
 MHC_POSITIVE_LABELS = ("Hateful", "Offensive")
+
+# Wav directories searched, in order, when a test video is absent from the
+# timestamped-chunk manifest. The Phase 0 media pull added test videos the
+# frozen testruns never covered, so the chunk manifests no longer define the
+# cohort; the split manifests do, and the duration comes off the wav header.
+WAV_DIRS = {
+    "hatemm": [os.path.join(RESULTS, "testruns", "hatemm", "wav"),
+               "{data_root}/HateMM/wav"],
+    "en": [os.path.join(RESULTS, "testruns", "mhclip_en", "wav"),
+           "{data_root}/Multihateclip/English/wav"],
+    "zh": [os.path.join(RESULTS, "testruns", "mhclip_zh", "wav"),
+           "{data_root}/Multihateclip/Chinese/wav"],
+}
 
 
 # ------------------------------------------------------------------- io
@@ -83,6 +97,53 @@ def durations_from_chunks(path):
             raise SystemExit("duplicate video_id %s in %s" % (vid, path))
         out[vid] = float(dur)
     return out
+
+
+def wav_header_duration(path):
+    """Duration in seconds straight off the wav header, no decode."""
+    import wave
+    with wave.open(path, "rb") as handle:
+        frames, rate = handle.getnframes(), handle.getframerate()
+    if rate <= 0:
+        raise SystemExit("non-positive sample rate in %s" % path)
+    return frames / float(rate)
+
+
+def read_split_ids(name):
+    """Frozen split manifest -> ordered list of video ids."""
+    path = os.path.join(SPLIT_DIR, name)
+    with open(path, encoding="utf-8") as handle:
+        return [line.strip() for line in handle if line.strip()]
+
+
+def resolve_durations(ids, chunk_path, code, data_root):
+    """video_id -> (duration, source) for every id that has audio on disk.
+
+    The timestamped-chunk manifest wins where it has an entry, so every
+    video the frozen runs already covered keeps byte-identical numbers.
+    Videos the manifest never saw -- the test media that only arrived with
+    the Phase 0 pull -- fall back to their wav header.
+    """
+    from_chunks = durations_from_chunks(chunk_path)
+    wav_dirs = [d.format(data_root=data_root) for d in WAV_DIRS[code]]
+    out, source, no_audio = {}, {}, []
+    for vid in ids:
+        if vid in from_chunks:
+            out[vid] = from_chunks[vid]
+            source[vid] = "timestamped_chunks"
+            continue
+        found = None
+        for wav_dir in wav_dirs:
+            cand = os.path.join(wav_dir, vid + ".wav")
+            if os.path.isfile(cand):
+                found = cand
+                break
+        if found is None:
+            no_audio.append(vid)
+            continue
+        out[vid] = wav_header_duration(found)
+        source[vid] = "wav_header"
+    return out, source, no_audio
 
 
 def save_npz_deterministic(path, arrays):
@@ -123,14 +184,16 @@ def span_range_notes(spans, duration):
     return past_end, wholly_past
 
 
-def collect_hatemm():
+def collect_hatemm(data_root):
     """HateMM test_clean: video-level label from the id prefix."""
     span_path = os.path.join(RESULTS, "hatemm_localization", "span_gold.json")
     chunk_path = os.path.join(RESULTS, "hatemm_localization",
                               "timestamped_chunks.jsonl")
     gold = json.load(open(span_path, encoding="utf-8"))
     spans_by_video = gold["spans"]
-    durations = durations_from_chunks(chunk_path)
+    split_ids = read_split_ids("hatemm_test.txt")
+    durations, dur_source, no_audio = resolve_durations(
+        split_ids, chunk_path, "hatemm", data_root)
 
     records = []
     for vid in sorted(durations):
@@ -143,25 +206,25 @@ def collect_hatemm():
             "spans": kept,
             "n_degenerate_spans": degenerate,
             "duration": durations[vid],
+            "duration_source": dur_source[vid],
         })
-    # The chunk manifest is the whole test_clean split (215 videos), so
-    # there is no missing-media list to build here; the field is present
-    # so every corpus sidecar has the same shape.
     return {
         "corpus": "hatemm",
         "split": "test_clean",
         "sources": {
             "spans": os.path.relpath(span_path, PROJECT_ROOT),
             "durations": os.path.relpath(chunk_path, PROJECT_ROOT),
+            "cohort": os.path.relpath(os.path.join(SPLIT_DIR,
+                                                   "hatemm_test.txt"),
+                                      PROJECT_ROOT),
         },
         "records": records,
-        "split_size": int(gold.get("split_videos") or len(durations)),
+        "split_size": len(split_ids),
         "upstream_split_size": int(gold.get("split_videos")
-                                   or len(durations)),
+                                   or len(split_ids)),
         "absent_from_local_mirror": [],
-        "missing_media": sorted(
-            set() if gold.get("split_videos") in (None, len(durations))
-            else set(spans_by_video) - set(durations)),
+        "missing_media": sorted(no_audio),
+        "gold_from_upstream_tsv_only": [],
         "label_field": "id prefix (hate_video_* / non_hate_video_*)",
     }
 
@@ -184,6 +247,33 @@ def upstream_test_ids(data_root, code):
                 for row in csv.DictReader(handle, delimiter="\t")}
 
 
+def upstream_test_rows(data_root, code):
+    """video_id -> {majority_label, spans} from the upstream test TSV.
+
+    span_gold_{en,zh}.json only keeps videos that are *also* in the local
+    annotation mirror, but the gold itself -- the majority vote and the
+    Duration spans -- comes from the upstream TSV alone; the mirror only
+    supplies a cross-check label. So a test video absent from the mirror
+    still has complete gold upstream, and is read from here rather than
+    dropped for want of a mirror row.
+    """
+    path = os.path.join(data_root, "Multihateclip", "upstream_spans",
+                        "%s_test.tsv" % code)
+    if not os.path.exists(path):
+        return {}
+    sys.path.insert(0, _THIS)
+    from mhclip_span_gold import parse_spans  # noqa: E402
+    import csv
+    out = {}
+    with open(path, encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            out[row["Video_ID"].strip()] = {
+                "majority_label": row["Majority_Voting"].strip(),
+                "spans": parse_spans(row["Duration"]),
+            }
+    return out
+
+
 def collect_mhclip(code, data_root):
     """MultiHateClip EN or ZH: majority-vote label from the upstream TSVs."""
     span_path = os.path.join(RESULTS, "mhclip_localization",
@@ -192,29 +282,42 @@ def collect_mhclip(code, data_root):
                               "mhclip_%s" % code, "timestamped_chunks.jsonl")
     gold = json.load(open(span_path, encoding="utf-8"))
     by_video = {v["video_id"]: v for v in gold["videos"]}
-    durations = durations_from_chunks(chunk_path)
+    upstream_rows = upstream_test_rows(data_root, code)
 
-    test_ids = {v["video_id"] for v in gold["videos"]
-                if "test" in [v["split"]] + list(v.get("extra_splits") or [])}
-    missing_media = sorted(test_ids - set(durations))
+    # The cohort is the frozen split manifest: upstream test videos whose
+    # media is present locally.
+    split_ids = read_split_ids("mhclip_%s_test.txt" % code)
+    durations, dur_source, no_audio = resolve_durations(
+        split_ids, chunk_path, code, data_root)
+
     upstream_ids = upstream_test_ids(data_root, code)
-    absent_from_mirror = (sorted(upstream_ids - test_ids)
+    mirror_test_ids = {v["video_id"] for v in gold["videos"]
+                       if "test" in [v["split"]]
+                       + list(v.get("extra_splits") or [])}
+    absent_from_mirror = (sorted(upstream_ids - mirror_test_ids)
                           if upstream_ids is not None else None)
 
     records = []
     not_in_gold = []
     not_in_test = []
+    from_upstream_only = []
     for vid in sorted(durations):
         entry = by_video.get(vid)
-        if entry is None:
-            not_in_gold.append(vid)
-            continue
-        splits = [entry["split"]] + list(entry.get("extra_splits") or [])
-        if "test" not in splits:
-            not_in_test.append({"video_id": vid, "splits": splits})
-            continue
-        kept, degenerate = clean_spans(entry["spans"])
-        label = entry["majority_label"]
+        if entry is not None:
+            splits = [entry["split"]] + list(entry.get("extra_splits") or [])
+            if "test" not in splits:
+                not_in_test.append({"video_id": vid, "splits": splits})
+                continue
+            raw_spans, label = entry["spans"], entry["majority_label"]
+        else:
+            row = upstream_rows.get(vid)
+            if row is None:
+                not_in_gold.append(vid)
+                continue
+            from_upstream_only.append(vid)
+            splits = ["test"]
+            raw_spans, label = row["spans"], row["majority_label"]
+        kept, degenerate = clean_spans(raw_spans)
         records.append({
             "video_id": vid,
             "label": label,
@@ -222,6 +325,7 @@ def collect_mhclip(code, data_root):
             "spans": kept,
             "n_degenerate_spans": degenerate,
             "duration": durations[vid],
+            "duration_source": dur_source[vid],
             "listed_in_splits": splits,
         })
     return {
@@ -229,16 +333,24 @@ def collect_mhclip(code, data_root):
         "split": "test",
         "sources": {
             "spans": os.path.relpath(span_path, PROJECT_ROOT),
+            "spans_fallback": "Multihateclip/upstream_spans/%s_test.tsv"
+                              % code,
             "durations": os.path.relpath(chunk_path, PROJECT_ROOT),
+            "cohort": os.path.relpath(
+                os.path.join(SPLIT_DIR, "mhclip_%s_test.txt" % code),
+                PROJECT_ROOT),
         },
         "records": records,
         "not_in_span_gold": not_in_gold,
         "not_in_test_split": not_in_test,
-        "split_size": len(test_ids),
-        "missing_media": missing_media,
+        "split_size": len(mirror_test_ids),
+        "missing_media": sorted(
+            ((set(upstream_ids) if upstream_ids is not None else set())
+             | set(no_audio)) - set(durations)),
         "upstream_split_size": (len(upstream_ids)
                                 if upstream_ids is not None else None),
         "absent_from_local_mirror": absent_from_mirror,
+        "gold_from_upstream_tsv_only": from_upstream_only,
         "label_field": "upstream Majority_Voting (Hateful/Offensive/Normal)",
     }
 
@@ -259,6 +371,11 @@ def build(corpus, out_dir, log):
         "videos_missing_local_media":
             len(corpus.get("missing_media") or []),
         "videos_available": len(corpus["records"]),
+        "videos_with_gold_from_upstream_tsv_only":
+            len(corpus.get("gold_from_upstream_tsv_only") or []),
+        "videos_with_duration_from_wav_header": sum(
+            1 for r in corpus["records"]
+            if r.get("duration_source") == "wav_header"),
         "videos_included": 0,
         "videos_excluded_positive_without_span": 0,
         "videos_positive_with_span": 0,
@@ -316,6 +433,7 @@ def build(corpus, out_dir, log):
         per_video[vid] = {
             "label": rec["label"],
             "duration": round(rec["duration"], 3),
+            "duration_source": rec.get("duration_source"),
             "n_frames": int(len(labels)),
             "n_positive_frames": n_pos,
             "n_spans": len(use_spans),
@@ -346,7 +464,13 @@ def build(corpus, out_dir, log):
         "fps": FPS,
         "frame_grid": "t = 0, 1, 2, ... while t < wav_duration",
         "span_convention": "half-open [start, end)",
-        "duration_source": "wav_duration from the timestamped-chunk manifest",
+        "duration_source": ("wav_duration from the timestamped-chunk "
+                            "manifest where it has an entry, otherwise the "
+                            "wav header"),
+        "cohort_definition": ("the frozen split manifest under "
+                             "results/reproduction/splits/"),
+        "videos_with_gold_from_upstream_tsv_only":
+            corpus.get("gold_from_upstream_tsv_only") or [],
         "label_field": corpus["label_field"],
         "sources": corpus["sources"],
         "npz": os.path.relpath(npz_path, PROJECT_ROOT),
@@ -386,7 +510,11 @@ def build(corpus, out_dir, log):
            counts["test_split_size_in_span_gold"],
            counts["test_videos_absent_from_local_annotation_mirror"],
            counts["videos_missing_local_media"]))
-    log("available videos          : %d" % counts["videos_available"])
+    log("available videos          : %d  (%d with the duration off the wav "
+        "header, %d with gold from the upstream TSV only)"
+        % (counts["videos_available"],
+           counts["videos_with_duration_from_wav_header"],
+           counts["videos_with_gold_from_upstream_tsv_only"]))
     log("included                  : %d  (%s)"
         % (counts["videos_included"],
            ", ".join("%s %d" % (k, v)
@@ -436,7 +564,7 @@ def main():
     log("fps=%g, half-open [start, end), duration = wav_duration" % FPS)
 
     sidecars = [
-        build(collect_hatemm(), args.out_dir, log),
+        build(collect_hatemm(args.data_root), args.out_dir, log),
         build(collect_mhclip("en", args.data_root), args.out_dir, log),
         build(collect_mhclip("zh", args.data_root), args.out_dir, log),
     ]
