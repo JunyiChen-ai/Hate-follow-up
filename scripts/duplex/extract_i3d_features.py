@@ -152,8 +152,12 @@ def snippet_producer(path, out_q, batch_snippets, err_box):
     proc = None
     try:
         proc = subprocess.Popen(
+            # -pix_fmt rgb24 is load-bearing, not decoration: for a 10-bit
+            # source ffmpeg's ppm muxer picks 16-bit rgb48 and every pixel
+            # doubles in width. Four MultiHateClip videos are 10-bit.
             ["ffmpeg", "-nostdin", "-v", "error", "-i", path,
-             "-vf", VF, "-f", "image2pipe", "-vcodec", "ppm", "pipe:1"],
+             "-vf", VF, "-pix_fmt", "rgb24",
+             "-f", "image2pipe", "-vcodec", "ppm", "pipe:1"],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             bufsize=1024 * 1024)
         buf, batch, n_seen = [], [], 0
