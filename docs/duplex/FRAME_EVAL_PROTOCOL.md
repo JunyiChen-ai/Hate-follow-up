@@ -9,6 +9,12 @@ not need. The HateMM numbers produced under the earlier prereg are
 reproduced bit for bit under this protocol (see "Regression" below), so
 the generalization costs no comparability.
 
+**Amended 2026-08-19:** HateClipSeg joins as the fourth corpus. The
+amendment is additive — grid, containment convention, degenerate-span
+rule and statistics are unchanged, the three existing arrays keep their
+hashes, and everything specific to the new corpus lives in its own
+section and its own build script.
+
 ## Why this document exists
 
 `LOCALIZATION_PROTOCOL_SURVEY.md` records the state of the field across
@@ -120,6 +126,120 @@ The EN video `k9OtaMbK0Ac` is listed upstream in both train and test
 with identical label and identical spans. It is counted as a test video
 here and must be removed from any training split.
 
+### HateClipSeg (our test split, added 2026-08-19)
+
+HateClipSeg is the fourth corpus and the only one whose timeline is
+annotated *exhaustively*. The other three draw hate spans on an
+otherwise unlabelled timeline; HateClipSeg partitions each video into
+segments and gives every segment a six-dimensional multi-hot label
+`[normal, hateful, insulting, sexual, violence, harm]`. The gold rules
+below follow from that difference, and because they do, the arrays are
+built by their own script, `scripts/duplex/build_gt_arrays_hateclipseg.py`.
+`build_gt_arrays.py` is untouched and its three arrays keep their hashes.
+
+**Split provenance: the split is ours.** The HateClipSeg paper reports an
+80/20 division and publishes no video ids, so there is nothing upstream
+to intersect with and nothing to reproduce. `reproduction_splits.py`
+draws its own: eligible videos are the annotated ones whose media is
+present locally, a video is positive if at least one of its segments is
+offensive under the union rule, ids are sorted then shuffled inside each
+stratum by `random.Random(234)` — one generator, strata visited in the
+fixed order (negative, positive) — and the first `round(0.2 n)` of each
+stratum go to test. Sorting before shuffling makes the draw independent
+of filesystem order; re-running reproduces both manifests byte for byte.
+Every number reported on this corpus must name the split as ours.
+
+Of the 435 annotated videos, 394 have local media. The 41 without it are
+listed by id in `results/reproduction/splits/manifest_report.json`. One
+of the 41, `yt_NzvfkIYS5Yg`, is held on the B2 mirror but the object
+there is a 135 KiB truncated file — `ffprobe` reports `partial file` and
+cannot read its audio stream — so it stays out. The corpus is heavily
+positive at the video level: 344 of the 394 carry at least one offensive
+segment. The draw gives 315 train and 79 test.
+
+| Stratum | Eligible | Train | Test |
+|---|---|---|---|
+| Video positive (≥1 offensive-union segment) | 344 | 275 | 69 |
+| Video negative | 50 | 40 | 10 |
+| Total | 394 | 315 | 79 |
+
+**Frame rule (primary).** A frame is positive if and only if the segment
+covering it, half-open, is offensive under the **union rule**: any of the
+five non-normal dimensions set. This is the rule
+`sentinel_localization_pilot.is_offensive_union` already applies, so the
+frame gold and that pilot's cohort agree by construction rather than by
+coincidence.
+
+**Frame rule (sensitivity).** A second array over the same videos and the
+same grid marks a frame positive if and only if its covering segment sets
+dimension 1, `hateful`, alone. It exists because the union rule is broad
+— `violence` and `harm` are in it — and a reader is entitled to ask
+whether a method tracks hate or tracks the union. Same cohort, same frame
+counts, so the two are directly comparable. The primary stays primary.
+
+**Segment tiling, measured before the rules were fixed.** Across all 435
+annotated videos and 11,714 segments: every video's first segment starts
+at 0.00; there are **0 gaps and 0 overlaps** between adjacent segments,
+to a 1 µs tolerance. The annotation genuinely tiles. Two consequences.
+First, the overlap-resolution rule — a frame covered by both a positive
+and a negative segment is positive, the same union the other corpora use
+— is frozen for completeness but never fires here. Second, an uncovered
+frame is negative, and after the tiling measurement that rule can only
+reach the sub-second tail past the last segment: 0 frames in the test
+cohort, and 1.2 s of audio corpus-wide.
+
+**Degenerate segments.** 23 segments have `end <= start`. Every one is
+the **final** segment of its video, and in every case its `end` equals
+the media duration to within 0.12 s, while its `start` is the previous
+boundary. They are dropped and counted, as elsewhere in this protocol.
+Dropping them removes no covered interval, since the interval each names
+is empty. One falls in the test cohort.
+
+**Annotation-clock rule.** For 18 of the 394 videos with media, the last
+usable segment ends 1.1 to 20.8 s past *both* the wav and the container
+duration — the segmentation was produced against a longer version of the
+video. Where a frame in that region lands is not recoverable, and neither
+answer is honest, so those videos are excluded: **a video whose last
+usable segment ends more than 1.0 s past the media is dropped.** The
+tolerance is one frame on the 1 fps grid, which is the largest overshoot
+that cannot move any label; it is fixed by the grid, not chosen against a
+cohort size. All 18 happen to fall in train, so the rule excludes nothing
+from the current test cohort — but it is frozen now, before any method is
+scored, and it matters to any baseline that builds train-side targets.
+The audit runs corpus-wide and is written into the sidecar.
+
+Six further videos have an audio stream shorter than the container by 1.2
+to 7.3 s while the annotation matches the container exactly. There the
+annotation clock is sound and only the audio stops early, so they are
+kept and the grid, which is built from the wav, simply truncates the
+annotated tail. One of them, `bit_7EOOUGa9y9h4`, is in the test cohort
+and loses 7.25 s of annotated timeline this way.
+
+| Array | Videos | Frames | Positive | Positive rate | Both classes within video | All-negative | All-positive |
+|---|---|---|---|---|---|---|---|
+| Primary, offensive union | 79 | 18839 | 9900 | 52.6% | 67 | 10 | 2 |
+| Sensitivity, hateful strict | 79 | 18839 | 4039 | 21.4% | 37 | 41 | 1 |
+
+The both-classes column is the one to watch, because the per-video macro
+ROC-AUC is computable only on videos that carry both frame classes. Under
+the primary rule 67 of 79 HateClipSeg test videos do, or 85%, against 85
+of 214 on HateMM (40%), 44 of 158 on MultiHateClip EN (28%), and 7 of 153
+on ZH (5%). The macro statistic, which the other three corpora compute
+over a thin slice, rests on most of the cohort here, and the pooled number
+is correspondingly less driven by separating positive videos from negative
+ones. That is what the finest annotation in the study buys, and it is the
+reason HateClipSeg is worth carrying.
+
+Timestamped ASR covers the split completely: all 394 locally held videos
+have a usable record in
+`results/interleaved_timeline/hateclipseg/timestamped_chunks.jsonl` — no
+errors, no empty chunk lists, every one reproducing its frozen text — so
+315 of 315 train and 79 of 79 test videos are covered and no video needed
+re-transcribing. `scripts/duplex/hateclipseg_asr_coverage.py` measures
+this and writes the gap list; the list is currently empty, and the
+`hateclipseg_missing` corpus entry in `interleaved_timeline_asr.py`
+consumes it if media lands later.
+
 ## Evaluation cohort
 
 The cohort is the test-split videos whose media is present locally at
@@ -133,7 +253,10 @@ One thing thins the MultiHateClip cohorts before any gold rule applies:
 media. 162 of the 200 upstream EN test videos and 157 of the 200 ZH have
 been fetched; the rest are unavailable and are listed by video id in the
 sidecars. HateMM loses nothing at this stage: all 215 test_clean videos
-have local media.
+have local media. HateClipSeg loses 41 of its 435 annotated videos to
+media, but that loss happens *before* the split is drawn rather than
+after, so it thins the pool the draw runs over instead of thinning a
+fixed test list; the 41 ids are in the split report.
 
 The local annotation mirror `annotation(new).json` no longer thins
 anything. It kept 890 of the 1000 upstream EN videos, which is why
@@ -158,18 +281,32 @@ video.
 | HateMM test_clean | 215 | 215 | 1 (degenerate span) | 214 | 129 | 29266 | 7080 (24.2%) |
 | MultiHateClip EN test | 200 | 162 | 4 | 158 | 112 | 5600 | 1403 (25.1%) |
 | MultiHateClip ZH test | 200 | 157 | 4 | 153 | 110 | 4817 | 1121 (23.3%) |
+| HateClipSeg test (ours) | 79 | 79 | 0 (clock rule) | 79 | 10 | 18839 | 9900 (52.6%) |
 
 The "all-negative" column counts included videos with no positive frame:
 every Normal-majority video, including the 8 EN and 5 ZH whose leftover
-spans rule (a) discards.
+spans rule (a) discards. The HateClipSeg row reads differently from the
+other three: its "upstream test" is our own 79-video draw, not a published
+list, and its exclusion column is the annotation-clock rule rather than
+rule (b).
 
-Released arrays, built by `scripts/duplex/build_gt_arrays.py`:
+Released arrays, built by `scripts/duplex/build_gt_arrays.py` (first
+three) and `scripts/duplex/build_gt_arrays_hateclipseg.py` (last two):
 
 | Array | SHA256 |
 |---|---|
 | `results/reproduction/gt/hatemm_test.npz` | `f4af758acbddd301c4898b1ce1a2436e6b260670ff3fcaedb99025d8a433ba65` |
 | `results/reproduction/gt/mhclip_en_test.npz` | `7099195e0a2bbcfb3e9be6e4117d709393beea06b78adf6bcefeba736d8c12c8` |
 | `results/reproduction/gt/mhclip_zh_test.npz` | `1abd4ae620add7e9d45b3895357ece7446a14ee69f2e509b724d3e63b5069cf6` |
+| `results/reproduction/gt/hateclipseg_test.npz` | `e7d164c04d77262f4cb77ad14592751b2cfdccc53f76a8a2d55162b8e0196b31` |
+| `results/reproduction/gt/hateclipseg_test_hateful_strict.npz` | `4e8e705c915d7197b6f3e5be580ad52bd63d47217da8c3d6f69c865814ae05d7` |
+
+Frozen split manifests for HateClipSeg, one video id per line:
+
+| Manifest | SHA256 |
+|---|---|
+| `results/reproduction/splits/hateclipseg_train.txt` | `5eb86a2cfdf070c7024e284925819a980a0c25d5906f341c80ef3b4f00b83319` |
+| `results/reproduction/splits/hateclipseg_test.txt` | `0d6486438a27493322ffdc862cbcc079448a9b7530fd53b0203564992f800a2b` |
 
 The HateMM hash is unchanged from the first build: its cohort did not
 move, and the two MultiHateClip rebuilds are purely additive — no array
@@ -225,5 +362,11 @@ method that can score them will be evaluated on them.
 No parameter of this protocol may be tuned after seeing a method's
 numbers. The frame rate, the containment convention, the degenerate-span
 rule, and the two MultiHateClip gold rules are frozen as of this
-document. Cohort membership changes only when media arrives, never in
-response to a result, and any change is visible in the array hash.
+document. So are the four HateClipSeg rules added on 2026-08-19: the
+union positive rule, the hateful-strict sensitivity rule, the
+uncovered-frame and overlap conventions, and the 1.0 s annotation-clock
+tolerance. So is the HateClipSeg split — seed 234, 80/20, stratified by
+video-level label — which was drawn and hashed before any method saw the
+corpus and may not be redrawn to improve a number. Cohort membership
+changes only when media arrives, never in response to a result, and any
+change is visible in the array hash.

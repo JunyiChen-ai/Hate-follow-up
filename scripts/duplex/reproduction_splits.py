@@ -14,6 +14,12 @@ Split rules (frozen by owner decision, see the Phase 0 plan):
 * MHClip  train = upstream ``train`` + ``valid`` intersected with available
   media, minus ``k9OtaMbK0Ac`` (an English video that upstream lists in both
   train and test); test = upstream ``test`` intersected with available media.
+* HateClipSeg has **no published split**.  The paper reports an 80/20 division
+  but releases no video ids, so no upstream manifest exists to intersect with.
+  The split written here is therefore *ours*, not a reproduction of theirs:
+  a seeded, video-level-stratified 80/20 draw over the annotated videos whose
+  media is present locally.  See ``hateclipseg_split`` below for the exact
+  rule; every number computed on it must be reported as being on our split.
 
 Outputs ``results/reproduction/splits/*.txt``, one video id per line, sorted,
 plus the SHA256 of each file.  Run with ``--check`` to recompute the manifests
@@ -23,9 +29,11 @@ and fail if they differ from what is on disk.
 from __future__ import annotations
 
 import argparse
+import ast
 import csv
 import hashlib
 import json
+import random
 import sys
 from pathlib import Path
 
@@ -56,6 +64,20 @@ MHC_VIDEO_DIRS = {
 }
 
 VIDEO_EXTS = {".mp4", ".mkv", ".webm", ".avi", ".mov", ".flv", ".m4v"}
+
+# ---- HateClipSeg -----------------------------------------------------------
+# Segment-level gold: one row per video, a python-literal list of 6-dim
+# multi-hot labels [normal, hateful, insulting, sexual, violence, harm] and a
+# parallel list of ['start', 'end'] string seconds.
+HCS_GOLD_CSV = (
+    REPO / "idea-stage" / "pilots" / "b1_coverage_audit" / "data"
+    / "segment_level_annotation.csv"
+)
+HCS_VIDEO_DIRS = [DATA / "HateClipSeg" / "video"]
+HCS_SEED = 234
+HCS_TEST_FRACTION = 0.2
+# Fixed stratum order, so the draw does not depend on dict iteration order.
+HCS_STRATA = ("negative", "positive")
 
 
 def available_ids(dirs: list[Path]) -> dict[str, Path]:
@@ -100,6 +122,103 @@ def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     h.update(path.read_bytes())
     return h.hexdigest()
+
+
+# ---------------------------------------------------------------- HateClipSeg
+def hcs_is_offensive_union(label: list) -> bool:
+    """Segment label is offensive under the union rule.
+
+    Identical to ``is_offensive_union`` in
+    ``scripts/duplex/sentinel_localization_pilot.py``: any of the five
+    non-normal dimensions (hateful, insulting, sexual, violence, harm) set.
+    """
+    return any(int(x) == 1 for x in label[1:6])
+
+
+def read_hcs_gold() -> dict[str, list[list[int]]]:
+    """video id -> segment labels, from the segment-level annotation CSV."""
+    csv.field_size_limit(1 << 30)
+    out: dict[str, list[list[int]]] = {}
+    with HCS_GOLD_CSV.open(encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            labels = ast.literal_eval(row["Segment-Level Label"])
+            spans = ast.literal_eval(row["Segment Timestamp"])
+            if len(labels) != len(spans):
+                continue
+            out[row["Video Id"].strip()] = labels
+    return out
+
+
+def hateclipseg_split() -> tuple[list[str], list[str], dict]:
+    """Our seeded 80/20 HateClipSeg split, stratified by video-level label.
+
+    HateClipSeg publishes no split ids, so there is nothing upstream to
+    intersect with and nothing to reproduce.  This draw is ours and is frozen
+    here:
+
+    1. Eligible videos are those with a segment-level annotation row *and*
+       local media.  Annotated videos without media are attrition and are
+       listed in the report, never silently absorbed.
+    2. A video is *positive* if at least one of its segments is offensive
+       under the union rule, and *negative* otherwise.  The video-level
+       annotation file is not consulted: the frame gold is built from the
+       segment labels, so the stratification variable is derived from the
+       same source, and the two can never disagree.
+    3. Within each stratum, ids are sorted and then shuffled by
+       ``random.Random(234)`` -- one generator, strata visited in the fixed
+       order (negative, positive) -- and the first ``round(0.2 * n)`` go to
+       test.  Sorting before shuffling makes the draw independent of
+       filesystem order.
+    """
+    gold = read_hcs_gold()
+    avail = available_ids(HCS_VIDEO_DIRS)
+    annotated = sorted(gold)
+    eligible = [v for v in annotated if v in avail]
+    missing_media = [v for v in annotated if v not in avail]
+    media_unannotated = sorted(set(avail) - set(gold))
+
+    strata: dict[str, list[str]] = {name: [] for name in HCS_STRATA}
+    for vid in eligible:
+        positive = any(hcs_is_offensive_union(lab) for lab in gold[vid])
+        strata["positive" if positive else "negative"].append(vid)
+
+    rng = random.Random(HCS_SEED)
+    train: list[str] = []
+    test: list[str] = []
+    per_stratum = {}
+    for name in HCS_STRATA:
+        ids = sorted(strata[name])
+        shuffled = list(ids)
+        rng.shuffle(shuffled)
+        n_test = int(round(HCS_TEST_FRACTION * len(shuffled)))
+        test.extend(shuffled[:n_test])
+        train.extend(shuffled[n_test:])
+        per_stratum[name] = {
+            "eligible": len(ids),
+            "test": n_test,
+            "train": len(ids) - n_test,
+        }
+
+    info = {
+        "manifest": "hateclipseg",
+        "provenance": (
+            "ours, not upstream: HateClipSeg publishes an 80/20 ratio but no "
+            "video ids"
+        ),
+        "seed": HCS_SEED,
+        "test_fraction": HCS_TEST_FRACTION,
+        "stratification": (
+            "video positive iff at least one segment is offensive under the "
+            "union rule over dims 1..5"
+        ),
+        "annotated": len(annotated),
+        "available": len(eligible),
+        "missing_media": len(missing_media),
+        "missing_media_ids": missing_media,
+        "media_without_annotation": media_unannotated,
+        "per_stratum": per_stratum,
+    }
+    return sorted(train), sorted(test), info
 
 
 def build() -> tuple[dict[str, list[str]], list[dict]]:
@@ -167,6 +286,24 @@ def build() -> tuple[dict[str, list[str]], list[dict]]:
                 file=sys.stderr,
             )
 
+    # ---- HateClipSeg ------------------------------------------------------
+    hcs_train, hcs_test, hcs_info = hateclipseg_split()
+    manifests["hateclipseg_train"] = hcs_train
+    manifests["hateclipseg_test"] = hcs_test
+    for name, ids in (("hateclipseg_train", hcs_train),
+                      ("hateclipseg_test", hcs_test)):
+        report.append(
+            {
+                "manifest": name,
+                "upstream": hcs_info["annotated"],
+                "available": len(ids),
+                "missing": 0,
+                "missing_ids": [],
+                "note": "seeded local split, no upstream ids exist",
+            }
+        )
+    report.append(hcs_info)
+
     return manifests, report
 
 
@@ -197,6 +334,18 @@ def main() -> int:
             digests[name] = sha256_file(path)
 
     for row in report:
+        if "upstream" not in row:  # the HateClipSeg provenance block
+            print(
+                f"{row['manifest']:20s} seed={row['seed']} "
+                f"annotated={row['annotated']:4d} "
+                f"available={row['available']:4d} "
+                f"missing_media={row['missing_media']:4d}  "
+                + ", ".join(
+                    f"{k}: {v['eligible']} -> {v['train']}/{v['test']}"
+                    for k, v in row["per_stratum"].items()
+                )
+            )
+            continue
         overlap = row.get("train_test_overlap_removed")
         extra = f"  overlap_removed={overlap}" if overlap else ""
         print(

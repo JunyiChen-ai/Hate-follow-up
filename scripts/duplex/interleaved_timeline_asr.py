@@ -96,6 +96,19 @@ SPLIT_CORPORA = {
                 "BV1Qx411V7tT", "BV1bA41137we", "BV1du411g7tk",
                 "BV1nJ4m1p7BG", "BV1zD4y1Y7ec"],
     },
+    # HateClipSeg videos, train or test, absent from the frozen manifest at
+    # results/interleaved_timeline/hateclipseg/timestamped_chunks.jsonl. The
+    # id list is written by scripts/duplex/hateclipseg_asr_coverage.py, which
+    # also records the coverage it measured; run that first. As of the Phase 2
+    # inventory the list is empty -- the frozen manifest already covers all
+    # 394 locally held videos -- so this entry exists for the case where more
+    # media lands later.
+    "hateclipseg_missing": {
+        "dataset": "HateClipSeg",
+        "wav_dir": os.path.join(DATA_ROOT, "HateClipSeg", "wav"),
+        "ids_file": os.path.join(ROOT, "results", "reproduction", "asr",
+                                 "hateclipseg_missing", "ids.txt"),
+    },
 }
 
 
