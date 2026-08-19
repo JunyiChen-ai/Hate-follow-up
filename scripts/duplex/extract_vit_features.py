@@ -9,8 +9,8 @@ paper's own visual encoder gets its own pass here.
 Everything except the encoder is identical to extract_clip_features.py, and
 deliberately so: the same 1 fps grid tied to the audio duration, the same
 duration resolver (chunk manifest first, wav header second), the same decord
-decode with a system-ffmpeg fallback for the AV1 files decord's bundled
-ffmpeg cannot read, the same index.json / failures.json bookkeeping. Row i of
+decode with a system-ffmpeg fallback -- shared code, imported from that file,
+not a second copy -- the same index.json / failures.json bookkeeping. Row i of
 the feature matrix is frame i of the frozen gold array by construction, which
 is what lets MultiHateLoc's per-frame scores be compared against VadCLIP's
 and DSANet's without a per-video crop.
@@ -38,9 +38,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import sys
-import tempfile
 import time
 
 import numpy as np
@@ -50,7 +48,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(_THIS, "..", ".."))
 sys.path.insert(0, _THIS)
 
 from extract_clip_features import (  # noqa: E402
-    CORPORA, ffmpeg_extract_1fps, find_duration, load_chunk_durations, read_ids)
+    CORPORA, encode_with_fallback, find_duration, load_chunk_durations,
+    read_ids)
 from frame_eval_common import frame_times  # noqa: E402
 
 OUT_ROOT = os.path.join(PROJECT_ROOT, "results", "reproduction", "features",
@@ -94,9 +93,7 @@ def main():
     if not todo:
         return 0
 
-    import decord
     import torch
-    from PIL import Image
     from transformers import ViTImageProcessor, ViTModel
 
     if not torch.cuda.is_available():
@@ -134,65 +131,7 @@ def main():
             grid = frame_times(duration, FPS)
             n_target = len(grid)
 
-            meta, batches, cleanup = None, None, None
-            try:
-                vr = decord.VideoReader(path, num_threads=4)
-                avg_fps = float(vr.get_avg_fps())
-                n_video = len(vr)
-                if not (avg_fps > 0) or n_video <= 0:
-                    raise ValueError("unusable video stream: fps=%r frames=%r"
-                                     % (avg_fps, n_video))
-                raw_idx = np.rint(grid * avg_fps).astype(np.int64)
-                idx = np.clip(raw_idx, 0, n_video - 1)
-                meta = {
-                    "decode_backend": "decord",
-                    "video_frames": int(n_video),
-                    "video_avg_fps": round(avg_fps, 6),
-                    "video_duration": round(n_video / avg_fps, 6),
-                    "frames_clamped_past_video_end":
-                        int((raw_idx > n_video - 1).sum()),
-                }
-
-                def batches(vr=vr, idx=idx):
-                    for s in range(0, len(idx), args.batch):
-                        arr = vr.get_batch(
-                            list(idx[s:s + args.batch])).asnumpy()
-                        yield [Image.fromarray(a) for a in arr]
-
-                cleanup = lambda vr=vr: None  # noqa: E731
-            except Exception as decord_exc:
-                work = tempfile.mkdtemp(prefix="vit1fps_", dir=args.tmp_dir)
-                try:
-                    png = ffmpeg_extract_1fps(path, work)
-                except Exception:
-                    shutil.rmtree(work, ignore_errors=True)
-                    raise
-                n_video = len(png)
-                if n_video >= n_target:
-                    png = png[:n_target]
-                    n_clamped = 0
-                else:
-                    n_clamped = n_target - n_video
-                    png = png + [png[-1]] * n_clamped
-                meta = {
-                    "decode_backend": "ffmpeg",
-                    "decord_error": "%s: %s" % (type(decord_exc).__name__,
-                                                decord_exc)[:300],
-                    "video_frames_at_1fps": int(n_video),
-                    "video_avg_fps": None,
-                    "video_duration": float(n_video),
-                    "frames_clamped_past_video_end": int(n_clamped),
-                }
-
-                def batches(png=png):
-                    for s in range(0, len(png), args.batch):
-                        yield [Image.open(p).convert("RGB")
-                               for p in png[s:s + args.batch]]
-
-                cleanup = lambda work=work: shutil.rmtree(  # noqa: E731
-                    work, ignore_errors=True)
-
-            try:
+            def encode(batches, n_target=n_target):
                 feats = np.empty((n_target, dim), dtype=np.float32)
                 written = 0
                 with torch.no_grad():
@@ -209,8 +148,10 @@ def main():
                 if written != n_target:
                     raise ValueError("decoded %d frames for a %d-frame grid"
                                      % (written, n_target))
-            finally:
-                cleanup()
+                return feats
+
+            feats, meta = encode_with_fallback(
+                encode, path, grid, n_target, args.batch, args.tmp_dir)
 
             tmp = os.path.join(out_dir, vid + ".tmp.npy")
             np.save(tmp, feats)

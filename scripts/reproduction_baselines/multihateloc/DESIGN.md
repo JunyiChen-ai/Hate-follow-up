@@ -69,9 +69,9 @@ denser than 1 fps the interpolation would be live.
 ### 2.3 BERT checkpoint
 
 The paper says "BERT", 768-d, without naming a checkpoint. We use
-`bert-base-uncased` for HateMM and MultiHateClip-EN and `bert-base-chinese`
-for MultiHateClip-ZH. Both are 768-d, which is what the stated dimensionality
-requires. HateMM carries a minority of non-English speech; it still goes
+`bert-base-uncased` for HateMM, MultiHateClip-EN and HateClipSeg, and
+`bert-base-chinese` for MultiHateClip-ZH. Both are 768-d, which is what the
+stated dimensionality requires. HateMM carries a minority of non-English speech; it still goes
 through the uncased English model, because HateMM is an English corpus and
 switching checkpoints per utterance would add a component the paper does not
 describe.

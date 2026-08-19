@@ -22,8 +22,9 @@ are repeated below so the file is readable on its own.
      on the identical transcription every other component of this study sees.
 
   2. BERT variant. The paper says "BERT", 768-d, without a checkpoint.
-     bert-base-uncased for hatemm and mhclip_en, bert-base-chinese for
-     mhclip_zh. Both are 768-d base models, which is what the stated
+     bert-base-uncased for hatemm, mhclip_en and hateclipseg (all three are
+     English corpora), bert-base-chinese for mhclip_zh. Both are 768-d base
+     models, which is what the stated
      dimensionality requires. HateMM contains a minority of non-English
      speech; it still goes through the uncased English model, since the corpus
      is an English corpus and switching checkpoints per utterance would be an
@@ -78,6 +79,7 @@ BERT_ID = {
     "hatemm": "bert-base-uncased",
     "mhclip_en": "bert-base-uncased",
     "mhclip_zh": "bert-base-chinese",
+    "hateclipseg": "bert-base-uncased",
 }
 MAX_TOKENS = 64  # ASR fragments are short; 64 word-pieces covers them.
 

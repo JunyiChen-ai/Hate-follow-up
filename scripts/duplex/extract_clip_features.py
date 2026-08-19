@@ -19,12 +19,16 @@ Timestamps are converted to frame indices as round(t * avg_fps), clamped to
 the last decodable frame. A clamp means the audio outlives the video stream;
 the count is recorded per video so the mismatch is visible rather than silent.
 
-Decoding uses decord, and falls back to the system ffmpeg (`-vf fps=1`) for
-files decord refuses. That fallback is not cosmetic: a large minority of the
-MultiHateClip mp4 files carry AV1 video, and decord's bundled ffmpeg has no
-AV1 decoder, so without it 202 EN and 48 ZH videos would silently drop out of
-every baseline trained on these features. Which backend produced a video is
-recorded per video in index.json.
+Decoding uses decord, and falls back to the system ffmpeg (`-vf fps=1`)
+whenever decord fails -- both when it refuses the file up front and when its
+threaded decoder dies part-way through the forward pass, which is why the
+retry re-runs the encoder from scratch rather than resuming. That fallback is
+not cosmetic: a large minority of the MultiHateClip mp4 files carry AV1 video
+and decord's bundled ffmpeg has no AV1 decoder, so without it 202 EN and 48
+ZH videos would silently drop out of every baseline trained on these
+features; five HateClipSeg files fail the second way, mid-stream on damaged
+h264 packets. Which backend produced a video, and the decord error that sent
+it to the fallback, are recorded per video in index.json.
 
 Preprocessing is CLIP's own released transform, run through
 `CLIPImageProcessor` rather than reimplemented: shortest-edge bicubic resize to
@@ -91,6 +95,18 @@ CORPORA = {
             "results/reproduction/asr/mhclip_en_train/"
             "timestamped_chunks.jsonl",
             "results/reproduction/asr/mhclip_en_test_new/"
+            "timestamped_chunks.jsonl",
+        ],
+    },
+    "hateclipseg": {
+        "video_dir": os.path.join(DATA_ROOT, "HateClipSeg", "video"),
+        # HateClipSeg's audio was extracted into the repo rather than
+        # alongside the media, so there is a single wav directory here.
+        "wav_dirs": [os.path.join(PROJECT_ROOT, "results", "hateclipseg",
+                                  "wav")],
+        "splits": ["hateclipseg_train.txt", "hateclipseg_test.txt"],
+        "chunk_manifests": [
+            "results/interleaved_timeline/hateclipseg/"
             "timestamped_chunks.jsonl",
         ],
     },
@@ -208,6 +224,113 @@ def ffmpeg_extract_1fps(path, work_dir):
     return [os.path.join(work_dir, f) for f in frames]
 
 
+def decord_frame_source(path, grid, batch_size):
+    """(meta, batches, cleanup) reading the 1 fps grid through decord.
+
+    Raises whatever decord raises. The caller is expected to retry through
+    ffmpeg_frame_source, because decord fails on this study's media in two
+    different places: `VideoReader` refuses AV1 outright, and its threaded
+    decoder dies part-way through a damaged h264 stream, long after the
+    reader was constructed.
+    """
+    import decord
+    from PIL import Image
+
+    vr = decord.VideoReader(path, num_threads=4)
+    avg_fps = float(vr.get_avg_fps())
+    n_video = len(vr)
+    if not (avg_fps > 0) or n_video <= 0:
+        raise ValueError("unusable video stream: fps=%r frames=%r"
+                         % (avg_fps, n_video))
+    raw_idx = np.rint(grid * avg_fps).astype(np.int64)
+    idx = np.clip(raw_idx, 0, n_video - 1)
+    meta = {
+        "decode_backend": "decord",
+        "video_frames": int(n_video),
+        "video_avg_fps": round(avg_fps, 6),
+        "video_duration": round(n_video / avg_fps, 6),
+        "frames_clamped_past_video_end": int((raw_idx > n_video - 1).sum()),
+    }
+
+    def batches():
+        for s in range(0, len(idx), batch_size):
+            arr = vr.get_batch(list(idx[s:s + batch_size])).asnumpy()
+            yield [Image.fromarray(a) for a in arr]
+
+    return meta, batches, lambda: None
+
+
+def ffmpeg_frame_source(path, n_target, batch_size, tmp_dir, decord_exc):
+    """(meta, batches, cleanup) reading the 1 fps grid through system ffmpeg.
+
+    The fallback path. `decord_exc` is the failure that sent the video here
+    and is recorded in the per-video metadata, so a file that needed the
+    fallback -- and the reason -- stays visible in index.json.
+    """
+    from PIL import Image
+
+    work = tempfile.mkdtemp(prefix="frames1fps_", dir=tmp_dir)
+    try:
+        png = ffmpeg_extract_1fps(path, work)
+    except Exception:
+        shutil.rmtree(work, ignore_errors=True)
+        raise
+    n_video = len(png)
+    if n_video >= n_target:
+        png = png[:n_target]
+        n_clamped = 0
+    else:
+        # Audio outlives the video stream: hold the last frame, the same
+        # thing the decord path's index clamp does.
+        n_clamped = n_target - n_video
+        png = png + [png[-1]] * n_clamped
+    meta = {
+        "decode_backend": "ffmpeg",
+        "decord_error": ("%s: %s" % (type(decord_exc).__name__,
+                                     decord_exc))[:300],
+        "video_frames_at_1fps": int(n_video),
+        "video_avg_fps": None,
+        "video_duration": float(n_video),
+        "frames_clamped_past_video_end": int(n_clamped),
+    }
+
+    def batches():
+        for s in range(0, len(png), batch_size):
+            yield [Image.open(p).convert("RGB") for p in png[s:s + batch_size]]
+
+    return meta, batches, lambda: shutil.rmtree(work, ignore_errors=True)
+
+
+def encode_with_fallback(encode, path, grid, n_target, batch_size, tmp_dir):
+    """(feats, meta): run `encode` over the video's frames, decord then ffmpeg.
+
+    `encode` takes the batch generator and returns the feature matrix. It is
+    called again from scratch if the decord attempt fails at any point --
+    including part-way through the forward pass, which is where decord's
+    threaded decoder actually dies on a damaged stream. Re-running the
+    encoder is what makes the fallback cover mid-decode failures as well as
+    the AV1 files decord refuses to open at all.
+    """
+    try:
+        meta, batches, cleanup = decord_frame_source(path, grid, batch_size)
+    except Exception as exc:
+        decord_exc = exc
+    else:
+        try:
+            return encode(batches), meta
+        except Exception as exc:
+            decord_exc = exc
+        finally:
+            cleanup()
+
+    meta, batches, cleanup = ffmpeg_frame_source(
+        path, n_target, batch_size, tmp_dir, decord_exc)
+    try:
+        return encode(batches), meta
+    finally:
+        cleanup()
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", required=True, choices=sorted(CORPORA))
@@ -235,9 +358,7 @@ def main():
     if not todo:
         return 0
 
-    import decord
     import torch
-    from PIL import Image
     from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
 
     if not torch.cuda.is_available():
@@ -271,69 +392,7 @@ def main():
             grid = frame_times(duration, FPS)
             n_target = len(grid)
 
-            meta, batches, cleanup = None, None, None
-            try:
-                vr = decord.VideoReader(path, num_threads=4)
-                avg_fps = float(vr.get_avg_fps())
-                n_video = len(vr)
-                if not (avg_fps > 0) or n_video <= 0:
-                    raise ValueError("unusable video stream: fps=%r frames=%r"
-                                     % (avg_fps, n_video))
-                raw_idx = np.rint(grid * avg_fps).astype(np.int64)
-                idx = np.clip(raw_idx, 0, n_video - 1)
-                meta = {
-                    "decode_backend": "decord",
-                    "video_frames": int(n_video),
-                    "video_avg_fps": round(avg_fps, 6),
-                    "video_duration": round(n_video / avg_fps, 6),
-                    "frames_clamped_past_video_end":
-                        int((raw_idx > n_video - 1).sum()),
-                }
-
-                def batches(vr=vr, idx=idx):
-                    for s in range(0, len(idx), args.batch):
-                        arr = vr.get_batch(
-                            list(idx[s:s + args.batch])).asnumpy()
-                        yield [Image.fromarray(a) for a in arr]
-
-                cleanup = lambda vr=vr: None  # noqa: E731
-            except Exception as decord_exc:
-                # decord's bundled ffmpeg cannot decode AV1; the system
-                # ffmpeg can. Fall back rather than lose the video.
-                work = tempfile.mkdtemp(prefix="clip1fps_", dir=args.tmp_dir)
-                try:
-                    png = ffmpeg_extract_1fps(path, work)
-                except Exception:
-                    shutil.rmtree(work, ignore_errors=True)
-                    raise
-                n_video = len(png)
-                if n_video >= n_target:
-                    png = png[:n_target]
-                    n_clamped = 0
-                else:
-                    # Audio outlives the video stream: hold the last frame,
-                    # the same thing the decord path's index clamp does.
-                    n_clamped = n_target - n_video
-                    png = png + [png[-1]] * n_clamped
-                meta = {
-                    "decode_backend": "ffmpeg",
-                    "decord_error": "%s: %s" % (type(decord_exc).__name__,
-                                                decord_exc)[:300],
-                    "video_frames_at_1fps": int(n_video),
-                    "video_avg_fps": None,
-                    "video_duration": float(n_video),
-                    "frames_clamped_past_video_end": int(n_clamped),
-                }
-
-                def batches(png=png):
-                    for s in range(0, len(png), args.batch):
-                        yield [Image.open(p).convert("RGB")
-                               for p in png[s:s + args.batch]]
-
-                cleanup = lambda work=work: shutil.rmtree(  # noqa: E731
-                    work, ignore_errors=True)
-
-            try:
+            def encode(batches, n_target=n_target):
                 feats = np.empty((n_target, model.config.projection_dim),
                                  dtype=np.float32)
                 written = 0
@@ -352,8 +411,10 @@ def main():
                 if written != n_target:
                     raise ValueError("decoded %d frames for a %d-frame grid"
                                      % (written, n_target))
-            finally:
-                cleanup()
+                return feats
+
+            feats, meta = encode_with_fallback(
+                encode, path, grid, n_target, args.batch, args.tmp_dir)
 
             # np.save appends .npy unless the name already ends in it, so the
             # temporary name has to carry the suffix itself.

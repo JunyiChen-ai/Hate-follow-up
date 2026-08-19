@@ -5,6 +5,15 @@
 #   bash scripts/duplex/run_reproduction_features.sh vggish
 #   bash scripts/duplex/run_reproduction_features.sh vit
 #   bash scripts/duplex/run_reproduction_features.sh i3d
+#   bash scripts/duplex/run_reproduction_features.sh bert
+#
+# A second argument restricts the run to a subset of the corpora, so a corpus
+# added after the first three can be extracted without touching them:
+#
+#   bash scripts/duplex/run_reproduction_features.sh clip hateclipseg
+#
+# The bert stage reads its frame count from the vit output, so it has to run
+# after vit for whatever corpora it is given.
 #
 # One corpus at a time on the single GPU, resumable (a video with its .npy
 # already on disk is skipped). Detached use:
@@ -17,7 +26,12 @@ export HVD_DATA_ROOT=/home/jehc223/data
 export TOKENIZERS_PARALLELISM=false
 PY=/home/jehc223/venvs/SafetyContradiction/bin/python
 
-STAGE=${1:?usage: run_reproduction_features.sh clip|vggish|vit|i3d}
+STAGE=${1:?usage: run_reproduction_features.sh clip|vggish|vit|i3d|bert [corpora...]}
+shift || true
+CORPORA=("$@")
+if [ "${#CORPORA[@]}" -eq 0 ]; then
+  CORPORA=(hatemm mhclip_en mhclip_zh)
+fi
 EXTRA=()
 case "$STAGE" in
   clip)   SCRIPT=scripts/duplex/extract_clip_features.py
@@ -41,13 +55,15 @@ case "$STAGE" in
           TMP=results/reproduction/features/.ffmpeg_scratch
           mkdir -p "$TMP"
           EXTRA=(--tmp-dir "$TMP") ;;
+  bert)   SCRIPT=scripts/reproduction_baselines/multihateloc/extract_bert_sentence_features.py
+          OUT=results/reproduction/features/bert_sentence_1fps ;;
   *) echo "unknown stage: $STAGE"; exit 2 ;;
 esac
 
 mkdir -p "$OUT"
 rm -f "$OUT/DONE" "$OUT/DONE_WITH_FAILURES"
 fail=0
-for C in hatemm mhclip_en mhclip_zh; do
+for C in "${CORPORA[@]}"; do
   echo "=== $STAGE $C $(date -Is)"
   echo "$STAGE:$C started $(date -Is)" > "$OUT/STATUS"
   $PY -u "$SCRIPT" --corpus "$C" ${EXTRA[@]+"${EXTRA[@]}"}
