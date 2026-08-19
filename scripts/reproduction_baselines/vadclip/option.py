@@ -43,10 +43,10 @@ def build_parser():
     # --- temporal window, re-read in seconds ---
     parser.add_argument("--visual-length", default=None, type=int,
                         help="rows per block; one row is one second. "
-                             "Default 256 for hatemm, 64 for mhclip_*")
+                             "Default 256 for hatemm and hateclipseg, 64 for mhclip_*")
     parser.add_argument("--attn-window", default=None, type=int,
                         help="local attention window in rows. "
-                             "Default 64 for hatemm, 16 for mhclip_*")
+                             "Default 64 for hatemm and hateclipseg, 16 for mhclip_*")
 
     # --- optimisation (published XD values) ---
     parser.add_argument("--max-epoch", default=10, type=int)

@@ -16,7 +16,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .data import NUM_CLASSES
+from .data import CORPORA, NUM_CLASSES
 
 
 # ------------------------------------------------------------------ losses
@@ -140,8 +140,7 @@ def resolve_device(requested):
 
 
 def add_common_args(parser):
-    parser.add_argument("--corpus", default="hatemm",
-                        choices=["hatemm", "mhclip_en", "mhclip_zh"])
+    parser.add_argument("--corpus", default="hatemm", choices=list(CORPORA))
     parser.add_argument("--device", default="auto",
                         choices=["auto", "cpu", "cuda"])
     parser.add_argument("--seed", default=234, type=int,
@@ -152,6 +151,10 @@ def add_common_args(parser):
                              "(0 = all). Used by the CPU dry run; never set "
                              "it for a real run")
     return parser
+
+
+VISUAL_LENGTH = {"hatemm": 256, "hateclipseg": 256}
+ATTN_WINDOW = {"hatemm": 64, "hateclipseg": 64}
 
 
 def default_visual_length(corpus):
@@ -167,12 +170,17 @@ def default_visual_length(corpus):
               zero padding, which the temporal transformer attends to (upstream
               passes padding_mask=None during training). 64 / 16 covers every
               video whole and keeps the published 4:1 window ratio.
+    hateclipseg
+              min 180 s, median 239 s, p90 286 s, max 350 s. Every video is
+              minutes long, so the mhclip argument for shrinking the window
+              (mostly-padding batches) does not apply and the HateMM setting
+              of 256 / 64 is kept, which is also the published number.
     """
-    return 256 if corpus == "hatemm" else 64
+    return VISUAL_LENGTH.get(corpus, 64)
 
 
 def default_attn_window(corpus):
-    return 64 if corpus == "hatemm" else 16
+    return ATTN_WINDOW.get(corpus, 16)
 
 
 def scores_out_path(method, corpus, root=None):

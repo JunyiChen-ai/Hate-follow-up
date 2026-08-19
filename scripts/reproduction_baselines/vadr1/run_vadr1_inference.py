@@ -115,6 +115,7 @@ VIDEO_DIRS = {
     "hatemm": "/home/jehc223/data/HateMM/video",
     "mhclip_en": "/home/jehc223/data/Multihateclip/English/video_mp4",
     "mhclip_zh": "/home/jehc223/data/Multihateclip/Chinese/video",
+    "hateclipseg": "/home/jehc223/data/HateClipSeg/video",
 }
 VIDEO_EXT = ".mp4"
 

@@ -32,6 +32,7 @@ they were written.
 
 from __future__ import annotations
 
+import ast
 import csv
 import json
 import os
@@ -51,8 +52,11 @@ GT_ROOT = os.path.join(REPO_ROOT, "results", "reproduction", "gt")
 
 HATEMM_ANNOTATION = "/home/jehc223/data/HateMM/upstream_spans/HateMM_annotation.csv"
 MHCLIP_ROOT = "/home/jehc223/data/Multihateclip/upstream_spans"
+HCS_SEGMENT_CSV = os.path.join(REPO_ROOT, "idea-stage", "pilots",
+                               "b1_coverage_audit", "data",
+                               "segment_level_annotation.csv")
 
-CORPORA = ("hatemm", "mhclip_en", "mhclip_zh")
+CORPORA = ("hatemm", "mhclip_en", "mhclip_zh", "hateclipseg")
 
 # Class order is load bearing: slot 0 is the normal class everywhere. See
 # dsanet/descriptions.py for the full argument.
@@ -68,6 +72,13 @@ def load_labels(corpus):
     HateMM: the `label` column of the upstream annotation CSV, Hate -> 1.
     MultiHateClip: upstream Majority_Voting over the train/valid/test TSVs,
     with the binary collapse CLAUDE.md fixes, Hateful + Offensive -> 1.
+    HateClipSeg: a video is 1 iff at least one of its segments is offensive
+    under the union rule over dimensions 1..5 (hateful, insulting, sexual,
+    violence, harm). The segment-level CSV is read directly rather than the
+    shipped video-level file, because that is the source the frame gold
+    (scripts/duplex/build_gt_arrays_hateclipseg.py) and the split
+    stratification (scripts/duplex/reproduction_splits.py) both derive from,
+    so the three cannot disagree.
     """
     if corpus == "hatemm":
         out = {}
@@ -93,6 +104,22 @@ def load_labels(corpus):
                         raise ValueError("unexpected Majority_Voting %r in %s"
                                          % (vote, path))
                     out[row["Video_ID"]] = 0 if vote == "Normal" else 1
+        return out
+
+    if corpus == "hateclipseg":
+        csv.field_size_limit(1 << 30)
+        out = {}
+        with open(HCS_SEGMENT_CSV, encoding="utf-8", newline="") as fh:
+            for row in csv.DictReader(fh):
+                labels = ast.literal_eval(row["Segment-Level Label"])
+                spans = ast.literal_eval(row["Segment Timestamp"])
+                if len(labels) != len(spans):
+                    # The same guard reproduction_splits.py applies: a row
+                    # whose two lists disagree carries no usable segment table
+                    # and never entered the split.
+                    continue
+                out[row["Video Id"].strip()] = int(any(
+                    any(int(x) == 1 for x in lab[1:6]) for lab in labels))
         return out
 
     raise ValueError("unknown corpus %r (expected one of %s)"

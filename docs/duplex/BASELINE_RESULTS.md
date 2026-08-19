@@ -1088,3 +1088,297 @@ MHC ZH carries the 1280x720 videos and runs slowest per frame. Against the
 CPU-measured floor of 1.0 to 3.5 frame/s recorded in DESIGN_EVENTVAD.md, the GPU
 is 10 to 24 times faster, and stage 1 remains the cost centre at 69% of the
 sweep.
+
+---
+
+# HateClipSeg (4th corpus)
+
+HateClipSeg joins the study as the fourth corpus, and it is the one that
+actually powers the measurement the other three could not. The annotation is
+exhaustive: every second of every video carries a segment label, so a hateful
+video is not a hateful *point* on an otherwise unannotated timeline. **67 of the
+79 gold videos carry both classes inside themselves, 85 % of the cohort.** The
+comparable counts are 85 of 214 on HateMM (40 %), 44 of 158 on MHC EN (28 %) and
+7 of 153 on MHC ZH (5 %). **The within-video macro is therefore the well-powered
+column on this corpus and the pooled column is the weak one** -- the exact
+reverse of the reading the other three corpora invite, and the reason this
+corpus was added.
+
+Cohort and grid. 315 train / 79 test videos, our own seeded 80/20 stratified
+draw (seed 234; HateClipSeg publishes a ratio but no ids), frozen at
+`results/reproduction/splits/hateclipseg_{train,test}.txt`. Gold arrays on the
+same 1 fps grid as every other corpus: `hateclipseg_test.npz` is PRIMARY, a
+frame positive iff its covering segment is offensive under the union rule over
+dimensions 1..5, 9,900 of 18,839 frames positive (52.55 %);
+`hateclipseg_test_hateful_strict.npz` is the sensitivity array, hateful
+dimension alone, 4,039 positive (21.44 %). Videos run 180 to 350 s, median 239 s.
+
+Two base rates have to be held in mind before any number below is read.
+**Chance PR-AUC is 0.5255**, not the 0.24 of the other corpora, so a PR column
+near 0.55 is near chance rather than well above it. And **69 of the 79 test
+videos are positive at the video level (87 %)**, so video-level AUC rests on 10
+negatives, and video-level average precision -- which is what every trained cell
+selects its checkpoint by -- is close to uninformative here: a constant
+predictor scores about 0.87.
+
+## Results
+
+Every row is `results/reproduction/{baselines/<method>,ours}/hateclipseg/frame_eval.json`,
+written by the same `eval_baseline_scores.py` over `frame_eval_common.py` that
+produced the other three corpora. Video AUC max-pools the frame scores per video
+and ranks them against the corpus video label.
+
+| method | supervision | branch | pooled ROC-AUC | pooled PR-AUC | within-hate macro (n) | video AUC |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Ours (masked locator, 1 fwd/video)** | **zero labels** | z_masked | 0.5414 | 0.6149 | 0.5324 (67) | **0.7536** |
+| VadCLIP | video labels | score_mlp | 0.5328 | 0.5447 | **0.5530** (67) | 0.5072 |
+| VadCLIP | video labels | score_align | 0.5531 | 0.5860 | 0.5063 (67) | 0.6275 |
+| DSANet | video labels | score_mlp | 0.5387 | 0.5502 | **0.5583** (67) | 0.5493 |
+| DSANet | video labels | score_refined | 0.5387 | 0.5502 | 0.5583 (67) | 0.5493 |
+| DSANet | video labels | score_align | 0.5559 | 0.5507 | 0.5015 (67) | 0.6145 |
+| MACIL-SD (av) | video labels | score_av | 0.5220 | 0.5412 | 0.5329 (67) | 0.5101 |
+| MACIL-SD (av) | video labels | score_audio | 0.5132 | 0.5314 | 0.5123 (67) | 0.5159 |
+| MACIL-SD (av) | video labels | score_visual | 0.5215 | 0.5471 | 0.5363 (67) | 0.5087 |
+| MACIL-SD (audio only) | video labels | score_mil | 0.5166 | 0.5568 | 0.5266 (67) | 0.6275 |
+| MACIL-SD (visual only) | video labels | score_mil | 0.5195 | 0.5581 | 0.5394 (67) | 0.6232 |
+| MultiHateLoc reimpl | video labels | score_fused | 0.4993 | 0.5208 | 0.5085 (67) | 0.6246 |
+| MultiHateLoc reimpl | video labels | score_dms | 0.5393 | 0.5684 | 0.4903 (67) | 0.6493 |
+| MultiHateLoc reimpl | video labels | score_visual | 0.5520 | 0.5767 | 0.4977 (67) | 0.6797 |
+| MultiHateLoc reimpl | video labels | score_audio | 0.4792 | 0.4997 | 0.4709 (67) | 0.5210 |
+| MultiHateLoc reimpl | video labels | score_text | 0.5346 | 0.5736 | 0.4990 (67) | 0.5558 |
+| MultiHateLoc reimpl | video labels | score_union | 0.4837 | 0.5176 | 0.4942 (67) | 0.5000 |
+| Vad-R1 (zero-shot, released prompt) | none | score_interval | **0.6382** | **0.6115** | 0.5001 (67) | 0.6826 |
+| Vad-R1 (term-adaptation arm) | none | score_interval | 0.5655 | 0.5610 | 0.5001 (67) | 0.6196 |
+| EventVAD | none | — | not run | not run | not run | not run |
+
+EventVAD is marked *not run* by owner default, not by oversight: it read the
+floor (0.50 to 0.52 pooled) on all three prior corpora while spending 6.4k MLLM
+calls and 13.4 GPU-hours, and 40 % of its events return no parseable score under
+the paper's own prompt. A fourth floor row is not worth another 4-plus GPU-hours.
+
+## What the table says
+
+**Nobody localises on HateClipSeg.** The within-video macro -- the column this
+corpus can actually measure -- runs from 0.4709 to 0.5583 across the sixteen
+supervised branch-cells, and the zero-label locator sits at 0.5324 inside that
+band. The best cell in the study is DSANet's MIL branch at 0.5583, which is
+0.058 above chance on 67 videos, and five branch-cells fall *below* chance, all
+five of them MultiHateLoc's. This is not a ranking worth defending; it is a floor
+that everything sits on. Vad-R1's macro is 0.5001 with a standard deviation of
+0.0006, which is the same degeneracy the other three corpora recorded: its
+positive prediction spans the whole clip, so its frame row is a broadcast video
+verdict and carries no within-video ranking at all.
+
+**The pooled column has almost nothing left to reward.** With 52.55 % of frames
+positive, chance PR-AUC is 0.5255; the supervised cells run 0.4792 to 0.5559 on
+pooled ROC and 0.4997 to 0.5860 on pooled PR, and three of them -- MultiHateLoc's
+audio, fused and union branches -- are below chance on both. The pooled metric
+was carried on the other corpora by video-level discrimination leaking into it;
+here, where 87 % of videos are positive, there is much less video-level signal
+left to leak.
+
+**Vad-R1 tops the pooled column at 0.6382 without doing anything the pooled
+column claims to measure.** Its within-video macro is 0.5001; the pooled number
+comes entirely from calling 41 of 79 videos abnormal end to end and 38 normal end
+to end. That is the clearest single demonstration in this document that pooled
+frame ROC on a corpus like this is a video-level metric wearing a frame-level
+name.
+
+**The one column with a real spread is video AUC, and the zero-label locator
+leads it**: 0.7536, against 0.6826 for Vad-R1's anomaly arm, 0.6797 for the best
+trained cell (MultiHateLoc's visual branch) and 0.6493, 0.6275, 0.6275 for the
+rest. On 10 negatives that is not a strong measurement either, but the direction
+matches HateMM, where the locator also led the video column (0.9010).
+
+The honest summary of this corpus: **HateClipSeg is where the study's central
+claim gets its cleanest negative.** On the one corpus whose annotation can
+support a within-video measurement over 85 % of its cohort, no method in the
+study -- trained or zero-label, audio, visual, text or fused -- rises meaningfully
+above chance at saying *where inside a hateful video* the hate is. The
+localisation claim that the field's benchmarks obscure is not merely
+unsupported here; it is measured and absent.
+
+## Vad-R1: both arms, and the same degeneracy
+
+Both arms ran on the 79 test videos, 16 frames each, the released checkpoint and
+prompt verbatim for the anomaly arm and the term-adaptation ablation for the
+hateful arm.
+
+| | anomaly arm | hateful arm |
+| --- | --- | --- |
+| positive-interval / negative parses | 41 / 38 | 56 / 23 |
+| unparsed | 0 | 0 |
+| pooled ROC / PR | 0.6382 / 0.6115 | 0.5655 / 0.5610 |
+| within-hate macro (sd) | 0.5001 (0.0006) | 0.5001 (0.0011) |
+| frame IoU, mean / median (n=69) | 0.389 / 0.326 | 0.461 / 0.515 |
+| R@frame-IoU 0.3 / 0.5 / 0.7 | 0.507 / 0.464 / 0.377 | 0.638 / 0.507 / 0.391 |
+| video verdict acc / P / R / F1 | 0.595 / 0.951 / 0.565 / 0.709 | 0.709 / 0.911 / 0.739 / 0.816 |
+
+Swapping the anomaly vocabulary for the hateful one moves the verdict threshold
+-- 15 more videos called positive, recall 0.565 to 0.739, accuracy 0.595 to 0.709
+-- and moves the interval-overlap numbers with it, but leaves the within-video
+macro at 0.5001 in both arms. The degeneracy is untouched by the term swap,
+exactly as it was on the three prior corpora. Its scores are binary, so the ROC
+curve has one interior operating point and both AUCs are coarse by construction.
+
+## Hateful-strict sensitivity (ours)
+
+The same scores against the hateful-only collapse, same videos, same frames,
+gold recollapsed:
+
+| gold | frames positive | pooled ROC | pooled PR | within macro (n) | video AUC |
+| --- | --- | --- | --- | --- | --- |
+| PRIMARY (offensive union) | 9,900 / 18,839 (0.5255) | 0.5414 | 0.6149 | 0.5324 (67) | 0.7536 |
+| sensitivity (hateful strict) | 4,039 / 18,839 (0.2144) | 0.5165 | 0.3635 | 0.5205 (37) | 0.6784 |
+
+The strict collapse moves every column toward chance and cuts the macro's video
+count from 67 to 37. It is reported because the corpus ships both collapses; the
+primary is primary.
+
+## Ours: prompt provenance and fidelity
+
+The locator is `scripts/duplex/masked_parallel_isolation_hateclipseg.py`, a
+sibling of the MultiHateClip script that imports its `Judge`, block mask,
+branch-local positions, cohort builder and frame map, so the mechanism is shared
+code rather than a second implementation.
+
+The prompt is this corpus's own frozen one. HateClipSeg was first read
+chunk-by-chunk by `scripts/duplex/isolated_chunk_diag.py`, and the assembled
+user text here is **asserted byte-identical to that module's on three probe
+strings before the model loads**, with the sha256s checked against its
+`FROZEN_TEXT_SHA` rather than merely observed to match. From
+`results/reproduction/ours/hateclipseg/prompt_fingerprints.json`:
+
+| component | sha256 |
+| --- | --- |
+| rules block (YOUTUBE_RULES under the frozen lead-in) | `e23dd329b55122ae1caa50334f96072d5ceb56d61edf98bc869af85f2f0c9a77` |
+| question | `f45673af42da76b5b8afad71160616bd929227eac995c6c5b8f848496f207233` |
+| system message | `e6addb7b869ede44dc5500bd4cce5a09429342b31202078fc74fe3061f197455` |
+| user-text template | `9442091c9044510371c325e893879dc3a6f7639c3ae1ea6b0afe877461c6d253` |
+| chat-template full prompt | `e0e73120ac8f66e3d803b0a2fbf510f3e6039ef86df73469ebd4cab4bfded3bc` |
+| packed prefix (160 tokens) | `5aab1929792c022cec703131dd296e26086479fc85bbeae18aa4a37d88a5b4c5` |
+| packed suffix | `4d7644e75cf868e705523f19f69479769ac5a427c3f682175cd44a4942e66016` |
+
+The first four equal HateMM's frozen values, which is the intended result: both
+corpora take YOUTUBE_RULES, so their templates coincide.
+
+Fidelity. The mask plumbing check is exact -- a fully causal 4-D mask reproduces
+the default no-mask logits to `max |Δ logit| = 0.000000` -- and the
+prompt-identity assertion (`concat(prefix_ids, branch_ids)` must equal the
+isolated prompt's ids, chunk by chunk) ran before every one of the 78 packed
+forwards and passed throughout.
+
+The spot check -- the three videos with the most chunks, 211 chunks re-scored
+with genuine isolated calls -- read Spearman 0.9905 against the matched-kernel
+sequential reference, which clears the 0.99 bar, so the protocol's escalation
+trigger did not fire. It cleared it narrowly enough to be worth superseding, so
+**the full-cohort comparison was run anyway**: every one of the 1,248 chunks was
+scored a second time with a genuine isolated call.
+
+| | HateClipSeg |
+| --- | --- |
+| chunks compared | 1,248 |
+| Spearman(masked, sequential) | 0.99862 |
+| Pearson | 0.99981 |
+| max abs delta z | 1.25 |
+| mean abs delta z | 0.170 |
+| chunks bit-identical | 44.5 % |
+| pooled ROC from the isolated calls | 0.5412 |
+| **endpoint delta, packed minus isolated** | **+0.00018 ROC, −0.00134 PR, +0.00152 macro** |
+
+The endpoint moves by at most 0.0014 on any column, so no number in this section
+depends on which way the chunks were scored. The spot-check pattern repeats the
+one measured on MultiHateClip: over three videos the z column is tie-dominated
+and Spearman converts sub-quantum bf16 noise into rank swaps, while over the full
+cohort, where z takes 179 distinct values, the same comparison reads 0.9986. The
+residual is bf16 non-associativity in attention over the longer packed sequence,
+not the packing mechanism.
+
+The re-run that produced the reference column reproduced the primary
+`frame_level`, `frame_level_hateful_strict` and `video_level` blocks **exactly**,
+field for field, which is the determinism check paid for free by running the
+comparison twice.
+
+## Coverage and cost
+
+78 of the 79 gold videos carry scorable chunks and one, `bit_20VYH5uxw20D`, does
+not: its chunk record fails the frozen `usable_spans` helper, so it is scored
+all-floor and reported rather than dropped. Zero gold videos lack a chunk record
+altogether. 1,248 chunks of 1,251 were scored; the three skipped carry empty
+text. Frame coverage is 16,140 of 18,839 (85.7 %); the 2,699 uncovered frames sit
+at the floor, −23.75, and nothing is imputed for them.
+
+Cost: **one packed forward per video**, 78 forwards, 93,981 packed tokens, 9.8 s
+of GPU for the whole cohort (0.125 s/video), zero labels, no training.
+
+## Loss evidence
+
+Every trained cell moved. The MIL classification loss at first and last epoch,
+with the selected epoch and its validation video AP. Selection is on a seeded,
+label-stratified 10 % carve of the train split (283 train / 32 val, 247 hateful
+in train); the test split is never opened during training.
+
+| cell | epochs | MIL loss first | MIL loss last | selected epoch | val video AP |
+| --- | --- | --- | --- | --- | --- |
+| VadCLIP | 10 | 0.4742 | 0.3056 | 3 | 0.8496 |
+| DSANet | 10 | 0.4745 | 0.2901 | 4 | 0.8557 |
+| MACIL-SD (av) | 50 | 0.4169 | 0.2245 | 50 | 0.9896 |
+| MACIL-SD (audio) | 50 | 0.5351 | 0.1927 | 46 | 0.9798 |
+| MACIL-SD (visual) | 50 | 0.4497 | 0.1114 | 12 | 0.9811 |
+| MultiHateLoc reimpl | 100 | 2.4697 | 0.2850 | 1 | 0.9498 |
+
+No cell is flat, so the pre-declared batch-16 contingency does not fire on this
+corpus either, and no rerun was performed.
+
+**The selection column should not be over-read on this corpus.** With 87 % of
+videos positive, validation video AP starts near 0.9 and has very little room to
+move: MultiHateLoc's peaks at epoch 1 (0.9498) and ends at 0.8696, so its
+reported row is a one-epoch model, and MACIL-SD's visual ablation selects epoch
+12 out of 50. The selection rule is the frozen one and is left as it stands, but
+on a corpus this positive-heavy the criterion is barely discriminating. This is a
+property of HateClipSeg's video-level balance, not a porting choice.
+
+## Sanity checks
+
+Run for every branch of every cell; all pass.
+
+Score-to-gold length: zero mismatches in all sixteen supervised branch-cells
+and in the locator. Zero gold videos missing from any score file and zero scored
+videos absent from the gold; `eval_baseline_scores.py` raises on either and did
+not. Finiteness: every score finite everywhere.
+
+Non-constant scores: 79 of 79 videos are non-constant in fourteen of the
+sixteen branch-cells. The two exceptions are MultiHateLoc's `score_text`, which
+has 2 constant videos of 79, and its `score_union`, which is a 0/1 indicator by
+construction rather than a score. Ranges are healthy: the MIL heads span roughly
+0.017 to 0.998 with a standard deviation of 0.19 to 0.29, the exception being
+MACIL-SD's visual-only head, which spans 0.5345 to 0.9655 at sd 0.067; the two
+alignment branches are narrow but not degenerate (0.4848 to 0.5972, sd 0.019),
+and the locator's chunk margin spans −22.75 to +25.75 with 182 distinct values
+over 1,248 chunks.
+
+## Run settings and wall time
+
+Single RTX 5090, one GPU job resident at a time, every stage strictly serial,
+driven by `scripts/reproduction_baselines/run_hateclipseg_sweep.sh`. Every stage
+is the existing runner for that method with `CORPORA=hateclipseg`; the only new
+code is the locator script and the corpus registration in
+`hate_common/{data,runtime}.py`. `visual-length` / `attn-window` take the HateMM
+setting of 256 / 64, since HateClipSeg's videos are 180 to 350 s and the
+MultiHateClip argument for a shorter window (batches that are mostly padding)
+does not apply. Every other hyperparameter is the published default.
+
+| stage | wall time |
+| --- | --- |
+| Ours (locator, 78 packed forwards) | 33 s |
+| VadCLIP train + score + evaluate | 12 s |
+| DSANet train + score + evaluate | 17 s |
+| MACIL-SD, three modalities | 2 min 4 s |
+| MultiHateLoc reimpl | 41 s |
+| Vad-R1, anomaly arm (79 videos, vLLM) | 5 min 59 s |
+| Vad-R1, hateful arm (79 videos, vLLM) | 6 min 35 s |
+| **whole sweep** | **16 min 21 s** |
+
+A follow-up 50 s locator pass produced the full-cohort fidelity column above.
+The two Vad-R1 arms are 78 % of the sweep; every trained baseline together is
+under four minutes, because the features are precomputed.
