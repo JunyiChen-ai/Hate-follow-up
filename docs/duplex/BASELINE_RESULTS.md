@@ -944,3 +944,140 @@ Trained baselines: minutes of training + feature extraction
 (CLIP/I3D/VGGish/ViT/BERT pipelines), video labels required.
 Vad-R1: 3.7 s/video, 16 frames, 7B, no labels but trained on its own
 VAD corpus. LELA (cited only): 12–16 GPT-4o-mini calls PER FRAME.
+
+---
+
+# EventVAD (MM'25, training-free, reimplemented-from-paper — released code non-runnable, see DESIGN_EVENTVAD.md)
+
+The released repository cannot execute: `graph_propagation` is imported and
+defined nowhere, the scoring prompt is the literal string `"prompt"`, the RAFT
+checkpoint path is a placeholder, and `src/evaluate.py` does not compile. All
+four gaps and every inference made in filling them are argued in
+`scripts/reproduction_baselines/DESIGN_EVENTVAD.md`; the porting patches are in
+`PATCHES.md`. The numbers below come from the `paper` prompt arm, the Figure 2
+reconstruction, which is the paper's own headline condition. No second arm was
+run: `no_thinking` and `bounded` are second conditions on the same test split
+and need owner approval.
+
+## Results
+
+| Corpus | Supervision | Pooled ROC | Pooled PR | Within-hate macro | Video AUC |
+|---|---|---|---|---|---|
+| HateMM test (214 videos, 29,266 frames) | none (training-free) | 0.5174 | 0.2519 | 0.4988 (n=85) | 0.4519 |
+| MHC EN test (158 videos, 5,600 frames) | none (training-free) | 0.5041 | 0.2568 | 0.4784 (n=44) | 0.5179 |
+| MHC ZH test (153 videos, 4,817 frames) | none (training-free) | 0.5202 | 0.2440 | 0.4923 (n=7) | 0.5623 |
+
+Every pooled figure sits within 0.021 of chance, and the HateMM video-level
+column sits below it. This is a floor row, not a competitive one.
+
+## Cost: EventVAD scores per event, not per video
+
+The method makes one MLLM call per event, so its per-video cost is whatever the
+segmenter cuts. That is the column the comparison has to be read with.
+
+| Corpus | Events | Events/video median | mean | max | **MLLM calls per video** | Stage-2 s/call |
+|---|---|---|---|---|---|---|
+| HateMM | 4,413 | 16 | 20.6 | **185** | **20.6 mean, 185 worst case** | 2.37 |
+| MHC EN | 1,061 | 6 | 6.7 | 16 | 6.7 mean, 16 worst case | 2.41 |
+| MHC ZH | 962 | 6 | 6.3 | 14 | 6.3 mean, 14 worst case | 2.24 |
+
+The worst case is `non_hate_video_356`: 29,953 decoded frames cut into 185
+events, so 185 VideoLLaMA2-7B forward passes for one video, 7.3 minutes of GPU
+time. Against this project's own two-calls-per-video cap (CLAUDE.md,
+anti-pattern 1) EventVAD is off by an order of magnitude on the HateMM mean and
+by two on its worst case. The cap does not bind a reproduced baseline, but the
+comparison is only honest with the number visible: 6,436 MLLM calls across 525
+videos, against one packed forward per video for ours.
+
+## The dominant anomaly: the model mostly declines to emit a number
+
+Under the paper's own prompt, VideoLLaMA2.1-7B-16F answers most events in prose
+that never states a score, and when it does state one it states almost the same
+one every time.
+
+| Corpus | Unparsed events | % of events | % of frames | Distinct parsed values | Share at 0.0 |
+|---|---|---|---|---|---|
+| HateMM | 1,798 / 4,413 | 40.74 | 40.64 | 8 | 2,141 / 2,615 = 81.9% |
+| MHC EN | 358 / 1,061 | 33.74 | 33.14 | 4 | 587 / 703 = 83.5% |
+| MHC ZH | 427 / 962 | 44.39 | 44.18 | 3 | 497 / 535 = 92.9% |
+
+Parse-rule histograms, verbatim from `frame_eval.json`:
+
+    hatemm     parse {sentence 1396, trailing_number 1219, unparsed 1798}
+               range {in_range 2486, none 1798, div10 127, clamped_low 1, div100 1}
+    mhclip_en  parse {sentence 364, trailing_number 339, unparsed 358}
+               range {in_range 682, none 358, div10 21}
+    mhclip_zh  parse {sentence 263, trailing_number 272, unparsed 427}
+               range {in_range 523, none 427, div10 12}
+
+The unparsed answers are not truncations. On MHC ZH, 418 of the 427 end in
+sentence-final punctuation: they are complete answers that simply never reach a
+number, typically of the form *"there are no obvious anomalies that stand out as
+unusual or unexpected"*. Only the handful that ran to the 2,048-token cap did so
+through degenerate repetition (*"a black and white stuffed animal, a black and
+white stuffed animal, …"*). Upstream's own parser, `float(output.strip())`,
+would have read none of them; the port's prose-tolerant parser recovers 55–66%.
+
+The consequence for the metric is that the score arrays are close to flat:
+
+| Corpus | Videos with a constant score array | of which at 0.0 |
+|---|---|---|
+| HateMM | 100 / 214 | 99 |
+| MHC EN | 80 / 158 | 80 |
+| MHC ZH | 121 / 153 | 120 |
+
+So 301 of 525 videos carry no within-video ranking information at all, which is
+why the within-hate macro sits at a median of exactly 0.5000 on all three
+corpora. Unparsed events fill with 0.0 and are counted rather than dropped, so
+the cohort stays constant between arms; `frac_frames_unparsed` records how much
+of each number was filled in.
+
+This is the same shape of failure Vad-R1 shows, reached by a different route.
+Vad-R1 broadcasts one video-level verdict across every frame; EventVAD cuts the
+timeline finely and correctly, then assigns nearly every piece the same score.
+Both produce a frame row that cannot localize. DESIGN_EVENTVAD.md predicted the
+mitigation in advance under G2-c: the `bounded` arm states the score range the
+paper leaves unstated. Whether it lifts the parse rate is a measurement this run
+does not make.
+
+## Sanity checks
+
+| Check | Result |
+|---|---|
+| Score length equals gold length | 525 / 525 videos exact, 0 mismatches |
+| Events tile the timeline | 0 gaps, 0 overlaps, 0 videos whose first event starts after frame 0 or whose last event ends before `n_frames` |
+| Segmentation errors | 0 across 525 videos |
+| Scoring errors | 0 across 6,436 events |
+| RAFT NaN | none, on any corpus |
+| Decode failures | none; every video in all three gold cohorts decoded |
+| Scores non-constant | **fails for 301 / 525 videos** — see the degeneracy above |
+| Decode rate cap | honoured; no video exceeds 30 fps |
+
+The only string in the run log matching `error` or `nan` is the preflight's own
+assertion that upstream's `src/evaluate.py` does not compile:
+
+    PASS G4: src/evaluate.py does not compile  -- Sorry: IndentationError:
+    unexpected indent (evaluate.py, line 45)
+
+Decoded frame counts came in 824 below the pre-run probe, 1,115,310 against
+1,116,134 predicted, a 0.07% difference from decode rounding.
+
+## Run settings and wall time
+
+Single RTX 5090, one GPU stage resident at a time, three corpora strictly
+serial, shortest-first. Preset `paper` (α = 0.75, γ = 0.6, CLIP L2-normalised),
+`ma_mode = upstream`, arm `paper`, greedy decoding, `max_new_tokens = 2048`,
+VideoLLaMA2.1-7B-16F in fp16 at 18.1 GB, 16 frames per event.
+
+| Corpus | Stage 1 (RAFT + CLIP) | Measured rate | Stage 2 (VideoLLaMA2) | Stage 3 |
+|---|---|---|---|---|
+| MHC ZH | 94.4 min (135,687 frames) | 23.96 frame/s | 35.9 min (962 calls) | < 1 min, CPU |
+| MHC EN | 69.2 min (159,167 frames) | 38.36 frame/s | 42.6 min (1,061 calls) | < 1 min, CPU |
+| HateMM | 388.8 min (820,456 frames) | 35.17 frame/s | 174.3 min (4,413 calls) | < 1 min, CPU |
+| **Total** | **9.2 h** | | **4.2 h** | |
+
+Whole sweep 13.4 hours. The rate spread across corpora is resolution, not load:
+MHC ZH carries the 1280x720 videos and runs slowest per frame. Against the
+CPU-measured floor of 1.0 to 3.5 frame/s recorded in DESIGN_EVENTVAD.md, the GPU
+is 10 to 24 times faster, and stage 1 remains the cost centre at 69% of the
+sweep.
