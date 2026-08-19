@@ -888,6 +888,7 @@ removed). Supervision column is the honest axis.
 | DSANet | video labels | 0.7063 | 0.4824 | 0.5453 | 0.7470 |
 | VadCLIP | video labels | 0.6855 | 0.4457 | 0.4848 | 0.7242 |
 | Vad-R1 (zero-shot ckpt) | none (trained on own VAD data) | 0.5696 | 0.2722 | 0.5000 | 0.5288 (balanced acc) |
+| EventVAD reimpl (training-free) | none | 0.5174 | 0.2519 | 0.4988 | 0.4519 |
 
 ## MHC EN test (158 gold videos)
 
@@ -900,6 +901,7 @@ removed). Supervision column is the honest axis.
 | VadCLIP | video labels | 0.6281 | 0.3611 | 0.3331 | 0.6405 |
 | **Ours** | **zero labels** | 0.6198 | 0.4141 | **0.6154** | 0.7015 |
 | Vad-R1 | none | 0.5427 | 0.2699 | 0.5000 | 0.5247 |
+| EventVAD reimpl | none | 0.5041 | 0.2568 | 0.4784 | 0.5179 |
 
 ## MHC ZH test (153 gold videos; within-macro n=7 — UNSTABLE, do not lean on that column)
 
@@ -913,6 +915,7 @@ removed). Supervision column is the honest axis.
 | Vad-R1 | none | 0.5987 | 0.2838 | 0.5000 | 0.6427 |
 | DSANet | video labels | 0.5749 | 0.2921 | 0.3557 | 0.5588 |
 | VadCLIP | video labels | 0.5676 | 0.2705 | 0.3562 | 0.3981 |
+| EventVAD reimpl | none | 0.5202 | 0.2440 | 0.4923 | 0.5623 |
 
 ## Readings the paper must carry
 
@@ -940,6 +943,10 @@ removed). Supervision column is the honest axis.
 ## Cost row (HateMM, per video)
 
 Ours: 1 packed forward, 0.11 s (prefix shared), zero labels.
+EventVAD reimpl: 6.3-20.6 VideoLLaMA2 calls/video (max 185), 2.4 s/call,
+13.4 GPU-hours for the three test sets; 40% of its events yield no
+parseable score under the paper's own prompt (301/525 videos end up
+with constant arrays) - floor row on every corpus.
 Trained baselines: minutes of training + feature extraction
 (CLIP/I3D/VGGish/ViT/BERT pipelines), video labels required.
 Vad-R1: 3.7 s/video, 16 frames, 7B, no labels but trained on its own
