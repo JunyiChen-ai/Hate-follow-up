@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 import optuna
+from optuna.trial import TrialState
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
@@ -134,6 +135,11 @@ def main(argv=None):
     ap.add_argument("--corpus", required=True,
                     choices=("hatemm", "mhclip_en", "mhclip_zh", "hateclipseg"))
     ap.add_argument("--trials", type=int, default=40)
+    ap.add_argument(
+        "--max-new-attempts", type=int, default=None,
+        help=("maximum subprocess attempts in this invocation; defaults to "
+              "max(2*trials, trials+5) so failed trials are replaced without "
+              "allowing a systemic failure to loop forever"))
     ap.add_argument("--python", default=DEFAULT_PYTHON)
     ap.add_argument("--root", default=str(REPO / "results" / "reproduction" /
                                             "official_val" / "tuning"))
@@ -163,10 +169,33 @@ def main(argv=None):
             if path.is_file(): path.unlink()
         return score
 
-    study.optimize(objective, n_trials=max(0, args.trials - len(study.trials)),
-                   gc_after_trial=True, catch=(RuntimeError,))
+    def n_complete():
+        return sum(t.state == TrialState.COMPLETE for t in study.trials)
+
+    # A failed subprocess is evidence, but not a successfully evaluated
+    # hyperparameter configuration.  Resume toward the requested number of
+    # completed validation trials rather than counting FAIL states as done.
+    attempts_left = (args.max_new_attempts if args.max_new_attempts is not None
+                     else max(2 * args.trials, args.trials + 5))
+    while n_complete() < args.trials and attempts_left > 0:
+        before = len(study.trials)
+        batch = min(args.trials - n_complete(), attempts_left)
+        study.optimize(objective, n_trials=batch, gc_after_trial=True,
+                       catch=(RuntimeError,))
+        used = len(study.trials) - before
+        attempts_left -= used
+        if used == 0:
+            break
+
+    complete = n_complete()
+    failed = sum(t.state == TrialState.FAIL for t in study.trials)
+    if complete < args.trials:
+        raise RuntimeError(
+            f"only {complete}/{args.trials} validation trials completed "
+            f"({failed} failed); inspect {root}/trial_*/stderr.log")
     summary = {"method": args.method, "corpus": args.corpus,
-               "n_trials": len(study.trials), "best_value": study.best_value,
+               "n_trials": len(study.trials), "n_complete": complete,
+               "n_failed": failed, "best_value": study.best_value,
                "best_params": study.best_params,
                "best_trial": study.best_trial.number}
     (root / "best.json").write_text(json.dumps(summary, indent=2) + "\n")

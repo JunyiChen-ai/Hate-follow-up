@@ -77,6 +77,16 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
 
     ids = read_ids(spec)
+    index_path = os.path.join(out_dir, "index.json")
+    index = json.load(open(index_path, encoding="utf-8")) \
+        if os.path.isfile(index_path) else {}
+    # A frozen split can deliberately exclude an unusable sample after an
+    # earlier extraction run.  Do not leave that sample discoverable through
+    # stale bookkeeping even when every active feature file already exists.
+    wanted = set(ids)
+    index = {vid: meta for vid, meta in index.items() if vid in wanted}
+    with open(index_path, "w", encoding="utf-8") as handle:
+        json.dump(index, handle, indent=1, sort_keys=True)
     todo = [v for v in ids
             if not os.path.isfile(os.path.join(out_dir, v + ".npy"))]
     print("vggish [%s]: %d videos in the manifests, %d already extracted, "
@@ -103,10 +113,6 @@ def main():
     print("vggish weights: %s (postprocess=False, hop=%.2f s, window=%.2f s)"
           % (torchvggish.torchvggish.VGGISH_WEIGHTS, HOP_SECONDS,
              vggish_params.EXAMPLE_WINDOW_SECONDS), flush=True)
-
-    index_path = os.path.join(out_dir, "index.json")
-    index = json.load(open(index_path, encoding="utf-8")) \
-        if os.path.isfile(index_path) else {}
 
     chunk_durations = load_chunk_durations(spec)
     failures = []
