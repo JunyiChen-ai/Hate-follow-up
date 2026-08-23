@@ -89,3 +89,4 @@ else
   touch "$OUT/DONE_WITH_FAILURES"
 fi
 echo "=== $STAGE all done $(date -Is)"
+exit "$fail"
