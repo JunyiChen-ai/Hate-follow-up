@@ -126,7 +126,7 @@ def main():
             if not os.path.isfile(path):
                 raise FileNotFoundError(path)
             duration, dur_src = find_duration(
-                vid, spec, chunk_durations, video_path)
+                vid, spec, chunk_durations, path)
             if duration is None or duration <= 0:
                 raise ValueError("no positive wav duration for %s" % vid)
             grid = frame_times(duration, FPS)

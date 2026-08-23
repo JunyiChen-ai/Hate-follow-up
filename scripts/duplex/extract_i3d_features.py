@@ -297,7 +297,7 @@ def main():
             if not os.path.isfile(path):
                 raise FileNotFoundError(path)
             wav_duration, dur_src = find_duration(
-                vid, spec, chunk_durations, video_path)
+                vid, spec, chunk_durations, path)
 
             out_q = queue.Queue(maxsize=args.queue)
             box = {}
