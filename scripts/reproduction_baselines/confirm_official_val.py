@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Retrain the frozen Optuna winner on three seeds, then touch test once."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import subprocess
+
+from tune_official_val import DEFAULT_PYTHON, HERE, REPO, option_args
+
+SEEDS = (234, 2025, 3407)
+
+
+def materialize(best):
+    values = dict(best)
+    temporal = values.pop("temporal", None)
+    if temporal:
+        length, window = temporal.split(":")
+        values.update(visual_length=int(length), attn_window=int(window))
+    return values
+
+
+def train_command(method, corpus, out, values, seed, python):
+    common = ["--corpus", corpus, "--device", "cuda", "--seed", str(seed)]
+    if method == "vadclip":
+        return [python, str(HERE / "train_vadclip_hatemm.py"), *common,
+                "--out-dir", str(out), *option_args(values, method)]
+    if method == "dsanet":
+        return [python, str(HERE / "train_dsanet_hatemm.py"), *common,
+                "--out-dir", str(out), *option_args(values, method)]
+    if method.startswith("macilsd"):
+        modality = "av" if method == "macilsd" else method.removeprefix("macilsd_")
+        return [python, str(HERE / "train_macilsd_hatemm.py"), *common,
+                "--out-dir", str(out), "--modality", modality,
+                *option_args(values, method)]
+    if method == "multihateloc":
+        return [python, str(HERE / "train_multihateloc.py"), *common,
+                "--out-root", str(out), "--run-test",
+                *option_args(values, method)]
+    if method == "cmhkf":
+        return [python, str(HERE / "cmhkf_adapter.py"), *common,
+                "--out-dir", str(out), "--run-test",
+                *option_args(values, method)]
+    if method.startswith("fed_wsvad"):
+        clients = "3" if method.endswith("3client") else "1"
+        return [python, str(HERE / "fed_wsvad_adapter.py"), *common,
+                "--out-dir", str(out), "--clients", clients,
+                "--partition-seed", "234", "--run-test",
+                *option_args(values, method)]
+    raise ValueError(method)
+
+
+def inference_command(method, corpus, out, values, python):
+    if method not in ("vadclip", "dsanet") and not method.startswith("macilsd"):
+        return None
+    package = "macilsd" if method.startswith("macilsd") else method
+    cmd = [python, str(HERE / package / "infer.py"), "--corpus", corpus,
+           "--device", "cuda", "--out-dir", str(out), "--split", "test",
+           "--model-path", str(out / "model.pth"), *option_args(values, method)]
+    if method.startswith("macilsd"):
+        modality = "av" if method == "macilsd" else method.removeprefix("macilsd_")
+        cmd += ["--modality", modality]
+    return cmd
+
+
+def run(cmd, log):
+    proc = subprocess.run(cmd, cwd=REPO, text=True, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+    log.write_text(proc.stdout)
+    if proc.returncode:
+        raise RuntimeError(f"rc={proc.returncode}; see {log}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--method", required=True)
+    ap.add_argument("--corpus", required=True)
+    ap.add_argument("--python", default=DEFAULT_PYTHON)
+    ap.add_argument("--tuning-root", default=str(
+        REPO / "results/reproduction/official_val/tuning"))
+    ap.add_argument("--final-root", default=str(
+        REPO / "results/reproduction/official_val/final"))
+    args = ap.parse_args()
+    best_path = Path(args.tuning_root) / args.method / args.corpus / "best.json"
+    selected = json.loads(best_path.read_text())
+    values = materialize(selected["best_params"])
+    for seed in SEEDS:
+        out = Path(args.final_root) / args.method / args.corpus / f"seed_{seed}"
+        out.mkdir(parents=True, exist_ok=True)
+        frozen = {"method": args.method, "corpus": args.corpus, "seed": seed,
+                  "source": str(best_path), "best_trial": selected["best_trial"],
+                  "best_validation_ap": selected["best_value"], "params": values}
+        (out / "frozen_config.json").write_text(json.dumps(frozen, indent=2) + "\n")
+        train = train_command(args.method, args.corpus, out, values, seed, args.python)
+        run(train, out / "train.log")
+        infer = inference_command(args.method, args.corpus, out, values, args.python)
+        if infer:
+            run(infer, out / "infer.log")
+        scores = (out / args.corpus / "scores.jsonl"
+                  if args.method == "multihateloc" else out / "scores.jsonl")
+        evaluation = [args.python, str(HERE / "eval_baseline_scores.py"),
+                      "--corpus", args.corpus, "--scores", str(scores),
+                      "--split", "test", "--json-out", str(out / "frame_eval.json")]
+        run(evaluation, out / "eval.log")
+        print(f"completed {args.method}/{args.corpus}/seed_{seed}", flush=True)
+
+
+if __name__ == "__main__":
+    main()
