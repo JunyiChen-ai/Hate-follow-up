@@ -79,8 +79,7 @@ CORPORA = {
                                   "hatemm", "wav")],
         "splits": ["hatemm_train.txt", "hatemm_val.txt", "hatemm_test.txt"],
         "chunk_manifests": [
-            "results/hatemm_localization/timestamped_chunks.jsonl",
-            "results/reproduction/asr/hatemm_train/timestamped_chunks.jsonl",
+            "results/reproduction/asr/hatemm_all/timestamped_chunks.jsonl",
         ],
     },
     "mhclip_en": {
@@ -94,11 +93,7 @@ CORPORA = {
         "splits": ["mhclip_en_train.txt", "mhclip_en_val.txt",
                    "mhclip_en_test.txt"],
         "chunk_manifests": [
-            "results/interleaved_timeline/mhclip_en/timestamped_chunks.jsonl",
-            "results/reproduction/asr/mhclip_en_train/"
-            "timestamped_chunks.jsonl",
-            "results/reproduction/asr/mhclip_en_test_new/"
-            "timestamped_chunks.jsonl",
+            "results/reproduction/asr/mhclip_en_all/timestamped_chunks.jsonl",
         ],
     },
     "hateclipseg": {
@@ -111,7 +106,7 @@ CORPORA = {
         "splits": ["hateclipseg_train.txt", "hateclipseg_val.txt",
                    "hateclipseg_test.txt"],
         "chunk_manifests": [
-            "results/interleaved_timeline/hateclipseg/"
+            "results/reproduction/asr/hateclipseg_all/"
             "timestamped_chunks.jsonl",
         ],
     },
@@ -126,11 +121,7 @@ CORPORA = {
         "splits": ["mhclip_zh_train.txt", "mhclip_zh_val.txt",
                    "mhclip_zh_test.txt"],
         "chunk_manifests": [
-            "results/interleaved_timeline/mhclip_zh/timestamped_chunks.jsonl",
-            "results/reproduction/asr/mhclip_zh_train/"
-            "timestamped_chunks.jsonl",
-            "results/reproduction/asr/mhclip_zh_test_new/"
-            "timestamped_chunks.jsonl",
+            "results/reproduction/asr/mhclip_zh_all/timestamped_chunks.jsonl",
         ],
     },
 }

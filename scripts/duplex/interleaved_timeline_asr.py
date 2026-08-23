@@ -67,6 +67,34 @@ DATA_ROOT = os.environ.get("HVD_DATA_ROOT", "/home/jehc223/data")
 SPLITS = os.path.join(ROOT, "results", "reproduction", "splits")
 
 SPLIT_CORPORA = {
+    # Unified manifests used by the official-validation reproduction.  These
+    # deliberately cover train + validation + test in one resumable output so
+    # the run does not depend on legacy, unversioned testrun artifacts being
+    # present on a particular machine.
+    "hatemm_all": {
+        "dataset": "HateMM",
+        "wav_dir": "/home/jehc223/Retrieval-hate/data/AV2A_wav/HateMM",
+        "ids_files": [os.path.join(SPLITS, "hatemm_%s.txt" % split)
+                      for split in ("train", "val", "test")],
+    },
+    "mhclip_en_all": {
+        "dataset": "MHClip_EN",
+        "wav_dir": "/home/jehc223/Retrieval-hate/data/AV2A_wav/MHC",
+        "ids_files": [os.path.join(SPLITS, "mhclip_en_%s.txt" % split)
+                      for split in ("train", "val", "test")],
+    },
+    "mhclip_zh_all": {
+        "dataset": "MHClip_ZH",
+        "wav_dir": "/home/jehc223/Retrieval-hate/data/AV2A_wav/MHC_zh",
+        "ids_files": [os.path.join(SPLITS, "mhclip_zh_%s.txt" % split)
+                      for split in ("train", "val", "test")],
+    },
+    "hateclipseg_all": {
+        "dataset": "HateClipSeg",
+        "wav_dir": "/home/jehc223/Retrieval-hate/data/AV2A_wav/HateClipSeg",
+        "ids_files": [os.path.join(SPLITS, "hateclipseg_%s.txt" % split)
+                      for split in ("train", "val", "test")],
+    },
     "hatemm_train": {
         "dataset": "HateMM",
         "wav_dir": os.path.join(DATA_ROOT, "HateMM", "wav"),
@@ -148,6 +176,8 @@ def main():
         ROOT, "results", "interleaved_timeline"))
     ap.add_argument("--limit", type=int, default=None,
                     help="Process at most this many remaining videos (smoke test)")
+    ap.add_argument("--video-batch", type=int, default=8,
+                    help="Number of video files submitted to the pipeline together")
     args = ap.parse_args()
 
     out_dir = os.path.join(args.out_root, args.corpus)
@@ -167,7 +197,15 @@ def main():
         dataset = spec["dataset"]
         wav_dir = spec["wav_dir"]
         frozen = {}
-        if "ids_file" in spec:
+        if "ids_files" in spec:
+            wanted = []
+            for ids_file in spec["ids_files"]:
+                with open(ids_file, encoding="utf-8") as handle:
+                    wanted.extend(ln.strip() for ln in handle if ln.strip())
+            # A split bug must not silently cause a duplicated ASR record.
+            if len(wanted) != len(set(wanted)):
+                raise ValueError("duplicate ids across %s" % spec["ids_files"])
+        elif "ids_file" in spec:
             with open(spec["ids_file"], encoding="utf-8") as handle:
                 wanted = [ln.strip() for ln in handle if ln.strip()]
         else:
@@ -190,6 +228,29 @@ def main():
                   f"{missing_wav}", flush=True)
 
     done = set(load_jsonl(out_path))
+    # A video container may legitimately have no audio stream.  Keep such a
+    # video in the experiment and record an explicit empty transcript instead
+    # of silently dropping it (the downstream text grid then stays all-zero).
+    # This is also resumable: never append the sentinel twice.
+    missing_records = [v for v in missing_wav if v not in done]
+    if missing_records:
+        with open(out_path, "a", encoding="utf-8") as handle:
+            for vid in missing_records:
+                handle.write(json.dumps({
+                    "video_id": vid,
+                    "text": "",
+                    "chunks": [],
+                    "n_chunks": 0,
+                    "matches_frozen_text": None,
+                    "frozen_n_chunks": None,
+                    "wav_duration": None,
+                    "container_duration": None,
+                    "asr_seconds": 0.0,
+                    "error": "missing_or_unreadable_audio",
+                }, ensure_ascii=False) + "\n")
+        done.update(missing_records)
+        print("  recorded %d explicit empty-audio transcripts" %
+              len(missing_records), flush=True)
     todo = [v for v in wanted
             if v not in done and os.path.isfile(os.path.join(wav_dir, v + ".wav"))]
     todo.sort(key=lambda v: (meta.get(v, {}).get("wav_duration") or 0.0))
@@ -212,7 +273,8 @@ def main():
 
     proc = AutoProcessor.from_pretrained(MODEL_ID)
     model = AutoModelForSpeechSeq2Seq.from_pretrained(
-        MODEL_ID, dtype=torch.float16, low_cpu_mem_usage=True).to("cuda")
+        MODEL_ID, torch_dtype=torch.float16,
+        low_cpu_mem_usage=True).to("cuda")
     model.eval()
     devices = {p.device.type for p in model.parameters()}
     dtypes = {str(p.dtype) for p in model.parameters()}
@@ -224,7 +286,7 @@ def main():
     pipe = pipeline("automatic-speech-recognition", model=model,
                     tokenizer=proc.tokenizer,
                     feature_extractor=proc.feature_extractor,
-                    dtype=torch.float16, device="cuda",
+                    torch_dtype=torch.float16, device="cuda",
                     chunk_length_s=30, batch_size=8)
     gen_kwargs = {"task": "transcribe"}
 
@@ -233,53 +295,76 @@ def main():
     n_match = 0
     n_error = 0
     fh = open(out_path, "a")
-    for i, vid in enumerate(todo, 1):
-        wav = os.path.join(wav_dir, vid + ".wav")
-        tv = time.time()
+    processed = 0
+    for batch_start in range(0, len(todo), args.video_batch):
+        vids = todo[batch_start:batch_start + args.video_batch]
+        wavs = [os.path.join(wav_dir, vid + ".wav") for vid in vids]
+        tb = time.time()
         try:
-            out = pipe(wav, return_timestamps=True, return_language=True,
-                       generate_kwargs=gen_kwargs)
+            outs = list(pipe(wavs, batch_size=args.video_batch,
+                             return_timestamps=True, return_language=True,
+                             generate_kwargs=gen_kwargs))
+            if len(outs) != len(vids):
+                raise RuntimeError("pipeline returned %d outputs for %d inputs" %
+                                   (len(outs), len(vids)))
+        except Exception as batch_exc:
+            # Preserve per-video fault isolation: a malformed recording must
+            # not turn every other member of its batch into an empty record.
+            print("  batch fallback (%s: %s)" %
+                  (type(batch_exc).__name__, str(batch_exc)[:200]), flush=True)
+            outs = []
+            for vid, wav in zip(vids, wavs):
+                try:
+                    outs.append(pipe(wav, return_timestamps=True,
+                                     return_language=True,
+                                     generate_kwargs=gen_kwargs))
+                except Exception as exc:
+                    outs.append({"text": "", "chunks": [],
+                                 "_asr_error": "%s: %s" %
+                                 (type(exc).__name__, str(exc)[:350])})
+
+        per_video_seconds = (time.time() - tb) / max(len(vids), 1)
+        for vid, out in zip(vids, outs):
             text = (out.get("text") or "").strip()
             chunks = [{"start": (c.get("timestamp") or (None, None))[0],
                        "end": (c.get("timestamp") or (None, None))[1],
                        "text": c.get("text") or ""}
                       for c in out.get("chunks", [])]
-            err = None
-        except Exception as exc:
-            text, chunks = "", []
-            err = f"{type(exc).__name__}: {exc}"[:400]
-            n_error += 1
-            print(f"  ASR ERROR {vid}: {err}", flush=True)
+            err = out.get("_asr_error")
+            if err:
+                n_error += 1
+                print(f"  ASR ERROR {vid}: {err}", flush=True)
 
-        if vid in frozen:
-            frozen_text = frozen[vid].get("fresh_text") or ""
-            matches = (text == frozen_text)
-            frozen_n_chunks = frozen[vid].get("n_chunks")
-        else:
-            # Split-manifest corpora have no frozen transcript to reproduce.
-            matches, frozen_n_chunks = None, None
-        n_match += int(bool(matches))
-        rec = {
-            "video_id": vid,
-            "text": text,
-            "chunks": chunks,
-            "n_chunks": len(chunks),
-            "matches_frozen_text": matches,
-            "frozen_n_chunks": frozen_n_chunks,
-            "wav_duration": meta.get(vid, {}).get("wav_duration"),
-            "container_duration": meta.get(vid, {}).get("container_duration"),
-            "asr_seconds": round(time.time() - tv, 2),
-            "error": err,
-        }
-        fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
-        fh.flush()
-        os.fsync(fh.fileno())
+            if vid in frozen:
+                frozen_text = frozen[vid].get("fresh_text") or ""
+                matches = (text == frozen_text)
+                frozen_n_chunks = frozen[vid].get("n_chunks")
+            else:
+                # Split-manifest corpora have no frozen transcript to reproduce.
+                matches, frozen_n_chunks = None, None
+            n_match += int(bool(matches))
+            rec = {
+                "video_id": vid,
+                "text": text,
+                "chunks": chunks,
+                "n_chunks": len(chunks),
+                "matches_frozen_text": matches,
+                "frozen_n_chunks": frozen_n_chunks,
+                "wav_duration": meta.get(vid, {}).get("wav_duration"),
+                "container_duration": meta.get(vid, {}).get("container_duration"),
+                "asr_seconds": round(per_video_seconds, 2),
+                "error": err,
+            }
+            fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
 
-        audio_done += rec["wav_duration"] or 0.0
-        if i % 20 == 0 or i == 1:
+            processed += 1
+            audio_done += rec["wav_duration"] or 0.0
+        if processed % 20 < len(vids) or processed == len(vids):
             el = time.time() - t0
             rt = audio_done / max(el, 1e-9)
-            print(f"  [{i}/{len(todo)}] dur={rec['wav_duration']}s "
+            print(f"  [{processed}/{len(todo)}] dur={rec['wav_duration']}s "
                   f"chunks={len(chunks)} match={matches} "
                   f"{rec['asr_seconds']}s | {rt:.1f}x realtime, "
                   f"eta {(total_sec - audio_done) / max(rt, 1e-9) / 60:.1f} min",

@@ -15,14 +15,13 @@ set -uo pipefail
 cd /home/jehc223/Hate-follow-up || exit 1
 export HVD_DATA_ROOT=/home/jehc223/data
 export TOKENIZERS_PARALLELISM=false
-PY=/home/jehc223/venvs/SafetyContradiction/bin/python
+PY=${PYTHON:-/home/jehc223/miniconda3/envs/HateVideo/bin/python}
 OUT=results/reproduction/asr
 mkdir -p "$OUT"
 rm -f "$OUT/DONE"
 
 fail=0
-for C in hatemm_train mhclip_en_train mhclip_zh_train \
-         mhclip_en_test_new mhclip_zh_test_new; do
+for C in hatemm_all mhclip_en_all mhclip_zh_all hateclipseg_all; do
   echo "=== $C $(date -Is)"
   echo "asr:$C started $(date -Is)" > "$OUT/STATUS"
   rc=1
