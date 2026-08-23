@@ -142,9 +142,8 @@ def train(args):
     runtime.setup_seed(args.seed)
 
     labels = hdata.load_labels(args.corpus)
-    all_train = hdata.load_split(args.corpus, "train")
-    train_ids, val_ids = hdata.split_train_val(all_train, labels,
-                                               args.val_frac, args.seed)
+    train_ids, val_ids = hdata.load_train_val(
+        args.corpus, labels, args.val_frac, args.seed)
 
     if args.limit_videos:
         train_ids = train_ids[:args.limit_videos]

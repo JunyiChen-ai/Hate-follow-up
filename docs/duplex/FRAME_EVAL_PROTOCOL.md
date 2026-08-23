@@ -1,5 +1,13 @@
 # Frame-level evaluation protocol (corpus-general)
 
+**Amended 2026-08-23 (model-selection split only).** Trained baselines now
+preserve HateMM's released train/validation/test split and MultiHateClip's
+released train/valid/test split. The earlier baseline runs merged train and
+validation and then carved 10%; they are retained as `legacy-resplit-val`.
+HateClipSeg's frozen test IDs are unchanged; 20% of its former training cohort
+is now a seeded, stratified validation manifest. Frame-level test GT and its
+cohort remain unchanged by this amendment.
+
 **Frozen:** 2026-08-18, Phase 1 of the baseline reproduction plan, before
 any baseline is trained or scored. This document supersedes nothing: it
 generalizes the HateMM-only protocol frozen in

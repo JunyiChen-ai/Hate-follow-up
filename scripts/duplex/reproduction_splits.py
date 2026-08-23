@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze the train/test video-ID manifests used by every baseline reproduction.
+"""Freeze the train/validation/test manifests used by baseline reproductions.
 
 The manifests are the single source of truth for which videos each baseline may
 train on and which it is evaluated on.  They are derived from the upstream split
@@ -9,16 +9,16 @@ baseline's dataloader.
 
 Split rules (frozen by owner decision, see the Phase 0 plan):
 
-* HateMM  train = ``train_clean`` + ``validation_clean`` (851 upstream ids)
-  intersected with available media; test = ``test_clean`` (215 ids).
-* MHClip  train = upstream ``train`` + ``valid`` intersected with available
-  media, minus ``k9OtaMbK0Ac`` (an English video that upstream lists in both
-  train and test); test = upstream ``test`` intersected with available media.
+* HateMM preserves the released ``train_clean`` / ``valid`` / ``test_clean``
+  split, intersected with available media.
+* MHClip preserves the released ``train`` / ``valid`` / ``test`` split,
+  intersected with available media.  ``k9OtaMbK0Ac`` is removed from train
+  because upstream also lists it in test.
 * HateClipSeg has **no published split**.  The paper reports an 80/20 division
   but releases no video ids, so no upstream manifest exists to intersect with.
   The split written here is therefore *ours*, not a reproduction of theirs:
-  a seeded, video-level-stratified 80/20 draw over the annotated videos whose
-  media is present locally.  See ``hateclipseg_split`` below for the exact
+  a seeded, video-level-stratified 64/16/20 train/validation/test draw over the
+  annotated videos whose media is present locally. See ``hateclipseg_split`` below for the exact
   rule; every number computed on it must be reported as being on our split.
 
 Outputs ``results/reproduction/splits/*.txt``, one video id per line, sorted,
@@ -51,7 +51,10 @@ HATEMM_VIDEO_DIRS = [
     REPO / "results" / "testruns" / "hatemm" / "media",
 ]
 
-MHC_SPANS = DATA / "Multihateclip" / "upstream_spans"
+MHC_SPAN_CANDIDATES = (
+    DATA / "Multihateclip" / "upstream_spans",
+    Path("/home/jehc223/Retrieval-hate/data/gt/mhc_votes"),
+)
 MHC_VIDEO_DIRS = {
     "en": [
         DATA / "Multihateclip" / "English" / "video_mp4",
@@ -69,13 +72,24 @@ VIDEO_EXTS = {".mp4", ".mkv", ".webm", ".avi", ".mov", ".flv", ".m4v"}
 # Segment-level gold: one row per video, a python-literal list of 6-dim
 # multi-hot labels [normal, hateful, insulting, sexual, violence, harm] and a
 # parallel list of ['start', 'end'] string seconds.
-HCS_GOLD_CSV = (
+HCS_GOLD_CSV_CANDIDATES = (
     REPO / "idea-stage" / "pilots" / "b1_coverage_audit" / "data"
-    / "segment_level_annotation.csv"
+    / "segment_level_annotation.csv",
+    DATA / "HateClipSeg" / "Dataset" / "segment_level_annotation.csv",
 )
-HCS_VIDEO_DIRS = [DATA / "HateClipSeg" / "video"]
+HCS_VIDEO_DIRS = [
+    DATA / "HateClipSeg" / "videos",
+    DATA / "HateClipSeg" / "video",
+    Path("/home/jehc223/Retrieval-hate/data/video/HateClipSeg"),
+]
 HCS_SEED = 234
 HCS_TEST_FRACTION = 0.2
+HCS_VALID_FRACTION_OF_REMAINDER = 0.2
+# This video arrived after the 394-video cohort and 79-video test manifest were
+# frozen on 2026-08-19. Excluding it preserves the published test SHA256
+# 0d648643... while allowing a validation split to be carved from the original
+# frozen training cohort.
+HCS_POST_FREEZE_MEDIA = {"yt_DnrYK1FXKgk"}
 # Fixed stratum order, so the draw does not depend on dict iteration order.
 HCS_STRATA = ("negative", "positive")
 
@@ -109,6 +123,18 @@ def read_mhc_tsv(path: Path) -> list[str]:
         return [r["Video_ID"].strip() for r in reader if r.get("Video_ID", "").strip()]
 
 
+def mhc_tsv(lang: str, split: str) -> Path:
+    """Resolve either the original lowercase TSVs or the archived copies."""
+    language = {"en": "English", "zh": "Chinese"}[lang]
+    names = (f"{lang}_{split}.tsv", f"mhc_{language}_{split}.tsv")
+    for root in MHC_SPAN_CANDIDATES:
+        for name in names:
+            path = root / name
+            if path.is_file():
+                return path
+    raise FileNotFoundError(f"no MHC {lang}/{split} TSV in {MHC_SPAN_CANDIDATES}")
+
+
 def dedup(ids: list[str]) -> list[str]:
     seen, out = set(), []
     for i in ids:
@@ -139,7 +165,10 @@ def read_hcs_gold() -> dict[str, list[list[int]]]:
     """video id -> segment labels, from the segment-level annotation CSV."""
     csv.field_size_limit(1 << 30)
     out: dict[str, list[list[int]]] = {}
-    with HCS_GOLD_CSV.open(encoding="utf-8", newline="") as fh:
+    path = next((p for p in HCS_GOLD_CSV_CANDIDATES if p.is_file()), None)
+    if path is None:
+        raise FileNotFoundError(f"no HateClipSeg annotation CSV in {HCS_GOLD_CSV_CANDIDATES}")
+    with path.open(encoding="utf-8", newline="") as fh:
         for row in csv.DictReader(fh):
             labels = ast.literal_eval(row["Segment-Level Label"])
             spans = ast.literal_eval(row["Segment Timestamp"])
@@ -149,8 +178,8 @@ def read_hcs_gold() -> dict[str, list[list[int]]]:
     return out
 
 
-def hateclipseg_split() -> tuple[list[str], list[str], dict]:
-    """Our seeded 80/20 HateClipSeg split, stratified by video-level label.
+def hateclipseg_split() -> tuple[list[str], list[str], list[str], dict]:
+    """Our seeded 64/16/20 HateClipSeg split, stratified by video label.
 
     HateClipSeg publishes no split ids, so there is nothing upstream to
     intersect with and nothing to reproduce.  This draw is ours and is frozen
@@ -173,7 +202,8 @@ def hateclipseg_split() -> tuple[list[str], list[str], dict]:
     gold = read_hcs_gold()
     avail = available_ids(HCS_VIDEO_DIRS)
     annotated = sorted(gold)
-    eligible = [v for v in annotated if v in avail]
+    eligible = [v for v in annotated
+                if v in avail and v not in HCS_POST_FREEZE_MEDIA]
     missing_media = [v for v in annotated if v not in avail]
     media_unannotated = sorted(set(avail) - set(gold))
 
@@ -184,6 +214,7 @@ def hateclipseg_split() -> tuple[list[str], list[str], dict]:
 
     rng = random.Random(HCS_SEED)
     train: list[str] = []
+    valid: list[str] = []
     test: list[str] = []
     per_stratum = {}
     for name in HCS_STRATA:
@@ -192,11 +223,15 @@ def hateclipseg_split() -> tuple[list[str], list[str], dict]:
         rng.shuffle(shuffled)
         n_test = int(round(HCS_TEST_FRACTION * len(shuffled)))
         test.extend(shuffled[:n_test])
-        train.extend(shuffled[n_test:])
+        remainder = shuffled[n_test:]
+        n_valid = int(round(HCS_VALID_FRACTION_OF_REMAINDER * len(remainder)))
+        valid.extend(remainder[:n_valid])
+        train.extend(remainder[n_valid:])
         per_stratum[name] = {
             "eligible": len(ids),
             "test": n_test,
-            "train": len(ids) - n_test,
+            "validation": n_valid,
+            "train": len(remainder) - n_valid,
         }
 
     info = {
@@ -207,6 +242,7 @@ def hateclipseg_split() -> tuple[list[str], list[str], dict]:
         ),
         "seed": HCS_SEED,
         "test_fraction": HCS_TEST_FRACTION,
+        "validation_fraction_of_remainder": HCS_VALID_FRACTION_OF_REMAINDER,
         "stratification": (
             "video positive iff at least one segment is offensive under the "
             "union rule over dims 1..5"
@@ -216,9 +252,10 @@ def hateclipseg_split() -> tuple[list[str], list[str], dict]:
         "missing_media": len(missing_media),
         "missing_media_ids": missing_media,
         "media_without_annotation": media_unannotated,
+        "post_freeze_media_excluded": sorted(HCS_POST_FREEZE_MEDIA & set(avail)),
         "per_stratum": per_stratum,
     }
-    return sorted(train), sorted(test), info
+    return sorted(train), sorted(valid), sorted(test), info
 
 
 def build() -> tuple[dict[str, list[str]], list[dict]]:
@@ -227,15 +264,19 @@ def build() -> tuple[dict[str, list[str]], list[dict]]:
 
     # ---- HateMM -----------------------------------------------------------
     hm_avail = available_ids(HATEMM_VIDEO_DIRS)
-    hm_train_up = dedup(
-        read_id_list(HATEMM_SPLITS / "train_clean.csv")
-        + read_id_list(HATEMM_SPLITS / "validation_clean.csv")
-    )
+    hm_train_up = dedup(read_id_list(HATEMM_SPLITS / "train_clean.csv"))
+    hm_valid_path = HATEMM_SPLITS / "validation_clean.csv"
+    if not hm_valid_path.is_file():
+        hm_valid_path = HATEMM_SPLITS / "valid.csv"
+    hm_valid_up = dedup(read_id_list(hm_valid_path))
     hm_test_up = dedup(read_id_list(HATEMM_SPLITS / "test_clean.csv"))
     hm_test_set = set(hm_test_up)
     hm_train_up = [i for i in hm_train_up if i not in hm_test_set]
+    hm_valid_up = [i for i in hm_valid_up if i not in hm_test_set]
 
-    for name, upstream in (("hatemm_train", hm_train_up), ("hatemm_test", hm_test_up)):
+    for name, upstream in (("hatemm_train", hm_train_up),
+                           ("hatemm_val", hm_valid_up),
+                           ("hatemm_test", hm_test_up)):
         kept = sorted(i for i in upstream if i in hm_avail)
         missing = sorted(i for i in upstream if i not in hm_avail)
         manifests[name] = kept
@@ -252,17 +293,17 @@ def build() -> tuple[dict[str, list[str]], list[dict]]:
     # ---- MultiHateClip ----------------------------------------------------
     for lang in ("en", "zh"):
         avail = available_ids(MHC_VIDEO_DIRS[lang])
-        train_up = dedup(
-            read_mhc_tsv(MHC_SPANS / f"{lang}_train.tsv")
-            + read_mhc_tsv(MHC_SPANS / f"{lang}_valid.tsv")
-        )
-        test_up = dedup(read_mhc_tsv(MHC_SPANS / f"{lang}_test.tsv"))
+        train_up = dedup(read_mhc_tsv(mhc_tsv(lang, "train")))
+        valid_up = dedup(read_mhc_tsv(mhc_tsv(lang, "valid")))
+        test_up = dedup(read_mhc_tsv(mhc_tsv(lang, "test")))
         test_set = set(test_up)
         overlap = sorted(set(train_up) & test_set)
         train_up = [i for i in train_up if i not in test_set]
+        valid_up = [i for i in valid_up if i not in test_set]
 
         for name, upstream in (
             (f"mhclip_{lang}_train", train_up),
+            (f"mhclip_{lang}_val", valid_up),
             (f"mhclip_{lang}_test", test_up),
         ):
             kept = sorted(i for i in upstream if i in avail)
@@ -287,10 +328,12 @@ def build() -> tuple[dict[str, list[str]], list[dict]]:
             )
 
     # ---- HateClipSeg ------------------------------------------------------
-    hcs_train, hcs_test, hcs_info = hateclipseg_split()
+    hcs_train, hcs_valid, hcs_test, hcs_info = hateclipseg_split()
     manifests["hateclipseg_train"] = hcs_train
+    manifests["hateclipseg_val"] = hcs_valid
     manifests["hateclipseg_test"] = hcs_test
     for name, ids in (("hateclipseg_train", hcs_train),
+                      ("hateclipseg_val", hcs_valid),
                       ("hateclipseg_test", hcs_test)):
         report.append(
             {
@@ -341,7 +384,7 @@ def main() -> int:
                 f"available={row['available']:4d} "
                 f"missing_media={row['missing_media']:4d}  "
                 + ", ".join(
-                    f"{k}: {v['eligible']} -> {v['train']}/{v['test']}"
+                    f"{k}: {v['eligible']} -> {v['train']}/{v['validation']}/{v['test']}"
                     for k, v in row["per_stratum"].items()
                 )
             )

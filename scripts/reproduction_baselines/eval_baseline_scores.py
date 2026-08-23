@@ -35,6 +35,7 @@ import os
 import sys
 
 import numpy as np
+from sklearn.metrics import average_precision_score, roc_auc_score
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -69,6 +70,26 @@ def evaluate_scores(scores, gt, hate_ids=None):
         macro_over = {v for v in per_video if v in hate_ids}
 
     out = fec.evaluate(per_video, macro_over=macro_over)
+    ordered = sorted(per_video)
+    video_y = np.asarray([int(np.asarray(per_video[v][1]).max() > 0)
+                          for v in ordered])
+    video_max = np.asarray([float(np.asarray(per_video[v][0]).max())
+                            for v in ordered])
+    video_mean = np.asarray([float(np.asarray(per_video[v][0]).mean())
+                             for v in ordered])
+    out["video_level"] = {
+        "aggregation": ["max", "mean"],
+        "n_videos": len(ordered),
+        "n_positive": int(video_y.sum()),
+        "max_roc_auc": (float(roc_auc_score(video_y, video_max))
+                        if len(np.unique(video_y)) == 2 else None),
+        "max_pr_auc": (float(average_precision_score(video_y, video_max))
+                       if video_y.size else None),
+        "mean_roc_auc": (float(roc_auc_score(video_y, video_mean))
+                         if len(np.unique(video_y)) == 2 else None),
+        "mean_pr_auc": (float(average_precision_score(video_y, video_mean))
+                        if video_y.size else None),
+    }
     out["n_videos_missing_from_scores"] = len(missing)
     out["videos_missing_from_scores"] = missing[:20]
     out["n_videos_not_in_gold"] = len(extra)
@@ -88,6 +109,9 @@ def format_report(res, title):
         "  within-hate macro AUC  %s  (n=%d, sd %s, median %s)"
         % (_fmt(macro["macro_auc"]), macro["n_videos_both_classes"],
            _fmt(macro["macro_auc_sd"]), _fmt(macro["macro_auc_median"])),
+        "  video max ROC / AP     %s / %s"
+        % (_fmt(res["video_level"]["max_roc_auc"]),
+           _fmt(res["video_level"]["max_pr_auc"])),
     ]
     if res["n_videos_missing_from_scores"]:
         lines.append("  MISSING from scores    %d, e.g. %s"

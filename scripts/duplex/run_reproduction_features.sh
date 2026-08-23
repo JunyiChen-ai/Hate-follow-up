@@ -24,13 +24,13 @@ set -uo pipefail
 cd /home/jehc223/Hate-follow-up || exit 1
 export HVD_DATA_ROOT=/home/jehc223/data
 export TOKENIZERS_PARALLELISM=false
-PY=/home/jehc223/venvs/SafetyContradiction/bin/python
+PY=${PYTHON:-/home/jehc223/miniconda3/envs/HateVideo/bin/python}
 
 STAGE=${1:?usage: run_reproduction_features.sh clip|vggish|vit|i3d|bert [corpora...]}
 shift || true
 CORPORA=("$@")
 if [ "${#CORPORA[@]}" -eq 0 ]; then
-  CORPORA=(hatemm mhclip_en mhclip_zh)
+  CORPORA=(hatemm mhclip_en mhclip_zh hateclipseg)
 fi
 EXTRA=()
 case "$STAGE" in

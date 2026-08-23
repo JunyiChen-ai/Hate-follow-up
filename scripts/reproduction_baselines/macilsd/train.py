@@ -259,9 +259,10 @@ def train(args):
     runtime.setup_seed(args.seed)
 
     labels = hdata.load_labels(args.corpus)
-    all_train = usable_ids(args.corpus, hdata.load_split(args.corpus, "train"))
-    train_ids, val_ids = hdata.split_train_val(all_train, labels,
-                                               args.val_frac, args.seed)
+    train_ids, val_ids = hdata.load_train_val(
+        args.corpus, labels, args.val_frac, args.seed)
+    train_ids = usable_ids(args.corpus, train_ids)
+    val_ids = usable_ids(args.corpus, val_ids)
     if args.limit_videos:
         # Debug only. Interleaved by class rather than a plain head slice: the
         # ids sort with every hateful video first in all three corpora, so

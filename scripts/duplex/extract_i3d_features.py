@@ -67,7 +67,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(_THIS, "..", ".."))
 sys.path.insert(0, _THIS)
 
 from extract_clip_features import (  # noqa: E402
-    CORPORA, find_duration, load_chunk_durations, read_ids)
+    CORPORA, find_duration, find_video_path, load_chunk_durations, read_ids)
 
 OUT_ROOT = os.path.join(PROJECT_ROOT, "results", "reproduction", "features",
                         "i3d_rgb_5crop")
@@ -292,7 +292,7 @@ def main():
     t0 = time.time()
     n_snip_total, n_sec_total = 0, 0.0
     for i, vid in enumerate(todo, 1):
-        path = os.path.join(spec["video_dir"], vid + ".mp4")
+        path = find_video_path(spec["video_dir"], vid)
         try:
             if not os.path.isfile(path):
                 raise FileNotFoundError(path)

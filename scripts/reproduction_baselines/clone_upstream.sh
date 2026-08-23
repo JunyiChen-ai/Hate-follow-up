@@ -22,6 +22,12 @@ VADCLIP_URL="https://github.com/nwpu-zxr/VadCLIP.git"
 VADCLIP_SHA="c41067f07d252efcda18008bea367886070c33b0"
 DSANET_URL="https://github.com/lessiYin/DSANet.git"
 DSANET_SHA="eb335b23fd6f01810bcd176c948c10348764a504"
+CMHKF_URL="https://github.com/ssp-seven/CMHKF.git"
+CMHKF_SHA="3b07707f240892ef1284dcbad5fac96fc8504c70"
+FED_WSVAD_URL="https://github.com/wbfwonderful/Fed-WSVAD.git"
+FED_WSVAD_SHA="287747f5d7cb0d52e3f0667885de78bb9a61b139"
+VERA_URL="https://github.com/vera-framework/VERA.git"
+VERA_SHA="15b8bcb8574a977c229c577f50bfe6f06d07106e"
 VADR1_URL="https://github.com/wbfwonderful/Vad-R1.git"
 VADR1_SHA="8536296b748d389dfca2d8f81a9703aa57404bc2"
 EVENTVAD_URL="https://github.com/YihuaJerry/EventVAD.git"
@@ -57,6 +63,9 @@ clone_pinned () {
 mkdir -p "${THIRD_PARTY}"
 clone_pinned VadCLIP "${VADCLIP_URL}" "${VADCLIP_SHA}"
 clone_pinned DSANet  "${DSANET_URL}"  "${DSANET_SHA}"
+clone_pinned CMHKF "${CMHKF_URL}" "${CMHKF_SHA}"
+clone_pinned Fed-WSVAD "${FED_WSVAD_URL}" "${FED_WSVAD_SHA}"
+clone_pinned VERA "${VERA_URL}" "${VERA_SHA}"
 # Vad-R1 is read, not run: vadr1/run_vadr1_inference.py carries its own copy of
 # the released prompt and its --verify-prompt flag compares that copy against
 # this clone. No CLIP checkpoint is involved; the model is the released

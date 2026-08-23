@@ -48,7 +48,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(_THIS, "..", ".."))
 sys.path.insert(0, _THIS)
 
 from extract_clip_features import (  # noqa: E402
-    CORPORA, encode_with_fallback, find_duration, load_chunk_durations,
+    CORPORA, encode_with_fallback, find_duration, find_video_path, load_chunk_durations,
     read_ids)
 from frame_eval_common import frame_times  # noqa: E402
 
@@ -121,7 +121,7 @@ def main():
     t0 = time.time()
     n_frames_total = 0
     for i, vid in enumerate(todo, 1):
-        path = os.path.join(spec["video_dir"], vid + ".mp4")
+        path = find_video_path(spec["video_dir"], vid)
         try:
             if not os.path.isfile(path):
                 raise FileNotFoundError(path)

@@ -50,11 +50,19 @@ FEATURE_ROOT = os.path.join(REPO_ROOT, "results", "reproduction",
 SPLIT_ROOT = os.path.join(REPO_ROOT, "results", "reproduction", "splits")
 GT_ROOT = os.path.join(REPO_ROOT, "results", "reproduction", "gt")
 
-HATEMM_ANNOTATION = "/home/jehc223/data/HateMM/upstream_spans/HateMM_annotation.csv"
-MHCLIP_ROOT = "/home/jehc223/data/Multihateclip/upstream_spans"
-HCS_SEGMENT_CSV = os.path.join(REPO_ROOT, "idea-stage", "pilots",
-                               "b1_coverage_audit", "data",
-                               "segment_level_annotation.csv")
+HATEMM_ANNOTATION_CANDIDATES = (
+    "/home/jehc223/data/HateMM/upstream_spans/HateMM_annotation.csv",
+    "/home/jehc223/Retrieval-hate/data/gt/HateMM/HateMM_annotation.csv",
+)
+MHCLIP_ROOT_CANDIDATES = (
+    "/home/jehc223/data/Multihateclip/upstream_spans",
+    "/home/jehc223/Retrieval-hate/data/gt/mhc_votes",
+)
+HCS_SEGMENT_CSV_CANDIDATES = (
+    os.path.join(REPO_ROOT, "idea-stage", "pilots", "b1_coverage_audit",
+                 "data", "segment_level_annotation.csv"),
+    "/home/jehc223/data/HateClipSeg/Dataset/segment_level_annotation.csv",
+)
 
 CORPORA = ("hatemm", "mhclip_en", "mhclip_zh", "hateclipseg")
 
@@ -82,7 +90,11 @@ def load_labels(corpus):
     """
     if corpus == "hatemm":
         out = {}
-        with open(HATEMM_ANNOTATION, newline="") as fh:
+        path = next((p for p in HATEMM_ANNOTATION_CANDIDATES
+                     if os.path.isfile(p)), None)
+        if path is None:
+            raise FileNotFoundError("no HateMM annotation CSV found")
+        with open(path, newline="") as fh:
             for row in csv.DictReader(fh):
                 vid = row["video_file_name"].rsplit(".", 1)[0]
                 label = row["label"].strip()
@@ -94,9 +106,18 @@ def load_labels(corpus):
 
     if corpus in ("mhclip_en", "mhclip_zh"):
         lang = corpus.split("_")[1]
+        language = {"en": "English", "zh": "Chinese"}[lang]
         out = {}
         for part in ("train", "valid", "test"):
-            path = os.path.join(MHCLIP_ROOT, "%s_%s.tsv" % (lang, part))
+            candidates = []
+            for root in MHCLIP_ROOT_CANDIDATES:
+                candidates.extend((
+                    os.path.join(root, "%s_%s.tsv" % (lang, part)),
+                    os.path.join(root, "mhc_%s_%s.tsv" % (language, part)),
+                ))
+            path = next((p for p in candidates if os.path.isfile(p)), None)
+            if path is None:
+                raise FileNotFoundError("no MHC %s/%s TSV found" % (lang, part))
             with open(path, newline="") as fh:
                 for row in csv.DictReader(fh, delimiter="\t"):
                     vote = row["Majority_Voting"].strip()
@@ -109,7 +130,11 @@ def load_labels(corpus):
     if corpus == "hateclipseg":
         csv.field_size_limit(1 << 30)
         out = {}
-        with open(HCS_SEGMENT_CSV, encoding="utf-8", newline="") as fh:
+        path = next((p for p in HCS_SEGMENT_CSV_CANDIDATES
+                     if os.path.isfile(p)), None)
+        if path is None:
+            raise FileNotFoundError("no HateClipSeg segment annotation CSV found")
+        with open(path, encoding="utf-8", newline="") as fh:
             for row in csv.DictReader(fh):
                 labels = ast.literal_eval(row["Segment-Level Label"])
                 spans = ast.literal_eval(row["Segment Timestamp"])
@@ -173,6 +198,27 @@ def split_train_val(video_ids, labels, val_frac, seed):
         val_ids.extend(sorted(chosen))
         train_ids.extend(m for m in members if m not in chosen)
     return sorted(train_ids), sorted(val_ids)
+
+
+def load_train_val(corpus, labels=None, val_frac=0.1, seed=234,
+                   legacy_resplit=False):
+    """Return the frozen official train/validation manifests.
+
+    ``legacy_resplit=True`` reproduces the pre-2026-08-23 protocol which
+    carved validation from a merged training manifest. New experiments must
+    use the default official manifests. HateClipSeg's validation manifest is
+    the frozen local split because that dataset releases no split IDs.
+    """
+    train_ids = load_split(corpus, "train")
+    if legacy_resplit:
+        labels = labels if labels is not None else load_labels(corpus)
+        return split_train_val(train_ids, labels, val_frac, seed)
+    val_ids = load_split(corpus, "val")
+    overlap = sorted(set(train_ids) & set(val_ids))
+    if overlap:
+        raise ValueError("train/validation overlap for %s: %s"
+                         % (corpus, overlap[:5]))
+    return train_ids, val_ids
 
 
 def label_vectors(class_indices, device=None):

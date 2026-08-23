@@ -1,5 +1,23 @@
 # Reproduction baselines
 
+> **Protocol amendment (2026-08-23).** New `official-val` runs preserve the
+> released validation sets for HateMM, MHC-EN and MHC-ZH. Earlier rows merged
+> train+validation and made a seeded 10% carve; those measurements remain
+> archived as `legacy-resplit-val` and must not be mixed into an official-val
+> ranking. HateClipSeg releases no split IDs, so its frozen 394-video cohort
+> keeps the original 79-video test manifest (SHA256 `0d648643...`) and divides
+> the former train cohort into 252 train / 63 validation videos, stratified by
+> the video-level offensive-union label with seed 234.
+
+The validation-only search entry point is `tune_official_val.py`. It supports
+VadCLIP, DSANet, MACIL-SD (AV/audio/visual), MultiHateLoc, CMHKF and both the
+centralized and three-client Fed-WSVAD protocols; trials never load test.
+VERA is staged in `vera_adapter.py`: `select` chooses guiding questions with
+official video-level validation labels, `infer` performs resumable official
+InternVL2-8B sliding-window inference, and `postprocess` applies VERA's visual
+neighbour propagation and Gaussian smoothing. Test inference is a separate,
+explicit command after the validation choice has been archived.
+
 Video-anomaly-detection baselines, ported to the hateful-video corpora of the
 reproduction study. Each predicts a score per temporal unit; the study reads
 those scores as frame-level hate localisation on the 1 fps grid.

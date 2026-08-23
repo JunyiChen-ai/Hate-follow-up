@@ -73,10 +73,11 @@ FPS = 1.0
 CORPORA = {
     "hatemm": {
         "video_dir": os.path.join(DATA_ROOT, "HateMM", "video"),
-        "wav_dirs": [os.path.join(DATA_ROOT, "HateMM", "wav"),
+        "wav_dirs": ["/home/jehc223/Retrieval-hate/data/AV2A_wav/HateMM",
+                     os.path.join(DATA_ROOT, "HateMM", "wav"),
                      os.path.join(PROJECT_ROOT, "results", "testruns",
                                   "hatemm", "wav")],
-        "splits": ["hatemm_train.txt", "hatemm_test.txt"],
+        "splits": ["hatemm_train.txt", "hatemm_val.txt", "hatemm_test.txt"],
         "chunk_manifests": [
             "results/hatemm_localization/timestamped_chunks.jsonl",
             "results/reproduction/asr/hatemm_train/timestamped_chunks.jsonl",
@@ -85,11 +86,13 @@ CORPORA = {
     "mhclip_en": {
         "video_dir": os.path.join(DATA_ROOT, "Multihateclip", "English",
                                   "video_mp4"),
-        "wav_dirs": [os.path.join(DATA_ROOT, "Multihateclip", "English",
+        "wav_dirs": ["/home/jehc223/Retrieval-hate/data/AV2A_wav/MHC",
+                     os.path.join(DATA_ROOT, "Multihateclip", "English",
                                   "wav"),
                      os.path.join(PROJECT_ROOT, "results", "testruns",
                                   "mhclip_en", "wav")],
-        "splits": ["mhclip_en_train.txt", "mhclip_en_test.txt"],
+        "splits": ["mhclip_en_train.txt", "mhclip_en_val.txt",
+                   "mhclip_en_test.txt"],
         "chunk_manifests": [
             "results/interleaved_timeline/mhclip_en/timestamped_chunks.jsonl",
             "results/reproduction/asr/mhclip_en_train/"
@@ -99,12 +102,14 @@ CORPORA = {
         ],
     },
     "hateclipseg": {
-        "video_dir": os.path.join(DATA_ROOT, "HateClipSeg", "video"),
+        "video_dir": os.path.join(DATA_ROOT, "HateClipSeg", "videos"),
         # HateClipSeg's audio was extracted into the repo rather than
         # alongside the media, so there is a single wav directory here.
-        "wav_dirs": [os.path.join(PROJECT_ROOT, "results", "hateclipseg",
+        "wav_dirs": ["/home/jehc223/Retrieval-hate/data/AV2A_wav/HateClipSeg",
+                     os.path.join(PROJECT_ROOT, "results", "hateclipseg",
                                   "wav")],
-        "splits": ["hateclipseg_train.txt", "hateclipseg_test.txt"],
+        "splits": ["hateclipseg_train.txt", "hateclipseg_val.txt",
+                   "hateclipseg_test.txt"],
         "chunk_manifests": [
             "results/interleaved_timeline/hateclipseg/"
             "timestamped_chunks.jsonl",
@@ -113,11 +118,13 @@ CORPORA = {
     "mhclip_zh": {
         "video_dir": os.path.join(DATA_ROOT, "Multihateclip", "Chinese",
                                   "video"),
-        "wav_dirs": [os.path.join(DATA_ROOT, "Multihateclip", "Chinese",
+        "wav_dirs": ["/home/jehc223/Retrieval-hate/data/AV2A_wav/MHC_zh",
+                     os.path.join(DATA_ROOT, "Multihateclip", "Chinese",
                                   "wav"),
                      os.path.join(PROJECT_ROOT, "results", "testruns",
                                   "mhclip_zh", "wav")],
-        "splits": ["mhclip_zh_train.txt", "mhclip_zh_test.txt"],
+        "splits": ["mhclip_zh_train.txt", "mhclip_zh_val.txt",
+                   "mhclip_zh_test.txt"],
         "chunk_manifests": [
             "results/interleaved_timeline/mhclip_zh/timestamped_chunks.jsonl",
             "results/reproduction/asr/mhclip_zh_train/"
@@ -144,6 +151,15 @@ def read_ids(spec):
     return out
 
 
+def find_video_path(video_dir, video_id):
+    """Resolve mixed container extensions without changing video identity."""
+    for ext in (".mp4", ".mkv", ".webm", ".avi", ".mov", ".m4v", ".flv"):
+        path = os.path.join(video_dir, video_id + ext)
+        if os.path.isfile(path):
+            return path
+    return os.path.join(video_dir, video_id + ".mp4")
+
+
 def wav_duration_seconds(path):
     import wave
     with wave.open(path, "rb") as handle:
@@ -151,6 +167,16 @@ def wav_duration_seconds(path):
     if rate <= 0:
         raise ValueError("non-positive sample rate in %s" % path)
     return frames / float(rate)
+
+
+def video_duration_seconds(path):
+    """Container-duration fallback for released videos with no audio track."""
+    import subprocess
+    proc = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", path],
+        capture_output=True, text=True, check=True)
+    return float(proc.stdout.strip())
 
 
 def load_chunk_durations(spec):
@@ -182,7 +208,7 @@ def load_chunk_durations(spec):
     return out
 
 
-def find_duration(vid, spec, chunk_durations):
+def find_duration(vid, spec, chunk_durations, video_path=None):
     """(duration, source): the chunk manifest first, the wav header second."""
     hit = chunk_durations.get(vid)
     if hit is not None:
@@ -192,6 +218,10 @@ def find_duration(vid, spec, chunk_durations):
         if os.path.isfile(path):
             return wav_duration_seconds(path), os.path.relpath(
                 path, PROJECT_ROOT if path.startswith(PROJECT_ROOT) else "/")
+    if video_path and os.path.isfile(video_path):
+        duration = video_duration_seconds(video_path)
+        if duration > 0:
+            return duration, "video-container (no released wav)"
     return None, None
 
 
@@ -366,7 +396,7 @@ def main():
 
     proc = CLIPImageProcessor.from_pretrained(MODEL_ID)
     model = CLIPVisionModelWithProjection.from_pretrained(
-        MODEL_ID, dtype=torch.float16).to("cuda")
+        MODEL_ID, torch_dtype=torch.float16).to("cuda")
     model.eval()
     devices = {p.device.type for p in model.parameters()}
     if devices != {"cuda"}:
@@ -382,11 +412,11 @@ def main():
     t0 = time.time()
     n_frames_total = 0
     for i, vid in enumerate(todo, 1):
-        path = os.path.join(spec["video_dir"], vid + ".mp4")
+        path = find_video_path(spec["video_dir"], vid)
         try:
             if not os.path.isfile(path):
                 raise FileNotFoundError(path)
-            duration, dur_src = find_duration(vid, spec, chunk_durations)
+            duration, dur_src = find_duration(vid, spec, chunk_durations, path)
             if duration is None or duration <= 0:
                 raise ValueError("no positive wav duration for %s" % vid)
             grid = frame_times(duration, FPS)

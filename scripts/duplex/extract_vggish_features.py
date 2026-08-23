@@ -45,7 +45,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(_THIS, "..", ".."))
 sys.path.insert(0, _THIS)
 
 from frame_eval_common import frame_times  # noqa: E402
-from extract_clip_features import (CORPORA, find_duration,  # noqa: E402
+from extract_clip_features import (CORPORA, find_duration, find_video_path,  # noqa: E402
                                    load_chunk_durations, read_ids)
 
 OUT_ROOT = os.path.join(PROJECT_ROOT, "results", "reproduction", "features",
@@ -120,17 +120,22 @@ def main():
                 if os.path.isfile(cand):
                     wav_path = cand
                     break
-            if wav_path is None:
-                raise FileNotFoundError("%s.wav in %s" % (vid,
-                                                          spec["wav_dirs"]))
             # Same duration resolver as the CLIP features and the gold
             # arrays: the chunk manifest first, the wav header second.
-            duration, dur_src = find_duration(vid, spec, chunk_durations)
+            video_path = find_video_path(spec["video_dir"], vid)
+            duration, dur_src = find_duration(
+                vid, spec, chunk_durations, video_path)
             if duration is None or duration <= 0:
                 raise ValueError("no positive duration for %s" % vid)
             n_target = len(frame_times(duration, FPS))
 
-            data, rate = read_wav(wav_path)
+            if wav_path is None:
+                # Released videos without an audio stream are valid examples;
+                # represent the absent modality as deterministic silence.
+                rate = 16000
+                data = np.zeros(int(np.ceil(duration * rate)), dtype=np.float64)
+            else:
+                data, rate = read_wav(wav_path)
             # Pad the tail so the final grid second still forms a full patch.
             need = int(np.ceil(((n_target - 1) * HOP_SECONDS
                                 + vggish_params.EXAMPLE_WINDOW_SECONDS
@@ -167,8 +172,9 @@ def main():
                 "wav_duration": round(duration, 6),
                 "duration_source": dur_src,
                 "sample_rate": int(rate),
-                "wav": os.path.relpath(wav_path, PROJECT_ROOT)
-                       if wav_path.startswith(PROJECT_ROOT) else wav_path,
+                "wav": (os.path.relpath(wav_path, PROJECT_ROOT)
+                        if wav_path and wav_path.startswith(PROJECT_ROOT)
+                        else wav_path),
                 "dim": int(feats.shape[1]),
             }
             n_rows += n_target

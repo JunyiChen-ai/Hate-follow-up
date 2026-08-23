@@ -136,6 +136,9 @@ def main(argv=None):
     ap.add_argument("--val-frac", type=float, default=0.1)
     ap.add_argument("--select", default="val_ap", choices=("val_ap", "last"))
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--run-test", action="store_true",
+                    help="run frozen-checkpoint inference on the test split; "
+                         "leave off during validation tuning")
     args = ap.parse_args(argv)
 
     torch.manual_seed(args.seed)
@@ -148,10 +151,9 @@ def main(argv=None):
     os.makedirs(out_dir, exist_ok=True)
 
     labels = hdata.load_labels(args.corpus)
-    train_all = hdata.load_split(args.corpus, "train")
     test_ids = hdata.load_split(args.corpus, "test")
-    train_ids, val_ids = hdata.split_train_val(train_all, labels,
-                                               args.val_frac, args.seed)
+    train_ids, val_ids = hdata.load_train_val(
+        args.corpus, labels, args.val_frac, args.seed)
     print("multihateloc [%s]: %d train, %d val, %d test  (%d hateful in train)"
           % (args.corpus, len(train_ids), len(val_ids), len(test_ids),
              sum(labels[v] for v in train_ids)), flush=True)
@@ -165,10 +167,10 @@ def main(argv=None):
         mdata.MultiModalDataset(args.corpus, val_ids, labels),
         batch_size=args.batch_size, shuffle=False, collate_fn=mdata.collate,
         num_workers=2) if val_ids else None)
-    test_loader = tdata.DataLoader(
+    test_loader = (tdata.DataLoader(
         mdata.MultiModalDataset(args.corpus, test_ids, labels),
         batch_size=args.batch_size, shuffle=False, collate_fn=mdata.collate,
-        num_workers=2)
+        num_workers=2) if args.run_test else None)
 
     model = MultiHateLoc({m: mdata.FEATURE_DIMS[m] for m in mdata.MODALITIES},
                          hidden=args.hidden, embed=args.embed,
@@ -212,14 +214,16 @@ def main(argv=None):
         best_epoch, best_ap = args.max_epoch, float("nan")
         print("  selection off: taking the last epoch", flush=True)
 
-    frames, video, _ = predict(model, test_loader, device)
+    frames, video = {}, {}
     scores_path = os.path.join(out_dir, "scores.jsonl")
-    with open(scores_path, "w", encoding="utf-8") as fh:
-        for vid in test_ids:
-            rec = {"video_id": vid}
-            rec.update({k: [round(float(x), 6) for x in v]
-                        for k, v in frames[vid].items()})
-            fh.write(json.dumps(rec) + "\n")
+    if test_loader is not None:
+        frames, video, _ = predict(model, test_loader, device)
+        with open(scores_path, "w", encoding="utf-8") as fh:
+            for vid in test_ids:
+                rec = {"video_id": vid}
+                rec.update({k: [round(float(x), 6) for x in v]
+                            for k, v in frames[vid].items()})
+                fh.write(json.dumps(rec) + "\n")
 
     torch.save(model.state_dict(), os.path.join(out_dir, "model.pt"))
     log = {
@@ -227,7 +231,7 @@ def main(argv=None):
         "args": vars(args),
         "n_parameters": int(n_params),
         "n_train": len(train_ids), "n_val": len(val_ids),
-        "n_test": len(test_ids),
+        "n_test": len(test_ids) if args.run_test else 0,
         "steps_per_epoch": int(np.ceil(len(train_ids) / args.batch_size)),
         "selected_epoch": best_epoch,
         "selected_val_video_ap": best_ap,
@@ -239,8 +243,12 @@ def main(argv=None):
     }
     with open(os.path.join(out_dir, "train_log.json"), "w") as fh:
         json.dump(log, fh, indent=1, default=float)
-    print("  wrote %s (%d videos), %.0fs total"
-          % (scores_path, len(test_ids), time.time() - t0), flush=True)
+    if args.run_test:
+        print("  wrote %s (%d videos), %.0fs total"
+              % (scores_path, len(test_ids), time.time() - t0), flush=True)
+    else:
+        print("  validation-only run; test split not loaded, %.0fs total"
+              % (time.time() - t0), flush=True)
     return 0
 
 
