@@ -216,8 +216,10 @@ def find_duration(vid, spec, chunk_durations, video_path=None):
     for wav_dir in spec["wav_dirs"]:
         path = os.path.join(wav_dir, vid + ".wav")
         if os.path.isfile(path):
-            return wav_duration_seconds(path), os.path.relpath(
-                path, PROJECT_ROOT if path.startswith(PROJECT_ROOT) else "/")
+            duration = wav_duration_seconds(path)
+            if duration > 0:
+                return duration, os.path.relpath(
+                    path, PROJECT_ROOT if path.startswith(PROJECT_ROOT) else "/")
     if video_path and os.path.isfile(video_path):
         duration = video_duration_seconds(video_path)
         if duration > 0:

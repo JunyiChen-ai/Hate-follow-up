@@ -103,7 +103,7 @@ def main():
     # add_pooling_layer=False: the pooler head has no pretrained weights in
     # this checkpoint and we take the CLS token directly, so building it would
     # only put randomly-initialised parameters in the graph.
-    model = ViTModel.from_pretrained(MODEL_ID, dtype=torch.float16,
+    model = ViTModel.from_pretrained(MODEL_ID, torch_dtype=torch.float16,
                                      add_pooling_layer=False).to("cuda")
     model.eval()
     devices = {p.device.type for p in model.parameters()}

@@ -90,6 +90,10 @@ HCS_VALID_FRACTION_OF_REMAINDER = 0.2
 # 0d648643... while allowing a validation split to be carved from the original
 # frozen training cohort.
 HCS_POST_FREEZE_MEDIA = {"yt_DnrYK1FXKgk"}
+# Present by filename but truncated before the first decodable frame. It fell
+# in train in the frozen draw; remove it after drawing so val/test IDs stay
+# byte-for-byte stable.
+HCS_UNUSABLE_TRAIN_MEDIA = {"yt_NzvfkIYS5Yg"}
 # Fixed stratum order, so the draw does not depend on dict iteration order.
 HCS_STRATA = ("negative", "positive")
 
@@ -234,6 +238,14 @@ def hateclipseg_split() -> tuple[list[str], list[str], list[str], dict]:
             "train": len(remainder) - n_valid,
         }
 
+    bad_outside_train = HCS_UNUSABLE_TRAIN_MEDIA & (set(valid) | set(test))
+    if bad_outside_train:
+        raise RuntimeError("frozen unusable media entered val/test: %s" %
+                           sorted(bad_outside_train))
+    train = [v for v in train if v not in HCS_UNUSABLE_TRAIN_MEDIA]
+    for name in HCS_STRATA:
+        per_stratum[name]["train"] = sum(v in train for v in strata[name])
+
     info = {
         "manifest": "hateclipseg",
         "provenance": (
@@ -253,6 +265,8 @@ def hateclipseg_split() -> tuple[list[str], list[str], list[str], dict]:
         "missing_media_ids": missing_media,
         "media_without_annotation": media_unannotated,
         "post_freeze_media_excluded": sorted(HCS_POST_FREEZE_MEDIA & set(avail)),
+        "unusable_train_media_excluded": sorted(
+            HCS_UNUSABLE_TRAIN_MEDIA & set(avail)),
         "per_stratum": per_stratum,
     }
     return sorted(train), sorted(valid), sorted(test), info
