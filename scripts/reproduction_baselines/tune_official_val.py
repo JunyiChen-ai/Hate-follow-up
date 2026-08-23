@@ -146,13 +146,23 @@ def main(argv=None):
     args = ap.parse_args(argv)
     root = Path(args.root) / args.method / args.corpus
     root.mkdir(parents=True, exist_ok=True)
+    storage = f"sqlite:///{root / 'study.sqlite3'}"
+    # Optuna persists trials but not the sampler RNG state.  Re-seed from the
+    # persisted attempt count so a resumed process does not restart the exact
+    # same deterministic suggestion sequence.
     study = optuna.create_study(
         study_name=f"{args.method}-{args.corpus}", direction="maximize",
-        storage=f"sqlite:///{root / 'study.sqlite3'}", load_if_exists=True,
-        sampler=optuna.samplers.TPESampler(seed=234))
+        storage=storage, load_if_exists=True)
+    sampler_seed = 234 + len(study.trials)
+    study = optuna.load_study(
+        study_name=f"{args.method}-{args.corpus}", storage=storage,
+        sampler=optuna.samplers.TPESampler(seed=sampler_seed))
 
     def objective(trial):
         values = suggest(trial, args.method, args.corpus)
+        if any(t.state == TrialState.COMPLETE and t.params == trial.params
+               for t in study.trials if t.number != trial.number):
+            raise optuna.TrialPruned("duplicate completed parameter set")
         out = root / f"trial_{trial.number:04d}"
         out.mkdir(parents=True, exist_ok=True)
         cmd = command(args.method, args.corpus, out, values, args.python)
@@ -189,13 +199,15 @@ def main(argv=None):
 
     complete = n_complete()
     failed = sum(t.state == TrialState.FAIL for t in study.trials)
+    pruned = sum(t.state == TrialState.PRUNED for t in study.trials)
     if complete < args.trials:
         raise RuntimeError(
             f"only {complete}/{args.trials} validation trials completed "
             f"({failed} failed); inspect {root}/trial_*/stderr.log")
     summary = {"method": args.method, "corpus": args.corpus,
                "n_trials": len(study.trials), "n_complete": complete,
-               "n_failed": failed, "best_value": study.best_value,
+               "n_failed": failed, "n_pruned": pruned,
+               "sampler_seed": sampler_seed, "best_value": study.best_value,
                "best_params": study.best_params,
                "best_trial": study.best_trial.number}
     (root / "best.json").write_text(json.dumps(summary, indent=2) + "\n")
