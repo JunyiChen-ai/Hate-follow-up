@@ -832,3 +832,15 @@ through a matrix with orthonormal rows, which is an isometry -- the smoke test
 asserts it. So the 128-dimensional motion branch carries exactly two degrees
 of freedom. That is upstream's design and the paper's Eq. (2), kept as is, and
 it is worth knowing before reading Table 5's `+1.42` for RAFT alone.
+# LAVAD
+
+Added 2026-08-21. Upstream is
+https://github.com/lucazanella/lavad at
+`1ad46c666d1b3cfb262f3dd84769acf873285056`. The clone remains pristine under
+`third_party/lavad`; no upstream source is vendored or edited. The complete
+adapter and deviation ledger is `DESIGN_LAVAD.md`. In brief: prepare the
+frozen test cohort as one JPEG per gold second, run upstream with
+`frame_interval=1`, strictly pack raw/refined JSON scores onto the common grid,
+and replace upstream sklearn evaluation with `eval_baseline_scores.py`. The
+published anomaly prompt is retained as the primary arm. No full inference or
+hate-specific prompt arm has been run.

@@ -26,6 +26,8 @@ VADR1_URL="https://github.com/wbfwonderful/Vad-R1.git"
 VADR1_SHA="8536296b748d389dfca2d8f81a9703aa57404bc2"
 EVENTVAD_URL="https://github.com/YihuaJerry/EventVAD.git"
 EVENTVAD_SHA="25cacd88a82af389776d2b397239f39961ac2d27"
+LAVAD_URL="https://github.com/lucazanella/lavad.git"
+LAVAD_SHA="1ad46c666d1b3cfb262f3dd84769acf873285056"
 # EventVAD's two dependencies that ship as source rather than as packages.
 # RAFT is pinned to the head of princeton-vl/RAFT because the repository has
 # had one functional commit since 2021 and no tags; the checkpoint, not the
@@ -65,6 +67,7 @@ clone_pinned Vad-R1  "${VADR1_URL}"  "${VADR1_SHA}"
 # the release imports a `graph_propagation` it never defines. Its RAFT and
 # VideoLLaMA2 dependencies are run, so both are cloned.
 clone_pinned EventVAD    "${EVENTVAD_URL}"    "${EVENTVAD_SHA}"
+clone_pinned lavad       "${LAVAD_URL}"       "${LAVAD_SHA}"
 clone_pinned RAFT        "${RAFT_URL}"        "${RAFT_SHA}"
 clone_pinned VideoLLaMA2 "${VIDEOLLAMA2_URL}" "${VIDEOLLAMA2_SHA}"
 

@@ -10,6 +10,7 @@ those scores as frame-level hate localisation on the 1 fps grid.
 | DSANet | AAAI 2026 | weak, video-level | CLIP ViT-B/16, 1 fps | https://github.com/lessiYin/DSANet | `eb335b2` |
 | MACIL-SD | ACM MM 2022 | weak, video-level | I3D 5-crop + VGGish | https://github.com/JustinYuu/MACIL_SD | `c20943f` |
 | EventVAD | ACM MM 2025 | **training free** | CLIP + RAFT, VideoLLaMA2 7B | https://github.com/YihuaJerry/EventVAD | `25cacd8` |
+| LAVAD | CVPR 2024 | **training free** | 5x BLIP-2 + Llama-2-13B + ImageBind | https://github.com/lucazanella/lavad | `1ad46c6` |
 
 The three weakly-supervised ports train on video-level labels only. EventVAD
 trains nothing and runs on the test cohorts alone.
@@ -20,6 +21,13 @@ this file**, because neither shares code with the CLIP pair and each consumes
 different inputs. EventVAD additionally has `DESIGN_EVENTVAD.md`, because its
 released code cannot be run and two of its components had to be reconstructed
 from the paper.
+
+LAVAD is separately specified in `DESIGN_LAVAD.md`. Its cohort adapter and
+shared-evaluator handoff are complete, but no final scores exist yet: the
+released seven-stage pipeline requires five BLIP-2 passes, ImageBind retrieval
+and two Llama-2-13B generations per temporal point, and its official command
+expects two GPUs. Do not interpret its presence in this table as a completed
+full-corpus run.
 
 DSANet's README says it consumes VadCLIP's released features, and the code
 bears that out: the two repositories carry byte-identical copies of
