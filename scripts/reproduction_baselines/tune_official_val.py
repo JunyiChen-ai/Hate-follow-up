@@ -24,6 +24,13 @@ REPO = HERE.parents[1]
 DEFAULT_PYTHON = "/home/jehc223/miniconda3/envs/HateVideo/bin/python"
 
 
+def atomic_write(path, content):
+    path = Path(path)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(content)
+    temporary.replace(path)
+
+
 def temporal(trial, corpus):
     choices = (["64:8", "64:16", "128:16", "128:32"]
                if corpus.startswith("mhclip") else
@@ -317,7 +324,7 @@ def main(argv=None):
                "sampler_seed": sampler_seed, "best_value": study.best_value,
                "best_params": study.best_params,
                "best_trial": study.best_trial.number}
-    (root / "best.json").write_text(json.dumps(summary, indent=2) + "\n")
+    atomic_write(root / "best.json", json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
     return 0
 

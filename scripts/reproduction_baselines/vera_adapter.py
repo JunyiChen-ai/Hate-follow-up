@@ -60,6 +60,13 @@ PROMPT_BANK = {
 }
 
 
+def atomic_write(path, content):
+    path = Path(path)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(content)
+    temporary.replace(path)
+
+
 def video_path(corpus, vid):
     for ext in EXTS:
         path = VIDEO_DIRS[corpus] / (vid + ext)
@@ -160,8 +167,8 @@ def completed_validation_rows(path, valid_ids):
             except (ValueError, TypeError, json.JSONDecodeError):
                 dirty = True
     if dirty:
-        path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n"
-                                for r in rows.values()))
+        atomic_write(path, "".join(json.dumps(r, ensure_ascii=False) + "\n"
+                                   for r in rows.values()))
     return rows
 
 
@@ -197,7 +204,7 @@ def select(args):
                "metric": "video_average_precision", "scores": scores,
                "selected": best, "prompts": PROMPT_BANK[best],
                "backbone": MODEL_ID, "attention_backend": backend}
-    selected_path.write_text(json.dumps(payload, indent=2) + "\n")
+    atomic_write(selected_path, json.dumps(payload, indent=2) + "\n")
     print(json.dumps(payload, indent=2))
 
 
@@ -278,7 +285,7 @@ def postprocess(args):
                      "score_neighbor": neighbor.tolist(),
                      "score_official_postprocessed": official.tolist()})
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    atomic_write(out, "".join(json.dumps(r) + "\n" for r in rows))
     print(f"wrote {out}: {len(rows)} videos")
 
 

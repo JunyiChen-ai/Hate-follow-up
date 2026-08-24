@@ -14,6 +14,13 @@ from tune_official_val import DEFAULT_PYTHON, HERE, REPO, option_args
 SEEDS = (234, 2025, 3407)
 
 
+def atomic_write(path, content):
+    path = Path(path)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(content)
+    temporary.replace(path)
+
+
 def materialize(best):
     values = dict(best)
     temporal = values.pop("temporal", None)
@@ -122,7 +129,7 @@ def main():
                     continue
             except (json.JSONDecodeError, OSError):
                 pass
-        frozen_path.write_text(json.dumps(frozen, indent=2) + "\n")
+        atomic_write(frozen_path, json.dumps(frozen, indent=2) + "\n")
         train = train_command(args.method, args.corpus, out, values, seed, args.python)
         run(train, out / "train.log")
         infer = inference_command(args.method, args.corpus, out, values, args.python)

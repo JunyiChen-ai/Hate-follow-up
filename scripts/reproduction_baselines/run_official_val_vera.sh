@@ -72,7 +72,9 @@ payload = {
     "attention_backend": selected["attention_backend"],
     "source": str(source),
 }
-out.write_text(json.dumps(payload, indent=2) + "\n")
+temporary = out.with_name(out.name + ".tmp")
+temporary.write_text(json.dumps(payload, indent=2) + "\n")
+temporary.replace(out)
 PY
 done
 
