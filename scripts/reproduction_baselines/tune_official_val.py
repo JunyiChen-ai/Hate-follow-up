@@ -160,6 +160,23 @@ def main(argv=None):
 
     def objective(trial):
         values = suggest(trial, args.method, args.corpus)
+        if args.method == "dsanet":
+            # Empirical feasibility guards from the shared 32 GiB GPU.  These
+            # combinations either overflow memory before the first update or
+            # drive the weighted alignment gradient non-finite within a few
+            # epochs.  Prune them before launching an expensive subprocess;
+            # viable batch-64 configurations (including the current best)
+            # remain in the search space.
+            effective_alignment_lr = values["lr"] * values["loss2_weight"]
+            if effective_alignment_lr > 2.5e-4:
+                raise optuna.TrialPruned(
+                    "unstable DSA-Net lr * loss2_weight region")
+            if (values["visual_length"] == 256 and
+                    (values["batch_size"] == 96 or
+                     (values["num_prototypes"] == 32 and
+                      values["batch_size"] >= 64))):
+                raise optuna.TrialPruned(
+                    "DSA-Net configuration exceeds shared-GPU memory")
         if any(t.state == TrialState.COMPLETE and t.params == trial.params
                for t in study.trials if t.number != trial.number):
             raise optuna.TrialPruned("duplicate completed parameter set")
