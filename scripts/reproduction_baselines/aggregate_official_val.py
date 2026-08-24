@@ -12,8 +12,11 @@ METHODS = {
     "vadclip": ("score_mlp", "AAAI 2024"),
     "dsanet": ("score_mlp", "AAAI 2026"),
     "macilsd": ("score_av", "ACM MM 2022"),
-    "macilsd_audio": ("score_audio", "ACM MM 2022"),
-    "macilsd_visual": ("score_visual", "ACM MM 2022"),
+    # The independently trained unimodal models use Single_Model and emit its
+    # sole upstream inference branch as score_mil.  score_audio/score_visual
+    # belong only to the jointly trained AV model.
+    "macilsd_audio": ("score_mil", "ACM MM 2022"),
+    "macilsd_visual": ("score_mil", "ACM MM 2022"),
     "multihateloc": ("score_fused", "WWW 2026"),
     "cmhkf": ("score_align", "ACL 2025 Long"),
     "fed_wsvad_1client": ("score_align", "AAAI 2025"),
