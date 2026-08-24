@@ -10,6 +10,10 @@ import math
 from pathlib import Path
 import statistics
 
+import numpy as np
+
+from hate_common import data as hdata
+
 METHODS = {
     "vadclip": ("score_mlp", "AAAI 2024"),
     "dsanet": ("score_mlp", "AAAI 2026"),
@@ -64,6 +68,16 @@ def main(argv=None):
                          "requiring every preregistered seed and corpus")
     args = ap.parse_args(argv)
     root, rows, errors = Path(args.root), [], []
+    expected_cohorts = {}
+    for corpus in CORPORA:
+        gt = hdata.gt_arrays(corpus, "test")
+        labels = hdata.load_labels(corpus)
+        expected_cohorts[corpus] = {
+            "n_videos": len(gt),
+            "within_hate_n": sum(
+                labels.get(vid) == 1 and len(np.unique(gold)) == 2
+                for vid, gold in gt.items()),
+        }
     for method, (branch, venue) in METHODS.items():
         for corpus in CORPORA:
             runs = []
@@ -107,6 +121,11 @@ def main(argv=None):
                 errors.append(f"inconsistent video counts: {method}/{corpus}")
             if len({r["within_hate_n"] for r in runs}) != 1:
                 errors.append(f"inconsistent within-hate cohorts: {method}/{corpus}")
+            expected = expected_cohorts[corpus]
+            if any(r["n_videos"] != expected["n_videos"] for r in runs):
+                errors.append(f"wrong frozen video count: {method}/{corpus}")
+            if any(r["within_hate_n"] != expected["within_hate_n"] for r in runs):
+                errors.append(f"wrong within-hate cohort: {method}/{corpus}")
             rows.append({"method": method, "venue": venue, "corpus": corpus,
                          "supervision": SUPERVISION[method], "branch": branch,
                          "protocol": "official-val",
