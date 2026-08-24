@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 from pathlib import Path
 import subprocess
@@ -86,8 +87,17 @@ def main():
     best_path = Path(args.tuning_root) / args.method / args.corpus / "best.json"
     selected = json.loads(best_path.read_text())
     values = materialize(selected["best_params"])
+    confirmation_root = Path(args.final_root) / args.method / args.corpus
+    confirmation_root.mkdir(parents=True, exist_ok=True)
+    lock_path = confirmation_root / ".confirmation.lock"
+    lock_handle = lock_path.open("w")
+    try:
+        fcntl.flock(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit(
+            f"another confirmation owns {args.method}/{args.corpus}: {lock_path}")
     for seed in SEEDS:
-        out = Path(args.final_root) / args.method / args.corpus / f"seed_{seed}"
+        out = confirmation_root / f"seed_{seed}"
         out.mkdir(parents=True, exist_ok=True)
         frozen = {"method": args.method, "corpus": args.corpus, "seed": seed,
                   "source": str(best_path), "best_trial": selected["best_trial"],
