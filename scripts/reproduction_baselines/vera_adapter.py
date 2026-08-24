@@ -211,7 +211,8 @@ def infer(args):
     root = Path(args.out_dir); root.mkdir(parents=True, exist_ok=True)
     selection = json.loads(Path(args.prompt_json).read_text())
     prompts = selection["prompts"]
-    ids = hdata.load_split(args.corpus, args.split)
+    gt = hdata.gt_arrays(args.corpus, args.split)
+    ids = [vid for vid in hdata.load_split(args.corpus, args.split) if vid in gt]
     for vi, vid in enumerate(ids, 1):
         out = root / f"{vid}.json"
         if valid_raw_result(out, vid, args.stride):
@@ -240,11 +241,17 @@ def postprocess(args):
     from scipy.ndimage import gaussian_filter1d
     raw_root, out = Path(args.raw_dir), Path(args.out)
     rows = []
-    for vid in hdata.load_split(args.corpus, args.split):
+    gt = hdata.gt_arrays(args.corpus, args.split)
+    ids = [vid for vid in hdata.load_split(args.corpus, args.split) if vid in gt]
+    for vid in ids:
         rec = json.loads((raw_root / f"{vid}.json").read_text())
         raw = np.asarray([x["score"] for x in rec["segments"]], dtype=float)
         visual = np.load(FEATURE_ROOT / args.corpus / f"{vid}.npy")
-        n = min(len(raw), len(visual)); raw, visual = raw[:n], visual[:n]
+        if len(raw) != len(gt[vid]) or len(visual) != len(gt[vid]):
+            raise ValueError(
+                f"{args.corpus}/{vid}: raw={len(raw)}, visual={len(visual)}, "
+                f"gold={len(gt[vid])}; refusing silent temporal truncation")
+        n = len(raw)
         visual = visual / np.maximum(np.linalg.norm(visual, axis=1, keepdims=True), 1e-12)
         similarity = visual @ visual.T
         top_n = max(1, int(.15 * n))
