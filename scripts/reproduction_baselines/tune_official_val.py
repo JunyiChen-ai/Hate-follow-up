@@ -157,14 +157,30 @@ def main(argv=None):
     ap.add_argument(
         "--max-new-attempts", type=int, default=None,
         help=("maximum subprocess attempts in this invocation; defaults to "
-              "max(2*trials, trials+5) so failed trials are replaced without "
-              "allowing a systemic failure to loop forever"))
+              "a method-aware multiple of remaining COMPLETE trials so "
+              "failures are replaced without an unbounded loop"))
     ap.add_argument("--python", default=DEFAULT_PYTHON)
     ap.add_argument("--root", default=str(REPO / "results" / "reproduction" /
                                             "official_val" / "tuning"))
     args = ap.parse_args(argv)
     root = Path(args.root) / args.method / args.corpus
     root.mkdir(parents=True, exist_ok=True)
+
+    def remove_tuning_checkpoints(trial_root):
+        paths = [parent / name
+                 for parent in (trial_root, trial_root / args.corpus)
+                 for name in ("model.pth", "model.pt", "checkpoint.pth")]
+        for path in paths:
+            if path.is_file():
+                path.unlink()
+
+    # Recover the narrow interruption window after an adapter saves its model
+    # but before objective() removes it.  Only this study's trial directories
+    # are touched; final seed checkpoints live under a different root.
+    for trial_root in root.glob("trial_*"):
+        if trial_root.is_dir():
+            remove_tuning_checkpoints(trial_root)
+
     storage = f"sqlite:///{root / 'study.sqlite3'}"
     # Optuna persists trials but not the sampler RNG state.  Re-seed from the
     # persisted attempt count so a resumed process does not restart the exact
@@ -243,16 +259,11 @@ def main(argv=None):
         (out / "stdout.log").write_text(proc.stdout)
         (out / "stderr.log").write_text(proc.stderr)
         (out / "command.json").write_text(json.dumps(cmd, indent=2) + "\n")
-        checkpoint_paths = [parent / name
-                            for parent in (out, out / args.corpus)
-                            for name in ("model.pth", "model.pt", "checkpoint.pth")]
         # A tuning checkpoint is never selected directly: the winner is
         # retrained from its archived parameters for each final seed.  Remove
         # checkpoints from successful and failed subprocesses alike, including
         # MultiHateLoc's corpus-nested output layout.
-        for path in checkpoint_paths:
-            if path.is_file():
-                path.unlink()
+        remove_tuning_checkpoints(out)
         if proc.returncode != 0:
             raise RuntimeError(f"trial rc={proc.returncode}; see {out}")
         meta = json.loads(metric_path(args.method, out, args.corpus).read_text())
