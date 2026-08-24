@@ -71,9 +71,14 @@ def score_ids(model, corpus, ids, visual_length, device):
             feat = np.load(hdata.feature_path(corpus, vid)).astype(np.float32)
             n = len(feat)
             blocks, _ = hdata.tools.process_split(feat, visual_length)
+            # Upstream process_split returns [T,D] for a short video and
+            # [B,T,D] otherwise.  Model always expects the latter, and its
+            # attention mask needs each block's real (unpadded) length.
+            if blocks.ndim == 2:
+                blocks = blocks[None, ...]
+            lengths = runtime.chunk_lengths(n, visual_length).to(device)
             logits = model(torch.from_numpy(blocks).to(device), PROMPTS,
-                           torch.full((len(blocks),), visual_length,
-                                      dtype=torch.long, device=device))
+                           lengths)
             s = (1.0 - logits.softmax(-1)[..., 0]).reshape(-1)[:n]
             arr = s.float().cpu().numpy()
             scores[vid] = arr
