@@ -251,8 +251,16 @@ def main(argv=None):
     # A failed subprocess is evidence, but not a successfully evaluated
     # hyperparameter configuration.  Resume toward the requested number of
     # completed validation trials rather than counting FAIL states as done.
-    attempts_left = (args.max_new_attempts if args.max_new_attempts is not None
-                     else max(2 * args.trials, args.trials + 5))
+    if args.max_new_attempts is not None:
+        attempts_left = args.max_new_attempts
+    else:
+        remaining = args.trials - n_complete()
+        # HateMM's persisted CMHKF study predates the feasibility guards, so
+        # its categorical distributions must retain many choices that are now
+        # pruned immediately.  Budget attempts by remaining successful trials
+        # to prevent a healthy resume from stopping before 40 COMPLETE runs.
+        multiplier = 8 if args.method == "cmhkf" and args.corpus == "hatemm" else 2
+        attempts_left = max(multiplier * remaining, remaining + 5)
     while n_complete() < args.trials and attempts_left > 0:
         before = len(study.trials)
         batch = min(args.trials - n_complete(), attempts_left)
