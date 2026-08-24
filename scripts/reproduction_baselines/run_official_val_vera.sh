@@ -46,6 +46,7 @@ payload = {
     "selected": selected["selected"],
     "validation_scores": selected["scores"],
     "backbone": selected["backbone"],
+    "attention_backend": selected["attention_backend"],
     "source": str(source),
 }
 out.write_text(json.dumps(payload, indent=2) + "\n")

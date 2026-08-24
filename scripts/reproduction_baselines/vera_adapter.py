@@ -10,6 +10,7 @@ inference is a separate explicit stage so tuning cannot touch test media.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import math
 import os
@@ -91,14 +92,22 @@ def read_frames(path, start, window, count=8):
     return [Image.fromarray(x) for x in batch], duration
 
 
-def load_model():
+def load_model(required_backend=None):
     import torch
     from transformers import AutoModel, AutoTokenizer
+    flash_available = importlib.util.find_spec("flash_attn") is not None
+    if required_backend == "flash_attention_2" and not flash_available:
+        raise RuntimeError("selected VERA prompt used flash_attention_2, but "
+                           "flash_attn is unavailable for frozen inference")
+    use_flash = (flash_available if required_backend is None else
+                 required_backend == "flash_attention_2")
     model = AutoModel.from_pretrained(
         MODEL_ID, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True,
-        trust_remote_code=True, use_flash_attn=True).eval().cuda()
+        trust_remote_code=True, use_flash_attn=use_flash).eval().cuda()
     tok = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
-    return model, tok
+    backend = "flash_attention_2" if use_flash else "torch_attention"
+    print(f"VERA attention backend: {backend}", flush=True)
+    return model, tok, backend
 
 
 def question(prompt_lines, n_frames=8):
@@ -130,7 +139,9 @@ def valid_selection(path, corpus):
                 rec.get("prompts") == PROMPT_BANK[rec["selected"]] and
                 set(rec.get("scores", {})) == set(PROMPT_BANK) and
                 all(math.isfinite(float(x)) for x in rec["scores"].values()) and
-                rec.get("backbone") == MODEL_ID)
+                rec.get("backbone") == MODEL_ID and
+                rec.get("attention_backend") in
+                ("flash_attention_2", "torch_attention"))
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
         return False
 
@@ -161,7 +172,7 @@ def select(args):
     if valid_selection(selected_path, args.corpus):
         print(f"already selected {args.corpus}: {selected_path}")
         return
-    model, tok = load_model()
+    model, tok, backend = load_model()
     labels = hdata.load_labels(args.corpus)
     ids = hdata.load_split(args.corpus, "val")
     valid_ids = set(ids)
@@ -185,7 +196,7 @@ def select(args):
     payload = {"corpus": args.corpus, "selection_split": "official-val",
                "metric": "video_average_precision", "scores": scores,
                "selected": best, "prompts": PROMPT_BANK[best],
-               "backbone": MODEL_ID}
+               "backbone": MODEL_ID, "attention_backend": backend}
     selected_path.write_text(json.dumps(payload, indent=2) + "\n")
     print(json.dumps(payload, indent=2))
 
@@ -207,9 +218,9 @@ def valid_raw_result(path, vid, expected_windows):
 
 
 def infer(args):
-    model, tok = load_model()
     root = Path(args.out_dir); root.mkdir(parents=True, exist_ok=True)
     selection = json.loads(Path(args.prompt_json).read_text())
+    model, tok, _backend = load_model(selection["attention_backend"])
     prompts = selection["prompts"]
     gt = hdata.gt_arrays(args.corpus, args.split)
     ids = [vid for vid in hdata.load_split(args.corpus, args.split) if vid in gt]
