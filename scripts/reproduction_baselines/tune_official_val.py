@@ -64,12 +64,18 @@ def suggest(trial, method, corpus):
         length, window = map(int, choice.split(":"))
     else:
         length, window = temporal(trial, corpus)
+    # Preserve HateMM's persisted CMHKF distributions, but start new corpus
+    # studies directly in the empirically viable region.  Changing a
+    # categorical distribution inside an existing Optuna study is forbidden.
+    constrained_cmhkf = method == "cmhkf" and corpus != "hatemm"
+    batch_choices = [32] if constrained_cmhkf else [16, 32, 64, 96]
+    epoch_choices = [10] if constrained_cmhkf else [10, 20, 30, 50]
     common = {"lr": trial.suggest_float("lr", 1e-6, 5e-4, log=True),
-              "batch_size": trial.suggest_categorical("batch_size", [16, 32, 64, 96]),
+              "batch_size": trial.suggest_categorical("batch_size", batch_choices),
               "visual_length": length, "attn_window": window}
     if not method.startswith("fed_wsvad"):
         common["max_epoch"] = trial.suggest_categorical(
-            "max_epoch", [10, 20, 30, 50])
+            "max_epoch", epoch_choices)
     if method == "vadclip":
         common.update(prompt_prefix=trial.suggest_categorical("prompt_prefix", [5, 10, 20]),
                       prompt_postfix=trial.suggest_categorical("prompt_postfix", [5, 10, 20]),
