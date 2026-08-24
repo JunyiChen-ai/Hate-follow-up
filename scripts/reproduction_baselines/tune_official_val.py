@@ -10,6 +10,7 @@ retrained from scratch in the confirmation/final-seed stage.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 from pathlib import Path
 import subprocess
@@ -165,6 +166,13 @@ def main(argv=None):
     args = ap.parse_args(argv)
     root = Path(args.root) / args.method / args.corpus
     root.mkdir(parents=True, exist_ok=True)
+    lock_handle = (root / ".tuner.lock").open("w")
+    try:
+        fcntl.flock(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit(
+            f"another tuner owns {args.method}/{args.corpus}: "
+            f"{root / '.tuner.lock'}")
 
     def remove_tuning_checkpoints(trial_root):
         paths = [parent / name
