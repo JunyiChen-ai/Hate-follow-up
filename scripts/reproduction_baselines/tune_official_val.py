@@ -56,10 +56,11 @@ def suggest(trial, method, corpus):
                 "dropout": trial.suggest_categorical("dropout", [.05, .1, .2]),
                 "temperature": trial.suggest_categorical("temperature", [.03, .07, .1])}
 
-    # CMHKF's upstream fusion block is fixed at 256 visual tokens.  The
-    # shorter MHClip search space used by the other CLIP ports would make
-    # every CMHKF trial structurally invalid.
-    if method == "cmhkf" and corpus.startswith("mhclip"):
+    # CMHKF's fusion block and Fed-WSVAD's prompt visual projection are fixed
+    # at 256 visual tokens.  The shorter MHClip search space used by the other
+    # CLIP ports would make every such trial structurally invalid.
+    if method.startswith("fed_wsvad") or (
+            method == "cmhkf" and corpus.startswith("mhclip")):
         choice = trial.suggest_categorical("temporal", ["256:32", "256:64"])
         length, window = map(int, choice.split(":"))
     else:
@@ -209,6 +210,12 @@ def main(argv=None):
                 # avoid 3--5x longer configurations unsupported by validation.
                 raise optuna.TrialPruned(
                     "CMHKF validation peaks before epoch 10")
+        if (args.method.startswith("fed_wsvad") and
+                values["visual_length"] != 256):
+            # Upstream PromptLearner's visual projection is constructed with
+            # a fixed 256-wide temporal input and fails on any other length.
+            raise optuna.TrialPruned(
+                "Fed-WSVAD prompt network requires visual_length=256")
         if args.method == "dsanet":
             # Empirical feasibility guards from the shared 32 GiB GPU.  These
             # combinations either overflow memory before the first update or
