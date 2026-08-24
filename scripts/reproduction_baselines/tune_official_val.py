@@ -165,6 +165,16 @@ def main(argv=None):
 
     def objective(trial):
         values = suggest(trial, args.method, args.corpus)
+        if args.method == "multihateloc" and values["batch_size"] >= 64:
+            # MultiHateLoc's pairwise temporal contrastive objective retains
+            # substantially more activations than the other adapters.  On the
+            # shared 32 GiB GPU (about 20 GiB is occupied by another process),
+            # batch 64 consistently OOMs during backward even for the smallest
+            # hidden size.  Keep the persisted categorical distribution stable
+            # for Optuna resumes, but prune this empirically infeasible region
+            # before launching a subprocess.
+            raise optuna.TrialPruned(
+                "batch_size >= 64 exceeds the available GPU memory")
         if args.method == "dsanet":
             # Empirical feasibility guards from the shared 32 GiB GPU.  These
             # combinations either overflow memory before the first update or
