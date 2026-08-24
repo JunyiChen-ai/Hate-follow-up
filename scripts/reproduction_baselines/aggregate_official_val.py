@@ -26,6 +26,8 @@ METHODS = {
 CORPORA = ("hatemm", "mhclip_en", "mhclip_zh", "hateclipseg")
 TRAIN_SEEDS = {234, 2025, 3407}
 VERA_SEEDS = {234}
+SUPERVISION = {method: "video-level labels" for method in METHODS if method != "vera"}
+SUPERVISION["vera"] = "validation-selected; training-free"
 
 
 def mean_sd(values):
@@ -72,7 +74,8 @@ def main(argv=None):
             if not runs:
                 continue
             rows.append({"method": method, "venue": venue, "corpus": corpus,
-                         "branch": branch, "protocol": "official-val",
+                         "supervision": SUPERVISION[method], "branch": branch,
+                         "protocol": "official-val",
                          "n_seeds": len(runs), "seeds": [r["seed"] for r in runs],
                          **{k: mean_sd([r[k] for r in runs])
                             for k in ("roc_auc", "pr_auc", "video_roc_auc",
@@ -81,18 +84,19 @@ def main(argv=None):
     if errors and not args.allow_partial:
         raise SystemExit("official-val aggregation refused:\n  - " +
                          "\n  - ".join(errors))
-    payload = {"schema_version": 1, "protocol": "official-val",
+    payload = {"schema_version": 2, "protocol": "official-val",
                "complete": not errors, "validation_errors": errors,
                "rows": rows}
     jout = Path(args.json_out); jout.parent.mkdir(parents=True, exist_ok=True)
     jout.write_text(json.dumps(payload, indent=2) + "\n")
     lines = ["# Weakly supervised baselines — official validation", "",
-             "| Method | Venue | Corpus | Seeds | Frame ROC | Frame PR | Video ROC | Video AP | Within-hate ROC |",
-             "|---|---|---|---:|---:|---:|---:|---:|---:|"]
+             "| Method | Venue | Supervision | Corpus | Seeds | Frame ROC | Frame PR | Video ROC | Video AP | Within-hate ROC |",
+             "|---|---|---|---|---:|---:|---:|---:|---:|---:|"]
     def fmt(x):
         return f"{x['mean']:.4f}" + (f" ± {x['std']:.4f}" if x["std"] is not None else "")
     for r in rows:
-        lines.append(f"| {r['method']} | {r['venue']} | {r['corpus']} | {r['n_seeds']} | "
+        lines.append(f"| {r['method']} | {r['venue']} | {r['supervision']} | "
+                     f"{r['corpus']} | {r['n_seeds']} | "
                      f"{fmt(r['roc_auc'])} | {fmt(r['pr_auc'])} | "
                      f"{fmt(r['video_roc_auc'])} | {fmt(r['video_pr_auc'])} | "
                      f"{fmt(r['within_hate_auc'])} (n={r['within_hate_n']}) |")
