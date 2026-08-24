@@ -306,13 +306,19 @@ def load_scores_jsonl(path):
     """{video_id: {branch: np.ndarray}} from a scores.jsonl written by infer."""
     out = {}
     with open(path) as fh:
-        for line in fh:
+        for line_number, line in enumerate(fh, 1):
             line = line.strip()
             if not line:
                 continue
             rec = json.loads(line)
             vid = rec["video_id"]
-            out[vid] = {k: np.asarray(v, dtype=float)
-                        for k, v in rec.items()
-                        if k.startswith("score_")}
+            if vid in out:
+                raise ValueError(
+                    f"{path}:{line_number}: duplicate video_id {vid!r}")
+            branches = {k: np.asarray(v, dtype=float)
+                        for k, v in rec.items() if k.startswith("score_")}
+            if not branches:
+                raise ValueError(
+                    f"{path}:{line_number}: no score_* branch for {vid!r}")
+            out[vid] = branches
     return out
