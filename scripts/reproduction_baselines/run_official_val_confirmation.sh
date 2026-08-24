@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PYTHON="${PYTHON:-/home/jehc223/miniconda3/envs/HateVideo/bin/python}"
 CORPORA="${CORPORA:-hatemm mhclip_en mhclip_zh hateclipseg}"
-METHODS="${METHODS:-vadclip dsanet macilsd multihateloc cmhkf fed_wsvad_1client fed_wsvad_3client}"
+METHODS="${METHODS:-vadclip dsanet macilsd macilsd_audio macilsd_visual multihateloc cmhkf fed_wsvad_1client fed_wsvad_3client}"
 cd "$ROOT"
 for corpus in $CORPORA; do
   for method in $METHODS; do
@@ -11,4 +11,5 @@ for corpus in $CORPORA; do
       --method "$method" --corpus "$corpus"
   done
 done
-"$PYTHON" scripts/reproduction_baselines/aggregate_official_val.py
+PYTHON="$PYTHON" CORPORA="$CORPORA" \
+  bash scripts/reproduction_baselines/run_official_val_vera.sh
