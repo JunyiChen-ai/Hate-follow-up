@@ -36,6 +36,14 @@ def mean_sd(values):
             "values": values}
 
 
+def atomic_write(path, content):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(content)
+    temporary.replace(path)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="results/reproduction/official_val/final")
@@ -87,8 +95,8 @@ def main(argv=None):
     payload = {"schema_version": 2, "protocol": "official-val",
                "complete": not errors, "validation_errors": errors,
                "rows": rows}
-    jout = Path(args.json_out); jout.parent.mkdir(parents=True, exist_ok=True)
-    jout.write_text(json.dumps(payload, indent=2) + "\n")
+    jout = Path(args.json_out)
+    atomic_write(jout, json.dumps(payload, indent=2) + "\n")
     lines = ["# Weakly supervised baselines — official validation", "",
              "| Method | Venue | Supervision | Corpus | Seeds | Frame ROC | Frame PR | Video ROC | Video AP | Within-hate ROC |",
              "|---|---|---|---|---:|---:|---:|---:|---:|---:|"]
@@ -100,8 +108,8 @@ def main(argv=None):
                      f"{fmt(r['roc_auc'])} | {fmt(r['pr_auc'])} | "
                      f"{fmt(r['video_roc_auc'])} | {fmt(r['video_pr_auc'])} | "
                      f"{fmt(r['within_hate_auc'])} (n={r['within_hate_n']}) |")
-    mout = Path(args.md_out); mout.parent.mkdir(parents=True, exist_ok=True)
-    mout.write_text("\n".join(lines) + "\n")
+    mout = Path(args.md_out)
+    atomic_write(mout, "\n".join(lines) + "\n")
     print(f"wrote {jout} and {mout}: {len(rows)} rows")
     return 0
 
