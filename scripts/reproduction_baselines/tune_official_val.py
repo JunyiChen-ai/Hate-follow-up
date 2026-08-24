@@ -176,7 +176,7 @@ def main(argv=None):
             raise optuna.TrialPruned(
                 "batch_size >= 64 exceeds the available GPU memory")
         if args.method == "cmhkf":
-            if values["temporal"].split(":", 1)[0] != "256":
+            if values["visual_length"] != 256:
                 # The upstream multimodal fusion block has a fixed 256-step
                 # affine dimension and fails for the advertised 128-step
                 # variant before the first update.
