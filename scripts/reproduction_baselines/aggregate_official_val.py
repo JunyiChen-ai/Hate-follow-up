@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import statistics
 
@@ -74,17 +75,25 @@ def main(argv=None):
                 if (not score_path.is_file() or
                         payload.get("scores_sha256") != file_sha256(score_path)):
                     errors.append(f"score fingerprint mismatch: {path}")
-                if branch not in payload["results"]: continue
+                if branch not in payload["results"]:
+                    errors.append(f"missing branch {branch}: {path}")
+                    continue
                 r = payload["results"][branch]
                 if r.get("n_videos_missing_from_scores") != 0:
                     errors.append(f"missing scored videos: {path}")
                 if r.get("n_videos_not_in_gold") != 0:
                     errors.append(f"scores outside frozen gold: {path}")
+                metrics = {"roc_auc": r["roc_auc"], "pr_auc": r["pr_auc"],
+                           "video_roc_auc": r["video_level"]["max_roc_auc"],
+                           "video_pr_auc": r["video_level"]["max_pr_auc"],
+                           "within_hate_auc": r["per_video"]["macro_auc"]}
+                if not all(value is not None and math.isfinite(float(value))
+                           for value in metrics.values()):
+                    errors.append(f"non-finite metric: {path} / {branch}")
+                    continue
                 runs.append({"seed": int(path.parent.name.split("_")[-1]),
-                             "roc_auc": r["roc_auc"], "pr_auc": r["pr_auc"],
-                             "video_roc_auc": r["video_level"]["max_roc_auc"],
-                             "video_pr_auc": r["video_level"]["max_pr_auc"],
-                             "within_hate_auc": r["per_video"]["macro_auc"],
+                             **metrics,
+                             "n_videos": r["n_videos"],
                              "within_hate_n": r["per_video"]["n_videos_both_classes"]})
             expected = VERA_SEEDS if method == "vera" else TRAIN_SEEDS
             actual = {r["seed"] for r in runs}
@@ -94,6 +103,10 @@ def main(argv=None):
                     f"expected {sorted(expected)}")
             if not runs:
                 continue
+            if len({r["n_videos"] for r in runs}) != 1:
+                errors.append(f"inconsistent video counts: {method}/{corpus}")
+            if len({r["within_hate_n"] for r in runs}) != 1:
+                errors.append(f"inconsistent within-hate cohorts: {method}/{corpus}")
             rows.append({"method": method, "venue": venue, "corpus": corpus,
                          "supervision": SUPERVISION[method], "branch": branch,
                          "protocol": "official-val",
