@@ -67,7 +67,7 @@ def main(argv=None):
                     help="write an explicitly incomplete preview instead of "
                          "requiring every preregistered seed and corpus")
     args = ap.parse_args(argv)
-    root, rows, errors = Path(args.root), [], []
+    root, rows, errors, code_commits = Path(args.root), [], [], set()
     expected_cohorts = {}
     for corpus in CORPORA:
         gt = hdata.gt_arrays(corpus, "test")
@@ -82,6 +82,22 @@ def main(argv=None):
         for corpus in CORPORA:
             runs = []
             for path in sorted((root / method / corpus).glob("seed_*/frame_eval.json")):
+                seed = int(path.parent.name.split("_")[-1])
+                frozen_path = path.parent / "frozen_config.json"
+                try:
+                    frozen = json.loads(frozen_path.read_text())
+                    commit = frozen["code_commit"]
+                    frozen_ok = (frozen.get("method") == method and
+                                 frozen.get("corpus") == corpus and
+                                 frozen.get("seed") == seed and
+                                 isinstance(commit, str) and len(commit) == 40 and
+                                 all(ch in "0123456789abcdef" for ch in commit))
+                except (OSError, KeyError, TypeError, json.JSONDecodeError):
+                    frozen_ok, commit = False, None
+                if not frozen_ok:
+                    errors.append(f"invalid frozen config: {frozen_path}")
+                    continue
+                code_commits.add(commit)
                 payload = json.loads(path.read_text())
                 if payload.get("corpus") != corpus or payload.get("split") != "test":
                     errors.append(f"identity/split mismatch: {path}")
@@ -105,7 +121,7 @@ def main(argv=None):
                            for value in metrics.values()):
                     errors.append(f"non-finite metric: {path} / {branch}")
                     continue
-                runs.append({"seed": int(path.parent.name.split("_")[-1]),
+                runs.append({"seed": seed, "code_commit": commit,
                              **metrics,
                              "n_videos": r["n_videos"],
                              "within_hate_n": r["per_video"]["n_videos_both_classes"]})
@@ -137,12 +153,19 @@ def main(argv=None):
     if errors and not args.allow_partial:
         raise SystemExit("official-val aggregation refused:\n  - " +
                          "\n  - ".join(errors))
-    payload = {"schema_version": 2, "protocol": "official-val",
+    if len(code_commits) != 1:
+        errors.append(f"expected one code commit, found {sorted(code_commits)}")
+        if not args.allow_partial:
+            raise SystemExit("official-val aggregation refused:\n  - " + errors[-1])
+    archive_commit = next(iter(code_commits)) if len(code_commits) == 1 else None
+    payload = {"schema_version": 3, "protocol": "official-val",
+               "code_commit": archive_commit,
                "complete": not errors, "validation_errors": errors,
                "rows": rows}
     jout = Path(args.json_out)
     atomic_write(jout, json.dumps(payload, indent=2) + "\n")
     lines = ["# Weakly supervised baselines — official validation", "",
+             f"Code commit: `{archive_commit or 'mixed/incomplete'}`", "",
              "| Method | Venue | Supervision | Corpus | Seeds | Frame ROC | Frame PR | Video ROC | Video AP | Within-hate ROC |",
              "|---|---|---|---|---:|---:|---:|---:|---:|---:|"]
     def fmt(x):
