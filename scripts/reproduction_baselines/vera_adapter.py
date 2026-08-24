@@ -190,14 +190,14 @@ def select(args):
     print(json.dumps(payload, indent=2))
 
 
-def valid_raw_result(path, vid, stride):
+def valid_raw_result(path, vid, expected_windows):
     try:
         rec = json.loads(path.read_text())
         duration = float(rec["duration"])
         segments = rec["segments"]
-        expected = len(np.arange(0, max(1, math.ceil(duration)), stride))
         return (rec.get("video_id") == vid and math.isfinite(duration) and
-                duration > 0 and len(segments) == expected and expected > 0 and
+                duration > 0 and len(segments) == expected_windows and
+                expected_windows > 0 and
                 all(x.get("score") in (0, 1) and
                     math.isfinite(float(x["start"])) and
                     math.isfinite(float(x["end"])) and
@@ -215,11 +215,11 @@ def infer(args):
     ids = [vid for vid in hdata.load_split(args.corpus, args.split) if vid in gt]
     for vi, vid in enumerate(ids, 1):
         out = root / f"{vid}.json"
-        if valid_raw_result(out, vid, args.stride):
+        starts = np.arange(0, len(gt[vid]), args.stride)
+        if valid_raw_result(out, vid, len(starts)):
             continue
         path = video_path(args.corpus, vid)
         _, duration = read_frames(path, 0, 1, 8)
-        starts = np.arange(0, max(1, math.ceil(duration)), args.stride)
         records = []
         for start in starts:
             images, _ = read_frames(path, float(start), args.window, 8)
