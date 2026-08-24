@@ -243,13 +243,20 @@ def main(argv=None):
         (out / "stdout.log").write_text(proc.stdout)
         (out / "stderr.log").write_text(proc.stderr)
         (out / "command.json").write_text(json.dumps(cmd, indent=2) + "\n")
+        checkpoint_paths = [parent / name
+                            for parent in (out, out / args.corpus)
+                            for name in ("model.pth", "model.pt", "checkpoint.pth")]
+        # A tuning checkpoint is never selected directly: the winner is
+        # retrained from its archived parameters for each final seed.  Remove
+        # checkpoints from successful and failed subprocesses alike, including
+        # MultiHateLoc's corpus-nested output layout.
+        for path in checkpoint_paths:
+            if path.is_file():
+                path.unlink()
         if proc.returncode != 0:
             raise RuntimeError(f"trial rc={proc.returncode}; see {out}")
         meta = json.loads(metric_path(args.method, out, args.corpus).read_text())
         score = float(meta["selected_val_video_ap"])
-        for name in ("model.pth", "model.pt", "checkpoint.pth"):
-            path = out / name
-            if path.is_file(): path.unlink()
         return score
 
     def n_complete():
