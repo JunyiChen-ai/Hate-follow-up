@@ -191,7 +191,8 @@ def main(argv=None):
     model.load_state_dict(best_state)
     out = Path(args.out_dir); out.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), out / "model.pth")
-    meta = {"method": "fed_wsvad", "protocol": "official-val",
+    meta = {"method": f"fed_wsvad_{args.clients}client",
+            "protocol": "official-val",
             "upstream": "wbfwonderful/Fed-WSVAD@287747f",
             "args": vars(args), "visual_length": visual_length,
             "attn_window": attn_window, "train_ids": train_ids,
