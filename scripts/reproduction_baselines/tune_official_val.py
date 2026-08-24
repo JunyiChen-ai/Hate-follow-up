@@ -32,11 +32,37 @@ def temporal(trial, corpus):
 
 
 def suggest(trial, method, corpus):
+    # These adapters have method-specific spaces and do not consume the
+    # CLIP-port temporal arguments.  Build them before the shared space so an
+    # Optuna trial never sees the same parameter name with two distributions.
+    if method.startswith("macilsd"):
+        return {"lr": trial.suggest_float("lr", 2e-5, 1e-3, log=True),
+                "batch_size": trial.suggest_categorical("batch_size", [32, 64, 128]),
+                "max_epoch": trial.suggest_categorical("max_epoch", [20, 30, 50]),
+                "max_seqlen": trial.suggest_categorical("max_seqlen", [100, 150, 200]),
+                "dropout": trial.suggest_categorical("dropout", [.05, .1, .2]),
+                "lamda_a2b": trial.suggest_float("lamda_a2b", .5, 3., log=True),
+                "lamda_a2n": trial.suggest_float("lamda_a2n", .5, 3., log=True),
+                "lamda_cof": trial.suggest_float("lamda_cof", .03, .3, log=True)}
+    if method == "multihateloc":
+        return {"lr": trial.suggest_float("lr", 1e-5, 5e-4, log=True),
+                "batch_size": trial.suggest_categorical("batch_size", [16, 32, 64]),
+                "max_epoch": trial.suggest_categorical("max_epoch", [30, 50, 100]),
+                "k_proportion": trial.suggest_categorical("k_proportion", [2, 3, 5, 8]),
+                "lambda_smooth": trial.suggest_float("lambda_smooth", .01, .5, log=True),
+                "lambda_contrast": trial.suggest_float("lambda_contrast", .02, 1., log=True),
+                "hidden": trial.suggest_categorical("hidden", [128, 256, 512]),
+                "embed": trial.suggest_categorical("embed", [64, 128, 256]),
+                "dropout": trial.suggest_categorical("dropout", [.05, .1, .2]),
+                "temperature": trial.suggest_categorical("temperature", [.03, .07, .1])}
+
     length, window = temporal(trial, corpus)
     common = {"lr": trial.suggest_float("lr", 1e-6, 5e-4, log=True),
               "batch_size": trial.suggest_categorical("batch_size", [16, 32, 64, 96]),
-              "max_epoch": trial.suggest_categorical("max_epoch", [10, 20, 30, 50]),
               "visual_length": length, "attn_window": window}
+    if not method.startswith("fed_wsvad"):
+        common["max_epoch"] = trial.suggest_categorical(
+            "max_epoch", [10, 20, 30, 50])
     if method == "vadclip":
         common.update(prompt_prefix=trial.suggest_categorical("prompt_prefix", [5, 10, 20]),
                       prompt_postfix=trial.suggest_categorical("prompt_postfix", [5, 10, 20]),
@@ -54,32 +80,11 @@ def suggest(trial, method, corpus):
                       prompt_prefix=trial.suggest_categorical("prompt_prefix", [5, 10, 20]),
                       prompt_postfix=trial.suggest_categorical("prompt_postfix", [5, 10, 20]))
     elif method.startswith("fed_wsvad"):
-        common.pop("max_epoch")
         common.update(global_rounds=trial.suggest_categorical("global_rounds", [10, 20, 30]),
                       local_epochs=trial.suggest_categorical("local_epochs", [2, 5, 10]),
                       visual_layers=trial.suggest_categorical("visual_layers", [1, 2]),
                       prompt_prefix=trial.suggest_categorical("prompt_prefix", [5, 10, 20]),
                       prompt_postfix=trial.suggest_categorical("prompt_postfix", [5, 10, 20]))
-    elif method.startswith("macilsd"):
-        common = {"lr": trial.suggest_float("lr", 2e-5, 1e-3, log=True),
-                  "batch_size": trial.suggest_categorical("batch_size", [32, 64, 128]),
-                  "max_epoch": trial.suggest_categorical("max_epoch", [20, 30, 50]),
-                  "max_seqlen": trial.suggest_categorical("max_seqlen", [100, 150, 200]),
-                  "dropout": trial.suggest_categorical("dropout", [.05, .1, .2]),
-                  "lamda_a2b": trial.suggest_float("lamda_a2b", .5, 3., log=True),
-                  "lamda_a2n": trial.suggest_float("lamda_a2n", .5, 3., log=True),
-                  "lamda_cof": trial.suggest_float("lamda_cof", .03, .3, log=True)}
-    elif method == "multihateloc":
-        common = {"lr": trial.suggest_float("lr", 1e-5, 5e-4, log=True),
-                  "batch_size": trial.suggest_categorical("batch_size", [16, 32, 64]),
-                  "max_epoch": trial.suggest_categorical("max_epoch", [30, 50, 100]),
-                  "k_proportion": trial.suggest_categorical("k_proportion", [2, 3, 5, 8]),
-                  "lambda_smooth": trial.suggest_float("lambda_smooth", .01, .5, log=True),
-                  "lambda_contrast": trial.suggest_float("lambda_contrast", .02, 1., log=True),
-                  "hidden": trial.suggest_categorical("hidden", [128, 256, 512]),
-                  "embed": trial.suggest_categorical("embed", [64, 128, 256]),
-                  "dropout": trial.suggest_categorical("dropout", [.05, .1, .2]),
-                  "temperature": trial.suggest_categorical("temperature", [.03, .07, .1])}
     return common
 
 
