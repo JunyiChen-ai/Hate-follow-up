@@ -92,17 +92,35 @@ def main():
         frozen = {"method": args.method, "corpus": args.corpus, "seed": seed,
                   "source": str(best_path), "best_trial": selected["best_trial"],
                   "best_validation_ap": selected["best_value"], "params": values}
-        (out / "frozen_config.json").write_text(json.dumps(frozen, indent=2) + "\n")
+        frozen_path = out / "frozen_config.json"
+        scores = (out / args.corpus / "scores.jsonl"
+                  if args.method == "multihateloc" else out / "scores.jsonl")
+        evaluation_path = out / "frame_eval.json"
+        # A completed seed is immutable: do not retrain it or touch test again
+        # when a long multi-method confirmation run is resumed.  Only accept
+        # the checkpoint as complete when its frozen selection is byte-for-
+        # value identical and both score/evaluation artifacts parse.
+        if frozen_path.is_file() and scores.is_file() and evaluation_path.is_file():
+            try:
+                same = json.loads(frozen_path.read_text()) == frozen
+                json.loads(evaluation_path.read_text())
+                score_rows = [json.loads(line) for line in scores.read_text().splitlines()
+                              if line.strip()]
+                if same and score_rows:
+                    print(f"already complete {args.method}/{args.corpus}/seed_{seed}",
+                          flush=True)
+                    continue
+            except (json.JSONDecodeError, OSError):
+                pass
+        frozen_path.write_text(json.dumps(frozen, indent=2) + "\n")
         train = train_command(args.method, args.corpus, out, values, seed, args.python)
         run(train, out / "train.log")
         infer = inference_command(args.method, args.corpus, out, values, args.python)
         if infer:
             run(infer, out / "infer.log")
-        scores = (out / args.corpus / "scores.jsonl"
-                  if args.method == "multihateloc" else out / "scores.jsonl")
         evaluation = [args.python, str(HERE / "eval_baseline_scores.py"),
                       "--corpus", args.corpus, "--scores", str(scores),
-                      "--split", "test", "--json-out", str(out / "frame_eval.json")]
+                      "--split", "test", "--json-out", str(evaluation_path)]
         run(evaluation, out / "eval.log")
         print(f"completed {args.method}/{args.corpus}/seed_{seed}", flush=True)
 
