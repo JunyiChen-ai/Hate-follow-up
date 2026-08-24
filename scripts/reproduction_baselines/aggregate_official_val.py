@@ -21,6 +21,8 @@ METHODS = {
     "vera": ("score_official_postprocessed", "CVPR 2025"),
 }
 CORPORA = ("hatemm", "mhclip_en", "mhclip_zh", "hateclipseg")
+TRAIN_SEEDS = {234, 2025, 3407}
+VERA_SEEDS = {234}
 
 
 def mean_sd(values):
@@ -34,22 +36,38 @@ def main(argv=None):
     ap.add_argument("--root", default="results/reproduction/official_val/final")
     ap.add_argument("--json-out", default="docs/duplex/official_val_results.json")
     ap.add_argument("--md-out", default="docs/duplex/OFFICIAL_VAL_RESULTS.md")
+    ap.add_argument("--allow-partial", action="store_true",
+                    help="write an explicitly incomplete preview instead of "
+                         "requiring every preregistered seed and corpus")
     args = ap.parse_args(argv)
-    root, rows = Path(args.root), []
+    root, rows, errors = Path(args.root), [], []
     for method, (branch, venue) in METHODS.items():
         for corpus in CORPORA:
             runs = []
             for path in sorted((root / method / corpus).glob("seed_*/frame_eval.json")):
                 payload = json.loads(path.read_text())
+                if payload.get("corpus") != corpus or payload.get("split") != "test":
+                    errors.append(f"identity/split mismatch: {path}")
                 if branch not in payload["results"]: continue
                 r = payload["results"][branch]
+                if r.get("n_videos_missing_from_scores") != 0:
+                    errors.append(f"missing scored videos: {path}")
+                if r.get("n_videos_not_in_gold") != 0:
+                    errors.append(f"scores outside frozen gold: {path}")
                 runs.append({"seed": int(path.parent.name.split("_")[-1]),
                              "roc_auc": r["roc_auc"], "pr_auc": r["pr_auc"],
                              "video_roc_auc": r["video_level"]["max_roc_auc"],
                              "video_pr_auc": r["video_level"]["max_pr_auc"],
                              "within_hate_auc": r["per_video"]["macro_auc"],
                              "within_hate_n": r["per_video"]["n_videos_both_classes"]})
-            if not runs: continue
+            expected = VERA_SEEDS if method == "vera" else TRAIN_SEEDS
+            actual = {r["seed"] for r in runs}
+            if actual != expected:
+                errors.append(
+                    f"{method}/{corpus} seeds {sorted(actual)}; "
+                    f"expected {sorted(expected)}")
+            if not runs:
+                continue
             rows.append({"method": method, "venue": venue, "corpus": corpus,
                          "branch": branch, "protocol": "official-val",
                          "n_seeds": len(runs), "seeds": [r["seed"] for r in runs],
@@ -57,7 +75,12 @@ def main(argv=None):
                             for k in ("roc_auc", "pr_auc", "video_roc_auc",
                                       "video_pr_auc", "within_hate_auc")},
                          "within_hate_n": runs[0]["within_hate_n"]})
-    payload = {"schema_version": 1, "protocol": "official-val", "rows": rows}
+    if errors and not args.allow_partial:
+        raise SystemExit("official-val aggregation refused:\n  - " +
+                         "\n  - ".join(errors))
+    payload = {"schema_version": 1, "protocol": "official-val",
+               "complete": not errors, "validation_errors": errors,
+               "rows": rows}
     jout = Path(args.json_out); jout.parent.mkdir(parents=True, exist_ok=True)
     jout.write_text(json.dumps(payload, indent=2) + "\n")
     lines = ["# Weakly supervised baselines — official validation", "",
