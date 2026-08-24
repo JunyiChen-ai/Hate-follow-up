@@ -16,10 +16,8 @@ for corpus in $CORPORA; do
   raw="$final/raw"
   mkdir -p "$selection" "$final" "$raw"
 
-  if [[ ! -s "$selection/selected_prompt.json" ]]; then
-    "$PYTHON" scripts/reproduction_baselines/vera_adapter.py select \
-      --corpus "$corpus" --out-dir "$selection"
-  fi
+  "$PYTHON" scripts/reproduction_baselines/vera_adapter.py select \
+    --corpus "$corpus" --out-dir "$selection"
 
   "$PYTHON" scripts/reproduction_baselines/vera_adapter.py infer \
     --corpus "$corpus" --split test --out-dir "$raw" \

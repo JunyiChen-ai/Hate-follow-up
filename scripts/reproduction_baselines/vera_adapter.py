@@ -121,19 +121,55 @@ def predict(model, tok, images, prompts):
     return int("yes" in response.lower() and "no, there" not in response.lower()), response
 
 
+def valid_selection(path, corpus):
+    try:
+        rec = json.loads(Path(path).read_text())
+        return (rec.get("corpus") == corpus and
+                rec.get("selection_split") == "official-val" and
+                rec.get("selected") in PROMPT_BANK and
+                rec.get("prompts") == PROMPT_BANK[rec["selected"]] and
+                set(rec.get("scores", {})) == set(PROMPT_BANK) and
+                all(math.isfinite(float(x)) for x in rec["scores"].values()) and
+                rec.get("backbone") == MODEL_ID)
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return False
+
+
+def completed_validation_rows(path, valid_ids):
+    rows, dirty = {}, False
+    if path.is_file():
+        for line in path.read_text().splitlines():
+            try:
+                rec = json.loads(line)
+                if (rec.get("video_id") not in valid_ids or
+                        rec.get("score") not in (0, 1) or
+                        not isinstance(rec.get("response"), str)):
+                    raise ValueError("invalid validation row")
+                rows[rec["video_id"]] = rec
+            except (ValueError, TypeError, json.JSONDecodeError):
+                dirty = True
+    if dirty:
+        path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n"
+                                for r in rows.values()))
+    return rows
+
+
 def select(args):
     from sklearn.metrics import average_precision_score
+    root = Path(args.out_dir); root.mkdir(parents=True, exist_ok=True)
+    selected_path = root / "selected_prompt.json"
+    if valid_selection(selected_path, args.corpus):
+        print(f"already selected {args.corpus}: {selected_path}")
+        return
     model, tok = load_model()
     labels = hdata.load_labels(args.corpus)
     ids = hdata.load_split(args.corpus, "val")
-    root = Path(args.out_dir); root.mkdir(parents=True, exist_ok=True)
+    valid_ids = set(ids)
     scores = {}
     for name, prompts in PROMPT_BANK.items():
         pred = []
         log = root / f"val_{name}.jsonl"
-        done = {}
-        if log.is_file():
-            done = {r["video_id"]: r for r in map(json.loads, log.read_text().splitlines())}
+        done = completed_validation_rows(log, valid_ids)
         with log.open("a") as fh:
             for vid in ids:
                 if vid in done:
@@ -150,8 +186,24 @@ def select(args):
                "metric": "video_average_precision", "scores": scores,
                "selected": best, "prompts": PROMPT_BANK[best],
                "backbone": MODEL_ID}
-    (root / "selected_prompt.json").write_text(json.dumps(payload, indent=2) + "\n")
+    selected_path.write_text(json.dumps(payload, indent=2) + "\n")
     print(json.dumps(payload, indent=2))
+
+
+def valid_raw_result(path, vid, stride):
+    try:
+        rec = json.loads(path.read_text())
+        duration = float(rec["duration"])
+        segments = rec["segments"]
+        expected = len(np.arange(0, max(1, math.ceil(duration)), stride))
+        return (rec.get("video_id") == vid and math.isfinite(duration) and
+                duration > 0 and len(segments) == expected and expected > 0 and
+                all(x.get("score") in (0, 1) and
+                    math.isfinite(float(x["start"])) and
+                    math.isfinite(float(x["end"])) and
+                    isinstance(x.get("response"), str) for x in segments))
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return False
 
 
 def infer(args):
@@ -162,7 +214,7 @@ def infer(args):
     ids = hdata.load_split(args.corpus, args.split)
     for vi, vid in enumerate(ids, 1):
         out = root / f"{vid}.json"
-        if out.is_file():
+        if valid_raw_result(out, vid, args.stride):
             continue
         path = video_path(args.corpus, vid)
         _, duration = read_frames(path, 0, 1, 8)
