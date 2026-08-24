@@ -182,12 +182,13 @@ def main(argv=None):
                 # variant before the first update.
                 raise optuna.TrialPruned(
                     "CMHKF upstream fusion requires visual_length=256")
-            if values["batch_size"] < 32:
-                # A measured 10-epoch HateMM trial takes about 40 minutes at
-                # batch 16; batch 32 is memory-safe and halves the number of
-                # expensive prompt/video encoder updates per epoch.
+            if values["batch_size"] != 32:
+                # Full 10-epoch probes take roughly 40 minutes at batches 16,
+                # 32, and 96: the upstream fusion compute, not update count,
+                # dominates.  Batch 96 also reduced validation AP from .8125
+                # to .7408, while batch 16 is computationally infeasible.
                 raise optuna.TrialPruned(
-                    "CMHKF batch_size=16 is computationally infeasible")
+                    "CMHKF batch_size=32 is the only viable setting")
             if values["max_epoch"] > 10:
                 # Two full 10-epoch feasibility runs selected epoch 4 and
                 # degraded thereafter, while each run required about 40
