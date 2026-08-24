@@ -9,6 +9,19 @@ CORPORA="${CORPORA:-hatemm mhclip_en mhclip_zh hateclipseg}"
 TUNING_ROOT="${TUNING_ROOT:-$ROOT/results/reproduction/official_val/tuning}"
 FINAL_ROOT="${FINAL_ROOT:-$ROOT/results/reproduction/official_val/final}"
 MIN_FREE_GPU_MIB="${MIN_FREE_GPU_MIB:-20480}"
+CODE_COMMIT="${CODE_COMMIT:-$(git -C "$ROOT" rev-parse HEAD)}"
+
+verify_code_commit() {
+  local head dirty
+  head="$(git -C "$ROOT" rev-parse HEAD)"
+  dirty="$(git -C "$ROOT" status --porcelain --untracked-files=no)"
+  if [[ "$head" != "$CODE_COMMIT" || -n "$dirty" ]]; then
+    echo "VERA code changed: expected $CODE_COMMIT, head=$head, tracked_dirty=$([[ -n "$dirty" ]] && echo true || echo false)" >&2
+    exit 1
+  fi
+}
+
+verify_code_commit
 
 mkdir -p "$FINAL_ROOT/vera"
 VERA_LOCK="$FINAL_ROOT/vera/.runner.lock"
@@ -38,10 +51,12 @@ for corpus in $CORPORA; do
   mkdir -p "$selection" "$final" "$raw"
 
   wait_for_vera_gpu
+  verify_code_commit
   "$PYTHON" scripts/reproduction_baselines/vera_adapter.py select \
     --corpus "$corpus" --out-dir "$selection"
 
   wait_for_vera_gpu
+  verify_code_commit
   "$PYTHON" scripts/reproduction_baselines/vera_adapter.py infer \
     --corpus "$corpus" --split test --out-dir "$raw" \
     --prompt-json "$selection/selected_prompt.json"
@@ -52,17 +67,20 @@ for corpus in $CORPORA; do
     --corpus "$corpus" --split test --scores "$final/scores.jsonl" \
     --require-full-coverage --json-out "$final/frame_eval.json"
 
-  "$PYTHON" - "$selection/selected_prompt.json" "$final/frozen_config.json" <<'PY'
+  verify_code_commit
+  "$PYTHON" - "$selection/selected_prompt.json" "$final/frozen_config.json" "$CODE_COMMIT" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-source, out = map(Path, sys.argv[1:])
+source, out = map(Path, sys.argv[1:3])
+code_commit = sys.argv[3]
 selected = json.loads(source.read_text())
 payload = {
     "method": "vera",
     "corpus": selected["corpus"],
     "seed": 234,
+    "code_commit": code_commit,
     "deterministic_inference": True,
     "selection_split": selected["selection_split"],
     "selection_metric": selected["metric"],
