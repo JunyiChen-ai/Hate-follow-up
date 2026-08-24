@@ -162,14 +162,21 @@ def main(argv=None):
             hateful = text[1] / text[1].norm()
             loss_text = 1 + normal @ hateful
             loss = args.loss_mil * loss1 + args.loss_align * loss2 + args.loss_text * loss_text
+            if not torch.isfinite(loss).item():
+                raise RuntimeError("CMHKF training loss became non-finite")
             opt.zero_grad(); loss.backward(); opt.step(); total += float(loss.detach())
         sched.step()
         score = val_ap(model, args.corpus, val_ids, labels, length, device)
+        if not np.isfinite(score):
+            raise RuntimeError(
+                f"CMHKF validation AP became non-finite at epoch {epoch}")
         history.append({"epoch": epoch, "loss": total / max(len(loader), 1),
                         "val_video_ap": score})
         print(f"epoch {epoch}/{args.max_epoch} loss={history[-1]['loss']:.4f} val_ap={score:.4f}", flush=True)
         if score > best_ap:
             best_ap, best_epoch, best_state = score, epoch, copy.deepcopy(model.state_dict())
+    if best_state is None:
+        raise RuntimeError("CMHKF produced no finite validation checkpoint")
     model.load_state_dict(best_state)
     out = Path(args.out_dir); out.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), out / "model.pth")

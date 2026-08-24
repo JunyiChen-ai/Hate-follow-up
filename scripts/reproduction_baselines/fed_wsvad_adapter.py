@@ -115,6 +115,8 @@ def local_update(model, loader, epochs, lr, device):
         for feat, label, lengths in loader:
             feat, label, lengths = feat.to(device), label.to(device), lengths.to(device)
             loss = mil_loss(model(feat, PROMPTS, lengths), label, lengths)
+            if not torch.isfinite(loss).item():
+                raise RuntimeError("Fed-WSVAD training loss became non-finite")
             opt.zero_grad()
             loss.backward()
             opt.step()
@@ -181,6 +183,9 @@ def main(argv=None):
                   for name in global_state}
         apply_trainable(model, merged)
         score = val_ap(model, args.corpus, val_ids, labels, visual_length, device)
+        if not np.isfinite(score):
+            raise RuntimeError(
+                f"Fed-WSVAD validation AP became non-finite at round {rnd}")
         history.append({"round": rnd, "loss": float(np.average(losses,
                         weights=weights)), "val_video_ap": score})
         print(f"round {rnd}/{args.global_rounds} loss={history[-1]['loss']:.4f} val_ap={score:.4f}", flush=True)
@@ -188,6 +193,8 @@ def main(argv=None):
             best_ap, best_round = score, rnd
             best_state = copy.deepcopy(model.state_dict())
 
+    if best_state is None:
+        raise RuntimeError("Fed-WSVAD produced no finite validation checkpoint")
     model.load_state_dict(best_state)
     out = Path(args.out_dir); out.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), out / "model.pth")
