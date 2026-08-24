@@ -56,7 +56,14 @@ def suggest(trial, method, corpus):
                 "dropout": trial.suggest_categorical("dropout", [.05, .1, .2]),
                 "temperature": trial.suggest_categorical("temperature", [.03, .07, .1])}
 
-    length, window = temporal(trial, corpus)
+    # CMHKF's upstream fusion block is fixed at 256 visual tokens.  The
+    # shorter MHClip search space used by the other CLIP ports would make
+    # every CMHKF trial structurally invalid.
+    if method == "cmhkf" and corpus.startswith("mhclip"):
+        choice = trial.suggest_categorical("temporal", ["256:32", "256:64"])
+        length, window = map(int, choice.split(":"))
+    else:
+        length, window = temporal(trial, corpus)
     common = {"lr": trial.suggest_float("lr", 1e-6, 5e-4, log=True),
               "batch_size": trial.suggest_categorical("batch_size", [16, 32, 64, 96]),
               "visual_length": length, "attn_window": window}
