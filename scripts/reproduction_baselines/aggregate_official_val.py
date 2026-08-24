@@ -87,11 +87,14 @@ def main(argv=None):
                 try:
                     frozen = json.loads(frozen_path.read_text())
                     commit = frozen["code_commit"]
+                    source = Path(frozen["source"])
                     frozen_ok = (frozen.get("method") == method and
                                  frozen.get("corpus") == corpus and
                                  frozen.get("seed") == seed and
                                  isinstance(commit, str) and len(commit) == 40 and
-                                 all(ch in "0123456789abcdef" for ch in commit))
+                                 all(ch in "0123456789abcdef" for ch in commit) and
+                                 source.is_file() and
+                                 frozen.get("source_sha256") == file_sha256(source))
                 except (OSError, KeyError, TypeError, json.JSONDecodeError):
                     frozen_ok, commit = False, None
                 if not frozen_ok:

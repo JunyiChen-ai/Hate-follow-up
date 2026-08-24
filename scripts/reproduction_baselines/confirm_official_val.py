@@ -119,6 +119,7 @@ def main():
     verify_code_commit(code_commit)
     best_path = Path(args.tuning_root) / args.method / args.corpus / "best.json"
     selected = json.loads(best_path.read_text())
+    source_sha256 = file_sha256(best_path)
     values = materialize(selected["best_params"])
     confirmation_root = Path(args.final_root) / args.method / args.corpus
     confirmation_root.mkdir(parents=True, exist_ok=True)
@@ -130,11 +131,14 @@ def main():
         raise SystemExit(
             f"another confirmation owns {args.method}/{args.corpus}: {lock_path}")
     for seed in SEEDS:
+        if file_sha256(best_path) != source_sha256:
+            raise RuntimeError(f"validation selection changed: {best_path}")
         out = confirmation_root / f"seed_{seed}"
         out.mkdir(parents=True, exist_ok=True)
         frozen = {"method": args.method, "corpus": args.corpus, "seed": seed,
                   "code_commit": code_commit,
-                  "source": str(best_path), "best_trial": selected["best_trial"],
+                  "source": str(best_path), "source_sha256": source_sha256,
+                  "best_trial": selected["best_trial"],
                   "best_validation_ap": selected["best_value"], "params": values}
         frozen_path = out / "frozen_config.json"
         scores = (out / args.corpus / "scores.jsonl"
@@ -180,6 +184,8 @@ def main():
                       "--json-out", str(evaluation_path)]
         run(evaluation, out / "eval.log")
         verify_code_commit(code_commit)
+        if file_sha256(best_path) != source_sha256:
+            raise RuntimeError(f"validation selection changed: {best_path}")
         print(f"completed {args.method}/{args.corpus}/seed_{seed}", flush=True)
 
 

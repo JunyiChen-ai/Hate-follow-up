@@ -54,9 +54,11 @@ for corpus in $CORPORA; do
   verify_code_commit
   "$PYTHON" scripts/reproduction_baselines/vera_adapter.py select \
     --corpus "$corpus" --out-dir "$selection"
+  selection_sha256="$(sha256sum "$selection/selected_prompt.json" | cut -d' ' -f1)"
 
   wait_for_vera_gpu
   verify_code_commit
+  test "$selection_sha256" = "$(sha256sum "$selection/selected_prompt.json" | cut -d' ' -f1)"
   "$PYTHON" scripts/reproduction_baselines/vera_adapter.py infer \
     --corpus "$corpus" --split test --out-dir "$raw" \
     --prompt-json "$selection/selected_prompt.json"
@@ -68,13 +70,15 @@ for corpus in $CORPORA; do
     --require-full-coverage --json-out "$final/frame_eval.json"
 
   verify_code_commit
-  "$PYTHON" - "$selection/selected_prompt.json" "$final/frozen_config.json" "$CODE_COMMIT" <<'PY'
+  test "$selection_sha256" = "$(sha256sum "$selection/selected_prompt.json" | cut -d' ' -f1)"
+  "$PYTHON" - "$selection/selected_prompt.json" "$final/frozen_config.json" "$CODE_COMMIT" "$selection_sha256" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 source, out = map(Path, sys.argv[1:3])
 code_commit = sys.argv[3]
+source_sha256 = sys.argv[4]
 selected = json.loads(source.read_text())
 payload = {
     "method": "vera",
@@ -89,6 +93,7 @@ payload = {
     "backbone": selected["backbone"],
     "attention_backend": selected["attention_backend"],
     "source": str(source),
+    "source_sha256": source_sha256,
 }
 temporary = out.with_name(out.name + ".tmp")
 temporary.write_text(json.dumps(payload, indent=2) + "\n")
