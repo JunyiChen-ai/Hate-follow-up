@@ -201,6 +201,7 @@ def train(args):
     dnp_use = bool(args.DNP_use)
     best_ap, best_state, best_epoch = -1.0, None, -1
     history = []
+    stopped_nonfinite = False
 
     for e in range(args.max_epoch):
         model.train()
@@ -218,6 +219,19 @@ def train(args):
             else:
                 text_features, logits1, logits2, logits3, logits4 = out
                 DNP = None
+
+            # Some aggressive configurations remain useful for many epochs
+            # before an optimiser update makes the next forward pass NaN.  Do
+            # not feed those values into CUDA BCE (which poisons the process
+            # with a device-side assert): stop cleanly and retain the best
+            # validation-selected state accumulated so far.
+            tensors = (text_features, logits1, logits2, logits3, logits4)
+            if not all(torch.isfinite(x).all().item() for x in tensors):
+                stopped_nonfinite = True
+                print("non-finite model output; stopping early and retaining "
+                      "the best validation checkpoint")
+                sys.stdout.flush()
+                break
 
             loss1 = runtime.CLAS2(logits1, text_labels, feat_lengths, device)
             loss2 = runtime.CLASM(logits2, text_labels, feat_lengths, device)
@@ -239,6 +253,13 @@ def train(args):
                 gloss = torch.zeros(())
                 loss = loss1 + loss2 + loss3 + loss4 + loss5
 
+            if not torch.isfinite(loss).all().item():
+                stopped_nonfinite = True
+                print("non-finite loss; stopping early and retaining the best "
+                      "validation checkpoint")
+                sys.stdout.flush()
+                break
+
             optimizer_main.zero_grad()
             optimizer_refiner.zero_grad()
             loss.backward()
@@ -249,6 +270,9 @@ def train(args):
             totals += [loss1.item(), loss2.item(), loss3.item(), loss4.item(),
                        loss5.item(), closs.item(), gloss.item()]
             n_batches += 1
+
+        if stopped_nonfinite:
+            break
 
         scheduler_main.step()
         totals /= max(n_batches, 1)
@@ -271,6 +295,10 @@ def train(args):
             best_ap, best_epoch = val_ap, e + 1
             best_state = copy.deepcopy(model.state_dict())
 
+    if stopped_nonfinite and best_state is None:
+        raise RuntimeError(
+            "DSA-Net became non-finite before producing a valid checkpoint")
+
     if args.select == "val" and best_state is not None:
         model.load_state_dict(best_state)
         print("selected epoch %d (val video AP %.4f)" % (best_epoch, best_ap))
@@ -289,6 +317,7 @@ def train(args):
             "selected_epoch": (best_epoch if args.select == "val"
                                else args.max_epoch),
             "selected_val_video_ap": best_ap if best_ap >= 0 else None,
+            "stopped_nonfinite": stopped_nonfinite,
             "history": history,
             "class_prompts": prompt_text,
         }, fh, indent=2)
