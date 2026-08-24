@@ -30,6 +30,7 @@ Usage
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -43,6 +44,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "duplex")))
 
 from hate_common import data as hdata          # noqa: E402
 import frame_eval_common as fec                # noqa: E402
+
+
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def evaluate_scores(scores, gt, hate_ids=None):
@@ -175,6 +184,7 @@ def main(argv=None):
                     exist_ok=True)
         payload = {"corpus": args.corpus, "split": args.split,
                    "scores_file": os.path.abspath(args.scores),
+                   "scores_sha256": file_sha256(args.scores),
                    "n_hate_videos_in_gold": len(hate_ids),
                    "results": results}
         target = os.path.abspath(args.json_out)

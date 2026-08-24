@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import statistics
@@ -44,6 +45,14 @@ def atomic_write(path, content):
     temporary.replace(path)
 
 
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="results/reproduction/official_val/final")
@@ -61,6 +70,10 @@ def main(argv=None):
                 payload = json.loads(path.read_text())
                 if payload.get("corpus") != corpus or payload.get("split") != "test":
                     errors.append(f"identity/split mismatch: {path}")
+                score_path = Path(payload.get("scores_file", ""))
+                if (not score_path.is_file() or
+                        payload.get("scores_sha256") != file_sha256(score_path)):
+                    errors.append(f"score fingerprint mismatch: {path}")
                 if branch not in payload["results"]: continue
                 r = payload["results"][branch]
                 if r.get("n_videos_missing_from_scores") != 0:

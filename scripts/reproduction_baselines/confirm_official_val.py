@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -19,6 +20,14 @@ def atomic_write(path, content):
     temporary = path.with_name(path.name + ".tmp")
     temporary.write_text(content)
     temporary.replace(path)
+
+
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def materialize(best):
@@ -121,13 +130,20 @@ def main():
             try:
                 same = json.loads(frozen_path.read_text()) == frozen
                 evaluation_payload = json.loads(evaluation_path.read_text())
+                identity_ok = (
+                    evaluation_payload.get("corpus") == args.corpus and
+                    evaluation_payload.get("split") == "test" and
+                    Path(evaluation_payload.get("scores_file", "")).resolve() ==
+                    scores.resolve() and
+                    evaluation_payload.get("scores_sha256") == file_sha256(scores))
                 coverage_ok = all(
                     not result.get("n_videos_missing_from_scores") and
                     not result.get("n_videos_not_in_gold")
                     for result in evaluation_payload.get("results", {}).values())
                 score_rows = [json.loads(line) for line in scores.read_text().splitlines()
                               if line.strip()]
-                if same and score_rows and coverage_ok and evaluation_payload.get("results"):
+                if (same and identity_ok and score_rows and coverage_ok and
+                        evaluation_payload.get("results")):
                     print(f"already complete {args.method}/{args.corpus}/seed_{seed}",
                           flush=True)
                     continue
