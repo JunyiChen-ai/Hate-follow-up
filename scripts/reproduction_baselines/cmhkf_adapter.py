@@ -10,6 +10,7 @@ from pathlib import Path
 import random
 import sys
 import time
+import types
 
 import numpy as np
 import torch
@@ -53,6 +54,24 @@ def seed_all(seed):
 
 def onehot(labels, device):
     return hdata.label_vectors(labels, device)
+
+
+def reuse_identical_text_prompt_pass(model):
+    """Avoid CMHKF's duplicate, mathematically identical CLIP text pass."""
+    original_begin = model.encode_textprompt_begin
+
+    def encode_begin(this, text):
+        result = original_begin(text)
+        this._reproduction_prompt_cache = result
+        return result
+
+    def encode_reuse(this, text):
+        result = this._reproduction_prompt_cache
+        del this._reproduction_prompt_cache
+        return result
+
+    model.encode_textprompt_begin = types.MethodType(encode_begin, model)
+    model.encode_textprompt = types.MethodType(encode_reuse, model)
 
 
 def score_ids(model, corpus, ids, length, device, batch_size=32):
@@ -126,6 +145,7 @@ def main(argv=None):
                         generator=torch.Generator().manual_seed(args.seed))
     model = CMHKF(2, 512, length, 512, 1, 1, window,
                   args.prompt_prefix, args.prompt_postfix, str(device)).to(device)
+    reuse_identical_text_prompt_pass(model)
     opt = torch.optim.AdamW((p for p in model.parameters() if p.requires_grad), lr=args.lr)
     sched = MultiStepLR(opt, [3, 6, 10], 0.1)
     best_ap, best_epoch, best_state, history = -1.0, None, None, []
