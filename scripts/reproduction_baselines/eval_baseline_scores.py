@@ -140,6 +140,9 @@ def main(argv=None):
                          "field present in the file")
     ap.add_argument("--json-out", default=None,
                     help="write the full result dict here")
+    ap.add_argument("--require-full-coverage", action="store_true",
+                    help="abort unless every frozen-gold video is scored and "
+                         "no score lies outside the frozen cohort")
     args = ap.parse_args(argv)
 
     records = hdata.load_scores_jsonl(args.scores)
@@ -158,6 +161,11 @@ def main(argv=None):
             raise SystemExit("ABORT: branch %r absent from %s"
                              % (branch, args.scores))
         results[branch] = evaluate_scores(scores, gt, hate_ids)
+        if (args.require_full_coverage and
+                (results[branch]["n_videos_missing_from_scores"] or
+                 results[branch]["n_videos_not_in_gold"])):
+            raise SystemExit(
+                f"ABORT: {branch} does not exactly cover frozen {args.split}")
         print(format_report(results[branch],
                             "%s / %s / %s" % (args.corpus, args.split, branch)))
         print("")
@@ -169,8 +177,11 @@ def main(argv=None):
                    "scores_file": os.path.abspath(args.scores),
                    "n_hate_videos_in_gold": len(hate_ids),
                    "results": results}
-        with open(args.json_out, "w") as fh:
+        target = os.path.abspath(args.json_out)
+        temporary = target + ".tmp"
+        with open(temporary, "w") as fh:
             json.dump(payload, fh, indent=2, default=float)
+        os.replace(temporary, target)
         print("wrote %s" % args.json_out)
     return 0
 

@@ -50,7 +50,7 @@ for corpus in $CORPORA; do
     --out "$final/scores.jsonl"
   "$PYTHON" scripts/reproduction_baselines/eval_baseline_scores.py \
     --corpus "$corpus" --split test --scores "$final/scores.jsonl" \
-    --json-out "$final/frame_eval.json"
+    --require-full-coverage --json-out "$final/frame_eval.json"
 
   "$PYTHON" - "$selection/selected_prompt.json" "$final/frozen_config.json" <<'PY'
 import json

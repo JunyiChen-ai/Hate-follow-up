@@ -120,10 +120,14 @@ def main():
         if frozen_path.is_file() and scores.is_file() and evaluation_path.is_file():
             try:
                 same = json.loads(frozen_path.read_text()) == frozen
-                json.loads(evaluation_path.read_text())
+                evaluation_payload = json.loads(evaluation_path.read_text())
+                coverage_ok = all(
+                    not result.get("n_videos_missing_from_scores") and
+                    not result.get("n_videos_not_in_gold")
+                    for result in evaluation_payload.get("results", {}).values())
                 score_rows = [json.loads(line) for line in scores.read_text().splitlines()
                               if line.strip()]
-                if same and score_rows:
+                if same and score_rows and coverage_ok and evaluation_payload.get("results"):
                     print(f"already complete {args.method}/{args.corpus}/seed_{seed}",
                           flush=True)
                     continue
@@ -137,7 +141,8 @@ def main():
             run(infer, out / "infer.log")
         evaluation = [args.python, str(HERE / "eval_baseline_scores.py"),
                       "--corpus", args.corpus, "--scores", str(scores),
-                      "--split", "test", "--json-out", str(evaluation_path)]
+                      "--split", "test", "--require-full-coverage",
+                      "--json-out", str(evaluation_path)]
         run(evaluation, out / "eval.log")
         print(f"completed {args.method}/{args.corpus}/seed_{seed}", flush=True)
 
