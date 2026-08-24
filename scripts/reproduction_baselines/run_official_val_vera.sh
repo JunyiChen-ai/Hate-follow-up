@@ -8,6 +8,19 @@ PYTHON="${PYTHON:-/home/jehc223/miniconda3/envs/HateVideo/bin/python}"
 CORPORA="${CORPORA:-hatemm mhclip_en mhclip_zh hateclipseg}"
 TUNING_ROOT="${TUNING_ROOT:-$ROOT/results/reproduction/official_val/tuning}"
 FINAL_ROOT="${FINAL_ROOT:-$ROOT/results/reproduction/official_val/final}"
+MIN_FREE_GPU_MIB="${MIN_FREE_GPU_MIB:-20480}"
+
+wait_for_vera_gpu() {
+  local free_mib
+  while true; do
+    free_mib="$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits | head -n1)"
+    if [[ "$free_mib" =~ ^[0-9]+$ ]] && (( free_mib >= MIN_FREE_GPU_MIB )); then
+      return 0
+    fi
+    echo "VERA waiting for ${MIN_FREE_GPU_MIB} MiB free GPU memory (now ${free_mib:-unknown})" >&2
+    sleep 60
+  done
+}
 
 cd "$ROOT"
 for corpus in $CORPORA; do
@@ -16,9 +29,11 @@ for corpus in $CORPORA; do
   raw="$final/raw"
   mkdir -p "$selection" "$final" "$raw"
 
+  wait_for_vera_gpu
   "$PYTHON" scripts/reproduction_baselines/vera_adapter.py select \
     --corpus "$corpus" --out-dir "$selection"
 
+  wait_for_vera_gpu
   "$PYTHON" scripts/reproduction_baselines/vera_adapter.py infer \
     --corpus "$corpus" --split test --out-dir "$raw" \
     --prompt-json "$selection/selected_prompt.json"
