@@ -55,22 +55,38 @@ def onehot(labels, device):
     return hdata.label_vectors(labels, device)
 
 
-def score_ids(model, corpus, ids, length, device):
-    out = {}
+def score_ids(model, corpus, ids, length, device, batch_size=32):
+    out, blocks_all, lengths_all, owners, sizes = {}, [], [], [], {}
     model.eval()
+    for vid in ids:
+        v = np.load(hdata.feature_path(corpus, vid)).astype(np.float32)
+        a = np.load(VGG_ROOT / corpus / f"{vid}.npy").astype(np.float32)
+        n = len(v)
+        blocks, _ = hdata.tools.process_split(np.concatenate([v, a], -1), length)
+        # process_split returns [T, D] when the video fits in one block,
+        # but CMHKF consistently expects a batched [B, T, D] tensor.
+        if blocks.ndim == 2:
+            blocks = blocks[None, ...]
+        lens = runtime.chunk_lengths(n, length).cpu().tolist()
+        blocks_all.extend(blocks)
+        lengths_all.extend(lens)
+        owners.extend([vid] * len(blocks))
+        sizes[vid] = n
+        out[vid] = {"score_mil": [], "score_align": []}
     with torch.no_grad():
-        for vid in ids:
-            v = np.load(hdata.feature_path(corpus, vid)).astype(np.float32)
-            a = np.load(VGG_ROOT / corpus / f"{vid}.npy").astype(np.float32)
-            n = len(v)
-            blocks, _ = hdata.tools.process_split(np.concatenate([v, a], -1), length)
-            lens = runtime.chunk_lengths(n, length).to(device)
-            _, l1, l2, _, _ = model(torch.from_numpy(blocks).to(device), None,
-                                     PROMPTS, lens)
-            out[vid] = {
-                "score_mil": torch.sigmoid(l1).reshape(-1)[:n].float().cpu().numpy(),
-                "score_align": (1 - l2.softmax(-1)[..., 0]).reshape(-1)[:n].float().cpu().numpy(),
-            }
+        for start in range(0, len(blocks_all), batch_size):
+            stop = min(start + batch_size, len(blocks_all))
+            feat = torch.from_numpy(np.stack(blocks_all[start:stop])).to(device)
+            lens = torch.tensor(lengths_all[start:stop], device=device)
+            _, l1, l2, _, _ = model(feat, None, PROMPTS, lens)
+            mil = torch.sigmoid(l1).reshape(stop - start, -1).float().cpu().numpy()
+            align = (1 - l2.softmax(-1)[..., 0]).reshape(stop - start, -1).float().cpu().numpy()
+            for i, vid in enumerate(owners[start:stop]):
+                out[vid]["score_mil"].append(mil[i])
+                out[vid]["score_align"].append(align[i])
+    for vid in ids:
+        for key in ("score_mil", "score_align"):
+            out[vid][key] = np.concatenate(out[vid][key])[:sizes[vid]]
     return out
 
 

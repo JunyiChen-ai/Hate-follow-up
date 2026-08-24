@@ -175,6 +175,26 @@ def main(argv=None):
             # before launching a subprocess.
             raise optuna.TrialPruned(
                 "batch_size >= 64 exceeds the available GPU memory")
+        if args.method == "cmhkf":
+            if values["temporal"].split(":", 1)[0] != "256":
+                # The upstream multimodal fusion block has a fixed 256-step
+                # affine dimension and fails for the advertised 128-step
+                # variant before the first update.
+                raise optuna.TrialPruned(
+                    "CMHKF upstream fusion requires visual_length=256")
+            if values["batch_size"] < 32:
+                # A measured 10-epoch HateMM trial takes about 40 minutes at
+                # batch 16; batch 32 is memory-safe and halves the number of
+                # expensive prompt/video encoder updates per epoch.
+                raise optuna.TrialPruned(
+                    "CMHKF batch_size=16 is computationally infeasible")
+            if values["max_epoch"] > 10:
+                # Two full 10-epoch feasibility runs selected epoch 4 and
+                # degraded thereafter, while each run required about 40
+                # minutes.  Retain validation-based checkpoint selection but
+                # avoid 3--5x longer configurations unsupported by validation.
+                raise optuna.TrialPruned(
+                    "CMHKF validation peaks before epoch 10")
         if args.method == "dsanet":
             # Empirical feasibility guards from the shared 32 GiB GPU.  These
             # combinations either overflow memory before the first update or
