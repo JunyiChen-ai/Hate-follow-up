@@ -30,6 +30,18 @@ def file_sha256(path):
     return digest.hexdigest()
 
 
+def verify_code_commit(expected):
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
+    dirty = subprocess.check_output(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=REPO, text=True).strip()
+    if head != expected or dirty:
+        raise RuntimeError(
+            f"confirmation code changed: expected {expected}, head={head}, "
+            f"tracked_dirty={bool(dirty)}")
+
+
 def materialize(best):
     values = dict(best)
     temporal = values.pop("temporal", None)
@@ -99,7 +111,12 @@ def main():
         REPO / "results/reproduction/official_val/tuning"))
     ap.add_argument("--final-root", default=str(
         REPO / "results/reproduction/official_val/final"))
+    ap.add_argument("--code-commit", default=None,
+                    help="Git commit frozen across all confirmation subprocesses")
     args = ap.parse_args()
+    code_commit = args.code_commit or subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
+    verify_code_commit(code_commit)
     best_path = Path(args.tuning_root) / args.method / args.corpus / "best.json"
     selected = json.loads(best_path.read_text())
     values = materialize(selected["best_params"])
@@ -116,6 +133,7 @@ def main():
         out = confirmation_root / f"seed_{seed}"
         out.mkdir(parents=True, exist_ok=True)
         frozen = {"method": args.method, "corpus": args.corpus, "seed": seed,
+                  "code_commit": code_commit,
                   "source": str(best_path), "best_trial": selected["best_trial"],
                   "best_validation_ap": selected["best_value"], "params": values}
         frozen_path = out / "frozen_config.json"
@@ -150,6 +168,7 @@ def main():
             except (json.JSONDecodeError, OSError):
                 pass
         atomic_write(frozen_path, json.dumps(frozen, indent=2) + "\n")
+        verify_code_commit(code_commit)
         train = train_command(args.method, args.corpus, out, values, seed, args.python)
         run(train, out / "train.log")
         infer = inference_command(args.method, args.corpus, out, values, args.python)
@@ -160,6 +179,7 @@ def main():
                       "--split", "test", "--require-full-coverage",
                       "--json-out", str(evaluation_path)]
         run(evaluation, out / "eval.log")
+        verify_code_commit(code_commit)
         print(f"completed {args.method}/{args.corpus}/seed_{seed}", flush=True)
 
 
