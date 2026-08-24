@@ -10,6 +10,14 @@ TUNING_ROOT="${TUNING_ROOT:-$ROOT/results/reproduction/official_val/tuning}"
 FINAL_ROOT="${FINAL_ROOT:-$ROOT/results/reproduction/official_val/final}"
 MIN_FREE_GPU_MIB="${MIN_FREE_GPU_MIB:-20480}"
 
+mkdir -p "$FINAL_ROOT/vera"
+VERA_LOCK="$FINAL_ROOT/vera/.runner.lock"
+exec 9>"$VERA_LOCK"
+if ! flock -n 9; then
+  echo "another VERA runner owns $VERA_LOCK" >&2
+  exit 1
+fi
+
 wait_for_vera_gpu() {
   local free_mib
   while true; do
