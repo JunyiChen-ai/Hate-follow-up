@@ -152,6 +152,9 @@ def main(argv=None):
 
     labels = hdata.load_labels(args.corpus)
     test_ids = hdata.load_split(args.corpus, "test")
+    if args.run_test:
+        gold = hdata.gt_arrays(args.corpus, "test")
+        test_ids = [vid for vid in test_ids if vid in gold]
     train_ids, val_ids = hdata.load_train_val(
         args.corpus, labels, args.val_frac, args.seed)
     print("multihateloc [%s]: %d train, %d val, %d test  (%d hateful in train)"
