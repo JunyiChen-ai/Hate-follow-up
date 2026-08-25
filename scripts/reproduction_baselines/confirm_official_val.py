@@ -84,13 +84,16 @@ def train_command(method, corpus, out, values, seed, python):
 def inference_command(method, corpus, out, values, python):
     if method not in ("vadclip", "dsanet") and not method.startswith("macilsd"):
         return None
-    package = "macilsd" if method.startswith("macilsd") else method
-    cmd = [python, str(HERE / package / "infer.py"), "--corpus", corpus,
-           "--device", "cuda", "--out-dir", str(out), "--split", "test",
-           "--model-path", str(out / "model.pth"), *option_args(values, method)]
     if method.startswith("macilsd"):
         modality = "av" if method == "macilsd" else method.removeprefix("macilsd_")
-        cmd += ["--modality", modality]
+        return [python, str(HERE / "test_macilsd_hatemm.py"),
+                "--corpus", corpus, "--device", "cuda",
+                "--out-dir", str(out), "--split", "test",
+                "--model-path", str(out / "model.pth"),
+                *option_args(values, method), "--modality", modality]
+    cmd = [python, str(HERE / method / "infer.py"), "--corpus", corpus,
+           "--device", "cuda", "--out-dir", str(out), "--split", "test",
+           "--model-path", str(out / "model.pth"), *option_args(values, method)]
     return cmd
 
 
