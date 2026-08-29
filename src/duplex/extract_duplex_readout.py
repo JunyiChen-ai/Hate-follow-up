@@ -174,6 +174,15 @@ def main():
                         help="Defaults to results/duplex_readout/<dataset>")
     parser.add_argument("--video-ids", default=None,
                         help="Comma-separated subset of video ids (smoke tests)")
+    parser.add_argument("--video-ids-file", default=None,
+                        help="Text file containing one video id per line. "
+                             "Mutually exclusive with --video-ids.")
+    parser.add_argument("--manifest", default=None,
+                        help="JSONL cohort manifest. Rows are filtered to the "
+                             "requested dataset and their video_id values are used.")
+    parser.add_argument("--scores-only", action="store_true",
+                        help="Write the frozen Yes/No logit only; skip hidden-state "
+                             "materialization when a downstream readout is not needed.")
     parser.add_argument("--limit", type=int, default=None,
                         help="Process at most this many remaining videos")
     args = parser.parse_args()
@@ -200,7 +209,27 @@ def main():
             overrides = json.load(f)
         logging.info(f"Transcript overrides: {len(overrides)} ids from "
                      f"{args.transcript_override_json}")
-    if args.video_ids:
+    selectors = [bool(args.video_ids), bool(args.video_ids_file), bool(args.manifest)]
+    if sum(selectors) > 1:
+        parser.error("--video-ids, --video-ids-file, and --manifest are mutually exclusive")
+    if args.manifest:
+        manifest_name = {
+            "MHClip_EN": "MHC", "MHClip_ZH": "MHC_zh",
+            "HateMM": "HateMM", "HateClipSeg": "HateClipSeg",
+            "ImpliHateVid": "ImpliHateVid",
+        }[args.dataset]
+        split_ids = []
+        with open(args.manifest) as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                if row.get("dataset") == manifest_name:
+                    split_ids.append(str(row["video_id"]))
+    elif args.video_ids_file:
+        with open(args.video_ids_file) as handle:
+            split_ids = [line.strip() for line in handle if line.strip()]
+    elif args.video_ids:
         split_ids = [v.strip() for v in args.video_ids.split(",") if v.strip()]
     else:
         split_ids = load_clean_split_ids(args.dataset, args.split)
@@ -220,7 +249,20 @@ def main():
     logging.info(f"Model config: n_layers={n_layers} hidden_size={hidden_size} "
                  f"hidden-state array shape {expected_shape}")
 
-    done = load_done_ids(scores_path, hidden_dir, expected_shape)
+    if args.scores_only:
+        done = set()
+        if os.path.exists(scores_path):
+            with open(scores_path) as handle:
+                for line in handle:
+                    try:
+                        row = json.loads(line)
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+                    if (row.get("video_id") and isinstance(row.get("z"), (int, float))
+                            and np.isfinite(row["z"])):
+                        done.add(row["video_id"])
+    else:
+        done = load_done_ids(scores_path, hidden_dir, expected_shape)
     remaining = [v for v in split_ids if v not in done]
     logging.info(f"Resume: {len(done)} complete, {len(remaining)} remaining")
     if args.limit is not None:
@@ -303,14 +345,14 @@ def main():
         n_tokens_total = int(inputs["input_ids"].shape[1])
 
         with torch.no_grad():
-            outputs = model(**inputs, output_hidden_states=True,
+            outputs = model(**inputs, output_hidden_states=not args.scores_only,
                             use_cache=False, logits_to_keep=1)
             # Final prompt position: the one whose next-token distribution is
             # the Yes/No answer.
             last_logits = outputs.logits[0, -1, :].float()
             z = float(torch.logsumexp(last_logits[yes_idx], dim=0)
                       - torch.logsumexp(last_logits[no_idx], dim=0))
-            hidden = torch.stack(
+            hidden = None if args.scores_only else torch.stack(
                 [h[0, -1, :] for h in outputs.hidden_states], dim=0
             ).to(torch.float16).cpu().numpy()
 
@@ -320,11 +362,12 @@ def main():
             n_skipped += 1
             del hidden
             continue
-        if hidden.shape != expected_shape:
+        if hidden is not None and hidden.shape != expected_shape:
             raise SystemExit(f"{vid}: hidden shape {hidden.shape} != {expected_shape}")
 
-        np.save(os.path.join(hidden_dir, f"{vid}.npy"), hidden)
-        del hidden
+        if hidden is not None:
+            np.save(os.path.join(hidden_dir, f"{vid}.npy"), hidden)
+            del hidden
 
         rec = {
             "video_id": vid,

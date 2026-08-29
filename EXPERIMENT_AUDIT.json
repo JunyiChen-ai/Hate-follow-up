@@ -1,0 +1,41 @@
+{
+  "audit_skill": "experiment-audit",
+  "verdict": "WARN",
+  "reason_code": "exploratory_scope_and_unmatched_published_protocol",
+  "summary": "OMSL-v6 artifact integrity passes; exploratory score claims are supported with scope qualifiers, while confirmatory published-method SOTA and interval-decoder claims are unsupported.",
+  "audited_input_hashes": {
+    "scripts/idea_discovery/project_orthogonal_mobius_localizer.py": "sha256:197f52ad7724738623f38b4f2f51ff2a2cea4327ecf6ea03b2feb2edc318368c",
+    "results/idea_discovery/orthogonal_mobius_semantic_localizer_full643_v6.jsonl": "sha256:53c32de1e7b5c2fa533d84b8c7bdd26a7bc789410353610406edd3e497dd8bb5",
+    "results/idea_discovery/orthogonal_mobius_semantic_localizer_full643_v6_metrics.json": "sha256:84d29d15a23056f19dce3d183f095e9396b50e023dddabc1bee43a3fb5f5fb76"
+  },
+  "trace_path": ".aris/traces/experiment-audit/2026-08-29_run02/",
+  "agent_id": "/root/v6_integrity_final",
+  "verdict_id": "/root/v6_integrity_final",
+  "executor_model": "codex-gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "generated_at": "2026-08-29T05:53:40+12:00",
+  "date": "2026-08-29",
+  "auditor": "gpt-5.6-sol-ultra",
+  "overall_verdict": "warn",
+  "integrity_status": "pass",
+  "checks": {
+    "gt_provenance": {"status": "pass", "details": "GT is isolated to evaluator; inference has no GT path."},
+    "score_normalization": {"status": "pass", "details": "Raw unbounded scores feed metrics; no metric self-normalization."},
+    "result_existence": {"status": "warn", "details": "Core arithmetic and hashes pass; pooled bootstrap random stream was not replayed by auditor."},
+    "dead_code": {"status": "warn", "details": "Critical path is live; general evaluator should fail closed on unexpected alignment/nonfinite scores."},
+    "scope": {"status": "warn", "details": "643/644 coverage, 226 within-video-defined videos, development-selected exploratory design."},
+    "eval_type": "real_gt"
+  },
+  "claims": [
+    {"id": "C1", "impact": "supported_with_qualifier"},
+    {"id": "C2", "impact": "supported_with_qualifier"},
+    {"id": "C3", "impact": "unsupported"},
+    {"id": "C4", "impact": "supported"},
+    {"id": "C5", "impact": "unsupported"}
+  ]
+}
