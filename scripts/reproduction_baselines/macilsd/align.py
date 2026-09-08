@@ -21,16 +21,16 @@ What this study has
 -------------------
 Two grids, both honest, neither equal to the other:
 
-    visual  results/reproduction/features/i3d_rgb_5crop/<corpus>/<id>.npy
+    visual  runs/legacy_1fps/lab1/reproduction/features/i3d_rgb_5crop/<corpus>/<id>.npy
             (n_snippets, 5, 1024) float32. Snippet j covers
             [j*16/24, (j+1)*16/24) s = 0.666667 s, recorded exactly in
             <id>.times.json. Frames past the last whole snippet are dropped by
             the extractor.
 
-    audio   results/reproduction/features/vggish_1s/<corpus>/<id>.npy
+    audio   runs/legacy_1fps/lab1/reproduction/features/vggish_1s/<corpus>/<id>.npy
             (T, 128) float32. Row i is second i, i.e. [i, i+1).
 
-The second grid is the gold grid: `results/reproduction/gt/<corpus>_test.npz`
+The second grid is the gold grid: `runs/legacy_1fps/lab1/reproduction/gt/<corpus>_test.npz`
 arrays have length exactly T for all 214 + 158 + 153 gold videos, checked in
 smoke_cpu_macilsd.py. The two grids also do not cover the same span. Because
 the extractor drops the tail frames that do not fill a whole snippet, audio

@@ -13,7 +13,7 @@ one 512-d row per 16-frame snippet, so a row is roughly 0.53 s (UCF, 30 fps) or
 score 16 times to reach the frame grid.
 
 This study's features are one 512-d row per second, sampled on the same 1 fps
-grid the gold spans are rasterised onto (docs/duplex/FRAME_EVAL_PROTOCOL.md).
+grid the gold spans are rasterised onto (docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md).
 So:
 
     one feature row  ==  one snippet (the model's temporal unit)

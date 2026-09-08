@@ -71,7 +71,7 @@ def build_parser():
 
     # --- io ---
     parser.add_argument("--out-dir", default=None,
-                        help="default results/reproduction/baselines/dsanet/<corpus>")
+                        help="default runs/legacy_1fps/lab1/reproduction/baselines/dsanet/<corpus>")
     parser.add_argument("--clip-download-root", default=None)
     return parser
 

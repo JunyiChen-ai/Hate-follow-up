@@ -4,7 +4,7 @@
 # HateClipSeg is the fourth corpus. Nothing here is a new harness: every stage
 # is the existing runner for that method with CORPORA restricted to the new
 # corpus, so a HateClipSeg cell is produced by the same code that produced the
-# three corpora already in docs/duplex/BASELINE_RESULTS.md. The only new script
+# three corpora already in docs/protocol_1fps_legacy/BASELINE_RESULTS.md. The only new script
 # is the method's own locator, scripts/duplex/masked_parallel_isolation_hateclipseg.py.
 #
 # Strictly serial: one stage finishes before the next starts, so the machine
@@ -12,10 +12,10 @@
 #
 #     cd /home/jehc223/Hate-follow-up
 #     setsid nohup bash scripts/reproduction_baselines/run_hateclipseg_sweep.sh \
-#         > results/reproduction/hateclipseg_sweep/run.log 2>&1 < /dev/null &
+#         > runs/legacy_1fps/lab1/reproduction/hateclipseg_sweep/run.log 2>&1 < /dev/null &
 #
-# Progress: results/reproduction/hateclipseg_sweep/{run.log,STATUS}
-# Finished: results/reproduction/hateclipseg_sweep/DONE (absent means running
+# Progress: runs/legacy_1fps/lab1/reproduction/hateclipseg_sweep/{run.log,STATUS}
+# Finished: runs/legacy_1fps/lab1/reproduction/hateclipseg_sweep/DONE (absent means running
 #           or dead; STATUS then names the stage that was in flight).
 #
 # Restrict the sweep with STAGES:
@@ -31,7 +31,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PYTHON="${PYTHON:-/home/jehc223/venvs/SafetyContradiction/bin/python}"
 CORPUS=hateclipseg
 STAGES="${STAGES:-ours vadclip dsanet macilsd multihateloc vadr1_anomaly vadr1_hateful}"
-OUT="${REPO_ROOT}/results/reproduction/hateclipseg_sweep"
+OUT="${REPO_ROOT}/runs/legacy_1fps/lab1/reproduction/hateclipseg_sweep"
 
 cd "${REPO_ROOT}"
 mkdir -p "${OUT}"

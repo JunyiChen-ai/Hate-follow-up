@@ -1,6 +1,6 @@
 """Shared frame-level localization evaluation machinery.
 
-Protocol: docs/duplex/FRAME_EVAL_PROTOCOL.md. This module is the single
+Protocol: docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md. This module is the single
 implementation of the frame grid, the span-to-frame conversion, and the
 two pooled statistics (rank ROC-AUC, step-wise average precision) that
 every method in the reproduction study is scored with. It is corpus-

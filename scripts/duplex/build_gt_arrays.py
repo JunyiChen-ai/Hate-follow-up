@@ -1,14 +1,14 @@
 """Build the released frame-level ground-truth arrays for the reproduction study.
 
-Protocol: docs/duplex/FRAME_EVAL_PROTOCOL.md (frozen 2026-08-18). This
+Protocol: docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md (frozen 2026-08-18). This
 script is the only producer of the arrays every method in the study is
 scored against, so that no method can quietly bring its own gold.
 
 Outputs, one per corpus:
 
-    results/reproduction/gt/hatemm_test.npz
-    results/reproduction/gt/mhclip_en_test.npz
-    results/reproduction/gt/mhclip_zh_test.npz
+    runs/legacy_1fps/lab1/reproduction/gt/hatemm_test.npz
+    runs/legacy_1fps/lab1/reproduction/gt/mhclip_en_test.npz
+    runs/legacy_1fps/lab1/reproduction/gt/mhclip_zh_test.npz
 
 Each npz holds one uint8 array per included video, keyed by video_id, on
 the 1 fps grid t = 0, 1, 2, ... while t < duration, with 1 marking a
@@ -55,7 +55,7 @@ RESULTS = os.path.join(PROJECT_ROOT, "results")
 OUT_DIR = os.path.join(RESULTS, "reproduction", "gt")
 SPLIT_DIR = os.path.join(RESULTS, "reproduction", "splits")
 
-PROTOCOL_DOC = "docs/duplex/FRAME_EVAL_PROTOCOL.md"
+PROTOCOL_DOC = "docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md"
 FPS = 1.0
 
 MHC_POSITIVE_LABELS = ("Hateful", "Offensive")
@@ -468,7 +468,7 @@ def build(corpus, out_dir, log):
                             "manifest where it has an entry, otherwise the "
                             "wav header"),
         "cohort_definition": ("the frozen split manifest under "
-                             "results/reproduction/splits/"),
+                             "runs/legacy_1fps/lab1/reproduction/splits/"),
         "videos_with_gold_from_upstream_tsv_only":
             corpus.get("gold_from_upstream_tsv_only") or [],
         "label_field": corpus["label_field"],

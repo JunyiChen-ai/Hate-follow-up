@@ -111,9 +111,9 @@ def main():
     ap.add_argument("--corpus", required=True)
     ap.add_argument("--python", default=DEFAULT_PYTHON)
     ap.add_argument("--tuning-root", default=str(
-        REPO / "results/reproduction/official_val/tuning"))
+        REPO / "runs/legacy_1fps/lab1/reproduction/official_val/tuning"))
     ap.add_argument("--final-root", default=str(
-        REPO / "results/reproduction/official_val/final"))
+        REPO / "runs/legacy_1fps/lab1/reproduction/official_val/final"))
     ap.add_argument("--code-commit", default=None,
                     help="Git commit frozen across all confirmation subprocesses")
     args = ap.parse_args()

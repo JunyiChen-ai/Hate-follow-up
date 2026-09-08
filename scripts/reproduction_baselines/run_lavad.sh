@@ -7,8 +7,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CORPUS="${CORPUS:-hateclipseg}"
 PY="${PY:-/home/jehc223/venvs/SafetyContradiction/bin/python}"
-INPUT="${ROOT}/results/reproduction/lavad_inputs/${CORPUS}"
-OUT="${ROOT}/results/reproduction/baselines/lavad/${CORPUS}"
+INPUT="${ROOT}/runs/legacy_1fps/lab1/reproduction/lavad_inputs/${CORPUS}"
+OUT="${ROOT}/runs/legacy_1fps/lab1/reproduction/baselines/lavad/${CORPUS}"
 UP="${ROOT}/third_party/lavad"
 
 cd "$ROOT"

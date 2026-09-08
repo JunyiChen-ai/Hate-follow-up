@@ -2,7 +2,7 @@
 """Score a trained MACIL-SD checkpoint and write per-video frame scores.
 
 Thin launcher over macilsd/infer.py. Writes
-results/reproduction/baselines/<method>/<corpus>/scores.jsonl, one JSON object
+runs/legacy_1fps/lab1/reproduction/baselines/<method>/<corpus>/scores.jsonl, one JSON object
 per video, each score array on the 1 fps gold grid. --modality must match the
 one the checkpoint was trained with, since it selects both the architecture and
 the default output directory.

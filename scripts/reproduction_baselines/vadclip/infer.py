@@ -1,7 +1,7 @@
 """VadCLIP inference, ported from VadCLIP @ c41067f src/xd_test.py.
 
 Emits per-video frame-level score arrays on the 1 fps grid, one JSON object
-per line, to results/reproduction/baselines/vadclip/<corpus>/scores.jsonl.
+per line, to runs/legacy_1fps/lab1/reproduction/baselines/vadclip/<corpus>/scores.jsonl.
 
 Two branches are written for every video, both verbatim upstream formulas:
 
@@ -44,7 +44,7 @@ def infer(args, model_path, split="test"):
     labels = hdata.load_labels(args.corpus)
     gt = hdata.gt_arrays(args.corpus, split)
     # Score exactly the cohort the gold covers: the split ids whose media was
-    # present when results/reproduction/gt was built.
+    # present when runs/legacy_1fps/lab1/reproduction/gt was built.
     ids = [v for v in hdata.load_split(args.corpus, split) if v in gt]
     if args.limit_videos:
         ids = ids[:args.limit_videos]

@@ -2,7 +2,7 @@
 """Score a trained VadCLIP checkpoint and write per-video frame scores.
 
 Thin launcher over vadclip/infer.py. Writes
-results/reproduction/baselines/vadclip/<corpus>/scores.jsonl, one JSON object per
+runs/legacy_1fps/lab1/reproduction/baselines/vadclip/<corpus>/scores.jsonl, one JSON object per
 video, each score array on the 1 fps gold grid.
 
     python scripts/reproduction_baselines/test_vadclip_hatemm.py --corpus hatemm

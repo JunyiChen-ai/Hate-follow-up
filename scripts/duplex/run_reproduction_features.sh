@@ -19,7 +19,7 @@
 # already on disk is skipped). Detached use:
 #
 #   setsid nohup bash scripts/duplex/run_reproduction_features.sh clip \
-#     > results/reproduction/features/clip_b16_1fps/run.log 2>&1 &
+#     > runs/legacy_1fps/lab1/reproduction/features/clip_b16_1fps/run.log 2>&1 &
 set -uo pipefail
 cd /home/jehc223/Hate-follow-up || exit 1
 export HVD_DATA_ROOT=/home/jehc223/data
@@ -35,28 +35,28 @@ fi
 EXTRA=()
 case "$STAGE" in
   clip)   SCRIPT=scripts/duplex/extract_clip_features.py
-          OUT=results/reproduction/features/clip_b16_1fps
+          OUT=runs/legacy_1fps/lab1/reproduction/features/clip_b16_1fps
           # On disk, not the 31 GB tmpfs /tmp: the ffmpeg fallback writes one
           # PNG per second of video before encoding it.
-          TMP=results/reproduction/features/.ffmpeg_scratch
+          TMP=runs/legacy_1fps/lab1/reproduction/features/.ffmpeg_scratch
           mkdir -p "$TMP"
           EXTRA=(--tmp-dir "$TMP") ;;
   vggish) SCRIPT=scripts/duplex/extract_vggish_features.py
-          OUT=results/reproduction/features/vggish_1s ;;
+          OUT=runs/legacy_1fps/lab1/reproduction/features/vggish_1s ;;
   vit)    SCRIPT=scripts/duplex/extract_vit_features.py
-          OUT=results/reproduction/features/vit_b16_imagenet_1fps
-          TMP=results/reproduction/features/.ffmpeg_scratch
+          OUT=runs/legacy_1fps/lab1/reproduction/features/vit_b16_imagenet_1fps
+          TMP=runs/legacy_1fps/lab1/reproduction/features/.ffmpeg_scratch
           mkdir -p "$TMP"
           EXTRA=(--tmp-dir "$TMP") ;;
   i3d)    SCRIPT=scripts/duplex/extract_i3d_features.py
-          OUT=results/reproduction/features/i3d_rgb_5crop
+          OUT=runs/legacy_1fps/lab1/reproduction/features/i3d_rgb_5crop
           # Every video goes through the system ffmpeg here (24 fps decode),
           # and a long video's frames do not fit in the 31 GB tmpfs /tmp.
-          TMP=results/reproduction/features/.ffmpeg_scratch
+          TMP=runs/legacy_1fps/lab1/reproduction/features/.ffmpeg_scratch
           mkdir -p "$TMP"
           EXTRA=(--tmp-dir "$TMP") ;;
   bert)   SCRIPT=scripts/reproduction_baselines/multihateloc/extract_bert_sentence_features.py
-          OUT=results/reproduction/features/bert_sentence_1fps ;;
+          OUT=runs/legacy_1fps/lab1/reproduction/features/bert_sentence_1fps ;;
   *) echo "unknown stage: $STAGE"; exit 2 ;;
 esac
 

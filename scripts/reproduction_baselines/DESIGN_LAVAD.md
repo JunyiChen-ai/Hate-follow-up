@@ -82,11 +82,11 @@ CORPUS=hateclipseg bash scripts/reproduction_baselines/run_lavad.sh
 python scripts/reproduction_baselines/lavad/pack_scores.py \
   --corpus hateclipseg --raw-scores RAW_DIR \
   --refined-scores REFINED_DIR --similarities SIMILARITY_DIR \
-  --output results/reproduction/baselines/lavad/hateclipseg/scores.jsonl
+  --output runs/legacy_1fps/lab1/reproduction/baselines/lavad/hateclipseg/scores.jsonl
 python scripts/reproduction_baselines/eval_baseline_scores.py \
   --corpus hateclipseg \
-  --scores results/reproduction/baselines/lavad/hateclipseg/scores.jsonl \
-  --json-out results/reproduction/baselines/lavad/hateclipseg/frame_eval.json
+  --scores runs/legacy_1fps/lab1/reproduction/baselines/lavad/hateclipseg/scores.jsonl \
+  --json-out runs/legacy_1fps/lab1/reproduction/baselines/lavad/hateclipseg/frame_eval.json
 ```
 
 ## Deviations from upstream

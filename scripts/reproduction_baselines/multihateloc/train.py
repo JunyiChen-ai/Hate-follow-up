@@ -10,7 +10,7 @@ label-stratified 10 % of the train split is held out and the checkpoint is
 selected on its video-level average precision. The published 100-epoch budget
 is kept; selection decides which of those 100 epochs is scored.
 
-Output: results/reproduction/baselines/multihateloc_reimpl/<corpus>/
+Output: runs/legacy_1fps/lab1/reproduction/baselines/multihateloc_reimpl/<corpus>/
     scores.jsonl   one record per test video, all branches
     train_log.json per-epoch losses and validation AP
     model.pt       the selected state dict

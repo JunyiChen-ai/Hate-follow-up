@@ -69,7 +69,7 @@ def extract(video, out_dir, n_frames):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", required=True, choices=hdata.CORPORA)
-    ap.add_argument("--out-root", default="results/reproduction/lavad_inputs")
+    ap.add_argument("--out-root", default="runs/legacy_1fps/lab1/reproduction/lavad_inputs")
     ap.add_argument("--limit", type=int, default=None,
                     help="smoke only; prepare the first N cohort videos")
     ap.add_argument("--manifest-only", action="store_true")

@@ -1,0 +1,3 @@
+# EXPERIMENT TRACKER
+
+Canonical timestamped tracker: `EXPERIMENT_TRACKER_20260826_PARADIGM_ADAPT.md`.

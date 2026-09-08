@@ -17,7 +17,7 @@ embedding layer. Quantised features would throw away precision that the
 downstream MIL heads are trained on in float.
 
 Frame grid. One embedding per frame of the frame-level evaluation grid
-(docs/duplex/FRAME_EVAL_PROTOCOL.md): row i covers [i, i + 0.96) seconds, and
+(docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md): row i covers [i, i + 0.96) seconds, and
 T equals the number of gold frames for that video, because the duration comes
 from the same wav file build_gt_arrays.py reads. The waveform is zero-padded
 at the tail so the last second of audio still yields a full patch instead of

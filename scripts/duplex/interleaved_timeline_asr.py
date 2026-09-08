@@ -14,7 +14,7 @@ compared against the frozen `fresh_transcripts.jsonl` and the comparison result
 is recorded per video: a mismatch disqualifies that video from the timestamped
 segmentation route and sends it to the documented proportional fallback.
 
-Pre-registration: docs/duplex/PREREG_interleaved_timeline_killtest.md.
+Pre-registration: docs/protocol_1fps_legacy/PREREG_interleaved_timeline_killtest.md.
 
 Output: results/interleaved_timeline/<slug>/timestamped_chunks.jsonl.
 

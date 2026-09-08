@@ -27,7 +27,7 @@ picked out of that segment, and `process_video` accepts the resulting
 source also avoids the mp4v re-encode, which cannot round-trip the AV1 inputs.
 
 Output, one JSON object per line, in
-`results/reproduction/baselines/eventvad/<corpus>/event_scores[_<arm>].jsonl`.
+`runs/legacy_1fps/lab1/reproduction/baselines/eventvad/<corpus>/event_scores[_<arm>].jsonl`.
 """
 
 from __future__ import annotations

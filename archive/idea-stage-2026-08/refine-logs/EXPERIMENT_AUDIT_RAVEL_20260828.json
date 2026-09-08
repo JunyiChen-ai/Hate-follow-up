@@ -1,0 +1,24 @@
+{
+  "audit_skill": "experiment-audit",
+  "verdict": "FAIL",
+  "reason_code": "adaptive_test_reuse_and_partial_failure_incomplete_scope",
+  "summary": "Numbers are reproducible and use real GT, but the selected configuration was tuned on reused test-labelled cohorts and cannot support a SOTA claim.",
+  "date": "2026-08-28",
+  "auditor": "gpt-5.6-sol-ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "integrity_status": "fail",
+  "checks": {
+    "gt_provenance": {"status": "pass"},
+    "score_normalization": {"status": "fail", "details": "per-video ECDF changes dense metrics without raw-score companion reporting"},
+    "result_existence": {"status": "pass"},
+    "dead_code": {"status": "pass"},
+    "scope": {"status": "fail", "details": "test-selected configuration, partial cohort, skipped failures, one seed, grid mismatch"},
+    "eval_type": "real_gt_adaptively_test_selected"
+  },
+  "claims": [
+    {"id": "saved_per_dataset_numbers", "impact": "supported_descriptively"},
+    {"id": "runtime_label_free", "impact": "supported"},
+    {"id": "sota_macro_f1", "impact": "unsupported"}
+  ]
+}

@@ -86,3 +86,17 @@ sections are:
 - §"Post-shutdown follow-up" — the cross-config fusion oracle cell discovery
 - §"v3 p_evidence row correction" — the prompt-drift root-cause finding
 - §"Baseline reproduction + src/ archival (2026-04-13 later session)" — this archival event
+
+## 2026-09-09 cleanup (repository refocused on label-free localization, OMSL-v6)
+
+| directory | what | from |
+|---|---|---|
+| `root-2026-09/` | every markdown/json/zip that used to sit in the repository root (PAPER_PLAN, STATE_ARCHIVE, TARGET_LOOP, RESEARCH_BRIEF, NOVELTY_CHECK_*, EXPERIMENT_AUDIT*, CLAIMS_FROM_RESULTS, findings, MANIFEST, FOLLOWUP_SETUP, ...) | repo root |
+| `base-paper/` | TRIAGE EMNLP 2026 submission material: `constitution/`, `rebuttal/`, `figures/`, `src/*` (boundary_rescue, *_repro, our_method, meme_baselines, naive_baseline), root-level `scripts/*.py|*.sh`, `scripts/meme_baselines`, `scripts_relaxed/`, April-2026 docs | repo root, `src/`, `scripts/`, `docs/` |
+| `detection-2026-08/` | channel-restoration / duplex detection follow-ups (all falsified): `src/duplex`, `scripts/duplex/<analysis>`, `docs/duplex` (PREREG_*, *_NOTE), `docs/analysis`, `docs/proposals`, `docs/idea_discovery` | `src/`, `scripts/`, `docs/` |
+| `idea-stage-2026-08/` | idea-discovery reports, refine logs, `.aris/` traces, `artifacts/` (the last three are not tracked) | repo root |
+| `experiments/idea_discovery-2026-08/` | OMSL v1–v5 and every other 2026-08-23..29 candidate: `scripts/idea_discovery/`, `scripts/label_free_adapt/`, `tests/` | `scripts/`, `tests/` |
+
+Outputs of these eras live under `runs/legacy_*` (not tracked). Deleted on 2026-09-09
+with owner approval: `results/testruns` (17G), detection-era `results/*` (11G),
+large non-OMSL idea-discovery intermediates (5.5G), `.venv-r1` (7.4G).

@@ -19,7 +19,7 @@ needs a value per second, so:
 Containment is half-open, the same convention the gold arrays use, and the
 conversion goes through frame_eval_common.build_gt_array so the predicted
 vector and the gold vector are produced by one function on one grid. Duration
-comes from results/reproduction/gt/<corpus>_test.json, which is the duration
+comes from runs/legacy_1fps/lab1/reproduction/gt/<corpus>_test.json, which is the duration
 build_gt_arrays.py used, so the two vectors are the same length by
 construction; the script asserts it anyway.
 

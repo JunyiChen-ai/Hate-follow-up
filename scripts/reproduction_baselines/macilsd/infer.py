@@ -2,7 +2,7 @@
 
 Emits per-video frame-level score arrays on the 1 fps gold grid, one JSON
 object per line, to
-results/reproduction/baselines/<method>/<corpus>/scores.jsonl.
+runs/legacy_1fps/lab1/reproduction/baselines/<method>/<corpus>/scores.jsonl.
 
 Branches written for `--modality av`, all upstream formulas:
 

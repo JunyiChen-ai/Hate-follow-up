@@ -69,7 +69,7 @@ def build_parser():
 
     # --- io ---
     parser.add_argument("--out-dir", default=None,
-                        help="default results/reproduction/baselines/vadclip/<corpus>")
+                        help="default runs/legacy_1fps/lab1/reproduction/baselines/vadclip/<corpus>")
     parser.add_argument("--clip-download-root", default=None,
                         help="where clip.load looks for ViT-B-16.pt "
                              "(default ~/.cache/clip)")

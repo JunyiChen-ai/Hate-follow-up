@@ -60,9 +60,9 @@ def file_sha256(path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", default="results/reproduction/official_val/final")
-    ap.add_argument("--json-out", default="docs/duplex/official_val_results.json")
-    ap.add_argument("--md-out", default="docs/duplex/OFFICIAL_VAL_RESULTS.md")
+    ap.add_argument("--root", default="runs/legacy_1fps/lab1/reproduction/official_val/final")
+    ap.add_argument("--json-out", default="docs/protocol_1fps_legacy/official_val_results.json")
+    ap.add_argument("--md-out", default="docs/protocol_1fps_legacy/OFFICIAL_VAL_RESULTS.md")
     ap.add_argument("--allow-partial", action="store_true",
                     help="write an explicitly incomplete preview instead of "
                          "requiring every preregistered seed and corpus")

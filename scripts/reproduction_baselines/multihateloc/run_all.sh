@@ -4,7 +4,7 @@
 #
 #     cd /home/jehc223/Hate-follow-up
 #     setsid nohup bash scripts/reproduction_baselines/multihateloc/run_all.sh \
-#         > results/reproduction/baselines/multihateloc_reimpl/run_all.log 2>&1 &
+#         > runs/legacy_1fps/lab1/reproduction/baselines/multihateloc_reimpl/run_all.log 2>&1 &
 #
 # Restrict with:  CORPORA="hatemm" bash .../run_all.sh
 #
@@ -19,7 +19,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 PYTHON="${PYTHON:-/home/jehc223/venvs/SafetyContradiction/bin/python}"
 CORPORA="${CORPORA:-hatemm mhclip_en mhclip_zh}"
 HERE="scripts/reproduction_baselines/multihateloc"
-OUT_ROOT="${REPO_ROOT}/results/reproduction/baselines/multihateloc_reimpl"
+OUT_ROOT="${REPO_ROOT}/runs/legacy_1fps/lab1/reproduction/baselines/multihateloc_reimpl"
 
 cd "${REPO_ROOT}"
 mkdir -p "${OUT_ROOT}"

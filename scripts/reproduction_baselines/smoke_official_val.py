@@ -30,7 +30,7 @@ def main():
         assert all(v in labels for v in train + val + test)
         print(corpus, len(train), len(val), len(test),
               "val pos", sum(labels[v] for v in val))
-    path = REPO / "results/reproduction/splits/hateclipseg_test.txt"
+    path = REPO / "runs/legacy_1fps/lab1/reproduction/splits/hateclipseg_test.txt"
     assert digest(path) == EXPECTED_HCS_TEST
     print("official-validation protocol smoke: PASS")
 

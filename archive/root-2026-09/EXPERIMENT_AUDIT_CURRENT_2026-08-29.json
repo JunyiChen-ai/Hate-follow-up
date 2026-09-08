@@ -1,0 +1,28 @@
+{
+  "audit_skill": "experiment-audit",
+  "date": "2026-08-29",
+  "candidate": "evidence_capital_boundary_transport_v1",
+  "overall_verdict": "fail",
+  "integrity_status": "fail",
+  "reason_code": "development_selection_and_failed_mechanism_controls",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "checks": {
+    "gt_provenance": {"status": "warn", "classification": "provisional_real_gt_custom_evaluator"},
+    "score_normalization": {"status": "pass"},
+    "result_existence_and_reproduction": {"status": "pass"},
+    "implementation": {"status": "warn"},
+    "scope_and_controls": {"status": "fail"},
+    "eval_type": {"status": "warn", "classification": "real_gt_custom_evaluator"}
+  },
+  "coverage": {"predicted": 611, "ground_truth": 644, "fraction": 0.9487577639751553},
+  "claims": [
+    {"id": "raw_numeric_reproducibility", "impact": "supported"},
+    {"id": "four_distinct_datasets", "impact": "supported"},
+    {"id": "boundary_module_improves_frame_scores", "impact": "unsupported"},
+    {"id": "evidence_capital_attribution", "impact": "unsupported"},
+    {"id": "confirmatory_label_free_sota", "impact": "unsupported"}
+  ]
+}

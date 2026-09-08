@@ -23,7 +23,7 @@ CPU only.
 
 Usage
     python eval_baseline_scores.py --corpus hatemm \
-        --scores results/reproduction/baselines/vadclip/hatemm/scores.jsonl \
+        --scores runs/legacy_1fps/lab1/reproduction/baselines/vadclip/hatemm/scores.jsonl \
         --branch score_align
 """
 

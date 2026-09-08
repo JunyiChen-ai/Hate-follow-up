@@ -65,10 +65,10 @@ scores onto the frame grid with `np.repeat(scores, 16)`. The XD training CSV
 has five rows per video (`__0` .. `__4`, the five spatial crops); the test CSV
 keeps only `__0`.
 
-This study's features are `results/reproduction/features/clip_b16_1fps/<corpus>/<video_id>.npy`,
+This study's features are `runs/legacy_1fps/lab1/reproduction/features/clip_b16_1fps/<corpus>/<video_id>.npy`,
 shape `(T, 512)` float32, one row per second on the 1 fps grid that
-`docs/duplex/FRAME_EVAL_PROTOCOL.md` fixes and that the gold arrays in
-`results/reproduction/gt/` are rasterised onto. They come from
+`docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md` fixes and that the gold arrays in
+`runs/legacy_1fps/lab1/reproduction/gt/` are rasterised onto. They come from
 `openai/clip-vit-base-patch16` `image_embeds`, i.e. the same post-projection
 512-d space as OpenAI CLIP's `encode_image`, unnormalised (row norms near 11),
 so they sit in the space the frozen text encoder's embeddings live in. Single
@@ -83,7 +83,7 @@ for all 214 + 158 + 153 gold videos in the three corpora; they do, exactly.
 **No feature is re-extracted or resampled.**
 
 The CSV is replaced by `hate_common/data.py`, which reads the frozen split
-manifests under `results/reproduction/splits/` and the upstream label files
+manifests under `runs/legacy_1fps/lab1/reproduction/splits/` and the upstream label files
 directly.
 
 ### Labels and the binary collapse
@@ -213,7 +213,7 @@ Everything, sequentially, on one GPU:
 ```bash
 cd /home/jehc223/Hate-follow-up
 setsid nohup bash scripts/reproduction_baselines/run_all.sh \
-    > results/reproduction/baselines/run_all.log 2>&1 &
+    > runs/legacy_1fps/lab1/reproduction/baselines/run_all.log 2>&1 &
 ```
 
 One method on one corpus:
@@ -223,13 +223,13 @@ PY=/home/jehc223/venvs/SafetyContradiction/bin/python
 $PY scripts/reproduction_baselines/train_vadclip_hatemm.py --corpus hatemm --device cuda
 $PY scripts/reproduction_baselines/test_vadclip_hatemm.py  --corpus hatemm --device cuda
 $PY scripts/reproduction_baselines/eval_baseline_scores.py --corpus hatemm \
-    --scores results/reproduction/baselines/vadclip/hatemm/scores.jsonl \
-    --json-out results/reproduction/baselines/vadclip/hatemm/frame_eval.json
+    --scores runs/legacy_1fps/lab1/reproduction/baselines/vadclip/hatemm/scores.jsonl \
+    --json-out runs/legacy_1fps/lab1/reproduction/baselines/vadclip/hatemm/frame_eval.json
 ```
 
 ## Outputs
 
-Under `results/reproduction/baselines/<method>/<corpus>/`:
+Under `runs/legacy_1fps/lab1/reproduction/baselines/<method>/<corpus>/`:
 
 | file | contents |
 | --- | --- |
@@ -252,7 +252,7 @@ pooled number can be read against its base rate. It also reports any gold video
 absent from the score file rather than silently skipping it.
 
 The scored cohort is the gold cohort: the test-split ids whose media was present
-when `results/reproduction/gt/` was built (214 of 215 HateMM, 158 of 162
+when `runs/legacy_1fps/lab1/reproduction/gt/` was built (214 of 215 HateMM, 158 of 162
 mhclip_en, 153 of 157 mhclip_zh). The gold JSON files record why each of the
 others was dropped.
 
@@ -315,7 +315,7 @@ Here they do not.
 | I3D | `(n_snippets, 5, 1024)` | 16 frames at 24 fps = 0.666667 s | drops tail frames that do not fill a snippet |
 | VGGish | `(T, 128)` | 1 s, row `i` = `[i, i+1)` | the whole waveform |
 
-`T` is the gold length: the arrays in `results/reproduction/gt/` have length
+`T` is the gold length: the arrays in `runs/legacy_1fps/lab1/reproduction/gt/` have length
 exactly `T` for all 214 + 158 + 153 gold videos. The grids also cover different
 spans -- audio outlives visual in 1042 / 790 / 808 of the 1066 / 792 / 814
 videos, by at most 5.33 s, 1.67 s and 2.00 s.
@@ -433,7 +433,7 @@ All nine runs (three modalities x three corpora), sequentially, one GPU:
 ```bash
 cd /home/jehc223/Hate-follow-up
 setsid nohup bash scripts/reproduction_baselines/run_all_macilsd.sh \
-    > results/reproduction/baselines/run_all_macilsd.log 2>&1 &
+    > runs/legacy_1fps/lab1/reproduction/baselines/run_all_macilsd.log 2>&1 &
 ```
 
 `run_all_macilsd.sh` is separate from `run_all.sh` on purpose and does not
@@ -448,8 +448,8 @@ $PY scripts/reproduction_baselines/train_macilsd_hatemm.py \
 $PY scripts/reproduction_baselines/test_macilsd_hatemm.py \
     --corpus hatemm --modality av --device cuda
 $PY scripts/reproduction_baselines/eval_baseline_scores.py --corpus hatemm \
-    --scores results/reproduction/baselines/macilsd/hatemm/scores.jsonl \
-    --json-out results/reproduction/baselines/macilsd/hatemm/frame_eval.json
+    --scores runs/legacy_1fps/lab1/reproduction/baselines/macilsd/hatemm/scores.jsonl \
+    --json-out runs/legacy_1fps/lab1/reproduction/baselines/macilsd/hatemm/frame_eval.json
 ```
 
 `--modality` selects both the architecture and the output directory, so it must
@@ -457,7 +457,7 @@ match between train and test.
 
 ## Outputs
 
-Under `results/reproduction/baselines/<method>/<corpus>/`, where `<method>` is
+Under `runs/legacy_1fps/lab1/reproduction/baselines/<method>/<corpus>/`, where `<method>` is
 `macilsd`, `macilsd_audio` or `macilsd_visual`. Same four files the other ports
 write. The score branches differ:
 
@@ -562,7 +562,7 @@ All three corpora, sequentially, one GPU:
 ```bash
 cd /home/jehc223/Hate-follow-up
 setsid nohup bash scripts/reproduction_baselines/run_all_eventvad.sh \
-    > results/reproduction/baselines/run_all_eventvad.log 2>&1 &
+    > runs/legacy_1fps/lab1/reproduction/baselines/run_all_eventvad.log 2>&1 &
 ```
 
 Corpora are ordered shortest-first (`mhclip_zh mhclip_en hatemm`, 4817 s /
@@ -592,7 +592,7 @@ are second conditions on the same test split and need owner approval.
 
 ## Outputs
 
-Under `results/reproduction/baselines/eventvad/<corpus>/`:
+Under `runs/legacy_1fps/lab1/reproduction/baselines/eventvad/<corpus>/`:
 
 | file | contents |
 | --- | --- |

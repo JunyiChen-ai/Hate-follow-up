@@ -1,76 +1,44 @@
 .env
 
-# Python caches
+# Python
 __pycache__/
 *.pyc
-
-# Nested repository metadata
-**/.git/
-archive/
-archive/moe_refs/
-datasets/
-embeddings/
-third_party/
-
-# Local build artifacts
+.venv*/
 build/
 *.o
 *.so
 
-# Large model and checkpoint artifacts
+# Nested repository metadata
+**/.git/
+
+# Inputs, derived caches, experiment outputs, model caches (never in git)
+data/
+runs/
+.cache/
 *.pth
 *.pt
-
-# Large binary assets not needed for source publishing
 *.pack
 *.gif
 
-# Large experiment outputs
-archive/**/results/
+# External code (cloned as-is)
+third_party/
 
-# Slurm logs
+# Archived non-text material
+archive/**/results/
+archive/idea-stage-2026-08/.aris/
+archive/idea-stage-2026-08/artifacts/
+archive/idea-stage-2026-08/idea-stage/pilots/
+archive/moe_refs/
+
+# Slurm and launcher output
+*.out
 log/
 logs/
 slurm-*.out
 
-# Caches
-.cache/
-
-# Local paper downloads
-papers/
-
-# Overleaf-synced paper repository
-paper/
-
-# Local backup files
-*.backup
-
-# LaTeX scratch output
-texput.log
-
-# Stray tool marker
+# Tool markers, papers, local scratch
 .codex
-
-# Generated data (large, regenerate on target machine)
-rationales/
-results/
-
-# Slurm scripts (machine-specific)
-scripts/*.sbatch
-
-# State files (machine-specific)
-TARGET_LOOP_STATE.json
-external_repos/
-external_repos/
-
-# Independently released repo (github.com/JunyiChen-ai/TRIAGE)
-release/triage/
-
-# Read-only references into the frozen EMNLP2 tree
-results_frozen
-paper_emnlp2_frozen
-
-# The above are symlinks here, not directories; slash-suffixed rules miss them
-/datasets
-/external_repos
-/third_party
+papers/
+paper/
+*.backup
+texput.log

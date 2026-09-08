@@ -7,8 +7,8 @@ Upstream's own rasteriser is `src/evaluate.py`, which does not run: line 44
 reads `for line in f:s` and the file fails to compile. What it intended is
 `scores[s:e] = score` over a frame grid whose length is the largest segment end
 seen, scored against a UCF-Crime `tag.txt`. This study scores against the
-frozen gold arrays in `results/reproduction/gt/`, on the 1 fps grid
-`docs/duplex/FRAME_EVAL_PROTOCOL.md` fixes, through the same
+frozen gold arrays in `runs/legacy_1fps/lab1/reproduction/gt/`, on the 1 fps grid
+`docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md` fixes, through the same
 `frame_eval_common.evaluate` every other baseline goes through.
 
 The mapping, which is the whole of the adaptation

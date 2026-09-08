@@ -6,7 +6,7 @@ compared on identical input rather than on two separately-tuned feature
 pipelines.
 
 Frame grid. The features live on *the same grid as the frozen frame-level
-ground truth* (docs/duplex/FRAME_EVAL_PROTOCOL.md,
+ground truth* (docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md,
 scripts/duplex/frame_eval_common.frame_times): timestamps t = 0, 1, 2, ...
 while t < duration, with duration taken from the wav file, exactly as
 build_gt_arrays.py takes it. That is deliberate. Any other grid -- a plain
@@ -79,7 +79,7 @@ CORPORA = {
                                   "hatemm", "wav")],
         "splits": ["hatemm_train.txt", "hatemm_val.txt", "hatemm_test.txt"],
         "chunk_manifests": [
-            "results/reproduction/asr/hatemm_all/timestamped_chunks.jsonl",
+            "runs/legacy_1fps/lab1/reproduction/asr/hatemm_all/timestamped_chunks.jsonl",
         ],
     },
     "mhclip_en": {
@@ -93,7 +93,7 @@ CORPORA = {
         "splits": ["mhclip_en_train.txt", "mhclip_en_val.txt",
                    "mhclip_en_test.txt"],
         "chunk_manifests": [
-            "results/reproduction/asr/mhclip_en_all/timestamped_chunks.jsonl",
+            "runs/legacy_1fps/lab1/reproduction/asr/mhclip_en_all/timestamped_chunks.jsonl",
         ],
     },
     "hateclipseg": {
@@ -106,7 +106,7 @@ CORPORA = {
         "splits": ["hateclipseg_train.txt", "hateclipseg_val.txt",
                    "hateclipseg_test.txt"],
         "chunk_manifests": [
-            "results/reproduction/asr/hateclipseg_all/"
+            "runs/legacy_1fps/lab1/reproduction/asr/hateclipseg_all/"
             "timestamped_chunks.jsonl",
         ],
     },
@@ -121,7 +121,7 @@ CORPORA = {
         "splits": ["mhclip_zh_train.txt", "mhclip_zh_val.txt",
                    "mhclip_zh_test.txt"],
         "chunk_manifests": [
-            "results/reproduction/asr/mhclip_zh_all/timestamped_chunks.jsonl",
+            "runs/legacy_1fps/lab1/reproduction/asr/mhclip_zh_all/timestamped_chunks.jsonl",
         ],
     },
 }

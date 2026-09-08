@@ -1,0 +1,138 @@
+{
+  "test": "temporal attribution pilot",
+  "date": "2026-08-08",
+  "model": "Qwen3-VL-8B-Instruct",
+  "n": 90,
+  "preregistration": "docs/duplex/PREREG_temporal_attribution_pilot.md",
+  "verdict": "FAIL",
+  "headline": {
+    "auc_tp_vs_fp": {
+      "unaligned": 0.8583333333333333,
+      "aligned": 0.8505555555555555,
+      "shuffled": 0.8738888888888889
+    },
+    "aligned_minus_unaligned": -0.007777777777777772,
+    "aligned_minus_shuffled": -0.023333333333333428
+  },
+  "clauses": {
+    "auc_aligned_minus_unaligned_ge_0.05": {
+      "value": -0.007777777777777772,
+      "bar": 0.05,
+      "pass": false,
+      "boot95": [
+        -0.05444444444444452,
+        0.03777777777777769
+      ]
+    },
+    "auc_aligned_minus_shuffled_ge_0.05": {
+      "value": -0.023333333333333428,
+      "bar": 0.05,
+      "pass": false,
+      "boot95": [
+        -0.09499999999999997,
+        0.033333333333333326
+      ]
+    },
+    "fp_median_delta_le_minus_0.50": {
+      "value": 0.125,
+      "bar": -0.5,
+      "pass": false
+    },
+    "tp_median_delta_ge_minus_0.25": {
+      "value": -0.5,
+      "bar": -0.25,
+      "pass": false
+    }
+  },
+  "marker_directionally_consistent": false,
+  "subgroups": {
+    "marker_positive": {
+      "n_tp": 15,
+      "n_fp": 15,
+      "auc_unaligned": 0.86,
+      "auc_aligned": 0.8511111111111112,
+      "delta_auc": -0.008888888888888835,
+      "fp_median_delta": 0.25
+    },
+    "marker_negative": {
+      "n_tp": 15,
+      "n_fp": 15,
+      "auc_unaligned": 0.8622222222222222,
+      "auc_aligned": 0.84,
+      "delta_auc": -0.022222222222222254,
+      "fp_median_delta": -0.25
+    }
+  },
+  "z_by_arm_cell": {
+    "unaligned": {
+      "fp": {
+        "n": 30,
+        "mean": 2.6666666666666665,
+        "median": 2.75,
+        "q25": -3.0,
+        "q75": 6.5
+      },
+      "tp": {
+        "n": 30,
+        "mean": 11.2,
+        "median": 11.75,
+        "q25": 7.25,
+        "q75": 15.25
+      },
+      "tn": {
+        "n": 30,
+        "mean": -16.929166666666667,
+        "median": -17.5,
+        "q25": -19.25,
+        "q75": -14.25
+      }
+    },
+    "aligned": {
+      "fp": {
+        "n": 30,
+        "mean": 3.125,
+        "median": 2.25,
+        "q25": -2.25,
+        "q75": 8.25
+      },
+      "tp": {
+        "n": 30,
+        "mean": 11.208333333333334,
+        "median": 10.625,
+        "q25": 9.0,
+        "q75": 15.0
+      },
+      "tn": {
+        "n": 30,
+        "mean": -16.9375,
+        "median": -18.125,
+        "q25": -20.25,
+        "q75": -13.75
+      }
+    },
+    "shuffled": {
+      "fp": {
+        "n": 30,
+        "mean": 1.4666666666666666,
+        "median": 2.25,
+        "q25": -5.25,
+        "q75": 6.5
+      },
+      "tp": {
+        "n": 30,
+        "mean": 10.925,
+        "median": 11.5,
+        "q25": 7.0,
+        "q75": 14.5
+      },
+      "tn": {
+        "n": 30,
+        "mean": -16.754166666666666,
+        "median": -17.25,
+        "q25": -19.5,
+        "q75": -14.75
+      }
+    }
+  },
+  "content_policy": "statistics only; no video ids or transcript text"
+}

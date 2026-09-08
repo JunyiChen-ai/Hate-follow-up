@@ -6,7 +6,7 @@
 #
 #     cd /home/jehc223/Hate-follow-up
 #     setsid nohup bash scripts/reproduction_baselines/run_all_vadr1.sh \
-#         > results/reproduction/baselines/run_all_vadr1.log 2>&1 &
+#         > runs/legacy_1fps/lab1/reproduction/baselines/run_all_vadr1.log 2>&1 &
 #
 # Restrict the sweep with CORPORA:
 #     CORPORA="hatemm" bash scripts/reproduction_baselines/run_all_vadr1.sh

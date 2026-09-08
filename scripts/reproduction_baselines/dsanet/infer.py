@@ -1,7 +1,7 @@
 """DSANet inference, ported from DSANet @ eb335b2 src/xd_test.py.
 
 Emits per-video frame-level score arrays on the 1 fps grid to
-results/reproduction/baselines/dsanet/<corpus>/scores.jsonl.
+runs/legacy_1fps/lab1/reproduction/baselines/dsanet/<corpus>/scores.jsonl.
 
 Three branches per video:
 

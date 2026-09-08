@@ -24,9 +24,9 @@ carries an `INFERRED` comment at the line that makes it.
 | element | paper | here |
 | --- | --- | --- |
 | output | per-frame hate probabilities, sigmoid, one per frame of T | same |
-| visual features | ViT-B/16, 768-d per frame, cited to Dosovitskiy (ImageNet, not CLIP) | `results/reproduction/features/vit_b16_imagenet_1fps`, `google/vit-base-patch16-224` CLS token, 768-d |
-| audio features | VGGish, 128-d per 1-second clip | `results/reproduction/features/vggish_1s`, 128-d per second |
-| text features | Whisper transcript, sentence fragments with timestamps, BERT 768-d per fragment, repeat-padded over the fragment's interval | `results/reproduction/features/bert_sentence_1fps`, built by `extract_bert_sentence_features.py` |
+| visual features | ViT-B/16, 768-d per frame, cited to Dosovitskiy (ImageNet, not CLIP) | `runs/legacy_1fps/lab1/reproduction/features/vit_b16_imagenet_1fps`, `google/vit-base-patch16-224` CLS token, 768-d |
+| audio features | VGGish, 128-d per 1-second clip | `runs/legacy_1fps/lab1/reproduction/features/vggish_1s`, 128-d per second |
+| text features | Whisper transcript, sentence fragments with timestamps, BERT 768-d per fragment, repeat-padded over the fragment's interval | `runs/legacy_1fps/lab1/reproduction/features/bert_sentence_1fps`, built by `extract_bert_sentence_features.py` |
 | streams | one branch per modality plus a fused branch, each emitting frame probabilities | `model.MultiHateLoc`: three `ModalityBranch` plus a fused head |
 | MIL | top-K where K is a proportion; their Table 4 best is K = 3, the top 33 % of frames | `topk_counts` returns `ceil(T / 3)`, floor of one frame |
 | MIL loss | binary cross-entropy of the top-K mean against the video label | `MultiHateLoc.mil_loss` |
@@ -48,10 +48,10 @@ The paper never states its frame rate. It says only that T is "the number of
 frames". Its evaluation grid and its span-to-frame rasterization rule are
 likewise unstated, so the published 0.645 mAP / 0.799 AUC cannot be
 reconstructed from the paper alone
-(`docs/duplex/LOCALIZATION_PROTOCOL_SURVEY.md` records the same gap for LELA).
+(`docs/protocol_1fps_legacy/LOCALIZATION_PROTOCOL_SURVEY.md` records the same gap for LELA).
 
 We freeze **1 fps**, this study's gold grid
-(`docs/duplex/FRAME_EVAL_PROTOCOL.md`): frame i covers second i, and row i of
+(`docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md`): frame i covers second i, and row i of
 every feature matrix is frame i of the frozen gold array by construction. The
 choice is not neutral — a denser grid would change T, change `ceil(T/3)`, and
 change what a frame-level AUC means — but it is the only grid on which this
@@ -99,7 +99,7 @@ branch is `LayerNorm -> Linear(d, 256) -> ReLU -> Dropout(0.1) -> Linear(256,
 128) -> ReLU`, with a `Linear(128, 1)` frame head. The fused branch takes the
 concatenated 384-d frame embedding through the same shape. Total 0.67 M
 parameters, inside the 0.3 M to 20 M range every weakly-supervised localizer
-in `docs/duplex/BASELINE_REPRODUCTION_LIST.md` occupies.
+in `docs/protocol_1fps_legacy/BASELINE_REPRODUCTION_LIST.md` occupies.
 
 Two sub-choices inside this:
 
@@ -191,14 +191,14 @@ directory use). Probabilities are clamped to `[1e-7, 1 - 1e-7]` before the BCE.
 
 ## 3. Protocol differences from the paper's own evaluation
 
-These are why the numbers in `docs/duplex/BASELINE_RESULTS.md` must not be read
+These are why the numbers in `docs/protocol_1fps_legacy/BASELINE_RESULTS.md` must not be read
 against the 0.645 / 0.799 in the paper.
 
 1. **Frame grid.** Ours is 1 fps and frozen; theirs is unstated. Frame-level
    AUC and mAP are grid-dependent.
 2. **Span-to-frame gold.** Ours is the frozen rasterization in
-   `docs/duplex/FRAME_EVAL_PROTOCOL.md`; theirs is unstated.
-3. **Splits.** Ours are the frozen splits in `results/reproduction/splits/`;
+   `docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md`; theirs is unstated.
+3. **Splits.** Ours are the frozen splits in `runs/legacy_1fps/lab1/reproduction/splits/`;
    theirs are not published.
 4. **Model selection.** We never open the test split during training: a
    seeded, label-stratified 10 % of the train split is held out and the epoch

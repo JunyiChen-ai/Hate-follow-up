@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Restore the frozen 1-fps test GT from Retrieval-hate's canonical archive.
 
-The large ``results/reproduction`` tree is intentionally gitignored and may be
+The large ``runs/legacy_1fps/lab1/reproduction`` tree is intentionally gitignored and may be
 absent after a fresh clone. Retrieval-hate stores the same rasterized labels in
 its structured ``frame_gt_4fps/*.npz`` archives, including the exact ``y1``
 arrays. This importer selects only the frozen test manifest and applies the

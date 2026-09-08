@@ -10,13 +10,13 @@
 # automatic language detection.
 #
 #   setsid nohup bash scripts/duplex/run_reproduction_asr.sh \
-#     > results/reproduction/asr/run.log 2>&1 &
+#     > runs/legacy_1fps/lab1/reproduction/asr/run.log 2>&1 &
 set -uo pipefail
 cd /home/jehc223/Hate-follow-up || exit 1
 export HVD_DATA_ROOT=/home/jehc223/data
 export TOKENIZERS_PARALLELISM=false
 PY=${PYTHON:-/home/jehc223/miniconda3/envs/HateVideo/bin/python}
-OUT=results/reproduction/asr
+OUT=runs/legacy_1fps/lab1/reproduction/asr
 mkdir -p "$OUT"
 rm -f "$OUT/DONE"
 

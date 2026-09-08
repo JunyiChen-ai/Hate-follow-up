@@ -248,7 +248,7 @@ different grids.
 | VGGish `vggish_1s` | `(T, 128)` | 1 s, row `i` = `[i, i+1)` | the whole waveform |
 
 The second grid is the gold grid: the arrays in
-`results/reproduction/gt/<corpus>_test.npz` have length exactly `T` for all
+`runs/legacy_1fps/lab1/reproduction/gt/<corpus>_test.npz` have length exactly `T` for all
 214 + 158 + 153 gold videos, asserted in `smoke_cpu_macilsd.py`. The two grids
 also cover different spans. Because of the dropped tail, audio outlives visual
 in 1042 / 790 / 808 of the 1066 / 792 / 814 videos, by at most **5.33 s**

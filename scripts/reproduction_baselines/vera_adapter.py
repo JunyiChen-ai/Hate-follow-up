@@ -25,7 +25,7 @@ from hate_common import data as hdata
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 MODEL_ID = "OpenGVLab/InternVL2-8B"
-FEATURE_ROOT = REPO / "results/reproduction/features/clip_b16_1fps"
+FEATURE_ROOT = REPO / "runs/legacy_1fps/lab1/reproduction/features/clip_b16_1fps"
 
 VIDEO_DIRS = {
     "hatemm": Path("/home/jehc223/data/HateMM/video"),
@@ -293,7 +293,7 @@ def main():
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     ap.add_argument("stage", choices=("select", "infer", "postprocess"))
     ap.add_argument("--corpus", required=True, choices=hdata.CORPORA)
-    ap.add_argument("--out-dir", default="results/reproduction/official_val/vera")
+    ap.add_argument("--out-dir", default="runs/legacy_1fps/lab1/reproduction/official_val/vera")
     ap.add_argument("--prompt-json")
     ap.add_argument("--raw-dir")
     ap.add_argument("--out")

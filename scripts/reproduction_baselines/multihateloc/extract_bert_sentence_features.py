@@ -5,7 +5,7 @@ transcribes the audio into sentence fragments carrying timestamps, each
 fragment is embedded by BERT into a 768-d vector, and that vector is
 "repeat-padded" across the frames the fragment's interval covers. This script
 produces exactly that array, one file per video, on the same 1 fps grid the
-frozen gold arrays live on (docs/duplex/FRAME_EVAL_PROTOCOL.md), so row i of
+frozen gold arrays live on (docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md), so row i of
 the text matrix is frame i of the gold array and of the ViT / VGGish matrices
 already extracted by scripts/duplex/.
 

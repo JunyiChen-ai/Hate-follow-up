@@ -10,7 +10,7 @@
 #
 #     cd /home/jehc223/Hate-follow-up
 #     setsid nohup bash scripts/reproduction_baselines/run_all_macilsd.sh \
-#         > results/reproduction/baselines/run_all_macilsd.log 2>&1 &
+#         > runs/legacy_1fps/lab1/reproduction/baselines/run_all_macilsd.log 2>&1 &
 #
 # Restrict the sweep with the two environment variables:
 #     MODALITIES="av"  CORPORA="hatemm"  bash .../run_all_macilsd.sh
@@ -36,7 +36,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PYTHON="${PYTHON:-/home/jehc223/venvs/SafetyContradiction/bin/python}"
 MODALITIES="${MODALITIES:-av audio visual}"
 CORPORA="${CORPORA:-hatemm mhclip_en mhclip_zh}"
-OUT_ROOT="${REPO_ROOT}/results/reproduction/baselines"
+OUT_ROOT="${REPO_ROOT}/runs/legacy_1fps/lab1/reproduction/baselines"
 
 method_of () {
     case "$1" in

@@ -21,7 +21,7 @@ Split rules (frozen by owner decision, see the Phase 0 plan):
   annotated videos whose media is present locally. See ``hateclipseg_split`` below for the exact
   rule; every number computed on it must be reported as being on our split.
 
-Outputs ``results/reproduction/splits/*.txt``, one video id per line, sorted,
+Outputs ``runs/legacy_1fps/lab1/reproduction/splits/*.txt``, one video id per line, sorted,
 plus the SHA256 of each file.  Run with ``--check`` to recompute the manifests
 and fail if they differ from what is on disk.
 """

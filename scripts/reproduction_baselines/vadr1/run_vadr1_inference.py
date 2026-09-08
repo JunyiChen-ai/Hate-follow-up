@@ -76,7 +76,7 @@ metadata, so upstream's ndarray hand-off works unchanged.
 
 Output
 ------
-results/reproduction/baselines/vadr1/<corpus>/generations.jsonl, one object per
+runs/legacy_1fps/lab1/reproduction/baselines/vadr1/<corpus>/generations.jsonl, one object per
 video, and run_meta.json beside it. Scoring is not done here; see
 rasterize_and_eval.py.
 

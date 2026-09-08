@@ -16,7 +16,7 @@ boundaries are the entire content of upstream's segment directory, so nothing
 is lost.
 
 Output, one JSON object per line, in
-`results/reproduction/baselines/eventvad/<corpus>/events.jsonl`.
+`runs/legacy_1fps/lab1/reproduction/baselines/eventvad/<corpus>/events.jsonl`.
 
     video_id, probe, n_frames, decode_fps, events, boundary, event_diag,
     timings

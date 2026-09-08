@@ -14,7 +14,7 @@ from optuna.trial import TrialState
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", default="results/reproduction/official_val/tuning")
+    ap.add_argument("--root", default="runs/legacy_1fps/lab1/reproduction/official_val/tuning")
     ap.add_argument("--trials", type=int, default=40)
     ap.add_argument("--corpora", nargs="+", required=True)
     ap.add_argument("--methods", nargs="+", required=True)

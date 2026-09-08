@@ -2,7 +2,7 @@
 """Score a trained DSANet checkpoint and write per-video frame scores.
 
 Thin launcher over dsanet/infer.py. Writes
-results/reproduction/baselines/dsanet/<corpus>/scores.jsonl, one JSON object per
+runs/legacy_1fps/lab1/reproduction/baselines/dsanet/<corpus>/scores.jsonl, one JSON object per
 video, each score array on the 1 fps gold grid.
 
     python scripts/reproduction_baselines/test_dsanet_hatemm.py --corpus hatemm

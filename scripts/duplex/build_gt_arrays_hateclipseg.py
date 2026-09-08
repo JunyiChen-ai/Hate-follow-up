@@ -1,6 +1,6 @@
 """Build the frame-level ground-truth arrays for HateClipSeg (our test split).
 
-Protocol: docs/duplex/FRAME_EVAL_PROTOCOL.md, HateClipSeg section. This is a
+Protocol: docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md, HateClipSeg section. This is a
 sibling of ``build_gt_arrays.py`` rather than a fourth corpus inside it: the
 three corpora there are scored against *hate spans* drawn on an otherwise
 unannotated timeline, whereas HateClipSeg annotates the timeline exhaustively,
@@ -10,14 +10,14 @@ move a byte.
 
 Two arrays are produced over the same cohort and the same grid:
 
-    results/reproduction/gt/hateclipseg_test.npz
+    runs/legacy_1fps/lab1/reproduction/gt/hateclipseg_test.npz
         PRIMARY. A frame is positive iff the segment covering it is offensive
         under the union rule -- any of the five non-normal dimensions
         (hateful, insulting, sexual, violence, harm) set. This is the rule
         ``sentinel_localization_pilot.is_offensive_union`` already uses, so
         the frame gold and the earlier pilot cohort agree by construction.
 
-    results/reproduction/gt/hateclipseg_test_hateful_strict.npz
+    runs/legacy_1fps/lab1/reproduction/gt/hateclipseg_test_hateful_strict.npz
         SENSITIVITY. Positive iff dimension 1 (hateful) alone is set. Same
         videos, same frame counts, so the two are directly comparable; a
         method's numbers may be reported on both but the primary is primary.
@@ -29,7 +29,7 @@ same inputs reproduces the same SHA256 byte for byte.
 CPU only, no model calls. Sources:
 
     segments   idea-stage/pilots/b1_coverage_audit/data/segment_level_annotation.csv
-    cohort     results/reproduction/splits/hateclipseg_test.txt
+    cohort     runs/legacy_1fps/lab1/reproduction/splits/hateclipseg_test.txt
     durations  results/interleaved_timeline/hateclipseg/timestamped_chunks.jsonl
                (wav_duration), with the wav header as fallback
     container  results/hateclipseg/audio_meta.jsonl (clock cross-check only)
@@ -62,7 +62,7 @@ RESULTS = os.path.join(PROJECT_ROOT, "results")
 OUT_DIR = os.path.join(RESULTS, "reproduction", "gt")
 SPLIT_DIR = os.path.join(RESULTS, "reproduction", "splits")
 
-PROTOCOL_DOC = "docs/duplex/FRAME_EVAL_PROTOCOL.md"
+PROTOCOL_DOC = "docs/protocol_1fps_legacy/FRAME_EVAL_PROTOCOL.md"
 FPS = 1.0
 
 GOLD_CSV = os.path.join(
@@ -503,7 +503,7 @@ def main():
             "The cohort is our test split minus the videos excluded by the "
             "annotation-clock rule. Media for 41 of the 435 annotated videos "
             "is not held locally and never entered the split; that attrition "
-            "is recorded in results/reproduction/splits/manifest_report.json. "
+            "is recorded in runs/legacy_1fps/lab1/reproduction/splits/manifest_report.json. "
             "Any number computed against one SHA256 below is not comparable "
             "with a number computed against another."),
         "per_video": per_video,

@@ -6,8 +6,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PYTHON="${PYTHON:-/home/jehc223/miniconda3/envs/HateVideo/bin/python}"
 CORPORA="${CORPORA:-hatemm mhclip_en mhclip_zh hateclipseg}"
-TUNING_ROOT="${TUNING_ROOT:-$ROOT/results/reproduction/official_val/tuning}"
-FINAL_ROOT="${FINAL_ROOT:-$ROOT/results/reproduction/official_val/final}"
+TUNING_ROOT="${TUNING_ROOT:-$ROOT/runs/legacy_1fps/lab1/reproduction/official_val/tuning}"
+FINAL_ROOT="${FINAL_ROOT:-$ROOT/runs/legacy_1fps/lab1/reproduction/official_val/final}"
 MIN_FREE_GPU_MIB="${MIN_FREE_GPU_MIB:-20480}"
 CODE_COMMIT="${CODE_COMMIT:-$(git -C "$ROOT" rev-parse HEAD)}"
 

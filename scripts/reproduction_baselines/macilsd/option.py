@@ -136,7 +136,7 @@ def build_parser():
 
     # --- io ---
     parser.add_argument("--out-dir", default=None,
-                        help="default results/reproduction/baselines/"
+                        help="default runs/legacy_1fps/lab1/reproduction/baselines/"
                              "<method>/<corpus>, method per --modality")
     return parser
 
