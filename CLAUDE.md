@@ -12,7 +12,7 @@
 - **主指标：pooled frame ROC-AUC、pooled frame PR-AUC**（文献通用）。within-video macro ROC 只报告，不作主张、不作门、不做"谁更高"的比较。
 - 评测器全仓库只有一份：`src/eval/evaluate.py` + `src/eval/evaluate_four_datasets.py`。所有方法与 baseline 调用同一份；任何目录不得复制或改写评测逻辑。改评测器等于全表数字失效，必须显式裁定。
 - 权威数字只认 `runs/` 里评测器直接输出的 `metrics.json`；markdown 表格一律是转录，引用时注明来源文件路径。
-- **对着 test 开发（沿用 Retrieval-hate 规则 10，2026-09-09 适配）**：允许读取 test 预测和 test GT 做 error analysis，并据此改方法；允许用 test 指标比较设计版本。每次记录看了哪些文件、发现了什么、改了哪个设计（写进实验 README）。由此得到的数字是开发期证据，STATUS 和论文里必须标"development-selected"，不能写成未揭盲的确认结果。test 标签不得进入任何训练、拟合或阈值选择的计算路径（方法本身零标签）。提交前的 SOTA 主张需要一个从未看过的 cohort 或未动过的评测配置做一次确认。
+- **对着 test 开发（沿用 Retrieval-hate 规则 10，2026-09-09 适配）**：允许读取 test 预测和 test GT 做 error analysis，并据此改方法；允许用 test 指标比较设计版本。每次记录看了哪些文件、发现了什么、改了哪个设计（写进实验 README）。由此得到的数字是开发期证据，STATUS 和论文里必须标"development-selected"，不能写成未揭盲的确认结果。test 标签不得进入任何训练、拟合或阈值选择的计算路径（方法本身零标签）。不要求另设确认集（用户裁定 2026-09-09）。
 
 ## 哈希限制（沿用 Retrieval-hate 2026-09-05 裁定）
 - 禁止计算、记录、比较或依赖哈希、checksum、digest（SHA、MD5 等），包括文件、媒体、特征、缓存、模型、配置、代码、文档和结果的内容哈希，也包括用内容哈希派生随机种子。
