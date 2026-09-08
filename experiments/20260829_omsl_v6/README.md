@@ -55,3 +55,33 @@ instead of a data-derived digest (hash ban). Comparators on the same protocol:
   Audit and claim gate: `archive/root-2026-09/EXPERIMENT_AUDIT.md`, `CLAIMS_FROM_RESULTS.md`.
 - 2026-09-09: migrated here from `scripts/idea_discovery/project_orthogonal_mobius_localizer.py`;
   verified identical metrics under conda HateVideo before the seed change.
+
+## Ablations (2026-09-09, development-selected; test split, 4 fps; ROC / PR / within)
+
+Source: `runs/20260829_omsl_v6/ablation_<tag>/metrics.json`; launcher `launch/run_ablations.sh`; table by `summarize_ablations.py`. `full` is bit-identical to `v6_migrated_seed0_20260909`.
+
+| ablation | HateMM ROC / PR / within | HateClipSeg ROC / PR / within |
+|---|---|---|
+| full | 0.8507 / 0.5781 / 0.6494 | 0.6692 / 0.6622 / 0.5473 |
+| drop_language | 0.8501 / 0.5761 / 0.6337 | 0.6687 / 0.6626 / 0.5411 |
+| drop_audio | 0.8508 / 0.5802 / 0.6457 | 0.6690 / 0.6621 / 0.5450 |
+| visual_only | 0.8498 / 0.5771 / 0.6180 | 0.6683 / 0.6630 / 0.5321 |
+| mains_only | 0.8507 / 0.5781 / 0.6494 | 0.6692 / 0.6622 / 0.5475 |
+| mobius_raw | 0.8496 / 0.5748 / 0.6039 | 0.6683 / 0.6615 / 0.5340 |
+| perm_99 | 0.8507 / 0.5781 / 0.6494 | 0.6692 / 0.6622 / 0.5473 |
+| perm_255 | 0.8507 / 0.5781 / 0.6494 | 0.6692 / 0.6622 / 0.5473 |
+| order_sum | 0.8510 / 0.5783 / 0.6172 | 0.6704 / 0.6604 / 0.5479 |
+| intercept_mllm | 0.8506 / 0.5780 / 0.6494 | 0.6711 / 0.6630 / 0.5473 |
+| intercept_occ | 0.5358 / 0.2540 / 0.6494 | 0.4972 / 0.4714 / 0.5473 |
+| intercept_none | 0.5227 / 0.2534 / 0.6494 | 0.5145 / 0.4815 / 0.5473 |
+
+Tags: `drop_*` zero one stream; `visual_only` no coalition field (visual order, ties averaged);
+`mains_only` language+audio main effects without interaction terms; `mobius_raw` uncalibrated
+Möbius interactions; `perm_N` N block permutations; `order_sum` equal-weight sum instead of
+visual-primary lexicographic order; `intercept_*` video intercept = z only / occupancy only / 0.
+
+Reading (HateMM, HateClipSeg):
+- Pooled ROC/PR are carried by the whole-video MLLM logit z: removing it (`intercept_occ`, `intercept_none`) drops pooled ROC to .54/.52 and .50/.51. Occupancy adds nothing (`intercept_mllm` ≈ `full`). No module-1/2 change moves pooled by more than .002.
+- Modules 1–2 act only on within-video order: `visual_only` .618/.532 → `full` .649/.547. Language carries most of it (`drop_language` .634/.541), audio less (`drop_audio` .646/.545).
+- Calibrated interactions contribute nothing measurable: `mains_only` equals `full` (.6494 vs .6494; .5475 vs .5473). Uncalibrated interactions hurt (`mobius_raw` .604/.534), so calibration works by suppressing them. Permutation count (31/99/255) changes nothing.
+- Lexicographic order matters on HateMM within (.649 vs `order_sum` .617), not on HateClipSeg (.547 vs .548).

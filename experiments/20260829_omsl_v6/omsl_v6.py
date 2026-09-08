@@ -31,6 +31,7 @@ CODE_REVISION = ("2026-09-09 migration of scripts/idea_discovery/"
                  "permutation null seeded with PERMUTATION_SEED instead of a "
                  "data-derived digest (hash ban, CLAUDE.md)")
 PERMUTATION_SEED = 0
+PERMUTATIONS = 31  # fixed Monte-Carlo resolution, never label selected
 
 
 PLAYERS = (0, 1, 2)
@@ -117,7 +118,7 @@ def calibrated_mobius_field(
     block, block_rule = decorrelation_block_length(streams)
     generator = np.random.default_rng(PERMUTATION_SEED)
     null_maxima = []
-    for _ in range(31):  # fixed Monte-Carlo resolution, never label selected
+    for _ in range(PERMUTATIONS):
         permuted = streams.copy()
         permuted[:, 1] = permute_full_blocks(streams[:, 1], block, generator)
         permuted[:, 2] = permute_full_blocks(streams[:, 2], block, generator)
@@ -174,7 +175,23 @@ def main() -> None:
     parser.add_argument("--scores", action="append", nargs=2,
                         metavar=("DATASET", "JSONL"), required=True)
     parser.add_argument("--out", type=Path, required=True)
+    # Ablation switches (2026-09-09). Defaults reproduce OMSL-v6 exactly.
+    parser.add_argument("--drop", nargs="*", default=[], choices=["language", "audio"],
+                        help="zero a stream before the coalition game")
+    parser.add_argument("--fusion", default="mobius_calibrated",
+                        choices=["mobius_calibrated", "mobius_raw", "mains_only", "none"],
+                        help="coalition field: calibrated interactions (v6), raw Mobius "
+                             "interactions, language+audio mains only, or no field")
+    parser.add_argument("--order", default="lexicographic", choices=["lexicographic", "sum"],
+                        help="visual-primary lexicographic order (v6) or equal-weight sum")
+    parser.add_argument("--intercept", default="both", choices=["both", "mllm", "occupancy", "none"],
+                        help="video intercept: logmeanexp(occupancy, z) (v6), z only, occupancy only, 0")
+    parser.add_argument("--permutations", type=int, default=31)
+    parser.add_argument("--tag", default="", help="suffix appended to the method name")
     args = parser.parse_args()
+    global PERMUTATIONS
+    PERMUTATIONS = args.permutations
+    method_name = "orthogonal_mobius_semantic_localizer_v6" + (f"__{args.tag}" if args.tag else "")
     if args.out.exists():
         raise RuntimeError(f"refusing existing output: {args.out}")
 
@@ -209,6 +226,10 @@ def main() -> None:
                 np.linalg.norm(audio_embeddings, axis=1, keepdims=True), 1e-12)
             audio_margin = audio_embeddings @ text_embeddings.T
             audio_curve = resize(audio_margin[:, 1] - audio_margin[:, 0], length)
+            if "language" in args.drop:
+                language_curve = np.zeros(length)
+            if "audio" in args.drop:
+                audio_curve = np.zeros(length)
             streams = np.stack([
                 centered_rank(visual_curve), centered_rank(language_curve),
                 centered_rank(audio_curve),
@@ -226,22 +247,35 @@ def main() -> None:
             # lexicographic dominance constraint prevents a weak modality from
             # overturning visually distinguishable frames while still making
             # every tied plateau temporally dense.
-            calibrated_interactions, block_length, block_rule = (
-                calibrated_mobius_field(streams, components))
-            coalition_field = (
-                robust_unit(components[frozenset((1,))])
-                + robust_unit(components[frozenset((2,))])
-                + calibrated_interactions
-            )
-            order = np.lexsort((coalition_field, visual_curve))
+            mains = (robust_unit(components[frozenset((1,))])
+                     + robust_unit(components[frozenset((2,))]))
+            block_length, block_rule = -1, "not_computed"
+            if args.fusion == "mobius_calibrated":
+                calibrated_interactions, block_length, block_rule = (
+                    calibrated_mobius_field(streams, components))
+                coalition_field = mains + calibrated_interactions
+            elif args.fusion == "mobius_raw":
+                coalition_field = mains + sum(
+                    robust_unit(components[s]) for s in component_sets if len(s) >= 2)
+            elif args.fusion == "mains_only":
+                coalition_field = mains
+            else:  # "none": visual order only, ties averaged
+                coalition_field = np.zeros(length)
+            if args.order == "lexicographic":
+                order = np.lexsort((coalition_field, visual_curve))
+                primary_key, secondary_key = visual_curve, coalition_field
+            else:  # equal-weight sum of unit-scaled visual and coalition field
+                fused = robust_unit(visual_curve) + coalition_field
+                order = np.argsort(fused, kind="stable")
+                primary_key, secondary_key = fused, np.zeros(length)
             residual = np.empty(length, dtype=float)
             position = 0
             while position < length:
                 end = position + 1
                 anchor = order[position]
                 while (end < length
-                       and visual_curve[order[end]] == visual_curve[anchor]
-                       and coalition_field[order[end]] == coalition_field[anchor]):
+                       and primary_key[order[end]] == primary_key[anchor]
+                       and secondary_key[order[end]] == secondary_key[anchor]):
                     end += 1
                 average_rank = 0.5 * (position + end - 1)
                 residual[order[position:end]] = (average_rank + 0.5) / length - 0.5
@@ -253,14 +287,23 @@ def main() -> None:
             active = np.asarray(visual_curve > 0, dtype=float)
             occupancy = (float(active.sum()) + 0.5) / (length + 1.0)
             occupancy_logit = float(np.log(occupancy / (1 - occupancy)))
-            intercept = logmeanexp(np.asarray([occupancy_logit, reservoir[key]]))
+            if args.intercept == "both":
+                intercept = logmeanexp(np.asarray([occupancy_logit, reservoir[key]]))
+            elif args.intercept == "mllm":
+                intercept = float(reservoir[key])
+            elif args.intercept == "occupancy":
+                intercept = occupancy_logit
+            else:
+                intercept = 0.0
             score = intercept + residual
             audit["max_center_error"] = max(
                 audit["max_center_error"], abs(float(residual.mean())))
             audit["unique_scores"].append(int(len(np.unique(score))))
             output = {
                 "schema_version": 1,
-                "method": "orthogonal_mobius_semantic_localizer_v6",
+                "method": method_name,
+                "ablation": {"drop": list(args.drop), "fusion": args.fusion, "order": args.order,
+                             "intercept": args.intercept, "permutations": args.permutations},
                 "dataset": key[0], "video_id": key[1],
                 "duration": float(base["duration"]), "native_rate": 4.0,
                 "score_curve": score.tolist(),
