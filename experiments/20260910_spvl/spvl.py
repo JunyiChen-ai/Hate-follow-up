@@ -111,12 +111,13 @@ def load_asr(dataset):
     return out
 
 
-def frame_paths(dataset, vid, k):
-    d = ROOT / f"data/frames_k20/{dataset}/{vid}"
+def frame_paths(dataset, vid, k, source="k20"):
+    """source k20: K of the 20 uniform frames; source w8: every window-centre frame (k ignored)."""
+    d = ROOT / f"data/frames_{source}/{dataset}/{vid}"
     files = sorted(d.glob("f*_t*.jpg"))
     if not files:
         return []
-    if k < len(files):
+    if source == "k20" and k < len(files):
         idx = np.linspace(0, len(files) - 1, k).round().astype(int)
         files = [files[i] for i in idx]
     out = []
@@ -446,7 +447,7 @@ def run_groups(judge, enc, pos_p, branches, args, ext_ids=None):
 
 def score_video(judge, row, segments, args, verify=False):
     vid, ds, dur = row["video_id"], row["dataset"], float(row["duration"])
-    frames = frame_paths(ds, vid, args.frames) if args.frames > 0 else []
+    frames = frame_paths(ds, vid, args.frames, args.frame_source) if args.frames > 0 else []
     if args.frames > 0 and not frames:
         return None, {"error": "no frames cached"}
     with_context = not args.no_transcript_context
@@ -588,6 +589,8 @@ def main():
     ap.add_argument("--branches", choices=["joint", "dual", "triple"], default="joint",
                     help="dual: visual + speech branch per window (max); triple: joint + visual + speech")
     ap.add_argument("--window-question", choices=["rules", "evidence"], default="rules")
+    ap.add_argument("--frame-source", choices=["k20", "w8"], default="k20",
+                    help="k20: K uniform frames; w8: one frame per 8 s window (data/frames_w8)")
     ap.add_argument("--mask-kind", choices=["bool", "additive"], default="additive")
     ap.add_argument("--max-tokens", type=int, default=9000)
     ap.add_argument("--only-within-defined", action="store_true",
@@ -609,7 +612,7 @@ def main():
     tag = args.method_name or ("spvl_" + "_".join([
         f"f{args.frames}", "noctx" if args.no_transcript_context else "ctx",
         args.windows + (f"{args.window_seconds:g}" if args.windows == "fixed" else ""), args.mask,
-        f"st{args.stance}", f"br{args.branches}", f"q{args.window_question}"]))
+        f"st{args.stance}", f"br{args.branches}", f"q{args.window_question}", f"fs{args.frame_source}"]))
     if args.legacy_chunk_arm:
         tag = args.method_name or "legacy_chunk_replica"
     args.method_name = tag
