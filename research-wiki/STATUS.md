@@ -10,15 +10,17 @@
 
 `experiments/20260829_omsl_v6/README.md`。三模块：冻结 Qwen3-VL-8B 整视频 logit 作视频截距；视觉 / 时间戳文本 / ImageBind 音频三路流的 Möbius 联盟分解，交互项按 31 次块置换空分布校准；视觉主导的字典序打破平局，残差去均值后加截距。无学习参数，推理零 MLLM 调用，输出帧分数，不输出区间。2026-09-09 迁入并去哈希（置换种子改为常数 0），pooled 指标不变，within 第四位小数变化。
 
-## 最新权威结果（test，4 fps；pooled ROC / pooled PR / within-video macro ROC，within 只报告）
+## 最新权威结果（test，4 fps；pooled ROC / pooled PR / within-video macro ROC，三项并列主指标，2026-09-10 裁定）
 
 | 方法 | HateMM | HateClipSeg | MHC（历史） | MHC_zh（历史） |
 |---|---|---|---|---|
-| **OMSL-v6**（`v6_migrated_seed0_20260909/metrics.json`） | **.8507 / .5781** / .6494 | **.6692 / .6622** / .5473 | .7458 / .4970 / .7011 | .7522 / .5354 / .6837 |
+| **OMSL-v6**（`v6_migrated_seed0_20260909/metrics.json`） | **.8507 / .5781 / .6494** | **.6692 / .6622 / .5473** | .7458 / .4970 / .7011 | .7522 / .5354 / .6837 |
 | MultiHateLoc-DMS 重跑（`multihateloc_frozen_current4fps_v1_metrics.json`） | .7618 / .5188 / .6108 | .5056 / .4885 / .4996 | .7814 / .4790 / .5013 | .8778 / .6565 / .4962 |
-| T3AL 重跑，611 视频（`t3al_anchor_s20250819_metrics.json`，同目录） | .6886 / .4315 / .6636 | .5783 / .5292 / .5248 | .7824 / .5323 / .7190 | .7239 / .3601 / .6690 |
+| T3AL 重跑，611 视频，seed 20250819（`t3al_anchor_s20250819_metrics.json`，同目录） | .6091 / .3096 / .5068 | .6246 / .5645 / .5003 | .5975 / .2834 / .5605 | .6966 / .3584 / .4996 |
 
-PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。T3AL 覆盖 611 / 643 视频，base rate 不同，只看趋势。
+PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。T3AL 覆盖 611 / 643 视频，base rate 不同，只看趋势。T3AL 的超参 preset 是按 val 集 pooled PR-AUC 选的（`Retrieval-hate/scripts/repro_campaign/t3al_select.py`），方法本身不读标签。within 只在正负帧都有的视频上计算：HateMM 84 / 215，HateClipSeg 99 / 118。
+
+2026-09-10 修正：此前 T3AL 行的数字（.6886 / .4315 / .6636 等）误抄自 `endpoint_equilibrium_t3al_lcurve_v1_metrics.json`，那是 2026-08 idea discovery 里基于 T3AL 曲线的区间端点重解码变体，不是 T3AL 本身。
 
 ## 输入与缓存
 
@@ -32,7 +34,6 @@ PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。T3AL 覆盖
 
 1. 校区服务器首次使用：clone 仓库到 `/data/jehc223/Hate-follow-up`，建 `HateVideo` 环境，同步 HateClipSeg / HateMM 原始视频（campus2 缺 HCS，campus3 全缺）。
 2. 方法改进从 OMSL-v6 出发；任何新实验建 `experiments/<日期>_<slug>/`，输出到 `runs/`，结束更新本文件。
-3. 提交前 SOTA 主张需要未揭盲的确认：untouched cohort、fail-closed 评测器、共同覆盖的 T3AL、可复现的已发表对照（审计报告第 C3 条）。
 
 ## 资料与历史
 

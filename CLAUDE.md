@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## 项目
-**Label-free hateful video temporal localization**：训练、适配、阈值选择都不使用任何仇恨标注，输出帧级仇恨分数。当前方法 OMSL-v6（三模块，`experiments/20260829_omsl_v6/README.md`）。
+**Label-free hateful video temporal localization**：训练、适配、阈值选择都不使用任何仇恨标注，输出帧级仇恨分数。当前方法 OMSL-v6（三模块，`experiments/20260829_omsl_v6/README.md`）。研究迭代流程与晋级标准见 `RESEARCH_ITERATION_RULES.md`。
 
 - **主数据集**（2026-09-09 裁定）：HateMM、HateClipSeg。MHC-EN、MHC-ZH 停用：不跑、不作门、不进论文主表；旧文档里的 MHC 数字只作历史记录。新数据集只做 external validation，加入前须用户同意。
 - **对照**：零标签 / training-free / test-time adaptation 方法（T3AL、LAVAD、Vad-R1、EventVAD、ZS-CLIP、ZS-ImageBind 等）为同类对照；弱监督方法（MultiHateLoc、MACIL-SD、DSANet 等）作参照并标明使用了视频级标签。
@@ -9,7 +9,7 @@
 
 ## 评测协议（2026-09-09 裁定）
 - 网格：**4 fps**，本地协议。GT 数组 `data/gt_4fps/<dataset>.npz`（出处见同目录 `PROVENANCE.md`），test split。1 fps 时代的表（`docs/protocol_1fps_legacy/`）不与 4 fps 数字合表：视频集、GT 数组、上采样方式都不同。
-- **主指标：pooled frame ROC-AUC、pooled frame PR-AUC**（文献通用）。within-video macro ROC 只报告，不作主张、不作门、不做"谁更高"的比较。
+- **主指标（2026-09-10 裁定）：pooled frame ROC-AUC、pooled frame PR-AUC、within-video macro ROC-AUC**，三者并列报告与比较。pooled 两项是文献通用指标，主要反映视频级排序；within 等于 arXiv 2608.21854 的 Macro-AUROC（每个含正负帧的视频算一个 ROC 再平均），反映视频内定位顺序。
 - 评测器全仓库只有一份：`src/eval/evaluate.py` + `src/eval/evaluate_four_datasets.py`。所有方法与 baseline 调用同一份；任何目录不得复制或改写评测逻辑。改评测器等于全表数字失效，必须显式裁定。
 - 权威数字只认 `runs/` 里评测器直接输出的 `metrics.json`；markdown 表格一律是转录，引用时注明来源文件路径。
 - **对着 test 开发（沿用 Retrieval-hate 规则 10，2026-09-09 适配）**：允许读取 test 预测和 test GT 做 error analysis，并据此改方法；允许用 test 指标比较设计版本。每次记录看了哪些文件、发现了什么、改了哪个设计（写进实验 README）。由此得到的数字是开发期证据，STATUS 和论文里必须标"development-selected"，不能写成未揭盲的确认结果。test 标签不得进入任何训练、拟合或阈值选择的计算路径（方法本身零标签）。不要求另设确认集（用户裁定 2026-09-09）。
@@ -105,7 +105,7 @@ lab2 和 lab3 常被 Retrieval-hate 的搜索占用；机器是否空闲每次�
 | `archive/` | 淘汰的实验、过时文档、历史根目录文件（`root-2026-09`、`base-paper`、`detection-2026-08`、`idea-stage-2026-08`、`experiments/idea_discovery-2026-08`） | 提交（仅文本） |
 | `third_party/` | 外部代码原样克隆 | 忽略 |
 
-- 根目录白名单：`CLAUDE.md`、`AGENTS.md`、`Readme.md`、`LICENSE`、`environment_HateVideo.yml`、`.gitignore`。其余 markdown / JSON / txt 不得新增到根目录；报告进 `docs/`，状态进 `research-wiki/`。
+- 根目录白名单：`CLAUDE.md`、`AGENTS.md`、`Readme.md`、`RESEARCH_ITERATION_RULES.md`、`LICENSE`、`environment_HateVideo.yml`、`.gitignore`。其余 markdown / JSON / txt 不得新增到根目录；报告进 `docs/`，状态进 `research-wiki/`。
 - 每个实验目录含 `README.md`（机制假设、怎么跑、结论与去向）。实验目录之间不得互相 import；共享逻辑先升入 `src/`。实验淘汰后整目录移入 `archive/experiments/`，README 顶部补一行淘汰原因。
 - 每次运行写 `runs/<exp_id>/<run_name>/`：config 快照、代码版本说明（路径 + 日期 + commit）、`run.log`、`run.pid`、`metrics.json`。
 - 新建派生缓存放 `data/<类型>/`，同目录放 `PROVENANCE.md`（生成脚本、代码版本说明、日期、上游输入、生成机器）。没有出处的缓存视为不可信。大文件永不进 git。
