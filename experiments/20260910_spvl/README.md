@@ -117,6 +117,32 @@ corpora), rule-14g per-module ablation ≥ .01.
 - 2026-09-10: `data/gt_4fps/{HateMM,HateClipSeg}.npz` read only to list videos whose grid has both
   classes (84 / 99) for the pilot subset. No scores were inspected.
 
+## 7b. Pilot (E3, 2026-09-10, uoa-lab3, within-defined subset HateMM 84 / HateClipSeg 99)
+
+Source: `runs/20260910_spvl/pilot_<arm>/metrics_ispvl_rrank.json` (a0: `metrics_ilegacy_rrank.json`), reference
+`runs/20260910_spvl/reference_subset/metrics_v6_*.json` (OMSL-v6 restricted to the same videos; within is
+identical to the full-set value by construction). Pooled numbers on this subset are not comparable to
+full-set numbers and are not read.
+
+| arm | frames | context | windows | HateMM within | HateClipSeg within |
+|---|---|---|---|---|---|
+| OMSL-v6 full (reference) | Vid-Group | — | — | .6494 | .5473 |
+| a0 legacy chunk replica (batched, right padding — see note) | 0 | no | ASR | .5831 | .5084 |
+| a | 0 | no | ASR | .5602 | .5132 |
+| b | 0 | yes | ASR | .5691 | .5241 |
+| d | 0 | yes | fixed 8 s | .6500 | .5701 |
+| c | 20 | yes | fixed 8 s | **.6783** | **.5806** |
+
+Reading: context alone adds +.009 / +.011 (b vs a); fixed windows covering the whole video add
++.081 / +.046 (d vs b); frames add +.028 / +.011 (c vs d). Arm c beats OMSL-v6 by +.029 / +.034, both
+above the +.01 gate. Risk checks (`diagnose.json`): window scores are not copies of the verdict
+(0–1 videos with a constant window curve, median within-video std of window z ≈ 5.5); frames change
+the result, so R2 is not triggered. Spearman(z_video, 2026-08 z) = .82 HateMM / .52 HateClipSeg
+(the old HateClipSeg judge saw no transcript).
+Note on a0: the batched legacy replica used the tokenizer's default (right) padding, so shorter prompts
+were read at a pad position; median per-video Spearman against the cached chunk log-odds was only
+.46 / .26. Fixed to left padding for the full-set parity run.
+
 ## 8. Results
 
-(pending)
+(E4 pending)

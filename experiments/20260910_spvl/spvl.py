@@ -389,6 +389,7 @@ class Judge:
         """2026-08 per-chunk prompt (no system message, single Yes/No ids), batched calls."""
         yes = self.tok.encode("Yes", add_special_tokens=False)[0]
         no = self.tok.encode("No", add_special_tokens=False)[0]
+        self.tok.padding_side = "left"  # last position must be the prompt end for every row
         out = []
         for i in range(0, len(texts), batch):
             prompts = []
