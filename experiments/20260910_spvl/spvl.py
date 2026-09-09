@@ -417,6 +417,13 @@ def score_video(judge, row, segments, args, verify=False):
     if args.windows == "fixed":
         wins = fixed_windows(dur, args.window_seconds)
         wtexts = [window_text(segments, a, b) for a, b in wins]
+    elif args.windows == "asr_split":  # ASR segments cut into <= S-second pieces; silent gaps stay unscored
+        wins, wtexts = [], []
+        for s0, e0, t in segments:
+            n = max(1, int(math.ceil((e0 - s0) / args.window_seconds - 1e-9)))
+            for j in range(n):
+                a_, b_ = s0 + j * (e0 - s0) / n, s0 + (j + 1) * (e0 - s0) / n
+                wins.append((a_, b_)); wtexts.append(window_text([(s0, e0, t)], a_, b_))
     else:  # asr
         wins = [(s, e) for s, e, _ in segments]
         wtexts = [t for _, _, t in segments]
@@ -527,7 +534,7 @@ def main():
     ap.add_argument("--manifest", default=str(ROOT / "data/omsl_v6_inputs/manifests/all_test.jsonl"))
     ap.add_argument("--frames", type=int, default=20)
     ap.add_argument("--no-transcript-context", action="store_true")
-    ap.add_argument("--windows", choices=["fixed", "asr"], default="fixed")
+    ap.add_argument("--windows", choices=["fixed", "asr", "asr_split"], default="fixed")
     ap.add_argument("--window-seconds", type=float, default=8.0)
     ap.add_argument("--mask", choices=["block", "causal"], default="block")
     ap.add_argument("--mask-kind", choices=["bool", "additive"], default="additive")
