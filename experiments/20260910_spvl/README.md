@@ -220,3 +220,58 @@ forward), no post-processing, no per-corpus branch — yes; (f) same model as th
 comparator T3AL uses CLIP, LELA (GPT-4o-mini) not rerun — open; (g) per-module ablation ≥ .01 on both
 corpora: M2 yes, M1-frames yes, M1-context HateMM only, M3 pooled PR yes on both; (h) evaluator, split,
 GT, 4 fps unchanged — yes; (i) both corpora, all three metrics — yes; (j) cost — above.
+
+## 9. Round 2 (2026-09-10): tailoring the mechanism to the task
+
+User direction: refine the working mechanism into task-specific modules (novelty first, gains second).
+Three task characteristics, each with a module and a falsifiable prediction:
+
+| task characteristic (evidence in this repo) | module | prediction |
+|---|---|---|
+| **Stance is global, evidence is local.** Hate = statement + target + endorsement; target and stance are set by the whole video. Segment-independent localizers (LAVAD, EventVAD, T3AL, LELA) have within ≈ .50; adding the full transcript to the window judge gave HateMM within +.053. | **Stance conditioning**: the model first answers the whole-video question; its own answer (Yes/No) is appended to the shared context, and every window is then asked whether it is *one of the segments where the violating content occurs* (evidence question) — two forwards, still no extra encoding of frames. `--stance verdict --window-question evidence` | windows in hateful videos separate better (within ↑); non-hateful videos unaffected; risk: windows collapse onto the verdict (checked by within-video spread) |
+| **Hate is not speech-only and not short.** 12 % (HateMM) / 20 % (HCS) of positive frames lie outside any speech segment; 11/85 and 16/104 hateful videos have most of their hate in silent parts; extent per video ranges .11–.95. Speech-driven localizers leave silent parts unscored (their within on the silent-hate subset is *below* chance: .42 / .39). | **Modality-attributed evidence**: every window gets a visual branch (frames inside the window only) and a speech branch (spoken words only) in the same forward; window score = max; the branch scores are the modality attribution. `--branches dual` | silent-hate videos gain most; the two branches are not copies of each other |
+| **Verdict ≠ extent.** Pooled metrics measure how much of the video is hateful; the MLLM answers whether it is hateful (top-10 HCS videos by verdict: 69 % positive frames vs 77 % for the old judge). | **Extent-aware verdict** (M3): video score = verdict log-odds + mean window log-odds from the same forward | pooled PR ↑ on both corpora without touching within |
+
+### Pilot (within-defined subset; within HateMM / HCS; source `runs/20260910_spvl/pilot2_*/metrics_ispvl_rrank.json`)
+
+| arm | HateMM | HCS |
+|---|---|---|
+| round-1 SPVL (joint branch, rules question) | .6783 | .5806 |
+| joint + evidence question | .6746 | .5688 |
+| joint + rules + stance | .6828 | .5827 |
+| joint + evidence + stance | .6997 | .5718 |
+| dual + rules | .6886 | .5977 |
+| **dual + evidence + stance** | **.6976** | **.6001** |
+| triple + evidence + stance | .6931 | .6003 |
+
+### Full set (333 videos; pooled ROC / PR / within; all with the M3 intercept z_video + mean window z; source `runs/20260910_spvl/<run>/metrics_izv_plus_mean_rrank.json`)
+
+| variant | HateMM | HateClipSeg |
+|---|---|---|
+| OMSL-v6 | .8507 / .5781 / .6494 | .6692 / .6622 / .5473 |
+| SPVL round 1 + M3 | .8938 / .6863 / .6783 | .6882 / .6506 / .5806 |
+| **SPVL-r2** = dual + evidence + stance + M3 | **.8919 / .6831 / .6976** | **.7119 / .6664 / .6001** |
+| r2 − stance | .8945 / .6852 / .6899 | .7023 / .6579 / .5881 |
+| r2 with rules question | .8913 / .6753 / .6954 | .7070 / .6598 / .5998 |
+| r2 with joint branch (no modality split) | .8907 / .6838 / .6997 | .6881 / .6511 / .5718 |
+| r2 triple (joint + visual + speech) | .8944 / .6862 / .6931 | .7060 / .6637 / .6003 |
+
+### Reading
+
+- **Gate vs OMSL-v6** (noise floor pooled .005 / within .01): all six numbers improve — HateMM
+  +.041 / +.105 / +.048, HateClipSeg +.043 / +.004 / +.053 (HCS PR now within noise instead of −.012).
+  Comparison gate vs T3AL passed. **Promotion gate passed.**
+- **Modality split** (dual vs joint): HCS within +.028, pooled ROC +.024, PR +.015; HateMM within −.002.
+  The two branches are nearly independent inside a video (median Spearman(visual, speech) .11 HateMM /
+  .16 HCS); the visual branch is the larger score in 29 % / 46 % of windows with speech.
+- **Stance conditioning**: within +.008 / +.012, pooled PR −.002 / +.009. Passes the .01 floor on HCS
+  only; it is the mechanism that carries the evidence framing (evidence question without stance is
+  slightly worse than the rules question).
+- **Extent intercept**: with dual branches the mean window log-odds is a better extent estimate — HCS
+  pooled PR .622 → .666 (z_video alone → M3), now above OMSL-v6.
+- **Silent-hate subset** (26 videos with > 50 % of positive frames outside speech; `subset_eval.py`):
+  within HateMM .694 (round 1: .745), HCS .446 (round 1: .472). The prediction that silent-hate videos
+  gain most from the visual branch is **not** supported; HCS silent-hate videos stay below chance.
+  Diagnosis: with 20 uniform frames a long video has no frame inside most 8-second windows, so the
+  visual branch of those windows sees nothing. Round 3 tests one frame per window (`data/frames_w8`).
+- Modification rounds used (rule 9): round 1 = M3, round 2 = stance + modality split.
