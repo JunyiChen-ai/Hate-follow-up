@@ -6,22 +6,21 @@
 
 项目定义为 label-free hateful video temporal localization（零仇恨标注），主数据集 HateMM + HateClipSeg，4 fps 协议，主指标 pooled ROC / PR（2026-09-09 裁定，见 `CLAUDE.md`）。当前方法 OMSL-v6 在这两个数据集上三项指标都高于同协议的 MultiHateLoc（视频级标签训练）和 T3AL（零标签）重跑值。这是在同一批数据上反复选出来的开发期结果，不是未揭盲的确认结果（2026-08-29 审计定性 exploratory，见 `archive/root-2026-09/EXPERIMENT_AUDIT.md`）。
 
-## 当前方法：OMSL-v6
+## 当前方法：SPVL-r2（2026-09-10 晋级，development-selected）
 
-`experiments/20260829_omsl_v6/README.md`。三模块：冻结 Qwen3-VL-8B 整视频 logit 作视频截距；视觉 / 时间戳文本 / ImageBind 音频三路流的 Möbius 联盟分解，交互项按 31 次块置换空分布校准；视觉主导的字典序打破平局，残差去均值后加截距。无学习参数，推理零 MLLM 调用，输出帧分数，不输出区间。2026-09-09 迁入并去哈希（置换种子改为常数 0），pooled 指标不变，within 第四位小数变化。
+`experiments/20260910_spvl/README.md`。范式：stance-conditioned evidence localization。Qwen3-VL-8B 两次前向 / 视频：(1) 公共前缀 = 规则 + 20 帧带时间戳 + 整段 Whisper 转录带时间戳，读整视频裁定 log-odds；(2) 模型自己的裁定接进前缀，每个 8 秒窗一个画面分支和一个语音分支（"这一窗是否是违规内容所在片段"），分支之间用 block-diagonal mask 隔离，窗口分 = 两分支最大值；帧分 = (裁定 + 逐窗均值) + 视频内中心化秩残差。零训练、零标签；预处理只有 Whisper 和抽帧；去掉了 v6 的 CLIP、Vid-Group、ImageBind 和十几次文本调用。
 
-## 最新权威结果（test，4 fps；pooled ROC / pooled PR / within-video macro ROC，三项并列主指标，2026-09-10 裁定）
+## 最新权威结果（test，4 fps；pooled ROC / pooled PR / within-video macro ROC，三项并列主指标）
 
-| 方法 | HateMM | HateClipSeg | MHC（历史） | MHC_zh（历史） |
-|---|---|---|---|---|
-| **OMSL-v6**（`v6_migrated_seed0_20260909/metrics.json`） | **.8507 / .5781 / .6494** | **.6692 / .6622 / .5473** | .7458 / .4970 / .7011 | .7522 / .5354 / .6837 |
-| **SPVL + M3，候选，development-selected**（`runs/20260910_spvl/full/metrics_izv_plus_mean_rrank.json`；实验 `experiments/20260910_spvl/README.md` §8） | .8938 / .6863 / .6783 | .6882 / .6506 / .5806 | — | — |
-| MultiHateLoc-DMS 重跑（`multihateloc_frozen_current4fps_v1_metrics.json`） | .7618 / .5188 / .6108 | .5056 / .4885 / .4996 | .7814 / .4790 / .5013 | .8778 / .6565 / .4962 |
-| T3AL 重跑，611 视频，seed 20250819（`t3al_anchor_s20250819_metrics.json`，同目录） | .6091 / .3096 / .5068 | .6246 / .5645 / .5003 | .5975 / .2834 / .5605 | .6966 / .3584 / .4996 |
+| 方法 | HateMM | HateClipSeg |
+|---|---|---|
+| **SPVL-r2**（`runs/20260910_spvl/full2_dual_evid_stance/metrics_izv_plus_mean_rrank.json`） | **.8919 / .6831 / .6976** | **.7119 / .6664 / .6001** |
+| SPVL-r2 + 每窗一帧（`full3_dual_evid_stance_w8/metrics_izv_plus_mean_rrank.json`，5 倍代价） | .8936 / .6786 / .6885 | .7199 / .6798 / .6004 |
+| OMSL-v6（前一方法，`runs/20260829_omsl_v6/v6_migrated_seed0_20260909/metrics.json`） | .8507 / .5781 / .6494 | .6692 / .6622 / .5473 |
+| MultiHateLoc-DMS 重跑，弱监督（`runs/20260829_omsl_v6/multihateloc_frozen_current4fps_v1_metrics.json`） | .7618 / .5188 / .6108 | .5056 / .4885 / .4996 |
+| T3AL 重跑，611 视频（`runs/20260829_omsl_v6/t3al_anchor_s20250819_metrics.json`） | .6091 / .3096 / .5068 | .6246 / .5645 / .5003 |
 
-PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。T3AL 覆盖 611 / 643 视频，base rate 不同，只看趋势。T3AL 的超参 preset 是按 val 集 pooled PR-AUC 选的（`Retrieval-hate/scripts/repro_campaign/t3al_select.py`），方法本身不读标签。within 只在正负帧都有的视频上计算：HateMM 84 / 215，HateClipSeg 99 / 118。
-
-2026-09-10 修正：此前 T3AL 行的数字（.6886 / .4315 / .6636 等）误抄自 `endpoint_equilibrium_t3al_lcurve_v1_metrics.json`，那是 2026-08 idea discovery 里基于 T3AL 曲线的区间端点重解码变体，不是 T3AL 本身。
+PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。within 只在正负帧都有的视频上算：HateMM 84 / 215，HCS 99 / 118。晋级门（相对 v6，噪声下限 pooled .005 / within .01）：HateMM +.041 / +.105 / +.048，HCS +.043 / +.004 / +.053，全过。消融表 `runs/20260910_spvl/ablation_table.md`；MHC 历史数字见 git 历史。
 
 ## 输入与缓存
 
@@ -29,12 +28,13 @@ PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。T3AL 覆盖
 
 ## 运行任务与监控
 
-无运行中的实验。2026-09-10 SPVL（single-pass verdict-and-evidence localization，`experiments/20260910_spvl/`）完整运行与 12 组消融已在 uoa-lab3 跑完并回传（`runs/20260910_spvl/`）。相对 v6：HateMM 三项 +.043 / +.108 / +.029，HCS +.019 / −.012 / +.033；HCS pooled PR 低于噪声下限（.005），晋级门未全过（规则 9 第 1 轮修改 = M3）。待用户裁定：是否接受 HCS PR −.012 晋级，或继续修改。lab2 结果回传 rsync 在本机后台（`runs/legacy_1fps/lab2/rsync_reproduction.log`）。
+uoa-lab3 后台：`runs/20260910_spvl/round3_launch.out`（每窗一帧的两组 joint 消融，约 2 小时；本机 until 循环监控，结束 rsync 回本机）。
 
 ## 下一步
 
-1. 校区服务器首次使用：clone 仓库到 `/data/jehc223/Hate-follow-up`，建 `HateVideo` 环境，同步 HateClipSeg / HateMM 原始视频（campus2 缺 HCS，campus3 全缺）。
-2. 方法改进从 OMSL-v6 出发；任何新实验建 `experiments/<日期>_<slug>/`，输出到 `runs/`，结束更新本文件。
+1. 补 round-3 的 joint 消融进表；LELA（GPT-4o-mini）对照在本评测器下重跑或说明不可行（规则 14f）。
+2. HCS 无语音仇恨子集低于随机：GT 是 offensive 并集而 prompt 是仇恨规则，属标签定义问题，写进论文的 limitation。
+3. 方法改进从 SPVL-r2 出发；OMSL-v6 目录保留为对照，下次整理时移入 `archive/experiments/`。
 
 ## 资料与历史
 

@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## 项目
-**Label-free hateful video temporal localization**：训练、适配、阈值选择都不使用任何仇恨标注，输出帧级仇恨分数。当前方法 OMSL-v6（三模块，`experiments/20260829_omsl_v6/README.md`）。研究迭代流程与晋级标准见 `RESEARCH_ITERATION_RULES.md`。
+**Label-free hateful video temporal localization**：训练、适配、阈值选择都不使用任何仇恨标注，输出帧级仇恨分数。当前方法 SPVL-r2（stance-conditioned evidence localization，`experiments/20260910_spvl/README.md`，2026-09-10 晋级；前一方法 OMSL-v6 在 `experiments/20260829_omsl_v6/`）。研究迭代流程与晋级标准见 `RESEARCH_ITERATION_RULES.md`。
 
 - **主数据集**（2026-09-09 裁定）：HateMM、HateClipSeg。MHC-EN、MHC-ZH 停用：不跑、不作门、不进论文主表；旧文档里的 MHC 数字只作历史记录。新数据集只做 external validation，加入前须用户同意。
 - **对照**：零标签 / training-free / test-time adaptation 方法（T3AL、LAVAD、Vad-R1、EventVAD、ZS-CLIP、ZS-ImageBind 等）为同类对照；弱监督方法（MultiHateLoc、MACIL-SD、DSANet 等）作参照并标明使用了视频级标签。
