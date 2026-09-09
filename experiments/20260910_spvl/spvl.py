@@ -72,12 +72,26 @@ VIDEO_QUESTION = ('Does this video contain content that violates any of the abov
                   'Answer "Yes" or "No".')
 
 
-def window_question(i, n, t1, t2, text):
+def window_question(i, n, t1, t2, text, kind="joint", style="rules"):
+    """kind: joint | visual | speech; style: rules (does it violate) | evidence (is it where the violation occurs)."""
     body = text.strip() if text and text.strip() else "(no speech)"
-    return (f"Consider only window {i + 1} of {n}, from {t1:.1f}s to {t2:.1f}s of this video. "
-            f"Transcript in this window: {body}\n\n"
-            "Does THIS window contain content that violates any of the above rules?\n\n"
-            'Answer "Yes" or "No".')
+    head = f"Consider only window {i + 1} of {n}, from {t1:.1f}s to {t2:.1f}s of this video."
+    if kind == "joint":
+        ctx = f"{head} Transcript in this window: {body}\n\n"
+        q = ("Does THIS window contain content that violates any of the above rules?" if style == "rules" else
+             "Is THIS window one of the segments where the content that violates the above rules occurs?")
+    elif kind == "visual":
+        ctx = (f"{head} Look only at the frames whose timestamps fall inside this window and judge the visual "
+               f"content alone (imagery, gestures, symbols, on-screen text), ignoring the speech.\n\n")
+        q = ("Does the visual content of THIS window violate any of the above rules?" if style == "rules" else
+             "Is THIS window one of the segments where visual content that violates the above rules occurs?")
+    elif kind == "speech":
+        ctx = f"{head} Judge only what is spoken in this window: {body}\n\n"
+        q = ("Does the speech in THIS window violate any of the above rules?" if style == "rules" else
+             "Is THIS window one of the segments where speech that violates the above rules occurs?")
+    else:
+        raise ValueError(kind)
+    return ctx + q + '\n\nAnswer "Yes" or "No".'
 
 
 # ------------------------------------------------------------------ data
@@ -318,9 +332,14 @@ class Judge:
         pos, _delta = fn(**kw)
         return pos.to(self.device)  # [3,1,P]
 
-    def packed_positions(self, pos_p, branch_lens, sequential=False):
+    def packed_positions(self, pos_p, branch_lens, sequential=False, ext_len=0):
+        """[3,1,T] positions: prefix (mrope), optional text extension continuing sequentially,
+        then each branch restarting at the same offset (block) or continuing (sequential)."""
         s = int(pos_p.max().item()) + 1
         parts = [pos_p]
+        if ext_len:
+            parts.append(torch.arange(s, s + ext_len, device=self.device)[None, None].expand(3, 1, -1))
+            s += ext_len
         off = s
         for n in branch_lens:
             start = off if sequential else s
@@ -331,8 +350,10 @@ class Judge:
 
     # ---- forward
     @torch.no_grad()
-    def packed_forward(self, enc, pos_p, branches, arm="block"):
-        prefix_ids = enc["input_ids"][0].tolist()
+    def packed_forward(self, enc, pos_p, branches, arm="block", ext_ids=None):
+        """One forward over [prefix (+ext), branch_1..branch_N]; Yes/No log-odds at each branch end."""
+        ext_ids = ext_ids or []
+        prefix_ids = enc["input_ids"][0].tolist() + list(ext_ids)
         P = len(prefix_ids)
         lens = [len(b) for b in branches]
         ids = list(prefix_ids)
@@ -343,20 +364,19 @@ class Judge:
         total = len(ids)
         if arm == "block":
             allow = block_allow(P, lens)
-            pos = self.packed_positions(pos_p, lens, sequential=False)
+            pos = self.packed_positions(pos_p, lens, sequential=False, ext_len=len(ext_ids))
         elif arm == "causal":
             allow = causal_allow(total)
-            pos = self.packed_positions(pos_p, lens, sequential=True)
+            pos = self.packed_positions(pos_p, lens, sequential=True, ext_len=len(ext_ids))
         else:
             raise ValueError(arm)
         mask = to_mask(allow, self.dtype, self.device, self.mask_kind)
         kw = {"input_ids": torch.tensor([ids], device=self.device),
-              "attention_mask": mask, "position_ids": pos, "use_cache": False,
-              "logits_to_keep": torch.tensor(ends, device=self.device)}
+              "attention_mask": mask, "position_ids": pos, "use_cache": False}
         if "pixel_values" in enc:
             kw["pixel_values"] = enc["pixel_values"].to(self.device, self.dtype)
             kw["image_grid_thw"] = enc["image_grid_thw"].to(self.device)
-        keep = kw.pop("logits_to_keep")
+        keep = torch.tensor(ends, device=self.device)
         out = self.model.model(**kw)
         hidden = out.last_hidden_state[0, keep]  # [N, H]
         z = self.margins_fp32(hidden)
@@ -405,6 +425,25 @@ class Judge:
 
 
 # ------------------------------------------------------------------ per video
+def run_groups(judge, enc, pos_p, branches, args, ext_ids=None):
+    """Forward all branches, splitting into groups so that prefix + group <= max_tokens."""
+    P = enc["input_ids"].shape[1] + len(ext_ids or [])
+    groups, cur, cur_len = [], [], 0
+    for i, b in enumerate(branches):
+        if cur and P + cur_len + len(b) > args.max_tokens:
+            groups.append(cur); cur, cur_len = [], 0
+        cur.append(i); cur_len += len(b)
+    if cur:
+        groups.append(cur)
+    zs, total = [None] * len(branches), 0
+    for g in groups:
+        z, tot = judge.packed_forward(enc, pos_p, [branches[i] for i in g], arm=args.mask, ext_ids=ext_ids)
+        total += tot
+        for i, v in zip(g, z):
+            zs[i] = v
+    return zs, total, len(groups)
+
+
 def score_video(judge, row, segments, args, verify=False):
     vid, ds, dur = row["video_id"], row["dataset"], float(row["duration"])
     frames = frame_paths(ds, vid, args.frames) if args.frames > 0 else []
@@ -414,6 +453,7 @@ def score_video(judge, row, segments, args, verify=False):
     msgs, image_files = judge.prefix_messages(frames, segments, with_context, args.frames > 0)
     prefix_text, enc = judge.encode_prefix(msgs, image_files)
     prefix_ids = enc["input_ids"][0].tolist()
+    # windows
     if args.windows == "fixed":
         wins = fixed_windows(dur, args.window_seconds)
         wtexts = [window_text(segments, a, b) for a, b in wins]
@@ -427,72 +467,77 @@ def score_video(judge, row, segments, args, verify=False):
     else:  # asr
         wins = [(s, e) for s, e, _ in segments]
         wtexts = [t for _, _, t in segments]
-    questions = [VIDEO_QUESTION] + [window_question(i, len(wins), a, b, t)
-                                    for i, ((a, b), t) in enumerate(zip(wins, wtexts))]
+    # branch specs: (window index, kind, question)
+    kinds = {"joint": ["joint"], "dual": ["visual", "speech"], "triple": ["joint", "visual", "speech"]}[args.branches]
+    specs = []
+    for i, ((a, b), t) in enumerate(zip(wins, wtexts)):
+        for kind in kinds:
+            if kind == "speech" and not (t and t.strip()):
+                continue  # no speech in this window: no speech branch
+            if kind == "visual" and args.frames == 0:
+                continue
+            specs.append((i, kind, window_question(i, len(wins), a, b, t, kind=kind, style=args.window_question)))
+    if not specs:  # e.g. dual without frames and no speech anywhere
+        specs = [(i, "joint", window_question(i, len(wins), a, b, t)) for i, ((a, b), t) in enumerate(zip(wins, wtexts))]
+    b0_ids, b0_text = judge.branch_ids(VIDEO_QUESTION)
+    judge.seam_check_text(msgs, prefix_text, VIDEO_QUESTION, b0_text)
     branches, btexts = [], []
-    for q in questions:
+    for _, _, q in specs:
         bids, btext = judge.branch_ids(q)
-        judge.seam_check_text(msgs, prefix_text, q, btext)
-        branches.append(bids)
-        btexts.append(btext)
+        branches.append(bids); btexts.append(btext)
     if verify:
-        for q, bids in list(zip(questions, branches))[:3]:
+        judge.seam_check_tokens(msgs, image_files, prefix_ids, VIDEO_QUESTION, b0_ids)
+        for (_, _, q), bids in list(zip(specs, branches))[:2]:
             judge.seam_check_tokens(msgs, image_files, prefix_ids, q, bids)
     pos_p = judge.prefix_positions(enc)
     P = len(prefix_ids)
-    # group branches so that P + sum(lens) <= max_tokens
-    groups, cur, cur_len = [], [], 0
-    for i, b in enumerate(branches):
-        if cur and P + cur_len + len(b) > args.max_tokens:
-            groups.append(cur)
-            cur, cur_len = [], 0
-        cur.append(i)
-        cur_len += len(b)
-    if cur:
-        groups.append(cur)
-    zs = [None] * len(branches)
-    total_tokens = 0
-    for g in groups:
-        z, tot = judge.packed_forward(enc, pos_p, [branches[i] for i in g], arm=args.mask)
-        total_tokens += tot
-        for i, v in zip(g, z):
-            zs[i] = v
-    z_video, z_win = zs[0], zs[1:]
-    info = {"prefix_tokens": P, "total_tokens": total_tokens, "n_groups": len(groups),
-            "n_windows": len(wins), "img_tokens": judge.img_tokens[:1]}
-    if verify:
+    info = {"prefix_tokens": P, "n_windows": len(wins), "n_branches": len(specs), "img_tokens": judge.img_tokens[:1]}
+    if args.stance == "none":
+        zs, total, ngroups = run_groups(judge, enc, pos_p, [b0_ids] + branches, args)
+        z_video, zb = zs[0], zs[1:]
+        stance_answer = None
+    else:  # verdict: stage 1 = whole-video answer; stage 2 = windows conditioned on the model's own answer
+        zs, total1, _ = run_groups(judge, enc, pos_p, [b0_ids], args)
+        z_video = zs[0]
+        stance_answer = "Yes" if z_video > 0 else "No"
+        ans_text = f"{stance_answer}<|im_end|>\n"
+        ext_ids = b0_ids + judge.tok(ans_text, add_special_tokens=False)["input_ids"]
+        # string seam: prefix + Q0 + answer + q_i must equal the chat template of the 4-turn conversation
+        full = judge.render(msgs + [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]},
+                                   {"role": "assistant", "content": stance_answer},
+                                   {"role": "user", "content": [{"type": "text", "text": specs[0][2]}]}],
+                            add_generation_prompt=True)
+        if full != prefix_text + b0_text + ans_text + btexts[0]:
+            raise AssertionError("stance seam mismatch: chat template renders the assistant turn differently")
+        zb, total2, ngroups = run_groups(judge, enc, pos_p, branches, args, ext_ids=ext_ids)
+        total = total1 + total2
+        ngroups += 1
+    info.update({"total_tokens": total, "n_groups": ngroups, "stance_answer": stance_answer})
+    # aggregate branch scores per window
+    per = [dict() for _ in wins]
+    for (i, kind, _), z in zip(specs, zb):
+        per[i][kind] = z
+    z_win = []
+    for d in per:
+        vals = [v for v in d.values()]
+        z_win.append(max(vals) if vals else FILL_UNCOVERED)
+    if verify and args.stance == "none":
         checks = {}
-        # (i) packed branch_0 vs plain call
         z_ref, _, _ = judge.plain_forward(msgs, image_files, VIDEO_QUESTION)
-        z_pk, _ = judge.packed_forward(enc, pos_p, [branches[0]], arm="block")
+        z_pk, _ = judge.packed_forward(enc, pos_p, [b0_ids], arm="block")
         checks["video_q_packed_vs_plain_dz"] = abs(z_pk[0] - z_ref)
-        # (ii) all-causal packed vs plain sequential of full concatenation (positions from model)
-        ids = torch.tensor([prefix_ids + sum(branches[:4], [])], device=judge.device)
-        kw = {"input_ids": ids, "use_cache": False, "logits_to_keep": 8}
-        if "pixel_values" in enc:
-            kw["pixel_values"] = enc["pixel_values"].to(judge.device, judge.dtype)
-            kw["image_grid_thw"] = enc["image_grid_thw"].to(judge.device)
-        with torch.no_grad():
-            base_kw = dict(kw)
-            if "pixel_values" in enc:
-                base_kw["mm_token_type_ids"] = judge.mm_types(enc, ids.cpu())
-            base = judge.model(**base_kw).logits[0].float()
-            lens = [len(b) for b in branches[:4]]
-            allow = causal_allow(ids.shape[1])
-            pos = judge.packed_positions(pos_p, lens, sequential=True)
-            got = judge.model(**kw, attention_mask=to_mask(allow, judge.dtype, judge.device, judge.mask_kind),
-                              position_ids=pos).logits[0].float()
-        checks["causal4d_vs_nomask_max_dlogit"] = float((base - got).abs().max())
-        # (iii) 5 windows packed vs 5 plain calls
-        n = min(5, len(z_win))
-        seq = [judge.plain_forward(msgs, image_files, questions[1 + i])[0] for i in range(n)]
-        pk, _ = judge.packed_forward(enc, pos_p, branches[1:1 + n], arm="block")
+        n = min(5, len(zb))
+        seq = [judge.plain_forward(msgs, image_files, specs[i][2])[0] for i in range(n)]
+        pk, _ = judge.packed_forward(enc, pos_p, branches[:n], arm="block")
         checks["windows_packed_vs_plain_max_dz"] = max(abs(a - b) for a, b in zip(pk, seq)) if n else 0.0
         if n >= 3:
             from scipy.stats import spearmanr
             checks["windows_packed_vs_plain_spearman"] = float(spearmanr(pk, seq).correlation)
         checks["peak_mem_GB"] = torch.cuda.max_memory_allocated() / 1e9
         info["verify"] = checks
+    elif verify:
+        info["verify"] = {"note": "stance mode: seam asserted; packing equivalence verified in stance=none runs",
+                          "peak_mem_GB": torch.cuda.max_memory_allocated() / 1e9}
     # paint the 4 fps curve with the raw window z
     L = int(math.ceil(dur * FPS))
     curve = np.full(L, FILL_UNCOVERED, dtype=float)
@@ -507,10 +552,11 @@ def score_video(judge, row, segments, args, verify=False):
                 curve[i0:i1] = np.maximum(curve[i0:i1], z)
     pred = {"schema_version": 1, "method": args.method_name, "dataset": ds, "video_id": vid,
             "duration": dur, "native_rate": FPS, "score_curve": [float(x) for x in curve],
-            "intervals": [], "error": None, "calls": len(groups), "seed": SEED, "code_path": CODE_PATH,
-            "extra": {"z_video": z_video, "windows": [{"i": i, "start": a, "end": b, "z": z}
-                                                      for i, ((a, b), z) in enumerate(zip(wins, z_win))],
-                      **info}}
+            "intervals": [], "error": None, "calls": info["n_groups"], "seed": SEED, "code_path": CODE_PATH,
+            "extra": {"z_video": z_video, "stance_answer": stance_answer,
+                      "windows": [{"i": i, "start": a, "end": b, "z": z, **{f"z_{k}": v for k, v in per[i].items()}}
+                                  for i, ((a, b), z) in enumerate(zip(wins, z_win))],
+                      **{k: v for k, v in info.items() if k != "verify"}}}
     return pred, info
 
 
@@ -537,6 +583,11 @@ def main():
     ap.add_argument("--windows", choices=["fixed", "asr", "asr_split"], default="fixed")
     ap.add_argument("--window-seconds", type=float, default=8.0)
     ap.add_argument("--mask", choices=["block", "causal"], default="block")
+    ap.add_argument("--stance", choices=["none", "verdict"], default="none",
+                    help="verdict: windows are judged after the model's own whole-video answer (2 forwards)")
+    ap.add_argument("--branches", choices=["joint", "dual", "triple"], default="joint",
+                    help="dual: visual + speech branch per window (max); triple: joint + visual + speech")
+    ap.add_argument("--window-question", choices=["rules", "evidence"], default="rules")
     ap.add_argument("--mask-kind", choices=["bool", "additive"], default="additive")
     ap.add_argument("--max-tokens", type=int, default=9000)
     ap.add_argument("--only-within-defined", action="store_true",
@@ -557,7 +608,8 @@ def main():
     (out_dir / "run.pid").write_text(str(os.getpid()))
     tag = args.method_name or ("spvl_" + "_".join([
         f"f{args.frames}", "noctx" if args.no_transcript_context else "ctx",
-        args.windows + (f"{args.window_seconds:g}" if args.windows == "fixed" else ""), args.mask]))
+        args.windows + (f"{args.window_seconds:g}" if args.windows == "fixed" else ""), args.mask,
+        f"st{args.stance}", f"br{args.branches}", f"q{args.window_question}"]))
     if args.legacy_chunk_arm:
         tag = args.method_name or "legacy_chunk_replica"
     args.method_name = tag
