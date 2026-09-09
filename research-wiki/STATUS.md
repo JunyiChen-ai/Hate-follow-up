@@ -28,7 +28,7 @@ PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。T3AL 覆盖
 
 ## 运行任务与监控
 
-无运行中的实验。lab2 结果回传 rsync 在本机后台（`runs/legacy_1fps/lab2/rsync_reproduction.log`）。
+2026-09-10：`experiments/20260910_spvl/`（single-pass verdict-and-evidence localization）完整运行与消融在 uoa-lab3 跑（`runs/20260910_spvl/ablations_launch.out`，本机后台 until 循环监控，结束 rsync 回本机）。pilot 已完成：within HateMM .678 / HCS .581（v6 .649 / .547），见实验 README §7b。lab2 结果回传 rsync 在本机后台（`runs/legacy_1fps/lab2/rsync_reproduction.log`）。
 
 ## 下一步
 
