@@ -92,3 +92,33 @@ with torch.no_grad():
     print("windows plain(no mask)  :", [round(v, 3) for v in nomask])
     print("max|packed - plain4D| =", max(abs(x - y) for x, y in zip(packed, plain)),
           " max|packed - nomask| =", max(abs(x - y) for x, y in zip(packed, nomask)))
+
+# ---- third part: fp32 read-out; efficient kernel with additive mask
+with torch.no_grad():
+    plain32 = []
+    for b in branches:
+        ids_i = torch.tensor([prefix_ids + b], device=judge.device)
+        mi = spvl.to_mask(spvl.causal_allow(ids_i.shape[1]), judge.dtype, judge.device, "bool")
+        pi = judge.packed_positions(pos_p, [len(b)], sequential=True)
+        h = judge.model.model(input_ids=ids_i, pixel_values=pv, image_grid_thw=grid, position_ids=pi,
+                              attention_mask=mi, use_cache=False).last_hidden_state[0, -1:]
+        plain32.append(judge.margins_fp32(h)[0])
+    packed32, _ = judge.packed_forward(enc, pos_p, branches, arm="block")
+    nomask32 = [judge.plain_forward(msgs, image_files, q)[0] for q in qs]
+    print("fp32 readout plain(4D):", [round(v, 3) for v in plain32])
+    print("fp32 readout packed   :", [round(v, 3) for v in packed32])
+    print("fp32 readout nomask   :", [round(v, 3) for v in nomask32])
+    print("fp32 max|packed - plain4D| =", round(max(abs(x - y) for x, y in zip(packed32, plain32)), 4),
+          " max|packed - nomask| =", round(max(abs(x - y) for x, y in zip(packed32, nomask32)), 4))
+    judge.mask_kind = "additive"
+    try:
+        with sdpa_kernel(SDPBackend.EFFICIENT_ATTENTION):
+            pk_eff, _ = judge.packed_forward(enc, pos_p, branches, arm="block")
+        print("efficient kernel with additive mask OK:", [round(v, 3) for v in pk_eff])
+    except Exception as exc:
+        print("efficient kernel with additive mask failed:", type(exc).__name__, str(exc)[:100])
+    torch.cuda.reset_peak_memory_stats()
+    judge.mask_kind = "bool"
+    allb = [judge.branch_ids(spvl.window_question(i, len(wins), a_, b_, spvl.window_text(segs, a_, b_)))[0] for i, (a_, b_) in enumerate(wins)]
+    zz, tot = judge.packed_forward(enc, pos_p, [bids] + allb, arm="block")
+    print(f"full packed T={tot} windows={len(allb)} peak_mem={torch.cuda.max_memory_allocated()/1e9:.1f}GB")

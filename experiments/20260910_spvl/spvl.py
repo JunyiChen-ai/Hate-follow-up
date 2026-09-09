@@ -209,6 +209,14 @@ class Judge:
         lg = row.float()
         return float(torch.logsumexp(lg[self.yes_t], 0) - torch.logsumexp(lg[self.no_t], 0))
 
+    def margins_fp32(self, hidden_rows):
+        """Yes/No log-odds from hidden states with the lm_head applied in fp32 (avoids bf16 logit steps)."""
+        W = self.model.lm_head.weight
+        ids = torch.cat([self.yes_t, self.no_t])
+        lg = hidden_rows.float() @ W[ids].float().T  # [n, |yes|+|no|]
+        ny = len(self.yes_ids)
+        return (torch.logsumexp(lg[:, :ny], 1) - torch.logsumexp(lg[:, ny:], 1)).tolist()
+
     # ---- prompt construction
     def prefix_messages(self, frames, segments, with_context, with_frames):
         content = []
@@ -348,10 +356,11 @@ class Judge:
         if "pixel_values" in enc:
             kw["pixel_values"] = enc["pixel_values"].to(self.device, self.dtype)
             kw["image_grid_thw"] = enc["image_grid_thw"].to(self.device)
-        out = self.model(**kw)
-        logits = out.logits[0]
-        z = [self.margin(logits[i]) for i in range(len(branches))]
-        del out, logits, mask
+        keep = kw.pop("logits_to_keep")
+        out = self.model.model(**kw)
+        hidden = out.last_hidden_state[0, keep]  # [N, H]
+        z = self.margins_fp32(hidden)
+        del out, hidden, mask
         return z, total
 
     @torch.no_grad()
@@ -369,12 +378,11 @@ class Judge:
         if "pixel_values" in kw:
             kw["pixel_values"] = kw["pixel_values"].to(self.dtype)
             kw["mm_token_type_ids"] = self.mm_types(enc, enc["input_ids"])
-        out = self.model(**kw, use_cache=False, logits_to_keep=1)
-        row = out.logits[0, -1]
-        z = self.margin(row)
-        full_logits = row.float().cpu()
+        out = self.model.model(**kw, use_cache=False)
+        hidden = out.last_hidden_state[0, -1:]
+        z = self.margins_fp32(hidden)[0]
         del out
-        return z, full_logits, int(enc["input_ids"].shape[1])
+        return z, None, int(enc["input_ids"].shape[1])
 
     @torch.no_grad()
     def legacy_chunk_scores(self, texts, batch=8):
@@ -522,7 +530,7 @@ def main():
     ap.add_argument("--window-seconds", type=float, default=8.0)
     ap.add_argument("--mask", choices=["block", "causal"], default="block")
     ap.add_argument("--mask-kind", choices=["bool", "additive"], default="bool")
-    ap.add_argument("--max-tokens", type=int, default=12000)
+    ap.add_argument("--max-tokens", type=int, default=9000)
     ap.add_argument("--only-within-defined", action="store_true",
                     help="pilot subset: videos whose GT has both classes (selection only; labels never scored)")
     ap.add_argument("--limit", type=int, default=0)
