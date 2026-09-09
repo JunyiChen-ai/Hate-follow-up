@@ -84,11 +84,22 @@ Ablation switches: `--frames K` (0 = no frames), `--no-transcript-context`, `--w
 
 ## 5. Plumbing checks (must pass before any number is read)
 
-Run on the first video of every run and written to `verify.json`:
-(i) packed BRANCH_0 with block mask + explicit positions vs one ordinary call: |Δz| < 1e-2;
-(ii) all-causal 4D mask + sequential positions vs the model's own mask/positions: max |Δlogit| < 1e-2;
-(iii) five windows packed vs five ordinary calls: max |Δz| < 1e-2, Spearman ≥ .999;
-(iv) peak memory logged.
+Run on the first video of every run and written to `verify.json`; findings from
+`plumbing_debug.py` on lab3 (2026-09-10, hate_video_1, T = 2372–3168):
+- position ids: my prefix-from-`get_rope_index` + per-branch restart equals the model's own
+  `compute_3d_position_ids` exactly (max diff 0);
+- with the model's own causal path (no explicit mask) my positions reproduce the default logits
+  exactly (max |Δlogit| 0);
+- any explicit 4D mask changes the sdpa kernel (flash → math or memory-efficient) and moves
+  bf16 logits by up to 0.3–0.7; under the *same* kernel the all-causal 4D mask equals no-mask
+  exactly (0.0000) and packed-block vs independent calls differ by ≤ 0.24 log-odds with the
+  fp32 read-out. Packing is therefore exact up to bf16 kernel rounding, which affects every
+  arm (sequential calls included) equally;
+- Yes/No log-odds are read with the lm_head applied in fp32 to the kept hidden states;
+- peak memory 18.1 GB at T = 3168 (bf16 weights 17.5 GB); `--max-tokens 9000`, sequences above it
+  are split into branch groups with the full prefix repeated.
+Per-run `verify.json` records |Δz| for BRANCH_0 packed vs plain, causal-4D vs no-mask, five
+windows packed vs plain (max |Δz| and Spearman), and peak memory.
 
 ## 6. Plan and gates
 

@@ -131,7 +131,8 @@ def main():
     metrics_path = run_dir / f"metrics_{tag}.json"
     cmd = [sys.executable, str(ROOT / "src/eval/evaluate_four_datasets.py"), "--predictions", str(out_path),
            "--gt-dir", str(ROOT / "data/gt_4fps"), "--out", str(metrics_path), "--datasets", *a.datasets]
-    subprocess.run(cmd, check=True, cwd=ROOT)
+    import os
+    subprocess.run(cmd, check=True, cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)})
     d = json.load(open(metrics_path))
     print(f"composed {n_ok}/{len(rows)} -> {metrics_path}")
     for p in d["per_dataset"]:

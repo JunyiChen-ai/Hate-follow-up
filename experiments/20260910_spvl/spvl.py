@@ -529,7 +529,7 @@ def main():
     ap.add_argument("--windows", choices=["fixed", "asr"], default="fixed")
     ap.add_argument("--window-seconds", type=float, default=8.0)
     ap.add_argument("--mask", choices=["block", "causal"], default="block")
-    ap.add_argument("--mask-kind", choices=["bool", "additive"], default="bool")
+    ap.add_argument("--mask-kind", choices=["bool", "additive"], default="additive")
     ap.add_argument("--max-tokens", type=int, default=9000)
     ap.add_argument("--only-within-defined", action="store_true",
                     help="pilot subset: videos whose GT has both classes (selection only; labels never scored)")
