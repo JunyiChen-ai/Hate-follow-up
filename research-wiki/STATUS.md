@@ -15,6 +15,7 @@
 | 方法 | HateMM | HateClipSeg | MHC（历史） | MHC_zh（历史） |
 |---|---|---|---|---|
 | **OMSL-v6**（`v6_migrated_seed0_20260909/metrics.json`） | **.8507 / .5781 / .6494** | **.6692 / .6622 / .5473** | .7458 / .4970 / .7011 | .7522 / .5354 / .6837 |
+| **SPVL + M3，候选，development-selected**（`runs/20260910_spvl/full/metrics_izv_plus_mean_rrank.json`；实验 `experiments/20260910_spvl/README.md` §8） | .8938 / .6863 / .6783 | .6882 / .6506 / .5806 | — | — |
 | MultiHateLoc-DMS 重跑（`multihateloc_frozen_current4fps_v1_metrics.json`） | .7618 / .5188 / .6108 | .5056 / .4885 / .4996 | .7814 / .4790 / .5013 | .8778 / .6565 / .4962 |
 | T3AL 重跑，611 视频，seed 20250819（`t3al_anchor_s20250819_metrics.json`，同目录） | .6091 / .3096 / .5068 | .6246 / .5645 / .5003 | .5975 / .2834 / .5605 | .6966 / .3584 / .4996 |
 
@@ -28,7 +29,7 @@ PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。T3AL 覆盖
 
 ## 运行任务与监控
 
-2026-09-10：`experiments/20260910_spvl/`（single-pass verdict-and-evidence localization）完整运行与消融在 uoa-lab3 跑（`runs/20260910_spvl/ablations_launch.out`，本机后台 until 循环监控，结束 rsync 回本机）。pilot 已完成：within HateMM .678 / HCS .581（v6 .649 / .547），见实验 README §7b。lab2 结果回传 rsync 在本机后台（`runs/legacy_1fps/lab2/rsync_reproduction.log`）。
+无运行中的实验。2026-09-10 SPVL（single-pass verdict-and-evidence localization，`experiments/20260910_spvl/`）完整运行与 12 组消融已在 uoa-lab3 跑完并回传（`runs/20260910_spvl/`）。相对 v6：HateMM 三项 +.043 / +.108 / +.029，HCS +.019 / −.012 / +.033；HCS pooled PR 低于噪声下限（.005），晋级门未全过（规则 9 第 1 轮修改 = M3）。待用户裁定：是否接受 HCS PR −.012 晋级，或继续修改。lab2 结果回传 rsync 在本机后台（`runs/legacy_1fps/lab2/rsync_reproduction.log`）。
 
 ## 下一步
 

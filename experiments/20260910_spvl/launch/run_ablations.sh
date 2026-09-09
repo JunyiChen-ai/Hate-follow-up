@@ -16,6 +16,10 @@ bash $L abl_s16              --frames 20 --windows fixed --window-seconds 16
 bash $L abl_k8               --frames 8  --windows fixed --window-seconds 8
 bash $L legacy_chunk_replica --legacy-chunk-arm
 # composition ablations on the full run (no new forwards)
+"$PY" $C --run-dir runs/20260910_spvl/full --intercept zv_plus_mean --residual rank   # M3
+"$PY" $C --run-dir runs/20260910_spvl/full --intercept zv_plus_median --residual rank
+"$PY" $C --run-dir runs/20260910_spvl/full --intercept zv_plus_extent --residual rank
+"$PY" $C --run-dir runs/20260910_spvl/full --intercept mean_win --residual rank
 "$PY" $C --run-dir runs/20260910_spvl/full --intercept legacy --residual rank
 "$PY" $C --run-dir runs/20260910_spvl/full --intercept spvl   --residual none
 "$PY" $C --run-dir runs/20260910_spvl/full --intercept none   --residual rank

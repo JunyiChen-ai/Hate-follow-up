@@ -83,14 +83,16 @@ def load_visual():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
-    ap.add_argument("--intercept", choices=["spvl", "legacy", "none"], default="spvl")
+    ap.add_argument("--intercept", choices=["spvl", "legacy", "none", "mean_win", "zv_plus_mean", "lme_zv_top3", "zv_plus_lme", "zv_plus_kmean", "zv_plus_extent", "zv_plus_median", "zv_plus_tophalf"], default="spvl")
+    ap.add_argument("--k-mean", type=float, default=1.0)
+    ap.add_argument("--intercept-scale", type=float, default=1.0, help="multiply the intercept (residual stays in [-0.5, 0.5])")
     ap.add_argument("--residual", choices=["rank", "none"], default="rank")
     ap.add_argument("--visual-primary", action="store_true")
     ap.add_argument("--tag", default=None)
     ap.add_argument("--datasets", nargs="+", default=["HateMM", "HateClipSeg"])
     a = ap.parse_args()
     run_dir = Path(a.run_dir)
-    tag = a.tag or f"i{a.intercept}_r{a.residual}" + ("_vis" if a.visual_primary else "")
+    tag = a.tag or f"i{a.intercept}_r{a.residual}" + ("_vis" if a.visual_primary else "") + (f"_x{a.intercept_scale:g}" if a.intercept_scale != 1.0 else "") + (f"_k{a.k_mean:g}" if a.intercept == "zv_plus_kmean" else "")
     legacy = load_legacy_z() if a.intercept == "legacy" else {}
     visual = load_visual() if a.visual_primary else {}
     rows = [json.loads(l) for l in open(run_dir / "predictions.jsonl") if l.strip()]
@@ -112,8 +114,21 @@ def main():
                 if key not in legacy:
                     raise SystemExit(f"{key}: no legacy z")
                 intercept = legacy[key]
-            else:
+            elif a.intercept == "none":
                 intercept = 0.0
+            else:
+                w = np.array([x["z"] for x in r["extra"]["windows"]], float)
+                zv = float(r["extra"]["z_video"])
+                def lme(v):
+                    v = np.asarray(v, float); m = v.max(); return float(m + np.log(np.mean(np.exp(v - m))))
+                top3 = float(np.sort(w)[-3:].mean()) if len(w) >= 3 else float(w.mean())
+                intercept = {"mean_win": float(w.mean()), "zv_plus_mean": zv + float(w.mean()),
+                             "lme_zv_top3": lme([zv, top3]), "zv_plus_lme": zv + lme(w), "zv_plus_kmean": zv + a.k_mean * float(w.mean()),
+                             # extent as a log-odds: logit of the mean window probability (no free constant)
+                             "zv_plus_extent": zv + float(np.log(np.clip(pw := (1 / (1 + np.exp(-w))).mean(), 1e-6, 1 - 1e-6) / (1 - np.clip(pw, 1e-6, 1 - 1e-6)))),
+                             "zv_plus_median": zv + float(np.median(w)),
+                             "zv_plus_tophalf": zv + float(np.sort(w)[len(w) // 2:].mean())}[a.intercept]
+            intercept *= a.intercept_scale
             if a.residual == "none":
                 residual = np.zeros_like(raw)
             elif a.visual_primary:
