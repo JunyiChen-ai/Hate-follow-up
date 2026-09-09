@@ -283,6 +283,14 @@ class Judge:
         if got != prefix_ids + bids:
             raise AssertionError(f"token seam mismatch: {len(prefix_ids)}+{len(bids)} vs {len(got)}")
 
+    def mm_types(self, enc, input_ids=None):
+        """mm_token_type_ids (0 text, 1 image) for the given ids; derived if the processor omitted it."""
+        ids = enc["input_ids"] if input_ids is None else input_ids
+        if "mm_token_type_ids" in enc and input_ids is None:
+            return enc["mm_token_type_ids"].to(self.device)
+        img_id = self.model.config.image_token_id
+        return (ids == img_id).to(torch.int32).to(self.device)
+
     # ---- positions
     def prefix_positions(self, enc):
         """[3,1,P] mrope positions for the prefix from the model's own rope index."""
@@ -295,8 +303,8 @@ class Judge:
         kw = {"input_ids": ids}
         if "image_grid_thw" in params:
             kw["image_grid_thw"] = enc["image_grid_thw"].to(self.device)
-        if "mm_token_type_ids" in params and "mm_token_type_ids" in enc:
-            kw["mm_token_type_ids"] = enc["mm_token_type_ids"].to(self.device)
+        if "mm_token_type_ids" in params:
+            kw["mm_token_type_ids"] = self.mm_types(enc)
         if "attention_mask" in params:
             kw["attention_mask"] = torch.ones_like(ids)
         pos, _delta = fn(**kw)
@@ -360,6 +368,7 @@ class Judge:
         kw = {k: v.to(self.device) for k, v in enc.items() if k in ("input_ids", "attention_mask", "pixel_values", "image_grid_thw")}
         if "pixel_values" in kw:
             kw["pixel_values"] = kw["pixel_values"].to(self.dtype)
+            kw["mm_token_type_ids"] = self.mm_types(enc, enc["input_ids"])
         out = self.model(**kw, use_cache=False, logits_to_keep=1)
         row = out.logits[0, -1]
         z = self.margin(row)
@@ -448,7 +457,10 @@ def score_video(judge, row, segments, args, verify=False):
             kw["pixel_values"] = enc["pixel_values"].to(judge.device, judge.dtype)
             kw["image_grid_thw"] = enc["image_grid_thw"].to(judge.device)
         with torch.no_grad():
-            base = judge.model(**kw).logits[0].float()
+            base_kw = dict(kw)
+            if "pixel_values" in enc:
+                base_kw["mm_token_type_ids"] = judge.mm_types(enc, ids.cpu())
+            base = judge.model(**base_kw).logits[0].float()
             lens = [len(b) for b in branches[:4]]
             allow = causal_allow(ids.shape[1])
             pos = judge.packed_positions(pos_p, lens, sequential=True)
