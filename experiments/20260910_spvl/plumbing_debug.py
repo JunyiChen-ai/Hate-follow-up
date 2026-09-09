@@ -59,3 +59,36 @@ with torch.no_grad():
                      use_cache=False, logits_to_keep=1).logits[0, -1].float()
     print(f"a vs a (repeat): max|d|={float((a2-a).abs().max()):.4f}")
     print("attn impl:", judge.model.config._attn_implementation, "T", T)
+
+# ---- second part: is the 4D-mask discrepancy a kernel effect, and is packing exact under the same kernel?
+from torch.nn.attention import sdpa_kernel, SDPBackend
+wins = spvl.fixed_windows(dur, 8.0)
+qs = [spvl.window_question(i, len(wins), a_, b_, spvl.window_text(segs, a_, b_)) for i, (a_, b_) in enumerate(wins)][:5]
+branches = [judge.branch_ids(q)[0] for q in qs]
+with torch.no_grad():
+    m = spvl.to_mask(spvl.causal_allow(T), judge.dtype, judge.device, "bool")
+    for backend, name in ((SDPBackend.MATH, "math"), (SDPBackend.EFFICIENT_ATTENTION, "efficient")):
+        try:
+            with sdpa_kernel(backend):
+                x = judge.model(input_ids=ids, pixel_values=pv, image_grid_thw=grid, mm_token_type_ids=mm_full,
+                                use_cache=False, logits_to_keep=1).logits[0, -1].float()
+                y = judge.model(input_ids=ids, pixel_values=pv, image_grid_thw=grid, position_ids=pos_mine,
+                                attention_mask=m, use_cache=False, logits_to_keep=1).logits[0, -1].float()
+            print(f"[{name}] no-mask vs a(default): {float((x-a).abs().max()):.4f}; 4D-causal vs no-mask same kernel: {float((y-x).abs().max()):.4f}")
+        except Exception as exc:
+            print(f"[{name}] failed: {type(exc).__name__}: {str(exc)[:120]}")
+    # packing exactness under the same explicit-mask kernel: plain(prefix+branch_i) with 4D causal vs packed block
+    plain = []
+    for b in branches:
+        ids_i = torch.tensor([prefix_ids + b], device=judge.device)
+        mi = spvl.to_mask(spvl.causal_allow(ids_i.shape[1]), judge.dtype, judge.device, "bool")
+        pi = judge.packed_positions(pos_p, [len(b)], sequential=True)
+        plain.append(judge.margin(judge.model(input_ids=ids_i, pixel_values=pv, image_grid_thw=grid, position_ids=pi,
+                                              attention_mask=mi, use_cache=False, logits_to_keep=1).logits[0, -1]))
+    packed, _ = judge.packed_forward(enc, pos_p, branches, arm="block")
+    nomask = [judge.plain_forward(msgs, image_files, q)[0] for q in qs]
+    print("windows plain(4D causal):", [round(v, 3) for v in plain])
+    print("windows packed(block)   :", [round(v, 3) for v in packed])
+    print("windows plain(no mask)  :", [round(v, 3) for v in nomask])
+    print("max|packed - plain4D| =", max(abs(x - y) for x, y in zip(packed, plain)),
+          " max|packed - nomask| =", max(abs(x - y) for x, y in zip(packed, nomask)))
