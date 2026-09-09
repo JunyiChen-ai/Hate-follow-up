@@ -91,7 +91,7 @@ def load_asr(dataset):
     out = {}
     for line in open(path):
         r = json.loads(line)
-        segs = [(float(c["start"]), float(c["end"]), (c.get("text") or "").strip())
+        segs = [(float(c["start"]), float(c["end"]), (c.get("text") or ""))
                 for c in (r.get("chunks") or []) if c.get("end") is not None and c.get("start") is not None]
         out[r["video_id"]] = [s for s in segs if s[1] > s[0]]
     return out
@@ -141,7 +141,7 @@ def window_text(segments, t1, t2):
 def transcript_block(segments):
     if not segments:
         return "(no speech detected)"
-    return "\n".join(f"[{s:.1f}s-{e:.1f}s] {t}" for s, e, t in segments if t)
+    return "\n".join(f"[{s:.1f}s-{e:.1f}s] {t.strip()}" for s, e, t in segments if t.strip())
 
 
 # ------------------------------------------------------------------ packing
@@ -576,7 +576,8 @@ def main():
     if pred_path.exists():
         for line in open(pred_path):
             r = json.loads(line)
-            done.add((r["dataset"], r["video_id"]))
+            if not r.get("error"):  # error rows are retried; the evaluator keeps the last row per video
+                done.add((r["dataset"], r["video_id"]))
     n_err = 0
     t0 = time.time()
     with open(pred_path, "a") as fh:

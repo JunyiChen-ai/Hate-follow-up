@@ -75,7 +75,7 @@ full prefix. Estimated 3–6 s per video on one RTX 5090; 643 videos < 1 h.
 K = 20 frames (uniform, t_k = (k+0.5)·D/20); S = 8 s windows; pixel cap 100352 / min 65536; rules =
 `YOUTUBE_RULES` for both corpora; reading instruction = `prag`; Yes/No token sets = first tokens of
 {Yes, " Yes", yes, " yes", YES, " YES"} and the No analogues; uncovered frames in ASR-window mode =
-−12 (as in OMSL-v6 `text_curve`); seed 0; `--max-tokens 12000`; bool block mask via sdpa. Both corpora
+−12 (as in OMSL-v6 `text_curve`); seed 0; `--max-tokens 9000` (branch groups above it, each with the full prefix); additive bf16 block mask via sdpa (memory-efficient kernel). Both corpora
 use exactly the same constants and prompt (rule 13).
 
 Ablation switches: `--frames K` (0 = no frames), `--no-transcript-context`, `--windows {fixed,asr}`,
@@ -91,10 +91,13 @@ Run on the first video of every run and written to `verify.json`; findings from
 - with the model's own causal path (no explicit mask) my positions reproduce the default logits
   exactly (max |Δlogit| 0);
 - any explicit 4D mask changes the sdpa kernel (flash → math or memory-efficient) and moves
-  bf16 logits by up to 0.3–0.7; under the *same* kernel the all-causal 4D mask equals no-mask
+  bf16 logits (per-run `verify.json`: causal-4D vs no-mask max |Δlogit| 0.8–5.1 over the
+  vocabulary, |Δz| for the video question 0.25–0.41, five windows packed vs plain max |Δz|
+  0.16–0.75, Spearman .97–1.0); under the *same* kernel the all-causal 4D mask equals no-mask
   exactly (0.0000) and packed-block vs independent calls differ by ≤ 0.24 log-odds with the
   fp32 read-out. Packing is therefore exact up to bf16 kernel rounding, which affects every
-  arm (sequential calls included) equally;
+  arm (sequential calls included) equally; |Δz| of this size can swap adjacent windows whose
+  scores are within ~0.5 of each other, which is the precision floor of bf16 inference;
 - Yes/No log-odds are read with the lm_head applied in fp32 to the kept hidden states;
 - peak memory 18.1 GB at T = 3168 (bf16 weights 17.5 GB); `--max-tokens 9000`, sequences above it
   are split into branch groups with the full prefix repeated.
@@ -142,6 +145,15 @@ the result, so R2 is not triggered. Spearman(z_video, 2026-08 z) = .82 HateMM / 
 Note on a0: the batched legacy replica used the tokenizer's default (right) padding, so shorter prompts
 were read at a pad position; median per-video Spearman against the cached chunk log-odds was only
 .46 / .26. Fixed to left padding for the full-set parity run.
+
+## 7c. Code review (rule 6, 2026-09-10, independent agent)
+
+No blocking bug. Fixed before reading E4 numbers: (1) resume logic re-scores rows that carry
+`error` (previously they were treated as done and the evaluator would silently drop them);
+(2) legacy replica now passes the raw Whisper text (no `.strip()`) like the 2026-08 scorer.
+Noted: prediction grid is ceil(duration·4) from the manifest, one frame longer than the GT grid
+for 211/215 and 114/118 videos; the evaluator truncates to the common length, indices align from
+t = 0. README constants updated to the values actually run (additive mask, max-tokens 9000).
 
 ## 8. Results
 
