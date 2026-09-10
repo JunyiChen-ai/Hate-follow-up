@@ -39,6 +39,6 @@ for h in $CAMPUS; do
   CMD="$(repo_line '/data/jehc223/Hate-follow-up')
 echo \"  jobs: \$(squeue -u \$USER -h 2>/dev/null | wc -l) mine / \$(squeue -h 2>/dev/null | wc -l) total; free gpus: \$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | awk '\$1<1000' | wc -l)\"
 echo \"  disk: \$(df -h /data | tail -1 | awk '{print \$4\" free of \"\$2}'); quota: \$(quota -v 2>/dev/null | grep -A1 data-data | tail -1 | awk '{print \$1\"/\"\$2\" KB\"(\$1 ~ /\\*/ ? \" OVER SOFT LIMIT\" : \"\")}')\"
-stray=\$(ls /data/jehc223/Hate-follow-up 2>/dev/null | grep -vE '^(AGENTS\.md|CLAUDE\.md|Readme\.md|LICENSE|environment_HateVideo\.yml|\.gitignore|\.git|\.cache|archive|configs|data|docs|experiments|research-wiki|runs|scripts|src|third_party)$'); [ -n \"\$stray\" ] && echo \"  STRAY in repo root: \$stray\" || true"
+stray=\$(ls /data/jehc223/Hate-follow-up 2>/dev/null | grep -vE '^(AGENTS\.md|CLAUDE\.md|Readme\.md|RESEARCH_ITERATION_RULES\.md|LICENSE|environment_HateVideo\.yml|\.gitignore|\.git|\.cache|archive|configs|data|docs|experiments|research-wiki|runs|scripts|src|third_party)$'); [ -n \"\$stray\" ] && echo \"  STRAY in repo root: \$stray\" || true"
   ssh -o BatchMode=yes -o ConnectTimeout=8 -o RequestTTY=no "$h" "$CMD" 2>/dev/null | grep -v libmamba || echo "  ssh command failed"
 done
