@@ -220,6 +220,9 @@ class Judge:
             self.processor.image_processor.image_grid_pinpoints = [[384, 384]]
             self.model.config.image_grid_pinpoints = [[384, 384]]  # the model derives patch counts from its config
         self.image_token_id = getattr(self.model.config, "image_token_id", None)
+        # LLaVA-OneVision's template only renders list-typed content (string system / assistant text is dropped)
+        # and renders all images before the text of a turn.
+        self.list_content = self.family == "llava_onevision"
         self.forward_params = set(inspect.signature(self.model.model.forward).parameters)
         text_cfg = getattr(self.model.config, "text_config", self.model.config)
         self.softcap = getattr(text_cfg, "final_logit_softcapping", None)
@@ -271,7 +274,11 @@ class Judge:
         content = []
         intro = "Observe this video."
         if with_frames and frames:
-            intro += f" Below are {len(frames)} frames sampled from the video, each preceded by its timestamp."
+            if self.list_content:  # images are rendered before the turn's text: give the timestamps as a list
+                intro += (f" The {len(frames)} images above are frames sampled from the video, in order; "
+                          "frame k was taken at: " + ", ".join(f"frame {k + 1} at t={t:.1f}s" for k, (t, _) in enumerate(frames)) + ".")
+            else:
+                intro += f" Below are {len(frames)} frames sampled from the video, each preceded by its timestamp."
         if with_context:
             intro += " The full transcript with timestamps follows the frames." if (with_frames and frames) \
                 else " The full transcript with timestamps follows."
@@ -279,7 +286,8 @@ class Judge:
         images = []
         if with_frames:
             for t, f in frames:
-                content.append({"type": "text", "text": f"[t={t:.1f}s]\n"})
+                if not self.list_content:
+                    content.append({"type": "text", "text": f"[t={t:.1f}s]\n"})
                 content.append({"type": "image"})
                 images.append(f)
         tail = ""
@@ -288,7 +296,7 @@ class Judge:
         tail += ("\nBased on this platform's hate speech policy, the following types of content are prohibited:\n"
                  f"{YOUTUBE_RULES}\n\n{READER_PRAG}\n")
         content.append({"type": "text", "text": tail})
-        msgs = [{"role": "system", "content": SYSTEM_MESSAGE},
+        msgs = [self.turn("system", SYSTEM_MESSAGE),
                 {"role": "user", "content": content}]
         return msgs, images
 
@@ -309,6 +317,9 @@ class Judge:
         else:
             content.append({"type": "text", "text": text})
         return out
+
+    def turn(self, role, text):
+        return {"role": role, "content": [{"type": "text", "text": text}] if self.list_content else text}
 
     def conv(self, msgs, question, history=None):
         """Message list for asking `question` after the prefix (and optional earlier turns `history`)."""
@@ -351,9 +362,11 @@ class Judge:
         return text, enc
 
     def encode(self, text, images):
+        # add_special_tokens=False: the chat template already carries BOS where the family uses one (Gemma)
         if images:
-            return self.processor(text=[text], images=images, return_tensors="pt", **self.img_kw)
-        return self.processor(text=[text], return_tensors="pt")
+            imgs = [images] if self.family == "llava_onevision" else images  # nested = one multi-image sample
+            return self.processor(text=[text], images=imgs, return_tensors="pt", add_special_tokens=False, **self.img_kw)
+        return self.processor(text=[text], return_tensors="pt", add_special_tokens=False)
 
     def model_inputs(self, enc):
         """Tensors from a processor output that the model forward accepts, on device (generic across families)."""
@@ -379,7 +392,7 @@ class Judge:
     def answer_ids(self, msgs, question, answer):
         """Text the template adds for a completed assistant turn (answer + end-of-turn), after Q + header."""
         head = self.render(self.conv(msgs, question), add_generation_prompt=True)
-        full = self.render(self.conv(msgs, question) + [{"role": "assistant", "content": answer}],
+        full = self.render(self.conv(msgs, question) + [self.turn("assistant", answer)],
                            add_generation_prompt=False)
         if not full.startswith(head):
             raise AssertionError("assistant turn does not extend the question rendering")
@@ -602,6 +615,7 @@ def score_video(judge, row, segments, args, verify=False):
             specs.append((i, kind, window_question(i, len(wins), a, b, t, kind=kind, style=args.window_question)))
     if not specs:  # e.g. dual without frames and no speech anywhere
         specs = [(i, "joint", window_question(i, len(wins), a, b, t)) for i, ((a, b), t) in enumerate(zip(wins, wtexts))]
+    # asr mode on a video without transcript: no windows at all -> whole-video score only, curve stays FILL_UNCOVERED
     tmpl = msgs if args.isolation == "cache" else None  # cache path: branch text from the model's own template
     b0_ids, b0_text = judge.branch_ids(VIDEO_QUESTION, tmpl)
     judge.seam_check_text(msgs, prefix_text, VIDEO_QUESTION, b0_text)
@@ -626,9 +640,11 @@ def score_video(judge, row, segments, args, verify=False):
             ans_ids, ans_text = judge.answer_ids(msgs, VIDEO_QUESTION, stance_answer)
             ext_ids = b0_ids + ans_ids
             history = [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]},
-                       {"role": "assistant", "content": stance_answer}]
-            full = judge.render(judge.conv(msgs, specs[0][2], history), add_generation_prompt=True)
-            if judge.same_turn:  # window questions open a new user turn after the answer: re-derive their text
+                       judge.turn("assistant", stance_answer)]
+            full = judge.render(judge.conv(msgs, specs[0][2], history), add_generation_prompt=True) if specs else None
+            if not specs:
+                pass
+            elif judge.same_turn:  # window questions open a new user turn after the answer: re-derive their text
                 head = prefix_text + b0_text + ans_text
                 if not full.startswith(head):
                     raise AssertionError("stance seam mismatch (same-turn template)")
@@ -655,6 +671,10 @@ def score_video(judge, row, segments, args, verify=False):
             checks["peak_mem_GB"] = torch.cuda.max_memory_allocated() / 1e9
             checks["img_tokens_per_frame"] = judge.img_tokens[:1]
             info["verify"] = checks
+            # gate: a position / mask error shifts branches by several nats; bf16 kernel noise stays well below 1
+            if max(checks["video_q_cache_vs_plain_dz"], checks["windows_cache_vs_plain_max_dz"]) >= 1.0 or \
+                    checks.get("windows_cache_vs_plain_spearman", 1.0) < 0.9:
+                raise SystemExit(f"VERIFY GATE FAILED: {json.dumps(checks)}")
         del cache
         verify = False  # mask-path verify blocks below are skipped
     pos_p = judge.prefix_positions(enc) if args.isolation == "mask" else None
@@ -674,8 +694,8 @@ def score_video(judge, row, segments, args, verify=False):
         full = judge.render(msgs + [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]},
                                    {"role": "assistant", "content": stance_answer},
                                    {"role": "user", "content": [{"type": "text", "text": specs[0][2]}]}],
-                            add_generation_prompt=True)
-        if full != prefix_text + b0_text + ans_text + btexts[0]:
+                            add_generation_prompt=True) if specs else None
+        if specs and full != prefix_text + b0_text + ans_text + btexts[0]:
             raise AssertionError("stance seam mismatch: chat template renders the assistant turn differently")
         zb, total2, ngroups = run_groups(judge, enc, pos_p, branches, args, ext_ids=ext_ids)
         total = total1 + total2
@@ -789,6 +809,8 @@ def main():
         f"st{args.stance}", f"br{args.branches}", f"q{args.window_question}", f"fs{args.frame_source}"]))
     if args.legacy_chunk_arm:
         tag = args.method_name or "legacy_chunk_replica"
+    if args.isolation == "cache" and not args.method_name:
+        tag += "_isocache"
     if args.model_tag and not args.method_name:
         tag = f"{args.model_tag}__{tag}"
     args.method_name = tag
@@ -810,6 +832,10 @@ def main():
 
     judge = Judge(mask_kind=args.mask_kind, model_id=args.model)
     logging.info("model %s isolation %s", args.model, args.isolation)
+    import transformers
+    cfg.update({"same_turn": judge.same_turn, "list_content": judge.list_content, "img_kw": judge.img_kw,
+                "family": judge.family, "transformers": transformers.__version__, "torch": torch.__version__})
+    (out_dir / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False))
     pred_path = out_dir / "predictions.jsonl"
     done = set()
     if pred_path.exists():

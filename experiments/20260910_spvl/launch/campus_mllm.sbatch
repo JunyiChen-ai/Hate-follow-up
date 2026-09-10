@@ -6,9 +6,11 @@
 #SBATCH --output=runs/20260910_spvl/slurm_%j.out
 # Family / size robustness study on campus (README §11). One model per job, all arms sequentially inside it.
 # Submit: cd /data/jehc223/Hate-follow-up && sbatch --export=ALL,MODEL_ID=Qwen/Qwen3-VL-32B-Instruct,MODEL_TAG=q3vl-32b experiments/20260910_spvl/launch/campus_mllm.sbatch
-set -euo pipefail
+set -eo pipefail
 source /data/jehc223/miniconda3/bin/activate HateVLM
+set -u
 cd /data/jehc223/Hate-follow-up
+mkdir -p runs/20260910_spvl  # note: Slurm opens --output before this runs; the directory must exist at submit time
 export HF_HOME=/data/jehc223/Hate-follow-up/.cache/hf
 export SPVL_PYTHON=/data/jehc223/miniconda3/envs/HateVLM/bin/python
 : "${MODEL_ID:?set MODEL_ID}" "${MODEL_TAG:?set MODEL_TAG}"
