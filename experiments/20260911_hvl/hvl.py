@@ -38,7 +38,7 @@ from src.video_inputs import (FPS, fixed_windows, frame_paths, load_asr, load_ma
 CODE_PATH = "experiments/20260911_hvl/hvl.py"
 SEED = 0
 FILL_UNCOVERED = -12.0
-MAX_HYP_TOKENS = 160
+MAX_HYP_TOKENS = 220
 
 HYP_QUESTION = (
     "Summarise your judgement as a hypothesis in exactly this format, three lines and nothing else:\n"
@@ -50,7 +50,7 @@ HYP_QUESTION = (
 STATES = ["start", "continue", "stop", "none"]
 
 
-def state_question(i, n, t1, t2, text, kind, first):
+def state_question(i, n, t1, t2, text, kind, first, has_hyp=True):
     body = text.strip() if text and text.strip() else "(no speech)"
     head = f"Window {i + 1} of {n}, from {t1:.1f}s to {t2:.1f}s."
     if kind == "visual":
@@ -60,26 +60,30 @@ def state_question(i, n, t1, t2, text, kind, first):
     else:
         head += f" Transcript in this window: {body}"
     prev = "There is no previous window." if first else "Take your answer for the previous window into account."
-    return (f"{head}\n\n{prev} Relative to the hypothesis above, which one describes THIS window: "
+    ref = "the hypothesis above" if has_hyp else "content that violates the above rules"
+    return (f"{head}\n\n{prev} Relative to {ref}, which one describes THIS window: "
             "\"start\" (the violating content is present here and was not present in the previous window), "
             "\"continue\" (present here and also in the previous window), "
             "\"stop\" (not present here but present in the previous window), or "
             "\"none\" (not present here and not in the previous window)?\n\nAnswer with one word.")
 
 
-def yesno_question(i, n, t1, t2, text, kind):
+def yesno_question(i, n, t1, t2, text, kind, has_hyp=True):
     body = text.strip() if text and text.strip() else "(no speech)"
     head = f"Consider only window {i + 1} of {n}, from {t1:.1f}s to {t2:.1f}s of this video."
     if kind == "visual":
         ctx = (f"{head} Look only at the frames whose timestamps fall inside this window and judge the visual "
                f"content alone (imagery, gestures, symbols, on-screen text), ignoring the speech.\n\n")
-        q = "Is THIS window one of the segments where the visual evidence for the hypothesis above occurs?"
+        q = ("Is THIS window one of the segments where the visual evidence for the hypothesis above occurs?" if has_hyp
+             else "Is THIS window one of the segments where visual content that violates the above rules occurs?")
     elif kind == "speech":
         ctx = f"{head} Judge only what is spoken in this window: {body}\n\n"
-        q = "Is THIS window one of the segments where the spoken evidence for the hypothesis above occurs?"
+        q = ("Is THIS window one of the segments where the spoken evidence for the hypothesis above occurs?" if has_hyp
+             else "Is THIS window one of the segments where speech that violates the above rules occurs?")
     else:
         ctx = f"{head} Transcript in this window: {body}\n\n"
-        q = "Is THIS window one of the segments where the evidence for the hypothesis above occurs?"
+        q = ("Is THIS window one of the segments where the evidence for the hypothesis above occurs?" if has_hyp
+             else "Is THIS window one of the segments where the content that violates the above rules occurs?")
     return ctx + q + '\n\nAnswer "Yes" or "No".'
 
 
@@ -188,9 +192,9 @@ def score_video(judge, row, segments, args, verify=False):
                 if kind == "speech" and not (t and t.strip()):
                     continue
                 if args.states == "four":
-                    q = state_question(i, len(wins), a, b, t, kind, first=(prev_present is None))
+                    q = state_question(i, len(wins), a, b, t, kind, first=(prev_present is None), has_hyp=hyp is not None)
                 else:
-                    q = yesno_question(i, len(wins), a, b, t, kind)
+                    q = yesno_question(i, len(wins), a, b, t, kind, has_hyp=hyp is not None)
                 bids, btext = judge.branch_ids(msgs, q, chain_hist, head_text=chain_head)
                 n_branch += 1
                 if args.states == "four":
