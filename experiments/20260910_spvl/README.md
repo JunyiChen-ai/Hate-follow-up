@@ -355,7 +355,13 @@ Everything else (K=20, S=8, rules, reader, questions, Yes/No token sets, seed, g
 
 Cache path vs independent plain calls on Qwen3-VL-8B (`runs/20260910_spvl/mllm/q3vl-8b/verify_cache/verify.json`):
 whole-video Δz .033, windows max Δz .228, Spearman 1.000 — the same bf16 kernel-difference magnitude as the
-packed path (§5). Full-set consistency of the cache path against the mask path: see the table below.
+packed path (§5). Full-set consistency, Qwen3-VL-8B full arm, cache path vs the mask path of §10
+(`runs/20260910_spvl/mllm/q3vl-8b/full/metrics_izv_plus_mean_rrank.json` vs `full2_dual_evid_stance/`):
+HateMM .8920 / .6825 / .6968 vs .8919 / .6831 / .6976; HateClipSeg .7132 / .6675 / .6020 vs .7119 / .6664 /
+.6001 — all six differences ≤ .002, inside the noise floor, so the two isolation mechanisms are interchangeable.
+Per-family first-video checks (cache vs plain, Spearman 1.000 in all): InternVL3.5 Δz .13 / .06 (256 tokens/frame),
+Gemma-3 Δz .28 / .41 (256 tokens/frame; Gemma's template rejects consecutive user turns, so the question is
+appended to the prefix's own user turn — `Judge.same_turn`).
 
 **Arms per model** (`launch/run_mllm.sh`; Slurm: `launch/campus_mllm.sbatch`): full (SPVL-r2), winonly (joint
 branch, rules question, no context, no frames, no stance = the MLLM judging each window on its own), noctx,
