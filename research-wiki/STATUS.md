@@ -28,11 +28,11 @@ PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。within 只�
 
 ## 运行任务与监控
 
-uoa-lab3 后台：`runs/20260910_spvl/round3_launch.out`（每窗一帧的两组 joint 消融，约 2 小时；本机 until 循环监控，结束 rsync 回本机）。
+无。round-3 消融（每窗一帧的两组 joint 变体）2026-09-10 12:18 在 uoa-lab3 跑完，已回传到 `runs/20260910_spvl/abl3_*/`，数字在 `runs/20260910_spvl/ablation_table.md` 与实验 README §10。
 
 ## 下一步
 
-1. 补 round-3 的 joint 消融进表；LELA（GPT-4o-mini）对照在本评测器下重跑或说明不可行（规则 14f）。
+1. LELA（GPT-4o-mini）对照在本评测器下重跑或说明不可行（规则 14f，需要 API 费用，待用户裁定）。
 2. HCS 无语音仇恨子集低于随机：GT 是 offensive 并集而 prompt 是仇恨规则，属标签定义问题，写进论文的 limitation。
 3. 方法改进从 SPVL-r2 出发；OMSL-v6 目录保留为对照，下次整理时移入 `archive/experiments/`。
 

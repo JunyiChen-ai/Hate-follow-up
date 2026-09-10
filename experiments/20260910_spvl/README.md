@@ -1,6 +1,6 @@
 # SPVL — single-pass verdict-and-evidence localization (label-free)
 
-Status: 2026-09-10 promoted to current method (SPVL-r2, §10) after rounds 1–2; round-3 ablations still running on uoa-lab3. Development-selected numbers only
+Status: 2026-09-10 promoted to current method (SPVL-r2, §10) after rounds 1–2; round-3 ablations complete (uoa-lab3). Development-selected numbers only
 (test split, 4 fps, `RESEARCH_ITERATION_RULES.md` rule 10); every test-read is logged in §7.
 
 ## 1. Mechanism problems this experiment targets
@@ -285,10 +285,18 @@ branch of every window has a frame inside it. Source `runs/20260910_spvl/full3_d
 |---|---|---|---|
 | SPVL-r2 (20 uniform frames) + M3 | .8919 / .6831 / .6976 | .7119 / .6664 / .6001 | 1.5 s/video, 1 group |
 | SPVL-r2 with per-window frames + M3 | .8936 / .6786 / .6885 | .7199 / .6798 / .6004 | 7–11 s/video, median 2 groups (≈ 10.7k tokens) |
-| silent-hate subset within (26 videos) | .694 → .723 | .446 → .435 | |
+| joint branch + evidence + stance, per-window frames + M3 | .8940 / .6801 / .6797 | .6994 / .6697 / .5823 | 4–6 s/video |
+| joint branch + rules question, no stance, per-window frames + M3 | .8935 / .6788 / .6592 | .7003 / .6670 / .5826 | 4–6 s/video |
+| silent-hate subset within (26 videos): r2 → r2 per-window frames | .694 → .723 | .446 → .435 | |
+| silent-hate subset within: joint + evidence + stance / joint + rules, per-window frames | .698 / .721 | .467 / .511 | |
 
 Per-window frames raise HateClipSeg pooled PR (+.013) and HateMM silent-hate within (+.029) but cost
-5× and lower HateMM within by .009 (noise floor .01). HateClipSeg silent-hate videos stay below chance in
+5× and lower HateMM within by .009 (noise floor .01). With per-window frames the modality split is
+still the part that carries HateClipSeg within (dual .6004 vs joint .5823, +.018) and stance
+conditioning still carries HateMM within (joint + stance .6797 vs joint no-stance .6592, +.021; on
+HateClipSeg ±0). So the round-2 attribution (split helps HCS, stance helps HateMM) holds under a
+second frame layout. Sources: `runs/20260910_spvl/abl3_joint_evid_stance_w8/` and
+`abl3_joint_rules_none_w8/`, `metrics_izv_plus_mean_rrank.json`. HateClipSeg silent-hate videos stay below chance in
 every variant: their GT positives are the offensive union (sexual, violent, harmful, insulting), while the
 prompt's rules are hate rules, so silent sexual/violent visuals are not what the judge is asked for. This
 is a label-definition mismatch, recorded, not tuned around (rule 13: one prompt for both corpora).
@@ -297,8 +305,7 @@ is a label-definition mismatch, recorded, not tuned around (rule 13: one prompt 
 the shared context; whole-video verdict; the model's own verdict appended to the context; per 8-second
 window a visual branch and a speech branch (evidence question), window score = max; frame score =
 (z_video + mean window z) + centred-rank residual. Two forwards per video (verdict, then windows), frames
-encoded twice, no other model. The remaining round-3 arms (joint branch with per-window frames) are
-kept as ablations when they finish.
+encoded twice, no other model. The round-3 arms (joint branch with per-window frames) are kept as ablations in the table above.
 
 ### Gate (rule 8) — SPVL-r2 + M3 vs OMSL-v6 (noise floor pooled .005 / within .01)
 HateMM +.041 / +.105 / +.048; HateClipSeg +.043 / +.004 / +.053. Passed; comparison gate vs T3AL passed.
