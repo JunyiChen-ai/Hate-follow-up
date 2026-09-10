@@ -178,3 +178,9 @@ mechanism arm is below `p_base`.** The pilot falsified P1 and P2 as implemented,
 Disposition: the hypothesis step (P1), the state chain (P2), the revision step (G4 via revision) and neighbour
 context (G1 via context) are archived as negative results with the diagnoses above. Kept for the remaining gaps:
 `--fill-frames` (G3, arm `p_base_fill`, running). Code stays in this directory; the method is not promoted.
+
+### G3 — fill-frames (`p_base_fill`, uoa-lab3; window-centre frame added for every window without a uniform frame)
+
+Overall within .6871 / .5981 vs base .6926 / .6007 (noise); silent-hate subset (24 videos) .699 / .454 vs .683 /
+.447 (10 / 14 videos; inside noise). Adding the missing in-window frames does not change the judgement of the
+frameless windows: negative result for G3 in this form (consistent with spvl README §10, per-window frames).
