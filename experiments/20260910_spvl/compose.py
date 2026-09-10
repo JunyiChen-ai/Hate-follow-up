@@ -121,13 +121,19 @@ def main():
                 zv = float(r["extra"]["z_video"])
                 def lme(v):
                     v = np.asarray(v, float); m = v.max(); return float(m + np.log(np.mean(np.exp(v - m))))
-                top3 = float(np.sort(w)[-3:].mean()) if len(w) >= 3 else float(w.mean())
-                intercept = {"mean_win": float(w.mean()), "zv_plus_mean": zv + float(w.mean()),
-                             "lme_zv_top3": lme([zv, top3]), "zv_plus_lme": zv + lme(w), "zv_plus_kmean": zv + a.k_mean * float(w.mean()),
-                             # extent as a log-odds: logit of the mean window probability (no free constant)
-                             "zv_plus_extent": zv + float(np.log(np.clip(pw := (1 / (1 + np.exp(-w))).mean(), 1e-6, 1 - 1e-6) / (1 - np.clip(pw, 1e-6, 1 - 1e-6)))),
-                             "zv_plus_median": zv + float(np.median(w)),
-                             "zv_plus_tophalf": zv + float(np.sort(w)[len(w) // 2:].mean())}[a.intercept]
+                def top3():
+                    return float(np.sort(w)[-3:].mean()) if len(w) >= 3 else float(w.mean())
+                def extent():
+                    pw = np.clip((1 / (1 + np.exp(-w))).mean(), 1e-6, 1 - 1e-6); return float(np.log(pw / (1 - pw)))
+                # evaluated lazily: only the requested statistic is computed (ASR-window runs can have zero windows)
+                fns = {"mean_win": lambda: float(w.mean()), "zv_plus_mean": lambda: zv + float(w.mean()),
+                       "lme_zv_top3": lambda: lme([zv, top3()]), "zv_plus_lme": lambda: zv + lme(w),
+                       "zv_plus_kmean": lambda: zv + a.k_mean * float(w.mean()),
+                       "zv_plus_extent": lambda: zv + extent(),  # extent as a log-odds (no free constant)
+                       "zv_plus_median": lambda: zv + float(np.median(w)),
+                       "zv_plus_tophalf": lambda: zv + float(np.sort(w)[len(w) // 2:].mean())}
+                # no windows at all (ASR mode, video without transcript): window statistics are undefined -> 0
+                intercept = fns[a.intercept]() if len(w) else (0.0 if a.intercept == "mean_win" else zv)
             intercept *= a.intercept_scale
             if a.residual == "none":
                 residual = np.zeros_like(raw)
