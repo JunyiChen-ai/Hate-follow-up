@@ -8,7 +8,7 @@ source "$CONDA_ROOT/bin/activate"
 conda env remove -y -n HateVLM 2>/dev/null
 conda create -y -n HateVLM python=3.12
 conda activate HateVLM
-pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cu128
 pip install transformers==5.15.1 qwen-vl-utils==0.0.14 accelerate==1.14.0 pillow==12.3.0 numpy==2.5.2 scipy==1.18.1 scikit-learn==1.9.0 safetensors==0.8.0 huggingface_hub==1.28.0
 python -c "import torch,transformers;print(torch.__version__, torch.cuda.is_available(), transformers.__version__); import transformers.models.qwen3_vl as q; print('qwen3_vl ok')"
 echo SETUP_DONE
