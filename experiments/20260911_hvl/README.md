@@ -147,3 +147,34 @@ Round-2 arms launched 2026-09-11 07:50: `p_hyp_seq4_full` (speech chain over all
 (sequential + binary), `p_shuffle` (shuffled order control), `p_hyppermute` (another video's hypothesis, control),
 `p_tf_indep_yesno` (TARGET/FORM hypothesis, independent), `p_tf_indep_nb1` (+ neighbour context),
 `p_nohyp_indep_nb1` (SPVL-r2 + neighbour context, no hypothesis).
+
+### Round 2 (controls and alternatives; within subset; `izv_plus_mean_rrank` unless noted)
+
+| arm | run | HateMM within | HCS within | note |
+|---|---|---|---|---|
+| HVL code path, SPVL-r2 configuration (no hypothesis, independent Yes/No) | `p_base` | .6926 | .6007 | equals spvl.py (.6968 / .6020) within noise: code path consistent |
+| hypothesis + sequential four-state, speech chain over all windows | `p_hyp_seq4_full` | .6686 | .5327 | chain still 77 % "continue" |
+| hypothesis + sequential + binary Yes/No | `p_hyp_seqbin` | .6613 | .5573 | order without the state vocabulary: still below base |
+| shuffled window order (control for the chain) | `p_shuffle` | .5640 | .5115 | −.09 / −.02 vs the ordered chain: the chain does use order, but persistence dominates |
+| another video's hypothesis (control) | `p_hyppermute` | .6952 | .5460 | as good as or better than the model's own hypothesis (.6590 / .5356): the hypothesis content is not used constructively |
+| TARGET/FORM hypothesis + independent | `p_tf_indep_yesno` | .6504 | .5676 | 83 % of windows judged present (base 62 %) |
+| TARGET/FORM + neighbour transcripts | `p_tf_indep_nb1` | .6208 | .5719 | |
+| no hypothesis + neighbour transcripts | `p_nohyp_indep_nb1` | .6753 | .5946 | local temporal context hurts HateMM (−.017) |
+
+**Conclusion of E3 (rule 9): no candidate reaches +.01 within on either corpus over the current method; every
+mechanism arm is below `p_base`.** The pilot falsified P1 and P2 as implemented, with mechanism readings:
+1. A self-generated hypothesis induces **confirmation**: with "TARGET: X, FORM: …" in context the model marks
+   83 % of windows as present (62 % without), and the verification inherits the hypothesis's own localization
+   errors when timestamps are cited (88 % vs 44 % present inside vs outside cited spans). A permuted (wrong)
+   hypothesis does not hurt more than the model's own, so the verification is not using the hypothesis content.
+2. A sequential chain **persists**: once "start" is answered, "continue" is the cheapest next answer (77–82 % of
+   answers); the chain carries order (shuffling costs −.09) but the order information is used to persist, not to
+   find boundaries. Removing the state vocabulary (binary chain) does not fix it.
+3. Local temporal context (neighbour transcripts) lowers HateMM within by .017; the independent window judgement
+   with the full transcript in the prefix is already the better use of context.
+4. Revision restates the verdict (Spearman .76–.85 with z_video) and reads a long list of present windows as
+   evidence against the verdict (negative correlation with the count); it does not close a loop.
+
+Disposition: the hypothesis step (P1), the state chain (P2), the revision step (G4 via revision) and neighbour
+context (G1 via context) are archived as negative results with the diagnoses above. Kept for the remaining gaps:
+`--fill-frames` (G3, arm `p_base_fill`, running). Code stays in this directory; the method is not promoted.
