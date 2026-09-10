@@ -47,6 +47,11 @@ HYP_QUESTION = (
     "EVIDENCE: <up to 5 items separated by ';', each written as start-end: what is said or shown there, "
     "using the transcript or frame timestamps in seconds; or none>"
 )
+HYP_QUESTION_TF = (
+    "Summarise your judgement as a hypothesis in exactly this format, two lines and nothing else:\n"
+    "TARGET: <the group or groups the content targets, or none>\n"
+    "FORM: <the rule numbers from the list above that are violated, or none>"
+)
 STATES = ["start", "continue", "stop", "none"]
 
 
@@ -68,9 +73,13 @@ def state_question(i, n, t1, t2, text, kind, first, has_hyp=True):
             "\"none\" (not present here and not in the previous window)?\n\nAnswer with one word.")
 
 
-def yesno_question(i, n, t1, t2, text, kind, has_hyp=True):
+def yesno_question(i, n, t1, t2, text, kind, has_hyp=True, neighbours=None):
     body = text.strip() if text and text.strip() else "(no speech)"
     head = f"Consider only window {i + 1} of {n}, from {t1:.1f}s to {t2:.1f}s of this video."
+    if neighbours:  # local temporal context (gap G1 without a chain): what is said just before and after
+        prev_t, next_t = neighbours
+        head += (f" For context only: the previous window says \"{prev_t or '(no speech)'}\"; "
+                 f"the next window says \"{next_t or '(no speech)'}\". Judge THIS window, not the context.")
     if kind == "visual":
         ctx = (f"{head} Look only at the frames whose timestamps fall inside this window and judge the visual "
                f"content alone (imagery, gestures, symbols, on-screen text), ignoring the speech.\n\n")
@@ -136,8 +145,9 @@ def score_video(judge, row, segments, args, verify=False):
     history = [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]}, judge.turn("assistant", stance)]
     head = prefix_text + b0_text + a0_text
     hyp = None
-    if args.hypothesis == "structured":
-        b1, b1_text = judge.branch_ids(msgs, HYP_QUESTION, history, head_text=head)
+    if args.hypothesis in ("structured", "target_form"):
+        hq = HYP_QUESTION if args.hypothesis == "structured" else HYP_QUESTION_TF
+        b1, b1_text = judge.branch_ids(msgs, hq, history, head_text=head)
         if args.hyp_permute is not None:  # control: another video's hypothesis is written as this model's answer
             hyp_text = args.hyp_permute[(ds, vid)]
             judge.extend_cache(cache, b1)
@@ -145,14 +155,14 @@ def score_video(judge, row, segments, args, verify=False):
         else:
             hyp_text, gen_ids = judge.cached_generate(cache, b1, MAX_HYP_TOKENS, in_place=True)
         hyp = parse_hypothesis(hyp_text)
-        a1, a1_text = judge.answer_ids(msgs, HYP_QUESTION, hyp_text, history)
+        a1, a1_text = judge.answer_ids(msgs, hq, hyp_text, history)
         # the generated tokens are already in the cache; append only the end-of-turn that the template adds
         eot = judge.tok(a1_text[len(hyp_text):] if a1_text.startswith(hyp_text) else a1_text, add_special_tokens=False)["input_ids"] \
             if a1_text.startswith(hyp_text) else None
         if eot is None:  # template re-rendered the answer differently: replay the whole answer turn text instead
             raise AssertionError("hypothesis turn rendering does not start with the generated text")
         judge.extend_cache(cache, eot)
-        history = history + [{"role": "user", "content": [{"type": "text", "text": HYP_QUESTION}]}, judge.turn("assistant", hyp_text)]
+        history = history + [{"role": "user", "content": [{"type": "text", "text": hq}]}, judge.turn("assistant", hyp_text)]
         head = head + b1_text + a1_text
     info["hypothesis"] = hyp
     # ---- optional context filtering (gap 5): rebuild the prefix with only the cited sentences (+-1 segment)
@@ -168,7 +178,7 @@ def score_video(judge, row, segments, args, verify=False):
         del cache
         cache = judge.prefix_cache(enc2)
         head = prefix_text2
-        for q, a in ((VIDEO_QUESTION, stance), (HYP_QUESTION, hyp["raw"])):
+        for q, a in ((VIDEO_QUESTION, stance), (hq, hyp["raw"])):
             hq, _ = judge.branch_ids(msgs2, q, None if q == VIDEO_QUESTION else history[:2], head_text=head)
             judge.extend_cache(cache, hq)
             ha, ha_text = judge.answer_ids(msgs2, q, a, None if q == VIDEO_QUESTION else history[:2])
@@ -203,7 +213,11 @@ def score_video(judge, row, segments, args, verify=False):
                 if args.states == "four":
                     q = state_question(i, len(wins), a, b, t, kind, first=(prev_present is None), has_hyp=hyp is not None)
                 else:
-                    q = yesno_question(i, len(wins), a, b, t, kind, has_hyp=hyp is not None)
+                    nb = None
+                    if args.neighbours:
+                        nb = (wtexts[i - 1].strip()[:300] if i > 0 else "(start of video)",
+                              wtexts[i + 1].strip()[:300] if i + 1 < len(wins) else "(end of video)")
+                    q = yesno_question(i, len(wins), a, b, t, kind, has_hyp=hyp is not None, neighbours=nb)
                 bids, btext = judge.branch_ids(msgs, q, chain_hist, head_text=chain_head)
                 n_branch += 1
                 if args.states == "four":
@@ -273,13 +287,15 @@ def main():
     ap.add_argument("--frames", type=int, default=20)
     ap.add_argument("--no-transcript-context", action="store_true")
     ap.add_argument("--window-seconds", type=float, default=8.0)
-    ap.add_argument("--hypothesis", choices=["none", "structured"], default="structured")
+    ap.add_argument("--hypothesis", choices=["none", "structured", "target_form"], default="structured",
+                    help="structured: TARGET/FORM/EVIDENCE; target_form: TARGET/FORM only (no self-cited timestamps)")
     ap.add_argument("--verify", choices=["none", "independent", "sequential"], default="sequential")
     ap.add_argument("--states", choices=["yesno", "four"], default="four")
     ap.add_argument("--revise", choices=["off", "on"], default="on")
     ap.add_argument("--context", choices=["full", "cited"], default="full")
     ap.add_argument("--fill-frames", action="store_true")
     ap.add_argument("--branches", choices=["joint", "dual"], default="dual")
+    ap.add_argument("--neighbours", action="store_true", help="independent mode: show the previous and next window transcripts as context")
     ap.add_argument("--shuffle-windows", action="store_true", help="control: sequential chain visits windows in a fixed shuffled order")
     ap.add_argument("--hyp-from", default=None, help="control: predictions.jsonl of an earlier run; each video gets the NEXT video's hypothesis")
     ap.add_argument("--only-within-defined", action="store_true")
@@ -297,7 +313,7 @@ def main():
     tag = args.method_name or "hvl_" + "_".join([
         f"f{args.frames}" + ("fill" if args.fill_frames else ""), "noctx" if args.no_transcript_context else f"ctx{args.context}",
         f"w{args.window_seconds:g}", f"hyp{args.hypothesis}", f"v{args.verify}", f"s{args.states}",
-        f"rev{args.revise}", f"br{args.branches}"] + (["shuf"] if args.shuffle_windows else []) + (["hyppermute"] if args.hyp_from else []))
+        f"rev{args.revise}", f"br{args.branches}"] + (["nb1"] if args.neighbours else []) + (["shuf"] if args.shuffle_windows else []) + (["hyppermute"] if args.hyp_from else []))
     if args.model_tag and not args.method_name:
         tag = f"{args.model_tag}__{tag}"
     args.method_name = tag
