@@ -16,6 +16,7 @@ video intercept and rank residual. No labels are read anywhere in this file.
 from __future__ import annotations
 
 import argparse
+import copy
 import inspect
 import json
 import logging
@@ -31,7 +32,17 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[2]
 CODE_PATH = "experiments/20260910_spvl/spvl.py"
-MODEL = "Qwen/Qwen3-VL-8B-Instruct"
+MODEL = "Qwen/Qwen3-VL-8B-Instruct"  # default; --model overrides (family/size robustness study, README §11)
+# Per-family processor kwargs so that every frame costs a fixed, documented number of tokens.
+# Qwen: pixel cap (<= 91 tokens/frame); InternVL: one 448 tile (256); Gemma 3: 896 without pan-and-scan (256);
+# LLaVA-OneVision: base 384 only, no AnyRes grid (recorded from the run; see README §11).
+FAMILY_IMAGE_KW = {
+    "qwen3_vl": {"size": {"shortest_edge": 65536, "longest_edge": 100352}},
+    "qwen2_5_vl": {"size": {"shortest_edge": 65536, "longest_edge": 100352}},
+    "internvl": {"crop_to_patches": False},
+    "gemma3": {"do_pan_and_scan": False},
+    "llava_onevision": {},
+}
 FPS = 4.0
 MAX_PIXELS = 100352   # per-frame pixel cap (same as the 2026-08 whole-video judge)
 MIN_PIXELS = 65536
@@ -188,22 +199,34 @@ def to_mask(allow, dtype, device, kind):
 
 
 class Judge:
-    def __init__(self, mask_kind="bool"):
+    def __init__(self, mask_kind="bool", model_id=MODEL):
         from transformers import AutoModelForImageTextToText, AutoProcessor
-        self.processor = AutoProcessor.from_pretrained(MODEL)
+        self.model_id = model_id
+        self.processor = AutoProcessor.from_pretrained(model_id)
         self.tok = self.processor.tokenizer
         self.model = AutoModelForImageTextToText.from_pretrained(
-            MODEL, dtype=torch.bfloat16, device_map="cuda:0", attn_implementation="sdpa")
+            model_id, dtype=torch.bfloat16, device_map="cuda:0", attn_implementation="sdpa")
         self.model.eval()
         for p in self.model.parameters():
             p.requires_grad_(False)
         self.device = self.model.device
         self.dtype = torch.bfloat16
         self.mask_kind = mask_kind
+        self.family = self.model.config.model_type
+        if self.family not in FAMILY_IMAGE_KW:
+            raise SystemExit(f"model_type {self.family} not in FAMILY_IMAGE_KW; add its image kwargs first")
+        self.img_kw = dict(FAMILY_IMAGE_KW[self.family])
+        if self.family == "llava_onevision":  # base 384 only: no AnyRes grid, so every frame costs the same
+            self.processor.image_processor.image_grid_pinpoints = [[384, 384]]
+        self.image_token_id = getattr(self.model.config, "image_token_id", None)
+        self.forward_params = set(inspect.signature(self.model.model.forward).parameters)
+        text_cfg = getattr(self.model.config, "text_config", self.model.config)
+        self.softcap = getattr(text_cfg, "final_logit_softcapping", None)
         self.yes_ids, self.no_ids = self.binary_ids()
         self.yes_t = torch.tensor(self.yes_ids, device=self.device)
         self.no_t = torch.tensor(self.no_ids, device=self.device)
-        logging.info("Yes ids %s No ids %s", self.yes_ids, self.no_ids)
+        logging.info("model %s family %s Yes ids %s No ids %s softcap %s", model_id, self.family,
+                     self.yes_ids, self.no_ids, self.softcap)
         self.size_kw = {"shortest_edge": MIN_PIXELS, "longest_edge": MAX_PIXELS}
 
     def binary_ids(self):
@@ -226,9 +249,11 @@ class Judge:
 
     def margins_fp32(self, hidden_rows):
         """Yes/No log-odds from hidden states with the lm_head applied in fp32 (avoids bf16 logit steps)."""
-        W = self.model.lm_head.weight
+        W = self.model.get_output_embeddings().weight
         ids = torch.cat([self.yes_t, self.no_t])
         lg = hidden_rows.float() @ W[ids].float().T  # [n, |yes|+|no|]
+        if self.softcap:  # Gemma-style final logit softcapping (monotone; applied as in the model's own forward)
+            lg = torch.tanh(lg / self.softcap) * self.softcap
         ny = len(self.yes_ids)
         return (torch.logsumexp(lg[:, :ny], 1) - torch.logsumexp(lg[:, ny:], 1)).tolist()
 
@@ -265,10 +290,7 @@ class Judge:
         from PIL import Image
         text = self.render(msgs, add_generation_prompt=False)
         images = [Image.open(p).convert("RGB") for p in image_files]
-        if images:
-            enc = self.processor(text=[text], images=images, return_tensors="pt", size=self.size_kw)
-        else:
-            enc = self.processor(text=[text], return_tensors="pt")
+        enc = self.encode(text, images)
         for im in images:
             im.close()
         if "image_grid_thw" in enc:
@@ -279,12 +301,50 @@ class Judge:
             if max(px) > MAX_PIXELS:
                 raise SystemExit(f"pixel cap not honoured: {max(px)} > {MAX_PIXELS}")
             self.img_tokens = [int(t * h * w) // (merge ** 2) for t, h, w in grid.tolist()]
+        elif images and self.image_token_id is not None:
+            n_img = int((enc["input_ids"][0] == self.image_token_id).sum())
+            self.img_tokens = [n_img // len(images)] * len(images)
         else:
             self.img_tokens = []
+        self._prefix_text = text
         return text, enc
 
-    def branch_ids(self, question):
-        text = f"<|im_start|>user\n{question}<|im_end|>\n<|im_start|>assistant\n"
+    def encode(self, text, images):
+        if images:
+            return self.processor(text=[text], images=images, return_tensors="pt", **self.img_kw)
+        return self.processor(text=[text], return_tensors="pt")
+
+    def model_inputs(self, enc):
+        """Tensors from a processor output that the model forward accepts, on device (generic across families)."""
+        kw = {}
+        for k, v in enc.items():
+            if k in self.forward_params and torch.is_tensor(v):
+                kw[k] = v.to(self.device, self.dtype) if v.is_floating_point() else v.to(self.device)
+        if "mm_token_type_ids" in self.forward_params and "mm_token_type_ids" not in kw and "pixel_values" in kw:
+            kw["mm_token_type_ids"] = self.mm_types(enc, enc["input_ids"])
+        return kw
+
+    def branch_ids(self, question, msgs=None):
+        """User turn + assistant header as rendered by the model's own chat template (suffix after the prefix)."""
+        if msgs is None:  # Qwen ChatML (the 2026-09-10 runs)
+            text = f"<|im_start|>user\n{question}<|im_end|>\n<|im_start|>assistant\n"
+        else:
+            full = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]}],
+                               add_generation_prompt=True)
+            if not full.startswith(self._prefix_text):
+                raise AssertionError("chat template does not extend the prefix string")
+            text = full[len(self._prefix_text):]
+        return self.tok(text, add_special_tokens=False)["input_ids"], text
+
+    def answer_ids(self, msgs, question, answer):
+        """Text the template adds for a completed assistant turn (answer + end-of-turn), after Q + header."""
+        head = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]}],
+                           add_generation_prompt=True)
+        full = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]},
+                                  {"role": "assistant", "content": answer}], add_generation_prompt=False)
+        if not full.startswith(head):
+            raise AssertionError("assistant turn does not extend the question rendering")
+        text = full[len(head):]
         return self.tok(text, add_special_tokens=False)["input_ids"], text
 
     def seam_check_text(self, msgs, prefix_text, question, branch_text):
@@ -298,8 +358,7 @@ class Judge:
         full = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]}],
                            add_generation_prompt=True)
         images = [Image.open(p).convert("RGB") for p in image_files]
-        enc = (self.processor(text=[full], images=images, return_tensors="pt", size=self.size_kw)
-               if images else self.processor(text=[full], return_tensors="pt"))
+        enc = self.encode(full, images)
         for im in images:
             im.close()
         got = enc["input_ids"][0].tolist()
@@ -385,25 +444,56 @@ class Judge:
         return z, total
 
     @torch.no_grad()
-    def plain_forward(self, msgs, image_files, question):
-        """Reference: one ordinary call (no custom mask / positions)."""
+    def plain_forward(self, msgs, image_files, question, history=None):
+        """Reference: one ordinary call (no custom mask / positions / cache). history = extra turns before the question."""
         from PIL import Image
-        full = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]}],
+        full = self.render(msgs + list(history or []) + [{"role": "user", "content": [{"type": "text", "text": question}]}],
                            add_generation_prompt=True)
         images = [Image.open(p).convert("RGB") for p in image_files]
-        enc = (self.processor(text=[full], images=images, return_tensors="pt", size=self.size_kw)
-               if images else self.processor(text=[full], return_tensors="pt"))
+        enc = self.encode(full, images)
         for im in images:
             im.close()
-        kw = {k: v.to(self.device) for k, v in enc.items() if k in ("input_ids", "attention_mask", "pixel_values", "image_grid_thw")}
-        if "pixel_values" in kw:
-            kw["pixel_values"] = kw["pixel_values"].to(self.dtype)
-            kw["mm_token_type_ids"] = self.mm_types(enc, enc["input_ids"])
+        kw = self.model_inputs(enc)
         out = self.model.model(**kw, use_cache=False)
         hidden = out.last_hidden_state[0, -1:]
         z = self.margins_fp32(hidden)[0]
         del out
         return z, None, int(enc["input_ids"].shape[1])
+
+    # ---- cache path (family-agnostic isolation: prefix KV cache + one short forward per branch)
+    @torch.no_grad()
+    def prefix_cache(self, enc):
+        """Prefix forward with use_cache; returns the DynamicCache (prefix length = input_ids length)."""
+        kw = self.model_inputs(enc)
+        out = self.model.model(**kw, use_cache=True)
+        cache = out.past_key_values
+        del out
+        return cache
+
+    @torch.no_grad()
+    def extend_cache(self, cache, ids):
+        """Append text tokens to the cache in place (used for the model's own verdict turn)."""
+        P = cache.get_seq_length()
+        kw = {"input_ids": torch.tensor([ids], device=self.device),
+              "attention_mask": torch.ones(1, P + len(ids), dtype=torch.long, device=self.device),
+              "past_key_values": cache, "use_cache": True}
+        out = self.model.model(**kw)
+        del out
+        return cache
+
+    @torch.no_grad()
+    def cached_branch(self, cache, ids):
+        """Yes/No log-odds at the end of `ids` given the prefix cache; the cache is deep-copied, so branches
+        never see each other (exactly one independent call per branch)."""
+        c = copy.deepcopy(cache)
+        P = c.get_seq_length()
+        kw = {"input_ids": torch.tensor([ids], device=self.device),
+              "attention_mask": torch.ones(1, P + len(ids), dtype=torch.long, device=self.device),
+              "past_key_values": c, "use_cache": True}
+        out = self.model.model(**kw)
+        z = self.margins_fp32(out.last_hidden_state[0, -1:])[0]
+        del out, c
+        return z
 
     @torch.no_grad()
     def legacy_chunk_scores(self, texts, batch=8):
@@ -480,20 +570,58 @@ def score_video(judge, row, segments, args, verify=False):
             specs.append((i, kind, window_question(i, len(wins), a, b, t, kind=kind, style=args.window_question)))
     if not specs:  # e.g. dual without frames and no speech anywhere
         specs = [(i, "joint", window_question(i, len(wins), a, b, t)) for i, ((a, b), t) in enumerate(zip(wins, wtexts))]
-    b0_ids, b0_text = judge.branch_ids(VIDEO_QUESTION)
+    tmpl = msgs if args.isolation == "cache" else None  # cache path: branch text from the model's own template
+    b0_ids, b0_text = judge.branch_ids(VIDEO_QUESTION, tmpl)
     judge.seam_check_text(msgs, prefix_text, VIDEO_QUESTION, b0_text)
     branches, btexts = [], []
     for _, _, q in specs:
-        bids, btext = judge.branch_ids(q)
+        bids, btext = judge.branch_ids(q, tmpl)
         branches.append(bids); btexts.append(btext)
     if verify:
         judge.seam_check_tokens(msgs, image_files, prefix_ids, VIDEO_QUESTION, b0_ids)
         for (_, _, q), bids in list(zip(specs, branches))[:2]:
             judge.seam_check_tokens(msgs, image_files, prefix_ids, q, bids)
-    pos_p = judge.prefix_positions(enc)
     P = len(prefix_ids)
     info = {"prefix_tokens": P, "n_windows": len(wins), "n_branches": len(specs), "img_tokens": judge.img_tokens[:1]}
-    if args.stance == "none":
+    if args.isolation == "cache":
+        cache = judge.prefix_cache(enc)
+        z_video = judge.cached_branch(cache, b0_ids)
+        history = []
+        if args.stance == "none":
+            stance_answer, ext_ids, ngroups = None, [], 1
+        else:
+            stance_answer = "Yes" if z_video > 0 else "No"
+            ans_ids, ans_text = judge.answer_ids(msgs, VIDEO_QUESTION, stance_answer)
+            ext_ids = b0_ids + ans_ids
+            history = [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]},
+                       {"role": "assistant", "content": stance_answer}]
+            full = judge.render(msgs + history + [{"role": "user", "content": [{"type": "text", "text": specs[0][2]}]}],
+                                add_generation_prompt=True)
+            if full != prefix_text + b0_text + ans_text + btexts[0]:
+                raise AssertionError("stance seam mismatch: chat template renders the assistant turn differently")
+            judge.extend_cache(cache, ext_ids)
+            ngroups = 2
+        zb = [judge.cached_branch(cache, b) for b in branches]
+        total = P + len(ext_ids) + len(b0_ids) + sum(len(b) for b in branches)
+        if verify:
+            checks = {}
+            z_ref, _, _ = judge.plain_forward(msgs, image_files, VIDEO_QUESTION)
+            checks["video_q_cache_vs_plain_dz"] = abs(z_video - z_ref)
+            n = min(5, len(zb))
+            seq = [judge.plain_forward(msgs, image_files, specs[i][2], history=history)[0] for i in range(n)]
+            checks["windows_cache_vs_plain_max_dz"] = max(abs(a - b) for a, b in zip(zb[:n], seq)) if n else 0.0
+            if n >= 3:
+                from scipy.stats import spearmanr
+                checks["windows_cache_vs_plain_spearman"] = float(spearmanr(zb[:n], seq).correlation)
+            checks["peak_mem_GB"] = torch.cuda.max_memory_allocated() / 1e9
+            checks["img_tokens_per_frame"] = judge.img_tokens[:1]
+            info["verify"] = checks
+        del cache
+        verify = False  # mask-path verify blocks below are skipped
+    pos_p = judge.prefix_positions(enc) if args.isolation == "mask" else None
+    if args.isolation == "cache":
+        pass
+    elif args.stance == "none":
         zs, total, ngroups = run_groups(judge, enc, pos_p, [b0_ids] + branches, args)
         z_video, zb = zs[0], zs[1:]
         stance_answer = None
@@ -600,10 +728,17 @@ def main():
     ap.add_argument("--legacy-chunk-arm", action="store_true",
                     help="reproduce the 2026-08 per-chunk text scorer (parity check), ASR windows, no packing")
     ap.add_argument("--method-name", default=None)
+    ap.add_argument("--model", default=MODEL, help="HF id of the MLLM (README §11 family/size study)")
+    ap.add_argument("--model-tag", default=None,
+                    help="short model name; runs go to runs/<exp_id>/mllm/<tag>/<run_name> and prefix the method tag")
+    ap.add_argument("--isolation", choices=["mask", "cache"], default="mask",
+                    help="mask: packed forward with a block mask (Qwen3-VL); cache: prefix KV cache + one forward per branch (any family)")
     args = ap.parse_args()
+    if args.isolation == "mask" and args.model != MODEL:
+        raise SystemExit("--isolation mask is only validated for Qwen3-VL-8B; use --isolation cache for other models")
 
     torch.manual_seed(SEED)
-    out_dir = ROOT / "runs" / args.exp_id / args.run_name
+    out_dir = ROOT / "runs" / args.exp_id / (f"mllm/{args.model_tag}/{args.run_name}" if args.model_tag else args.run_name)
     out_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",
                         handlers=[logging.FileHandler(out_dir / "run.log"), logging.StreamHandler(sys.stdout)])
@@ -615,9 +750,11 @@ def main():
         f"st{args.stance}", f"br{args.branches}", f"q{args.window_question}", f"fs{args.frame_source}"]))
     if args.legacy_chunk_arm:
         tag = args.method_name or "legacy_chunk_replica"
+    if args.model_tag and not args.method_name:
+        tag = f"{args.model_tag}__{tag}"
     args.method_name = tag
     cfg = {k: v for k, v in vars(args).items()}
-    cfg.update({"model": MODEL, "max_pixels": MAX_PIXELS, "min_pixels": MIN_PIXELS, "fps": FPS,
+    cfg.update({"model": args.model, "max_pixels": MAX_PIXELS, "min_pixels": MIN_PIXELS, "fps": FPS,
                 "fill_uncovered": FILL_UNCOVERED, "code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"),
                 "host": socket.gethostname(), "rules": "YOUTUBE_RULES", "reader": "prag",
                 "video_question": VIDEO_QUESTION})
@@ -632,7 +769,8 @@ def main():
     asr = {ds: load_asr(ds) for ds in args.datasets}
     logging.info("videos %d  config %s", len(rows), tag)
 
-    judge = Judge(mask_kind=args.mask_kind)
+    judge = Judge(mask_kind=args.mask_kind, model_id=args.model)
+    logging.info("model %s isolation %s", args.model, args.isolation)
     pred_path = out_dir / "predictions.jsonl"
     done = set()
     if pred_path.exists():
