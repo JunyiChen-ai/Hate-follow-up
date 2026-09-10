@@ -84,4 +84,33 @@ Decision rule (declared before reading): cited-span within ≥ .60 (HateMM) / .5
 with content (not a renaming of z) → P1 stands; otherwise the hypothesis is demoted to context filtering (G5)
 and P2 (temporal states) is tested on its own.
 
-Results: pending.
+Results (`runs/20260911_hvl/e0_hypothesis/`, 183 videos, 3.2 s/video incl. generation; `metrics_cited.json`):
+
+| | HateMM (84) | HateClipSeg (99) |
+|---|---|---|
+| hypotheses with evidence spans / "none" | 79 / 3 (all three z<0) | 82 / 7 (5 of them z<0) |
+| items per hypothesis | 5.0 | 4.9 |
+| TARGET distribution | black people 43, jews 10+3, none 8, african americans 4, white people 3, lgbtq+ 1 … | none 25, jewish people 8+6, white people 4, black people 3, men 2, muslims 2, women 2 … |
+| cited-span within (macro ROC) | **.571** | **.506** |
+| cited-span pooled ROC | .588 | .494 |
+| coverage of GT-positive frames / precision of cited frames | .61 / .66 | .41 / .53 |
+
+Reading (decision rule above): (a) passes — the hypothesis varies with content (specific targets, rule numbers
+spread over 1–9) and "none" is not simply z<0 (HateMM: 3 of 3; HCS: 5 of 7, plus 25 "none" targets with
+evidence); (b) **fails** — the model's own cited spans localize barely above chance (.571 / .506, below the
+declared .60 / .55; per-window-alone gives .628 / .576). The model can say who and how, but not reliably where.
+Consequence: the cited spans are not used as scores anywhere; the hypothesis is kept only as conditioning
+for the verification step, and whether that conditioning helps is decided by the E3 pilot (hyp vs no-hyp
+arms, plus the permuted-hypothesis control suggested by the proposal review). P1 as a paradigm claim is on
+hold until the pilot says the verification uses the hypothesis.
+
+Proposal review (rule 4, 2026-09-11): 放行. Closest works: VideoHV-Agent (2603.04977, think-then-verify for
+long-video QA, retrieval of windows, no state chain, no verdict revision), GtS/VAGU (2507.21507, coarse-to-fine
+anomaly, no self-hypothesis), AnomalyRuler (2407.10299, induced rules from normal frames), MARS (2601.15115,
+video-level multi-stage reasoning for hateful video, no localization), LELA (2602.09637, per-frame independent).
+Reviewer suggestions adopted as control arms: sequential chain with binary Yes/No (separates order from the
+state vocabulary); shuffled window order (does the chain carry time?); hypothesis from another video (is the
+hypothesis used?); record state-transition counts; report Spearman(z_rev, z_video) and Spearman(z_rev, #present).
+Reviewer risk noted: the speech chain skipped no-speech windows, so its "previous window" differed from the
+visual chain's; fixed after the first pilot arm (sequential mode now visits every window in both chains).
+

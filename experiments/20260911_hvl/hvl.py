@@ -138,7 +138,12 @@ def score_video(judge, row, segments, args, verify=False):
     hyp = None
     if args.hypothesis == "structured":
         b1, b1_text = judge.branch_ids(msgs, HYP_QUESTION, history, head_text=head)
-        hyp_text, gen_ids = judge.cached_generate(cache, b1, MAX_HYP_TOKENS, in_place=True)
+        if args.hyp_permute is not None:  # control: another video's hypothesis is written as this model's answer
+            hyp_text = args.hyp_permute[(ds, vid)]
+            judge.extend_cache(cache, b1)
+            judge.extend_cache(cache, judge.tok(hyp_text, add_special_tokens=False)["input_ids"])
+        else:
+            hyp_text, gen_ids = judge.cached_generate(cache, b1, MAX_HYP_TOKENS, in_place=True)
         hyp = parse_hypothesis(hyp_text)
         a1, a1_text = judge.answer_ids(msgs, HYP_QUESTION, hyp_text, history)
         # the generated tokens are already in the cache; append only the end-of-turn that the template adds
@@ -188,9 +193,13 @@ def score_video(judge, row, segments, args, verify=False):
             chain = copy.deepcopy(cache) if args.verify == "sequential" else cache
             chain_head, chain_hist = head, list(history)
             prev_present = None
-            for i, ((a, b), t) in enumerate(zip(wins, wtexts)):
-                if kind == "speech" and not (t and t.strip()):
-                    continue
+            order = list(range(len(wins)))
+            if args.shuffle_windows:  # control: same chain, windows visited in a fixed pseudo-random order
+                rng = np.random.RandomState(SEED + len(wins)); order = list(rng.permutation(len(wins)))
+            for i in order:
+                (a, b), t = wins[i], wtexts[i]
+                if kind == "speech" and not (t and t.strip()) and args.verify != "sequential":
+                    continue  # independent mode (SPVL semantics): no speech branch without speech
                 if args.states == "four":
                     q = state_question(i, len(wins), a, b, t, kind, first=(prev_present is None), has_hyp=hyp is not None)
                 else:
@@ -271,6 +280,8 @@ def main():
     ap.add_argument("--context", choices=["full", "cited"], default="full")
     ap.add_argument("--fill-frames", action="store_true")
     ap.add_argument("--branches", choices=["joint", "dual"], default="dual")
+    ap.add_argument("--shuffle-windows", action="store_true", help="control: sequential chain visits windows in a fixed shuffled order")
+    ap.add_argument("--hyp-from", default=None, help="control: predictions.jsonl of an earlier run; each video gets the NEXT video's hypothesis")
     ap.add_argument("--only-within-defined", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--verify-only", action="store_true")
@@ -286,11 +297,11 @@ def main():
     tag = args.method_name or "hvl_" + "_".join([
         f"f{args.frames}" + ("fill" if args.fill_frames else ""), "noctx" if args.no_transcript_context else f"ctx{args.context}",
         f"w{args.window_seconds:g}", f"hyp{args.hypothesis}", f"v{args.verify}", f"s{args.states}",
-        f"rev{args.revise}", f"br{args.branches}"])
+        f"rev{args.revise}", f"br{args.branches}"] + (["shuf"] if args.shuffle_windows else []) + (["hyppermute"] if args.hyp_from else []))
     if args.model_tag and not args.method_name:
         tag = f"{args.model_tag}__{tag}"
     args.method_name = tag
-    cfg = dict(vars(args))
+    cfg = {k: v for k, v in vars(args).items() if k != "hyp_permute"}
     cfg.update({"code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"), "host": socket.gethostname(),
                 "seed": SEED, "fill_uncovered": FILL_UNCOVERED, "max_hyp_tokens": MAX_HYP_TOKENS,
                 "hyp_question": HYP_QUESTION, "states": STATES, "video_question": VIDEO_QUESTION})
@@ -303,6 +314,19 @@ def main():
         rows = rows[:args.limit]
     asr = {ds: load_asr(ds) for ds in args.datasets}
     logging.info("videos %d  config %s", len(rows), tag)
+    args.hyp_permute = None
+    if args.hyp_from:
+        src = [json.loads(l) for l in open(args.hyp_from) if l.strip()]
+        src = [r for r in src if not r.get("error") and (r["extra"].get("hypothesis") or {}).get("raw")]
+        by_ds = {}
+        for r in src:
+            by_ds.setdefault(r["dataset"], []).append(r)
+        args.hyp_permute = {}
+        for ds, lst in by_ds.items():
+            for k, r in enumerate(lst):
+                args.hyp_permute[(ds, r["video_id"])] = lst[(k + 1) % len(lst)]["extra"]["hypothesis"]["raw"]
+        rows = [r for r in rows if (r["dataset"], r["video_id"]) in args.hyp_permute]
+        logging.info("hypothesis permutation control: %d videos", len(rows))
     judge = Judge(model_id=args.model)
     import transformers
     cfg.update({"family": judge.family, "same_turn": judge.same_turn, "transformers": transformers.__version__})
