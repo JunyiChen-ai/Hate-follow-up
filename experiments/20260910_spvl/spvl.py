@@ -473,10 +473,9 @@ class Judge:
     @torch.no_grad()
     def extend_cache(self, cache, ids):
         """Append text tokens to the cache in place (used for the model's own verdict turn)."""
-        P = cache.get_seq_length()
-        kw = {"input_ids": torch.tensor([ids], device=self.device),
-              "attention_mask": torch.ones(1, P + len(ids), dtype=torch.long, device=self.device),
-              "past_key_values": cache, "use_cache": True}
+        # no attention_mask: no padding anywhere, and Qwen-VL derives branch positions from the cache length
+        # + rope_deltas only when the mask is absent (a full-length mask would yield prefix-length positions)
+        kw = {"input_ids": torch.tensor([ids], device=self.device), "past_key_values": cache, "use_cache": True}
         out = self.model.model(**kw)
         del out
         return cache
@@ -486,10 +485,7 @@ class Judge:
         """Yes/No log-odds at the end of `ids` given the prefix cache; the cache is deep-copied, so branches
         never see each other (exactly one independent call per branch)."""
         c = copy.deepcopy(cache)
-        P = c.get_seq_length()
-        kw = {"input_ids": torch.tensor([ids], device=self.device),
-              "attention_mask": torch.ones(1, P + len(ids), dtype=torch.long, device=self.device),
-              "past_key_values": c, "use_cache": True}
+        kw = {"input_ids": torch.tensor([ids], device=self.device), "past_key_values": c, "use_cache": True}
         out = self.model.model(**kw)
         z = self.margins_fp32(out.last_hidden_state[0, -1:])[0]
         del out, c
