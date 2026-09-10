@@ -360,8 +360,18 @@ packed path (§5). Full-set consistency, Qwen3-VL-8B full arm, cache path vs the
 HateMM .8920 / .6825 / .6968 vs .8919 / .6831 / .6976; HateClipSeg .7132 / .6675 / .6020 vs .7119 / .6664 /
 .6001 — all six differences ≤ .002, inside the noise floor, so the two isolation mechanisms are interchangeable.
 Per-family first-video checks (cache vs plain, Spearman 1.000 in all): InternVL3.5 Δz .13 / .06 (256 tokens/frame),
-Gemma-3 Δz .28 / .41 (256 tokens/frame; Gemma's template rejects consecutive user turns, so the question is
-appended to the prefix's own user turn — `Judge.same_turn`).
+Gemma-3 Δz .22 / .32 (256 tokens/frame; Gemma's template rejects consecutive user turns, so the question is
+appended to the prefix's own user turn — `Judge.same_turn`; its template carries `<bos>`, so the processor is
+called with `add_special_tokens=False` for every family), LLaVA-OneVision Δz .01 / .09 (730 tokens/frame in
+multi-image mode; its template renders all images before a turn's text, so the timestamps are given as a list
+after the frames, and it renders a completed assistant turn with a different header than the generation
+prompt, so the stance turn is answer + end-of-turn after the generation header — `loose_stance_seam`).
+Gate on the first video of every run: max Δz < 3 nats (bf16 noise between cached decode and prefill reaches
+≈1 nat on rare branches: on the Qwen3-VL-8B full set, branch |Δz| median .13, p99 .76, max 4.3, 53 of 13577
+branches above 1; a position error would shift every branch). Code review (rule 6, 2026-09-10) found three
+blocking issues before any cross-family result was read: campus `--output` directory missing, LLaVA-OV
+string-content turns dropped by its template, `asr` arm crashing on the 17 test videos without transcript;
+all fixed (commits dac1d89 … 1fc2b67); affected arms were rerun from scratch.
 
 **Arms per model** (`launch/run_mllm.sh`; Slurm: `launch/campus_mllm.sbatch`): full (SPVL-r2), winonly (joint
 branch, rules question, no context, no frames, no stance = the MLLM judging each window on its own), noctx,
