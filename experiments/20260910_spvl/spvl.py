@@ -216,8 +216,9 @@ class Judge:
         if self.family not in FAMILY_IMAGE_KW:
             raise SystemExit(f"model_type {self.family} not in FAMILY_IMAGE_KW; add its image kwargs first")
         self.img_kw = dict(FAMILY_IMAGE_KW[self.family])
-        if self.family == "llava_onevision":  # base 384 only: no AnyRes grid, so every frame costs the same
+        if self.family == "llava_onevision":  # single 384 grid cell (base + 1 patch): every frame costs the same
             self.processor.image_processor.image_grid_pinpoints = [[384, 384]]
+            self.model.config.image_grid_pinpoints = [[384, 384]]  # the model derives patch counts from its config
         self.image_token_id = getattr(self.model.config, "image_token_id", None)
         self.forward_params = set(inspect.signature(self.model.model.forward).parameters)
         text_cfg = getattr(self.model.config, "text_config", self.model.config)
