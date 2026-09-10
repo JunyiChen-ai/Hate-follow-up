@@ -225,8 +225,16 @@ class Judge:
         self.yes_ids, self.no_ids = self.binary_ids()
         self.yes_t = torch.tensor(self.yes_ids, device=self.device)
         self.no_t = torch.tensor(self.no_ids, device=self.device)
-        logging.info("model %s family %s Yes ids %s No ids %s softcap %s", model_id, self.family,
-                     self.yes_ids, self.no_ids, self.softcap)
+        # Templates that reject two consecutive user turns (Gemma 3): the question is appended to the prefix's
+        # own user turn instead of opening a second one; the prefix string then ends before the end-of-turn.
+        try:
+            self.render([{"role": "user", "content": [{"type": "text", "text": "a"}]},
+                         {"role": "user", "content": [{"type": "text", "text": "b"}]}], True)
+            self.same_turn = False
+        except Exception:
+            self.same_turn = True
+        logging.info("model %s family %s same_turn %s Yes ids %s No ids %s softcap %s", model_id, self.family,
+                     self.same_turn, self.yes_ids, self.no_ids, self.softcap)
         self.size_kw = {"shortest_edge": MIN_PIXELS, "longest_edge": MAX_PIXELS}
 
     def binary_ids(self):
@@ -286,9 +294,41 @@ class Judge:
     def render(self, msgs, add_generation_prompt):
         return self.processor.apply_chat_template(msgs, tokenize=False, add_generation_prompt=add_generation_prompt)
 
+    SENTINEL = "@@SPVL_PREFIX_END@@"
+
+    @staticmethod
+    def _append_text(msgs, text):
+        """Copy of msgs with `text` appended to the last user turn's final text element."""
+        out = copy.deepcopy(msgs)
+        content = out[-1]["content"]
+        if isinstance(content, str):
+            out[-1]["content"] = content + text
+        elif content and content[-1].get("type") == "text":
+            content[-1]["text"] += text
+        else:
+            content.append({"type": "text", "text": text})
+        return out
+
+    def conv(self, msgs, question, history=None):
+        """Message list for asking `question` after the prefix (and optional earlier turns `history`)."""
+        history = list(history or [])
+        if not self.same_turn:
+            return msgs + history + [{"role": "user", "content": [{"type": "text", "text": question}]}]
+        if history:  # [user Q0, assistant A] -> Q0 merged into the prefix turn, then A, then the question
+            q0 = history[0]["content"][0]["text"] if isinstance(history[0]["content"], list) else history[0]["content"]
+            return self._append_text(msgs, "\n\n" + q0) + history[1:] + \
+                [{"role": "user", "content": [{"type": "text", "text": question}]}]
+        return self._append_text(msgs, "\n\n" + question)
+
     def encode_prefix(self, msgs, image_files):
         from PIL import Image
-        text = self.render(msgs, add_generation_prompt=False)
+        if self.same_turn:
+            full = self.render(self._append_text(msgs, self.SENTINEL), add_generation_prompt=False)
+            # open user turn; each branch closes it. Trailing whitespace moves into the branch so the
+            # tokenizer's multi-newline tokens never straddle the seam (token seam check would fail otherwise).
+            text = full[:full.index(self.SENTINEL)].rstrip()
+        else:
+            text = self.render(msgs, add_generation_prompt=False)
         images = [Image.open(p).convert("RGB") for p in image_files]
         enc = self.encode(text, images)
         for im in images:
@@ -329,8 +369,7 @@ class Judge:
         if msgs is None:  # Qwen ChatML (the 2026-09-10 runs)
             text = f"<|im_start|>user\n{question}<|im_end|>\n<|im_start|>assistant\n"
         else:
-            full = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]}],
-                               add_generation_prompt=True)
+            full = self.render(self.conv(msgs, question), add_generation_prompt=True)
             if not full.startswith(self._prefix_text):
                 raise AssertionError("chat template does not extend the prefix string")
             text = full[len(self._prefix_text):]
@@ -338,25 +377,22 @@ class Judge:
 
     def answer_ids(self, msgs, question, answer):
         """Text the template adds for a completed assistant turn (answer + end-of-turn), after Q + header."""
-        head = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]}],
-                           add_generation_prompt=True)
-        full = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]},
-                                  {"role": "assistant", "content": answer}], add_generation_prompt=False)
+        head = self.render(self.conv(msgs, question), add_generation_prompt=True)
+        full = self.render(self.conv(msgs, question) + [{"role": "assistant", "content": answer}],
+                           add_generation_prompt=False)
         if not full.startswith(head):
             raise AssertionError("assistant turn does not extend the question rendering")
         text = full[len(head):]
         return self.tok(text, add_special_tokens=False)["input_ids"], text
 
     def seam_check_text(self, msgs, prefix_text, question, branch_text):
-        full = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]}],
-                           add_generation_prompt=True)
+        full = self.render(self.conv(msgs, question), add_generation_prompt=True)
         if full != prefix_text + branch_text:
             raise AssertionError("string seam mismatch")
 
     def seam_check_tokens(self, msgs, image_files, prefix_ids, question, bids):
         from PIL import Image
-        full = self.render(msgs + [{"role": "user", "content": [{"type": "text", "text": question}]}],
-                           add_generation_prompt=True)
+        full = self.render(self.conv(msgs, question), add_generation_prompt=True)
         images = [Image.open(p).convert("RGB") for p in image_files]
         enc = self.encode(full, images)
         for im in images:
@@ -447,8 +483,7 @@ class Judge:
     def plain_forward(self, msgs, image_files, question, history=None):
         """Reference: one ordinary call (no custom mask / positions / cache). history = extra turns before the question."""
         from PIL import Image
-        full = self.render(msgs + list(history or []) + [{"role": "user", "content": [{"type": "text", "text": question}]}],
-                           add_generation_prompt=True)
+        full = self.render(self.conv(msgs, question, history), add_generation_prompt=True)
         images = [Image.open(p).convert("RGB") for p in image_files]
         enc = self.encode(full, images)
         for im in images:
@@ -591,9 +626,16 @@ def score_video(judge, row, segments, args, verify=False):
             ext_ids = b0_ids + ans_ids
             history = [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]},
                        {"role": "assistant", "content": stance_answer}]
-            full = judge.render(msgs + history + [{"role": "user", "content": [{"type": "text", "text": specs[0][2]}]}],
-                                add_generation_prompt=True)
-            if full != prefix_text + b0_text + ans_text + btexts[0]:
+            full = judge.render(judge.conv(msgs, specs[0][2], history), add_generation_prompt=True)
+            if judge.same_turn:  # window questions open a new user turn after the answer: re-derive their text
+                head = prefix_text + b0_text + ans_text
+                if not full.startswith(head):
+                    raise AssertionError("stance seam mismatch (same-turn template)")
+                branches, btexts = [], []
+                for _, _, q in specs:
+                    t = judge.render(judge.conv(msgs, q, history), add_generation_prompt=True)[len(head):]
+                    branches.append(judge.tok(t, add_special_tokens=False)["input_ids"]); btexts.append(t)
+            elif full != prefix_text + b0_text + ans_text + btexts[0]:
                 raise AssertionError("stance seam mismatch: chat template renders the assistant turn differently")
             judge.extend_cache(cache, ext_ids)
             ngroups = 2
