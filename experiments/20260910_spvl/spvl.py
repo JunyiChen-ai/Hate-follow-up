@@ -394,9 +394,19 @@ class Judge:
         head = self.render(self.conv(msgs, question), add_generation_prompt=True)
         full = self.render(self.conv(msgs, question) + [self.turn("assistant", answer)],
                            add_generation_prompt=False)
-        if not full.startswith(head):
-            raise AssertionError("assistant turn does not extend the question rendering")
-        text = full[len(head):]
+        if full.startswith(head):
+            text = full[len(head):]
+        else:
+            # Some templates render a completed assistant turn differently from the generation header
+            # (LLaVA-OneVision: "assistant \n" vs "assistant\n"). Keep the header the model generates from and
+            # close the turn with what the template puts between an answer and the next user turn.
+            probe = self.render([self.turn("user", "x"), self.turn("assistant", "YQZ"), self.turn("user", "z")],
+                                add_generation_prompt=False)
+            after = probe[probe.index("YQZ") + 3:]
+            nxt = after.find("<|im_start|>") if "<|im_start|>" in after else -1
+            tail = after[:nxt] if nxt >= 0 else after
+            text = answer + tail
+            self.loose_stance_seam = True
         return self.tok(text, add_special_tokens=False)["input_ids"], text
 
     def seam_check_text(self, msgs, prefix_text, question, branch_text):
@@ -653,7 +663,13 @@ def score_video(judge, row, segments, args, verify=False):
                     t = judge.render(judge.conv(msgs, q, history), add_generation_prompt=True)[len(head):]
                     branches.append(judge.tok(t, add_special_tokens=False)["input_ids"]); btexts.append(t)
             elif full != prefix_text + b0_text + ans_text + btexts[0]:
-                raise AssertionError("stance seam mismatch: chat template renders the assistant turn differently")
+                if getattr(judge, "loose_stance_seam", False):
+                    if not getattr(judge, "_loose_logged", False):
+                        logging.warning("stance seam not byte-identical to the template's own 4-turn rendering "
+                                        "(generation header kept); family %s", judge.family)
+                        judge._loose_logged = True
+                else:
+                    raise AssertionError("stance seam mismatch: chat template renders the assistant turn differently")
             judge.extend_cache(cache, ext_ids)
             ngroups = 2
         zb = [judge.cached_branch(cache, b) for b in branches]
