@@ -28,9 +28,15 @@ arm_args() {
 }
 for ARM in "${ARMS[@]}"; do
   OUT="$BASE/$ARM"; mkdir -p "$OUT"
+  if grep -q "DONE videos" "$OUT/launch.log" 2>/dev/null && [ -f "$OUT/metrics_izv_plus_mean_rrank.json" ]; then
+    echo "ARM_SKIP $ARM already complete" | tee -a "$LOG"; continue
+  fi
   echo "ARM_START $ARM $(date -Is)" | tee -a "$LOG"
   # later flags override earlier ones (argparse), so arm-specific --frames 0 wins over the common --frames 20
   "$PY" experiments/20260910_spvl/spvl.py --run-name "$ARM" "${COMMON[@]}" $(arm_args "$ARM") 2>&1 | tee -a "$OUT/launch.log" | grep -E "VERIFY|progress|DONE|FAILED|OOM|Traceback|Error|GATE|honoured|FAMILY|Exit" || true
+  if ! grep -q "DONE videos" "$OUT/launch.log"; then
+    echo "ARM_FAILED $ARM $(date -Is) (no DONE line; see $OUT/launch.log)" | tee -a "$LOG"; continue
+  fi
   "$PY" experiments/20260910_spvl/compose.py --run-dir "$OUT" --intercept zv_plus_mean --residual rank 2>&1 | tee -a "$OUT/launch.log" | tail -3
   "$PY" experiments/20260910_spvl/compose.py --run-dir "$OUT" --intercept spvl --residual rank 2>&1 | tee -a "$OUT/launch.log" | tail -3
   if [ "$ARM" = full ]; then
