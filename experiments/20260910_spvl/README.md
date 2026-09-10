@@ -323,3 +323,48 @@ the round-2 combination (dual + evidence + stance) vs round 1: within +.019 / +.
 combination, its parts do not individually pass on both corpora; (h) evaluator, split, GT, 4 fps unchanged;
 (i) both corpora, three metrics; (j) cost: 2 forwards/video (verdict + windows), ≈ 1.5 s on a 5090, 333
 videos in 8 min; preprocessing Whisper + 20 ffmpeg seeks.
+
+## 11. MLLM family / size robustness study (2026-09-10, started)
+
+**Question** (user, 2026-09-10): is the result specific to Qwen3-VL-8B? Three sub-questions: Q1 what another MLLM
+gives on its own (whole-video verdict; per-window independent judgement); Q2 whether the same SPVL-r2 pipeline
+on another MLLM is comparable; Q3 whether the ablations point the same way on other MLLMs.
+
+**Models** (all native in transformers 5.15.1, non-thinking; chosen from what hateful-video and video-understanding
+papers actually use: arXiv 2601.15115, 2606.11953, 2608.15905, 2602.21854, 2508.18265):
+
+| tag | HF id | role | machine |
+|---|---|---|---|
+| q3vl-8b | Qwen/Qwen3-VL-8B-Instruct | current method; also the cache-path consistency check | uoa-lab3 |
+| q3vl-2b / q3vl-4b | Qwen/Qwen3-VL-{2B,4B}-Instruct | same family, smaller | uoa-lab3 |
+| q3vl-32b | Qwen/Qwen3-VL-32B-Instruct | same family, larger | uoa-campus1 (A100 80G, Slurm) |
+| q25vl-7b | Qwen/Qwen2.5-VL-7B-Instruct | previous generation, the most common baseline in hateful-video papers | uoa-campus2 (Slurm) |
+| internvl35-8b | OpenGVLab/InternVL3_5-8B-HF | other family (InternViT + Qwen3 LLM) | uoa-lab2 |
+| llava-ov-7b | llava-hf/llava-onevision-qwen2-7b-ov-hf | other family (SigLIP + Qwen2) | uoa-lab2 |
+| gemma3-12b | google/gemma-3-12b-it | other family (SigLIP + Gemma), gated | lab-server |
+
+**Code path.** `--isolation cache` (`Judge.prefix_cache / extend_cache / cached_branch`): the prefix is run once
+with a KV cache; every branch (whole-video question; per-window visual / speech questions) is one short forward
+on a deep copy of that cache, so each branch is exactly an independent call. The stance turn (question +
+the model's own Yes/No + end-of-turn, rendered by the model's chat template) is appended to the cache once.
+Branch text is the suffix of the chat-template rendering, so no ChatML string is hard-coded; the string and
+token seam checks of §5 still run on the first video of every run. Per-family image settings
+(`FAMILY_IMAGE_KW`): Qwen pixel cap as before (91 tokens/frame), InternVL one 448 tile, Gemma 3 without
+pan-and-scan, LLaVA-OneVision base 384 only (no AnyRes grid); tokens/frame and prefix length are recorded per run.
+Everything else (K=20, S=8, rules, reader, questions, Yes/No token sets, seed, greedy read-out) is unchanged.
+
+Cache path vs independent plain calls on Qwen3-VL-8B (`runs/20260910_spvl/mllm/q3vl-8b/verify_cache/verify.json`):
+whole-video Δz .033, windows max Δz .228, Spearman 1.000 — the same bf16 kernel-difference magnitude as the
+packed path (§5). Full-set consistency of the cache path against the mask path: see the table below.
+
+**Arms per model** (`launch/run_mllm.sh`; Slurm: `launch/campus_mllm.sbatch`): full (SPVL-r2), winonly (joint
+branch, rules question, no context, no frames, no stance = the MLLM judging each window on its own), noctx,
+noframes, asr (ASR segments instead of fixed windows), nostance, joint; compose variants of full: intercept only
+(= the MLLM's whole-video verdict alone), z_video intercept without M3. Table: `summarize_mllm.py` →
+`runs/20260910_spvl/mllm_table.md`.
+
+**Reading rule** (declared before the runs): an ablation counts as "design holds across MLLMs" if it has the same
+sign and exceeds the noise floor (within .01 / pooled .005) on at least 5 of 7 models; models where the sign flips
+are listed with the likely reason (image tokens per frame, model capability).
+
+Results: pending (runs launched 2026-09-10 21:00 on five machines).

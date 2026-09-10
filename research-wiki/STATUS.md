@@ -28,7 +28,7 @@ PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。within 只�
 
 ## 运行任务与监控
 
-无。round-3 消融（每窗一帧的两组 joint 变体）2026-09-10 12:18 在 uoa-lab3 跑完，已回传到 `runs/20260910_spvl/abl3_*/`，数字在 `runs/20260910_spvl/ablation_table.md` 与实验 README §10。
+MLLM family / 尺寸鲁棒性研究（实验 README §11）：7 个模型 × 7 个臂，2026-09-10 21:00 起并行跑在 uoa-lab3（Qwen3-VL-8B 一致性检查、4B、2B）、uoa-lab2（InternVL3.5-8B、LLaVA-OneVision-7B）、lab-server（Gemma-3-12B）、uoa-campus1（Qwen3-VL-32B，job 16689）、uoa-campus2（Qwen2.5-VL-7B，job 19985）。输出 `runs/20260910_spvl/mllm/<tag>/<arm>/`，汇总 `runs/20260910_spvl/mllm_table.md`。round-3 消融已完成（`runs/20260910_spvl/abl3_*/`）。
 
 ## 下一步
 
