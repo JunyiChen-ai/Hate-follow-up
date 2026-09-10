@@ -383,7 +383,7 @@ noframes, asr (ASR segments instead of fixed windows), nostance, joint; compose 
 sign and exceeds the noise floor (within .01 / pooled .005) on at least 5 of 7 models; models where the sign flips
 are listed with the likely reason (image tokens per frame, model capability).
 
-### Results (6 of 7 models complete 2026-09-11 01:00; Qwen3-VL-32B still queued on campus, `JobHeldUser` since 20:57)
+### Results (all 7 models complete 2026-09-11 04:24; Qwen3-VL-32B ran on uoa-campus1, Slurm job 16689, 3.8 s/video on an A100)
 
 Full tables: `runs/20260910_spvl/mllm_table.md` (Table A: the MLLM alone vs the pipeline; Table B: per-model
 ablation deltas). Sources `runs/20260910_spvl/mllm/<tag>/<arm>/metrics_*.json`. All numbers below are
@@ -392,6 +392,7 @@ development-selected test numbers (rule 10). Metric order pooled ROC / pooled PR
 | model | tokens/frame | HateMM: verdict only → per-window alone → SPVL-r2 | HateClipSeg: verdict only → per-window alone → SPVL-r2 |
 |---|---|---|---|
 | Qwen3-VL-8B (current) | 91 | .882/.646/.500 → .550/.271/.628 → **.892/.683/.697** | .674/.617/.500 → .544/.505/.576 → **.713/.668/.602** |
+| Qwen3-VL-32B | 91 | .871/.598/.500 → .547/.270/.619 → **.888/.666/.701** | .693/.639/.500 → .544/.507/.571 → **.718/.688/.602** |
 | Qwen3-VL-4B | 91 | .871/.627/.500 → .549/.275/.631 → **.881/.654/.675** | .683/.652/.500 → .538/.500/.568 → **.698/.671/.581** |
 | Qwen3-VL-2B | 91 | .847/.571/.500 → .544/.271/.628 → **.852/.618/.655** | .613/.585/.500 → .525/.494/.542 → **.627/.618/.567** |
 | Qwen2.5-VL-7B | 120 | .871/.639/.500 → .549/.272/.641 → **.887/.675/.680** | .690/.647/.500 → .540/.502/.566 → **.699/.668/.567** |
@@ -411,45 +412,46 @@ and .49–.58 on HateClipSeg; none reaches the current method's .70 / .60. Verdi
 weakest on HateMM (PR .50). So the current numbers are not "any good MLLM already does this": the best
 whole-video verdict alone gives pooled PR .646 / .617 and no within-video ordering at all.
 
-**Q2 — the pipeline on other MLLMs.** On all six models the pipeline raises every metric over both
-"alone" readings: pooled ROC +.005 to +.057, pooled PR +.02 to +.12, within +.03 to +.05 over per-window alone
-(HateMM) and +.02 to +.04 (HateClipSeg). The 8B-class models end within .04 within of Qwen3-VL-8B on HateMM
-(.646–.680 vs .697) and within .04 on HateClipSeg (.565–.604 vs .602); InternVL3.5-8B is the best on
-HateClipSeg within (.604) and Gemma-3-12B the best on HateClipSeg pooled (.718 / .693). Size within one family
-(Qwen3-VL 2B → 4B → 8B) moves every metric monotonically (within .655 → .675 → .697; .567 → .581 → .602). The
-previous-generation Qwen2.5-VL-7B is .017 / .035 within below Qwen3-VL-8B. Qwen3-VL-8B stays the best single
-choice on HateMM, but the method is not tied to it: with any of the seven models it beats OMSL-v6's within
+**Q2 — the pipeline on other MLLMs.** On all seven models the pipeline raises every metric over both
+"alone" readings: pooled ROC +.003 to +.057, pooled PR +.02 to +.12, within +.03 to +.08 over per-window alone
+(HateMM) and +.02 to +.04 (HateClipSeg). The 7–8B models of other families end within .05 within of
+Qwen3-VL-8B on HateMM (.646–.680 vs .697) and within .04 on HateClipSeg (.565–.604 vs .602); InternVL3.5-8B is
+the best on HateClipSeg within (.604), Gemma-3-12B and Qwen3-VL-32B the best on HateClipSeg pooled (.718 /
+.69). Inside the Qwen3-VL family the pipeline result rises with size and saturates at 8B: within .655 (2B) →
+.675 (4B) → .697 (8B) → .701 (32B) on HateMM, .567 → .581 → .602 → .602 on HateClipSeg; the 32B verdict alone
+is actually weaker than 8B's on HateMM (PR .598 vs .646) and the pipeline closes that gap. The
+previous-generation Qwen2.5-VL-7B is .017 / .035 within below Qwen3-VL-8B. So Qwen3-VL-8B is the best
+cost/quality point, not a requirement: with any of the seven models the method beats OMSL-v6's within
 (.649 / .547) and T3AL by a wide margin.
 
 **Q3 — do the ablations point the same way?** Table B, Δ within when the part is removed (noise floor .01),
-counted over the six complete models; the Qwen3-VL-8B row of Table B was re-run on the cache path
-(HateMM −.068 / −.073 / −.056 / −.112 / −.012 / +.003 / PR −.029; HateClipSeg −.026 / −.028 / −.017 / −.073 /
-−.014 / −.029 / PR −.045 for per-window alone / − context / − frames / ASR / − stance / joint / − M3), which
-reproduces the §9–§10 mask-path picture:
-- fixed 8 s windows vs ASR segments: negative on 6/6 models, both corpora (−.037 to −.084) — universal, and
+counted over the seven models:
+- fixed 8 s windows vs ASR segments: negative on 7/7 models, both corpora (−.037 to −.112) — universal, and
   the largest single effect everywhere;
-- M3 extent intercept: removing it lowers pooled PR on 6/6 models on HateClipSeg (−.016 to −.060) and on 4/6
-  on HateMM (Gemma −.119; Qwen3-VL-4B and LLaVA-OV ≈ 0) — holds;
-- frames in the shared context: negative beyond noise on 5/6 (HateMM) and 3/6 (HateClipSeg), never positive
-  beyond noise except LLaVA-OV HateMM +.010 (its 730-token frames are rendered before the text, so the
-  timestamp list is the only link between a frame and a window) — holds on most models;
-- stance conditioning: negative beyond noise on 4/6 (HateMM: Qwen3-VL-4B −.025, LLaVA-OV −.021, Gemma −.019,
-  Qwen3-VL-2B −.014) and 2/6 (HateClipSeg: LLaVA-OV −.028, Gemma −.021); one flip (InternVL HateMM +.013) —
-  a modest, mostly consistent gain, the same picture as on Qwen3-VL-8B (+.008 / +.012);
-- dual visual/speech branches vs a joint branch: HateClipSeg negative beyond noise on 3/6 (InternVL −.040,
-  Qwen3-VL-2B −.014, Qwen2.5-VL −.011), HateMM ≈ 0 with one flip (Qwen3-VL-2B +.013) — a HateClipSeg-specific
-  gain, exactly as on Qwen3-VL-8B (+.028 / −.002);
-- whole-video transcript context: this is the one part that does **not** transfer. On Qwen3-VL-8B it was the
-  second-largest effect (HateMM within −.053 without it); on the other models it is beyond noise only for
-  Qwen3-VL-4B (−.027 / −.010), Gemma (−.016 / −.007) and Qwen3-VL-2B on HateClipSeg (−.026); for Qwen2.5-VL,
-  InternVL and LLaVA-OV it is within noise or slightly positive. Reading: the smaller and other-family models
-  do not make use of the full transcript when judging a window; the frames and the stance answer carry the
-  global context for them instead. This is a real limitation of the mechanism story (§9 characteristic 1):
-  "evidence needs the global stance" holds across models only through the stance turn, not through the raw
-  transcript.
+- M3 extent intercept: removing it lowers pooled PR on 7/7 models on HateClipSeg (−.016 to −.060) and on 5/7
+  on HateMM (Gemma −.119, Qwen3-VL-32B −.046; Qwen3-VL-4B and LLaVA-OV ≈ 0) — passes;
+- frames in the shared context: negative beyond noise on 6/7 (HateMM) and 5/7 (HateClipSeg, plus LLaVA-OV at
+  exactly −.010), never positive beyond noise except LLaVA-OV HateMM +.010 (its 730-token frames are rendered
+  before the text, so the timestamp list is the only link between a frame and a window) — passes;
+- stance conditioning: negative beyond noise on 5/7 on HateMM (Qwen3-VL-8B −.012, 4B −.025, 2B −.014,
+  LLaVA-OV −.021, Gemma −.019; 32B −.009 and Qwen2.5-VL −.006 at the floor) and 3/7 on HateClipSeg (8B −.014,
+  LLaVA-OV −.028, Gemma −.021); one flip (InternVL HateMM +.013) — passes on HateMM only;
+- dual visual/speech branches vs a joint branch: HateMM ≈ 0 on every model (|Δ| ≤ .013); HateClipSeg negative
+  on 6/7 with 4/7 beyond noise (Qwen3-VL-8B −.029, InternVL −.040, Qwen3-VL-2B −.014, Qwen2.5-VL −.011),
+  LLaVA-OV +.008 — a HateClipSeg-specific gain, consistent in sign but short of the 5/7 count;
+- whole-video transcript context: the part that transfers least. Beyond noise on HateMM for Qwen3-VL-8B
+  (−.073), 32B (−.053), 4B (−.027) and Gemma (−.016), i.e. 4/7; on HateClipSeg for 8B (−.028), 32B (−.012),
+  2B (−.026) and 4B (−.010), i.e. 4/7; for Qwen2.5-VL, InternVL and LLaVA-OV it is within noise or slightly
+  positive on both corpora. Reading: whether a model uses the full transcript when judging a window depends on
+  the model (the Qwen3-VL family and Gemma do; the others do not), while the frames and the stance answer
+  carry the global context for all of them. For the mechanism story (§9, characteristic 1) this means
+  "evidence needs the global stance" is supported across models through the stance turn and the frames, not
+  through the raw transcript; the transcript-context claim must be stated as Qwen3-VL-specific.
 
-By the pre-declared reading rule (same sign beyond noise on ≥ 5 of 7 models): fixed windows and M3 pass;
-frames pass on HateMM only; stance and dual branches are consistent in sign but pass the count only on one
-corpus each; transcript context fails the count. Qwen3-VL-32B (campus) will be added when the queue releases
-the job; all Table B rows now share the cache code path.
+By the pre-declared reading rule (same sign beyond noise on ≥ 5 of 7 models): fixed windows, M3 and frames
+pass on both corpora; stance passes on HateMM only; dual branches are consistent in sign on HateClipSeg but
+short of the count; transcript context fails the count. All Table B rows share the cache code path.
+Cost note: prefix length is set by the family's image tokens (Qwen 2.8k, InternVL/Gemma 6.2k, LLaVA-OV 15.7k
+tokens per video); per-video time on a 5090 1.3 s (Qwen 2B–8B), 2.4 s (InternVL), 4.1 s (Gemma), ≈ 5 s
+(LLaVA-OV); 32B 3.8 s on an A100.
 
