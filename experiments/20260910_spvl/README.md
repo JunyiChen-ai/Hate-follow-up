@@ -422,7 +422,10 @@ choice on HateMM, but the method is not tied to it: with any of the seven models
 (.649 / .547) and T3AL by a wide margin.
 
 **Q3 — do the ablations point the same way?** Table B, Δ within when the part is removed (noise floor .01),
-counted over the six complete models (the 8B row is being re-run on the cache path for a like-for-like count):
+counted over the six complete models; the Qwen3-VL-8B row of Table B was re-run on the cache path
+(HateMM −.068 / −.073 / −.056 / −.112 / −.012 / +.003 / PR −.029; HateClipSeg −.026 / −.028 / −.017 / −.073 /
+−.014 / −.029 / PR −.045 for per-window alone / − context / − frames / ASR / − stance / joint / − M3), which
+reproduces the §9–§10 mask-path picture:
 - fixed 8 s windows vs ASR segments: negative on 6/6 models, both corpora (−.037 to −.084) — universal, and
   the largest single effect everywhere;
 - M3 extent intercept: removing it lowers pooled PR on 6/6 models on HateClipSeg (−.016 to −.060) and on 4/6
@@ -448,5 +451,5 @@ counted over the six complete models (the 8B row is being re-run on the cache pa
 By the pre-declared reading rule (same sign beyond noise on ≥ 5 of 7 models): fixed windows and M3 pass;
 frames pass on HateMM only; stance and dual branches are consistent in sign but pass the count only on one
 corpus each; transcript context fails the count. Qwen3-VL-32B (campus) will be added when the queue releases
-the job; the 8B row of Table B is being filled on the cache path so all rows share one code path.
+the job; all Table B rows now share the cache code path.
 
