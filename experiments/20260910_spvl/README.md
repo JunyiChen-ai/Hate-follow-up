@@ -67,7 +67,7 @@ cached log-odds before any comparison is made.
 Cost per new video: Whisper once (already cached), 20 ffmpeg seeks, **one MLLM forward** of about
 20×91 image tokens + transcript (≈ 0.3–1.5k) + N×~60 tokens (N ≈ 8–30). The current OMSL-v6 pipeline
 uses one multimodal call plus 11–15 text calls per video and three extra encoders (CLIP-L/14 features,
-Vid-Group, ImageBind). Sequences above `--max-tokens 12000` are split into branch groups, each with the
+Vid-Group, ImageBind). Sequences above `--max-tokens 9000` (proposal said 12000; §4 has the value actually run) are split into branch groups, each with the
 full prefix. Estimated 3–6 s per video on one RTX 5090; 643 videos < 1 h.
 
 ## 4. Constants (declared before any run)
