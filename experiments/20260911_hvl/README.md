@@ -114,3 +114,36 @@ hypothesis used?); record state-transition counts; report Spearman(z_rev, z_vide
 Reviewer risk noted: the speech chain skipped no-speech windows, so its "previous window" differed from the
 visual chain's; fixed after the first pilot arm (sequential mode now visits every window in both chains).
 
+
+## 8. E3 pilot, round 1 (within subset; test read, rule 10; table `runs/20260911_hvl/table.md`)
+
+Reference on the same videos: SPVL-r2 within .6968 / .6020 (cache path), per-window alone .6283 / .5762.
+
+| arm | run | HateMM within | HCS within | chain states s/c/x/n | note |
+|---|---|---|---|---|---|
+| hypothesis (TARGET/FORM/EVIDENCE) + independent Yes/No | `p_hyp_indep_yesno` | .6314 | .5597 | — | −.065 / −.042 vs SPVL-r2 |
+| hypothesis + sequential four-state + revision | `p_hyp_seq4_rev` | .6590 | .5356 | .07/.82/.02/.09 | chain collapses to "continue" (mean present-run 21 windows) |
+| no hypothesis + sequential four-state | `p_nohyp_seq4` | .6376 | .5545 | .08/.79/.03/.11 | same collapse |
+
+Neither the hypothesis nor the state chain improves on SPVL-r2; both are worse. Two mechanism readings from the
+predictions (files above, `analysis in this section`):
+- **Self-citation anchoring.** With the hypothesis in context, the independent Yes/No verification says "present"
+  in 88 % of the windows overlapping the model's own cited spans and in 44 % of the others (mean z 6.05 vs −0.27).
+  The cited spans localize at .571 / .506 (E0), so the verification inherits their errors instead of judging the
+  window. Prediction: a hypothesis without timestamps (TARGET / FORM only) removes the anchor and keeps the
+  "who / how" conditioning — arm `--hypothesis target_form` (round 2).
+- **Chain persistence.** The four-state chain answers "continue" once anything has started (99 % / 93 % of windows
+  inside / outside cited spans judged present); "take your previous answer into account" makes persistence the
+  cheapest answer, and the restricted softmax over four words gives log-odds of ±20. Predictions: (i) the shuffled
+  order control should score about the same (the chain carries no time information); (ii) a sequential chain with
+  binary Yes/No (no state vocabulary) and (iii) independent windows with the neighbouring windows' transcripts as
+  context (local temporal context without a chain) are the round-2 alternatives for gap G1.
+- Revision: Spearman(z_rev, z_video) .76–.84 and Spearman(z_rev, #present) −.17 to −.32 — z_rev mostly restates
+  z_video and moves against the count of present windows (the summary with "N of M windows present" lowers the
+  verdict when N is large, i.e. the model reads a long list as implausible). Intercept `izv_rev` vs `izv_plus_mean`
+  is within noise on HateMM and worse on HCS. Revision in this form does not close the loop.
+
+Round-2 arms launched 2026-09-11 07:50: `p_hyp_seq4_full` (speech chain over all windows), `p_hyp_seqbin`
+(sequential + binary), `p_shuffle` (shuffled order control), `p_hyppermute` (another video's hypothesis, control),
+`p_tf_indep_yesno` (TARGET/FORM hypothesis, independent), `p_tf_indep_nb1` (+ neighbour context),
+`p_nohyp_indep_nb1` (SPVL-r2 + neighbour context, no hypothesis).
