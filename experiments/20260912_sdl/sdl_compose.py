@@ -42,6 +42,7 @@ def main():
     run_dir = Path(a.run_dir)
     cfg = json.loads((run_dir / "config.json").read_text())
     ws = float(cfg.get("window_seconds", 8.0))
+    tag = a.tag if a.intercept == "adapted" else f"{a.tag}_ifrozen"
     rows = [json.loads(l) for l in open(run_dir / "predictions.jsonl") if l.strip()]
     frozen = {}
     if a.intercept == "frozen":
