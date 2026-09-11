@@ -236,7 +236,7 @@ def main():
     ap.add_argument("--accum", type=int, default=4)
     ap.add_argument("--lam", type=float, default=0.05)
     ap.add_argument("--pool", choices=["max", "mean"], default="max")
-    ap.add_argument("--grad-windows", type=int, default=4,
+    ap.add_argument("--grad-windows", type=int, default=2,
                     help="windows carried with gradient per step (positives use the argmax window only)")
     ap.add_argument("--shuffle-pseudo", action="store_true", help="control: permute the pseudo labels")
     ap.add_argument("--only-within-defined", action="store_true")
@@ -338,9 +338,18 @@ def main():
                     pick = sorted(rng_w.choice(have, size=k, replace=False).tolist())
                 K = len(pick)
                 total = 0.0
+                oom = False
                 for wi in pick:
                     wspecs = [sp for sp in specs if sp[0] == wi]
-                    zsw = branch_margins(judge, cache, ctx_len, wspecs, grad=True)
+                    try:
+                        zsw = branch_margins(judge, cache, ctx_len, wspecs, grad=True)
+                    except torch.OutOfMemoryError:
+                        logging.warning("OOM on %s window %d: skipping the rest of this video",
+                                        row["video_id"], wi)
+                        opt.zero_grad(set_to_none=True)
+                        torch.cuda.empty_cache()
+                        oom = True
+                        break
                     sw = zsw[0]
                     for extra in zsw[1:]:
                         sw = torch.maximum(sw, extra)
@@ -355,11 +364,15 @@ def main():
                     del zsw, sw, term
                 loss = total
                 del cache, zs0, s0
+                if oom:
+                    torch.cuda.empty_cache()
+                    continue
                 step += 1
                 if step % args.accum == 0:
                     torch.nn.utils.clip_grad_norm_(params, 1.0)
                     opt.step(); opt.zero_grad(set_to_none=True)
                 if n % 20 == 0:
+                    torch.cuda.empty_cache()
                     logging.info("ep%d %d/%d %s y=%d zv=%.1f loss=%.4f %.0fs mem=%.1fG", ep, n, len(rows),
                                  row["video_id"], labels[key], zv_frozen, loss,
                                  time.time() - t0, torch.cuda.max_memory_allocated() / 1e9)
