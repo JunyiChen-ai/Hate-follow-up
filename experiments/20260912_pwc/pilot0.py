@@ -154,13 +154,24 @@ def run_video(judge, row, segments, zmap, y4, args, choice_ids, verify=False):
     info = {"prefix_tokens": len(prefix_ids), "n_windows": len(wins), "n_pairs": len(pairs),
             "z_video": z_video, "stance": stance, "img_tokens": judge.img_tokens[:1]}
     if verify:
+        from PIL import Image
         z_ref = judge.plain_margin(msgs, image_files, VIDEO_QUESTION)
         q_probe = compare_question(pairs[0][0], pairs[0][1], wins, wtexts, "carrier")
         bp, _ = judge.branch_ids(msgs, q_probe, history, head_text=head)
-        judge.seam_check_tokens(msgs, image_files,
-                                prefix_ids + judge.tok(b0_text + a0_text, add_special_tokens=False)["input_ids"],
-                                q_probe, bp)
+        # token seam including the stance turn: prefix + Q0 + answer + comparison branch must equal the
+        # tokenization of the template's own four-turn rendering (seam_check_tokens takes no history).
+        full = judge.render(judge.conv(msgs, q_probe, history), add_generation_prompt=True)
+        images = [Image.open(p).convert("RGB") for p in image_files]
+        enc_full = judge.encode(full, images)
+        for im in images:
+            im.close()
+        stance_ids = judge.tok(b0_text + a0_text, add_special_tokens=False)["input_ids"]
+        want = prefix_ids + stance_ids + bp
+        got = enc_full["input_ids"][0].tolist()
+        if got != want:
+            raise AssertionError(f"token seam mismatch: {len(prefix_ids)}+{len(stance_ids)}+{len(bp)} vs {len(got)}")
         info["verify"] = {"video_q_cache_vs_plain_dz": abs(z_video - z_ref),
+                          "seam_tokens": [len(prefix_ids), len(stance_ids), len(bp)],
                           "choice_ids": {c: choice_ids[k] for k, c in enumerate(CHOICES)},
                           "peak_mem_GB": torch.cuda.max_memory_allocated() / 1e9}
         if abs(z_video - z_ref) >= 3.0:
