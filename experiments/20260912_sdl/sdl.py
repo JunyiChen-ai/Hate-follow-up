@@ -294,9 +294,9 @@ def main():
                 if not specs:
                     del cache
                     continue
-                # Pass 1, no gradient: all window scores. Pass 2, with gradient: only the windows the loss
-                # actually needs -- max() propagates through its argmax alone, and the mean terms are
-                # estimated on a fixed-size random subset (declared: --grad-windows).
+                # Pass 1, no gradient: all window scores. Pass 2: the loss is a sum of per-window
+                # terms, so each picked window is re-run with gradient and backpropagated on its own; only
+                # one branch graph is alive at a time (8 graphs over a 3k-token cache OOM a 32G card).
                 with torch.no_grad():
                     zs0 = branch_margins(judge, cache, ctx_len, specs, grad=False)
                 s0 = window_scores(specs, zs0, len(P["wins"]))
@@ -304,30 +304,40 @@ def main():
                 y = labels[key]
                 rng_w = np.random.default_rng(SEED * 7919 + step)
                 if y == 1 and args.pool == "max":
-                    # the argmax carries the max term; the sampled rest carry the sparsity term, which is
-                    # what pushes the non-evidence windows down. Without them the sparsity term would act
-                    # on the argmax itself and cancel the contrast.
                     top = max(have, key=lambda i: s0[i])
                     rest = [i for i in have if i != top]
                     k = min(args.grad_windows - 1, len(rest))
                     pick = [top] + (sorted(rng_w.choice(rest, size=k, replace=False).tolist()) if k > 0 else [])
                 else:
+                    top = None
                     k = min(args.grad_windows, len(have))
                     pick = sorted(rng_w.choice(have, size=k, replace=False).tolist())
-                gspecs = [sp for sp in specs if sp[0] in pick]
-                zs = branch_margins(judge, cache, ctx_len, gspecs, grad=True)
-                scores = window_scores(gspecs, zs, len(P["wins"]))
-                fn = mil_loss if args.pool == "max" else mil_loss_mean
-                loss = fn(scores, y, args.lam) / args.accum
-                loss.backward()
-                del cache, zs, zs0, scores, s0
+                K = len(pick)
+                total = 0.0
+                for wi in pick:
+                    wspecs = [sp for sp in specs if sp[0] == wi]
+                    zsw = branch_margins(judge, cache, ctx_len, wspecs, grad=True)
+                    sw = zsw[0]
+                    for extra in zsw[1:]:
+                        sw = torch.maximum(sw, extra)
+                    if y == 1 and args.pool == "max":
+                        term = args.lam * torch.sigmoid(sw) / K
+                        if wi == top:
+                            term = term - torch.nn.functional.logsigmoid(sw)
+                    else:
+                        term = (-torch.nn.functional.logsigmoid(-sw) + args.lam * torch.sigmoid(sw)) / K
+                    (term / args.accum).backward()
+                    total += float(term.detach())
+                    del zsw, sw, term
+                loss = total
+                del cache, zs0, s0
                 step += 1
                 if step % args.accum == 0:
                     torch.nn.utils.clip_grad_norm_(params, 1.0)
                     opt.step(); opt.zero_grad(set_to_none=True)
                 if n % 20 == 0:
                     logging.info("ep%d %d/%d %s y=%d zv=%.1f loss=%.4f %.0fs mem=%.1fG", ep, n, len(rows),
-                                 row["video_id"], labels[key], zv_frozen, float(loss.detach()) * args.accum,
+                                 row["video_id"], labels[key], zv_frozen, loss,
                                  time.time() - t0, torch.cuda.max_memory_allocated() / 1e9)
         torch.save({("%d" % i): {"A": m.A.weight.detach().cpu(), "B": m.B.weight.detach().cpu()}
                     for i, m in enumerate(lora_modules(judge.model))}, out_dir / "adapter.pt")
