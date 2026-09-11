@@ -199,25 +199,6 @@ def window_scores(specs, zs, n_windows):
     return [per.get(i, None) for i in range(n_windows)]
 
 
-def mil_loss(scores, y, lam):
-    s = torch.stack([x for x in scores if x is not None])
-    if y == 1:
-        loss = -torch.nn.functional.logsigmoid(s.max())
-    else:
-        loss = -torch.nn.functional.logsigmoid(-s).mean()
-    return loss + lam * torch.sigmoid(s).mean()
-
-
-def mil_loss_mean(scores, y, lam):
-    """Control: mean-pool on positives, i.e. no within-video contrast."""
-    s = torch.stack([x for x in scores if x is not None])
-    if y == 1:
-        loss = -torch.nn.functional.logsigmoid(s).mean()
-    else:
-        loss = -torch.nn.functional.logsigmoid(-s).mean()
-    return loss + lam * torch.sigmoid(s).mean()
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-name", required=True)
@@ -236,6 +217,10 @@ def main():
     ap.add_argument("--accum", type=int, default=4)
     ap.add_argument("--lam", type=float, default=0.05)
     ap.add_argument("--pool", choices=["max", "mean"], default="max")
+    ap.add_argument("--adapter-scope", choices=["branches", "all"], default="branches",
+                    help="branches: inference matches training (adapter off for prefix/verdict/stance); "
+                         "all: also let it perturb the video representation (control arm)")
+    ap.add_argument("--warmup", type=float, default=0.1, help="linear warmup fraction of total steps")
     ap.add_argument("--grad-windows", type=int, default=2,
                     help="windows carried with gradient per step (positives use the argmax window only)")
     ap.add_argument("--shuffle-pseudo", action="store_true", help="control: permute the pseudo labels")
@@ -259,6 +244,10 @@ def main():
     (out_dir / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False))
 
     rows = load_manifest(args.manifest, args.datasets)
+    if args.only_within_defined and args.train:
+        # within_defined_ids reads data/gt_4fps: selecting the ADAPTATION set with it would put test labels
+        # in the fitting path (rule 10). Evaluation-only runs may still use it.
+        raise SystemExit("--only-within-defined selects videos by GT; not allowed while --train 1")
     if args.only_within_defined:
         keep = within_defined_ids(args.datasets)
         rows = [r for r in rows if (r["dataset"], r["video_id"]) in keep]
@@ -292,6 +281,10 @@ def main():
     logging.info("LoRA on %d linears, %d trainable tensors, %.2fM params", n_lora, len(params),
                  sum(p.numel() for p in params) / 1e6)
     opt = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.0)
+    total_updates = max(1, args.epochs * len(rows) // max(args.accum, 1))
+    warm = max(1, int(args.warmup * total_updates))
+    sched = torch.optim.lr_scheduler.LambdaLR(
+        opt, lambda u: min(1.0, (u + 1) / warm))
 
     if args.train:
         step, t0 = 0, time.time()
@@ -336,7 +329,11 @@ def main():
                     top = None
                     k = min(args.grad_windows, len(have))
                     pick = sorted(rng_w.choice(have, size=k, replace=False).tolist())
+                N = len(have)
                 K = len(pick)
+                # sparsity is declared as a mean over ALL windows. The argmax is force-included, so it gets
+                # its own 1/N weight and the sampled rest carry the remaining (N-1)/N as an unbiased mean.
+                w_rest = (N - 1) / (N * max(K - 1, 1)) if (y == 1 and args.pool == "max") else 1.0 / max(K, 1)
                 total = 0.0
                 oom = False
                 for wi in pick:
@@ -354,11 +351,17 @@ def main():
                     for extra in zsw[1:]:
                         sw = torch.maximum(sw, extra)
                     if y == 1 and args.pool == "max":
-                        term = args.lam * torch.sigmoid(sw) / K
                         if wi == top:
-                            term = term - torch.nn.functional.logsigmoid(sw)
+                            term = (args.lam * torch.sigmoid(sw) / N
+                                    - torch.nn.functional.logsigmoid(sw))
+                        else:
+                            term = args.lam * torch.sigmoid(sw) * w_rest
+                    elif y == 1:  # mean-pool control: every window of a positive bag is pushed UP
+                        term = (-torch.nn.functional.logsigmoid(sw)
+                                + args.lam * torch.sigmoid(sw)) / max(K, 1)
                     else:
-                        term = (-torch.nn.functional.logsigmoid(-sw) + args.lam * torch.sigmoid(sw)) / K
+                        term = (-torch.nn.functional.logsigmoid(-sw)
+                                + args.lam * torch.sigmoid(sw)) / max(K, 1)
                     (term / args.accum).backward()
                     total += float(term.detach())
                     del zsw, sw, term
@@ -370,7 +373,7 @@ def main():
                 step += 1
                 if step % args.accum == 0:
                     torch.nn.utils.clip_grad_norm_(params, 1.0)
-                    opt.step(); opt.zero_grad(set_to_none=True)
+                    opt.step(); sched.step(); opt.zero_grad(set_to_none=True)
                 if n % 20 == 0:
                     torch.cuda.empty_cache()
                     logging.info("ep%d %d/%d %s y=%d zv=%.1f loss=%.4f %.0fs mem=%.1fG", ep, n, len(rows),
@@ -380,8 +383,11 @@ def main():
                     for i, m in enumerate(lora_modules(judge.model))}, out_dir / "adapter.pt")
         logging.info("TRAINED %d steps in %.0fs", step, time.time() - t0)
 
-    # ---- inference with the adapter active (SPVL-r2 otherwise unchanged)
-    set_lora(judge.model, True)
+    # ---- inference. The adapter was trained only on the window branches (the prefix is a no-grad
+    # constant with the adapter disabled), so by default inference matches training: adapter off for the
+    # prefix, the verdict and the stance, on for the window branches. --adapter-scope all is the control
+    # arm that lets it perturb the video representation and the verdict too.
+    set_lora(judge.model, args.adapter_scope == "all")
     fh = open(out_dir / "predictions.jsonl", "w")
     t0 = time.time()
     for n, row in enumerate(rows):
@@ -391,6 +397,7 @@ def main():
                                  "error": "no frames", "method": args.method_name}) + "\n")
             continue
         with torch.no_grad():
+            set_lora(judge.model, args.adapter_scope == "all")
             cache = judge.prefix_cache(P["enc"])
             prefix_len = P["enc"]["input_ids"].shape[1]
             b0, _ = judge.branch_ids(P["msgs"], VIDEO_QUESTION)
@@ -399,6 +406,7 @@ def main():
             a0, _ = judge.answer_ids(P["msgs"], VIDEO_QUESTION, stance)
             judge.extend_cache(cache, a0)
             ctx_len = prefix_len + len(b0) + len(a0)
+            set_lora(judge.model, True)
             specs, _, _ = branch_specs(judge, P, stance, args)
             zs = branch_margins(judge, cache, ctx_len, specs, grad=False)
         per = []
@@ -420,6 +428,7 @@ def main():
                              "score_curve": [float(x) for x in curve], "intervals": [], "error": None,
                              "calls": 2, "seed": SEED, "code_path": CODE_PATH,
                              "extra": {"z_video": z_video, "stance": stance, "windows": per,
+                                       "z_video_frozen": pseudo.get((row["dataset"], row["video_id"])),
                                        "n_windows": len(P["wins"])}}, ensure_ascii=False) + "\n")
         fh.flush()
         if n % 20 == 0:

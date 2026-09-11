@@ -32,6 +32,10 @@ def main():
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--tag", default="izv_plus_mean_rrank")
     ap.add_argument("--datasets", nargs="+", default=["HateMM", "HateClipSeg"])
+    ap.add_argument("--intercept", choices=["adapted", "frozen"], default="adapted",
+                    help="frozen: use the frozen run's z_video and mean window score as the intercept, so "
+                         "only the adapted within-video ordering can move the numbers (control arm)")
+    ap.add_argument("--frozen-run", default=str(ROOT / "runs/20260910_spvl/mllm/q3vl-8b/full/predictions.jsonl"))
     ap.add_argument("--gt-dir", default=str(ROOT / "data/gt_4fps"),
                     help="use data/gt_4fps_hate_only for the HateClipSeg secondary evaluation")
     a = ap.parse_args()
@@ -39,23 +43,32 @@ def main():
     cfg = json.loads((run_dir / "config.json").read_text())
     ws = float(cfg.get("window_seconds", 8.0))
     rows = [json.loads(l) for l in open(run_dir / "predictions.jsonl") if l.strip()]
-    out_path = run_dir / f"predictions_{a.tag}.jsonl"
+    frozen = {}
+    if a.intercept == "frozen":
+        for line in open(a.frozen_run):
+            r = json.loads(line)
+            if r.get("extra") and r["extra"].get("windows"):
+                w = np.array([x["z"] for x in r["extra"]["windows"]], float)
+                frozen[(r["dataset"], r["video_id"])] = float(r["extra"]["z_video"]) + float(w.mean())
+    out_path = run_dir / f"predictions_{tag}.jsonl"
     n_ok = 0
     with open(out_path, "w") as fh:
         for r in rows:
             if r.get("error") or not r.get("score_curve"):
-                fh.write(json.dumps({**r, "method": f"{r.get('method', 'sdl')}__{a.tag}"}) + "\n")
+                fh.write(json.dumps({**r, "method": f"{r.get('method', 'sdl')}__{tag}"}) + "\n")
                 continue
             W = r["extra"]["windows"]
             av = np.array([w["a"] for w in W], float)
             n = len(r["score_curve"])
             centers = (np.arange(n) + 0.5) / 4.0
             idx = np.minimum((centers // ws).astype(int), len(av) - 1)
-            final = float(r["extra"]["z_video"]) + float(av.mean()) + centered_rank(av[idx])
-            fh.write(json.dumps({**r, "method": f"{r.get('method', 'sdl')}__{a.tag}",
+            inter = (frozen[(r["dataset"], r["video_id"])] if a.intercept == "frozen"
+                     else float(r["extra"]["z_video"]) + float(av.mean()))
+            final = inter + centered_rank(av[idx])
+            fh.write(json.dumps({**r, "method": f"{r.get('method', 'sdl')}__{tag}",
                                  "score_curve": [float(x) for x in final]}) + "\n")
             n_ok += 1
-    metrics_path = run_dir / f"metrics_{a.tag}.json"
+    metrics_path = run_dir / f"metrics_{tag}.json"
     cmd = [sys.executable, str(ROOT / "src/eval/evaluate_four_datasets.py"), "--predictions", str(out_path),
            "--gt-dir", a.gt_dir, "--out", str(metrics_path), "--datasets", *a.datasets]
     subprocess.run(cmd, check=True, cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)})
