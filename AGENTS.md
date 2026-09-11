@@ -89,7 +89,7 @@ lab2 和 lab3 常被 Retrieval-hate 的搜索占用；机器是否空闲每次�
 - 第二份 checkout 只允许命名 `~/Hate-follow-up-<分支名>`，输出仍写主仓库 `runs/`、`data/`；分支合入后立即删除。
 
 ## 子 agent 调用
-- 能指定模型的环境里，子 agent 一律用可用的最强模型（Claude Code 下为 `model: fable`），不得降级。
+- 子 agent 一律使用与主会话相同的模型：主 agent 从自己的系统提示读取当前模型名并显式指定（不依赖默认继承），不得指定更弱的模型。
 - 用户可能要求单独起一个 agent 并直接交代任务；主 agent 先起好待命，再把用户的任务原文原样转给它。
 - 独立审稿（proposal review、code review）必须由另一个 agent 实例完成，不能由写代码的同一个 agent 自审。
 

@@ -87,7 +87,7 @@ lab2 和 lab3 常被 Retrieval-hate 的搜索占用；机器是否空闲每次�
 - 第二份 checkout 只允许命名 `~/Hate-follow-up-<分支名>`，输出仍写主仓库 `runs/`、`data/`；分支合入后立即删除。
 
 ## Agent 调用
-- 所有通过 Agent 工具 spawn 的子 agent 一律指定 `model: fable`，不得降级。
+- 所有通过 Agent 工具 spawn 的子 agent 一律使用与主会话相同的模型：主 agent 从自己的系统提示读取当前模型名并显式指定（不依赖默认继承），不得指定更弱的模型。
 - 用户可能要求单独 spawn 一个 agent 并直接交代任务；主 agent 先 spawn 待命，再用 SendMessage 把用户的任务原文转给它。
 
 ## 目录规范（2026-09-09 立；新文件必须遵守，存量按"碰到才迁"）
