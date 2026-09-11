@@ -117,6 +117,7 @@ def score_video(judge, row, segments, args, verify=False):
     head = prefix_text + b0_text + a0_text
 
     n = len(wins)
+    hidden = {}
     act_ids = getattr(judge, "_act_ids", None)
     if args.acts and act_ids is None:
         act_ids = [judge.label_ids(w) for w in ACTS]
@@ -135,7 +136,16 @@ def score_video(judge, row, segments, args, verify=False):
                 continue
             q = act_question(i, n, t1, t2, txt, kind)
             bids, _ = judge.branch_ids(msgs, q, history, head_text=head)
-            rec[f"z_{kind}"] = judge.cached_margin(cache, bids)
+            if args.save_hidden:
+                import copy as _copy
+                c = _copy.deepcopy(cache)
+                h = judge._step(c, bids)
+                rec[f"z_{kind}"] = judge.margins_fp32(h[None])[0]
+                if kind == "speech" or "h" not in rec:  # keep one vector per window: speech if present
+                    hidden[(i, kind)] = h.detach().to(torch.float16).cpu().numpy()
+                del c
+            else:
+                rec[f"z_{kind}"] = judge.cached_margin(cache, bids)
         vals = [rec[k] for k in ("z_visual", "z_speech") if k in rec]
         rec["a"] = max(vals) if vals else FILL_UNCOVERED
         if args.topic:
@@ -162,6 +172,13 @@ def score_video(judge, row, segments, args, verify=False):
         if abs(z_video - z_ref) >= 3.0:
             raise SystemExit(f"VERIFY GATE FAILED: {info['verify']}")
     del cache
+    if args.save_hidden and hidden:
+        hd = ROOT / "runs" / args.exp_id / args.run_name / "hidden"
+        hd.mkdir(parents=True, exist_ok=True)
+        keys = sorted(hidden)
+        np.savez_compressed(hd / f"{ds}__{vid}.npz",
+                            keys=np.asarray([f"{i}_{k}" for i, k in keys]),
+                            H=np.stack([hidden[k] for k in keys]).astype(np.float16))
 
     L = int(math.ceil(dur * FPS))
     centers = (np.arange(L) + 0.5) / FPS
@@ -186,6 +203,9 @@ def main():
     ap.add_argument("--window-seconds", type=float, default=8.0)
     ap.add_argument("--topic", type=int, default=1, help="0 reproduces SPVL-r2 (act branches only)")
     ap.add_argument("--acts", type=int, default=0, help="1 adds the speech-act read (round 2)")
+    ap.add_argument("--save-hidden", type=int, default=0,
+                    help="1 saves the last hidden vector at each window branch read (for the representation "
+                         "ceiling diagnostic); writes runs/<exp>/<run>/hidden/<ds>__<vid>.npz, fp16")
     ap.add_argument("--only-within-defined", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--method-name", default=None)
