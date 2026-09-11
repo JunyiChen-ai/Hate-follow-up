@@ -10,17 +10,31 @@ Measured on the within subsets from `runs/20260910_spvl/full2_dual_evid_stance/p
 (`experiments/20260912_pwc/diagnose_topic_confound.py`, PWC README §7c). Windows cross-tabulated by GT
 label and by whether the window's own transcript mentions the video's target group:
 
-| corpus | effect on the window log-odds |
+| corpus | effect on the window log-odds (unweighted cell means / count-weighted additive fit) |
 |---|---|
-| HateMM | mentioning the target group **+8.1**; being a GT-positive window **+4.3** |
-| HCS | mentioning the target group **+7.0**; being a GT-positive window **+4.3** |
+| HateMM | mentioning the target group **+8.1 / +7.2**; being a GT-positive window **+4.3 / +6.3** |
+| HCS | mentioning the target group **+7.0 / +6.9**; being a GT-positive window **+4.3 / +4.7** |
 
-The nuisance factor is 1.6–1.9× the signal. On HateMM, inside the "mentions target" stratum the GT effect
-nearly disappears (mean z +16.09 for positive windows vs +14.28 for negative ones).
+Correction (rule-4 review, 2026-09-12): the cells are very unbalanced (mention-yes is 52 + 112 of 1558
+HateMM windows, 127 + 180 of 3006 HCS windows), so the unweighted difference of cell means overstates the
+nuisance. Count-weighted, the nuisance is **comparable to** the signal on HateMM (ratio 1.15) and about
+1.5× on HCS — not the 1.6–1.9× an earlier draft claimed. Inside the "mentions target" stratum the GT
+effect is still small on HateMM (mean z +16.09 positive vs +14.28 negative).
 
-**Diagnosis: the frozen MLLM's per-window judgement is largely topic detection — does this window talk
-about the group the video is hostile to — not act detection — does this window attack them.** Hate videos
-are topically homogeneous, so the confound is present in every window of every hateful video.
+Two caveats carried over from PWC §7c and both material: (i) the target string is the model's own
+whole-video hypothesis, so "the window contains the target string" and "the model scores the window high"
+are correlated partly by construction; (ii) the lexical mention marker fires on only 10.5 % / 10.2 % of
+windows, so "the confound is present in every window" is a **hypothesis about the model's graded topic
+response**, not an established fact — it is what the topic read `t` is meant to test.
+
+**Diagnosis: the frozen MLLM's per-window judgement is substantially topic detection — does this window
+talk about the group the video is hostile to — rather than act detection — does this window attack them.**
+
+Premise mismatch declared before the run: the nuisance is definitionally present in every *hate* positive,
+but HateClipSeg's GT positives are the offensive union (Hateful, Insulting, Sexual, Violence, Self-Harm),
+so an HCS positive frame need not refer to a protected group at all. The correction is therefore predicted
+to behave differently on the two corpora, and the hate-only secondary GT (`data/gt_4fps_hate_only/`) is the
+place where the premise actually holds.
 
 This explains three earlier results that otherwise look unrelated:
 
@@ -84,9 +98,12 @@ three separate rows, and `t` must not be a renaming of `a`.
 
 ## 3. Inputs and cost
 
-No new cache, no new preprocessing, no new model, no resolution change. Per video: prefix once, 1 verdict
-read, 2N window reads (unchanged), plus **N topic reads**, i.e. 1.5× the window reads of SPVL-r2 and about
-1.3× its wall time. Measured seconds/video reported per run (rule 14j).
+No new cache, no new preprocessing, no new model, no resolution change. Per video: prefix once, 1 verdict read, the
+unchanged act reads (2 per window, but the speech branch is skipped on windows without speech: 3285 of
+3768 HateMM windows and 2979 of 3591 HCS windows have speech), plus **one topic read per window**. Measured
+over the test set that is 7053 → 10821 reads on HateMM and 6570 → 10161 on HCS, i.e. **×1.53 / ×1.55**,
+not the "2N → 3N" an earlier draft stated. Measured wall time on the within subsets: 3.05 s/video
+(`runs/20260912_tad/e0/run.log`) against SPVL-r2's ~1.5 s. Measured seconds/video reported per run (rule 14j).
 
 ## 4. Constants (declared before any run; identical for both corpora, rule 13)
 
@@ -118,8 +135,11 @@ Run the method on the within subsets (HateMM 84 / HCS 99). Declared before the r
 ### E1 — full run and gates
 
 Both corpora, all 333 videos, one run of the final code, three metrics through the shared evaluator.
-Rule 8 comparison gate vs T3AL and promotion gate vs SPVL-r2 (HateMM .8919 / .6831 / .6976; HCS
-.7119 / .6664 / .6001), noise floor pooled .005 / within .01. Pooled is **not** frozen by the unchanged
+Rule 8 comparison gate vs T3AL and promotion gate vs the promoted SPVL-r2 numbers (HateMM
+.8919 / .6831 / .6976; HCS .7119 / .6664 / .6001, mask path). The *internal* comparison is against this
+run's own `--curve act` row, because `tad.py` uses the KV-cache path whose SPVL-r2 numbers are
+.8920 / .6825 / .6968 and .7132 / .6675 / .6020 (`runs/20260910_spvl/mllm_table.md`); all differences are
+inside the noise floor, so the rule-8 gate is unaffected. Noise floor pooled .005 / within .01. Pooled is **not** frozen by the unchanged
 intercept (PWC README §5e correction) and is reported at every stage. Rule 14g ablation: `a` alone
 (= SPVL-r2), `t` alone, `a - beta t` for the three `beta` values, and a control where `t` is replaced by
 the topic scores of a **different video**'s windows (the analogue of HVL's permuted-hypothesis control:
@@ -127,14 +147,96 @@ if the permuted correction works as well, the correction is not carrying window-
 
 ### E2 — cross-model check
 
-If E1 passes, repeat on at least three further MLLMs from the §11 family study, with the pre-declared
-reading rule (same sign beyond noise on ≥ 5 of 7 if all seven are run).
+If E1 passes, repeat on at least three further MLLMs from the SPVL §11 family study (which covers eight
+models: Qwen3-VL 2B/4B/8B/32B, Qwen2.5-VL-7B, InternVL3.5-8B, LLaVA-OneVision-7B, Gemma-3-12B — its prose
+says "seven", the table has eight rows), with the pre-declared reading rule (same sign beyond noise on at
+least five of the models run).
 
 ### Secondary evaluation (user ruling, 2026-09-12)
 
 HCS main-table numbers stay on the full corpus. A secondary evaluation on the hate-labelled subset of HCS
 is reported separately, to separate "the method is weak" from "the label definition differs from the
 prompt". No change to the prompt, the method or the constants (rule 13).
+
+## 5b. E0 result, round 1 — subtraction is falsified (2026-09-12, lab-server sc448960)
+
+Run `runs/20260912_tad/e0/` (183 videos, 559 s, 3.05 s/video, one topic read per window). Analysis
+`analyze_e0.py`. Window-level within-video AUC on the videos that contain both classes:
+
+Frame-level within through the shared evaluator (`runs/20260912_tad/e0/metrics_<tag>.json`), which is what
+the gate is read on. The act-arm parity check demanded by the review passed: `--curve act` gives
+.6926 / .6007, identical to HVL's same-code-path baseline (`runs/20260911_hvl/p_base`) and within the noise
+floor of SPVL-r2's .6968 / .6020 (`runs/20260910_spvl/mllm_table.md`, cache path). An earlier compose bug
+(proportional resize of the window curve instead of the frame-centre mapping) inflated it to .7086; fixed.
+
+| curve | HateMM within | HCS within |
+|---|---|---|
+| act `a` (= SPVL-r2 window score, baseline) | **.6926** | **.6007** |
+| topic `t` alone | .6567 (−.036) | .5467 (−.054) |
+| `a − beta_OLS · t` (mean beta .80, median .71) | .6159 (**−.077**) | .5793 (−.021) |
+| `a − 1.0 · t` | .5749 (−.118) | .5764 (−.024) |
+| `a − 0.5 · t` | .6419 (−.051) | .5970 (−.004) |
+| control: `a − beta_OLS · t'` from another video (mean beta .19, median 0) | .6830 (−.010) | .5933 (−.007) |
+
+Window-level AUC on the same videos (`analyze_e0.py`, not the evaluator) tells the same story:
+act .7581 / .6212, topic .6981 / .5630, corrected-OLS .6528 / .5983.
+
+Degeneracy check **passes**: median Spearman(a, t) = .695 (HateMM) / .483 (HCS), far below the .9 stop
+threshold, and the fitted coefficient is substantial (median beta .93 / .60, zero on 3 % / 2 % of videos).
+So the topic read is a genuinely separate measurement, not the act read renamed — the 2026-08
+second-question failure mode does not apply here.
+
+**The gate fails: every subtraction lowers within on both corpora, monotonically in beta.** The reason is
+visible in the second row: the topic read **alone** orders windows at .657 / .547, well above chance.
+Referring to a protected group is not a nuisance variable in these corpora — it is positively predictive
+of the GT label (positive windows mention the group more often: 13 % vs 8 % on HateMM). Subtracting a
+predictive variable removes signal, not noise. The §1 cross-tabulation was right that the topic factor
+dominates the *magnitude* of the score; the inference "therefore remove it" was wrong, because the factor
+is correlated with the target as well as with the score.
+
+The monotone decrease in beta (0 → .5 → .8 → 1.0 gives .693 → .642 → .616 → .575 on HateMM) is the
+signature the reviewer named for "subtraction adds variance rather than removing a confound": a genuine
+confound removal would show an interior optimum. The permuted control behaves as predicted too — its OLS
+beta collapses towards the clip at 0 (median 0, mean .19), so it degenerates towards the act curve and
+loses only .010 / .007.
+
+Because the gate failed, the further controls the review asked for (a null auxiliary read, a second act
+read in the rules wording, the beta profile beyond 1.0, the 2×2 table recomputed on the residual) would
+only explain a gain that does not exist; they are not run. They are recorded here in case a later variant
+of this idea produces a gain that needs explaining.
+
+Disposition: round 1 (subtraction) is archived as a negative result. The diagnosis survives — the window
+judgement is largely a topic judgement — but the correction has to change what is *asked*, not subtract
+what was answered. That is round 2.
+
+## 5c. Round 2 — the window decision as a speech act
+
+Instead of correcting a binary "does this window violate the rules", the decision is re-specified as a
+five-way choice over what the video **does** towards the group:
+
+```
+attacks   - it attacks, dehumanises, threatens, excludes or stereotypes such a group, and the video endorses this
+reports   - it neutrally describes or reports on such a group or on someone else's attack
+quotes    - it quotes or shows someone else's words without endorsing them
+condemns  - it criticises or condemns such an attack
+unrelated - it does not refer to such a group at all
+```
+
+read as a restricted softmax over the five first tokens (disjointness checked at start-up), with
+`act_margin = log P(attacks) − logsumexp(log P(other four))`.
+
+Why these five: they are exactly the carve-outs the project's own hate definition states — "Quotation,
+neutral reporting, counterspeech, satire, and condemnation are not endorsement" (`LEGACY_POLICY`,
+2026-08 judge). A binary violation question forces all five into one axis, which is why "mentions the
+group" and "attacks the group" collapse onto the same score. `unrelated` absorbs the topic dimension that
+round 1 tried to subtract, but inside the same decision rather than after it.
+
+Cost: one extra read per window instead of one Yes/No read (`--acts 1 --topic 0`), same as round 1.
+
+Declared gate (before the run): `act_margin` as the residual curve must beat the act curve by ≥ .01 within
+on both corpora, either alone (`--curve actmargin`) or as an equal-weight rank sum with it
+(`--curve act_plus_margin`). Diagnostics recorded: the distribution over the five acts, the share of
+windows whose argmax is `unrelated`, and Spearman(act_margin, a).
 
 ## 6. Test-read log (rule 10)
 

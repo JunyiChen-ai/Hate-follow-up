@@ -53,6 +53,8 @@ def main():
     run_dir = Path(a.run_dir)
     tag = a.tag or (f"{a.curve}" + (f"_b{a.beta}" if a.curve in ("corrected", "permuted") else ""))
     rows = [json.loads(l) for l in open(run_dir / "predictions.jsonl") if l.strip()]
+    cfg = json.loads((run_dir / "config.json").read_text())
+    ws = float(cfg.get("window_seconds", 8.0))
 
     # control: each video takes the NEXT video's topic curve (same dataset, fixed order), resized by index
     order = [r for r in rows if not r.get("error") and r.get("extra")]
@@ -74,7 +76,10 @@ def main():
             av = np.array([w["a"] for w in W], float)
             raw = np.asarray(r["score_curve"], float)
             n = len(raw)
-            idx = np.minimum((np.arange(n) * len(av) / n).astype(int), len(av) - 1)
+            # exactly the mapping tad.py used to build score_curve (frame centre -> window index), not a
+            # proportional resize: the two differ at window boundaries and move within (parity check).
+            centers = (np.arange(n) + 0.5) / 4.0
+            idx = np.minimum((centers // ws).astype(int), len(av) - 1)
             if a.curve == "act":
                 cur = av
             elif a.curve == "topic":
@@ -94,7 +99,10 @@ def main():
                 betas.append(b)
                 cur = av - b * tv
             intercept = float(r["extra"]["z_video"]) + float(av.mean())
-            final = intercept + centered_rank(cur)[idx]
+            # rank over FRAMES, exactly as experiments/20260910_spvl/compose.py does: every frame of a
+            # window carries the window value and ties are averaged, so longer windows weigh more. Ranking
+            # over windows instead shifts within by ~.012 on HateMM (act-arm parity check, 2026-09-12).
+            final = intercept + centered_rank(np.asarray(cur, float)[idx])
             fh.write(json.dumps({**r, "method": f"{r.get('method', 'tad')}__{tag}",
                                  "score_curve": [float(x) for x in final],
                                  "compose": {"curve": a.curve, "beta": a.beta}}) + "\n")
