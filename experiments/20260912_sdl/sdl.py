@@ -147,8 +147,32 @@ def step_grad(judge, cache, ids):
 
 
 def crop_cache(cache, n_added):
-    """Remove the n_added tokens the branch just appended (negative form; positive is deprecated)."""
+    """Remove the n_added tokens the branch just appended, then detach.
+
+    A gradient branch concatenates its own k/v onto the cached prefix tensors, so after cropping the
+    remaining tensors are still nodes of that branch's (now freed) graph. Detaching restores the cache to
+    a constant before the next branch runs.
+    """
     cache.crop(-int(n_added))
+    detach_cache(cache)
+    return cache
+
+
+def detach_cache(cache):
+    layers = getattr(cache, "layers", None)
+    if layers is not None:
+        for layer in layers:
+            for attr in ("keys", "values"):
+                t = getattr(layer, attr, None)
+                if torch.is_tensor(t):
+                    setattr(layer, attr, t.detach())
+        return cache
+    for attr in ("key_cache", "value_cache"):
+        lst = getattr(cache, attr, None)
+        if lst is not None:
+            for i, t in enumerate(lst):
+                if torch.is_tensor(t):
+                    lst[i] = t.detach()
     return cache
 
 
