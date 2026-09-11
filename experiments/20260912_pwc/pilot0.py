@@ -49,23 +49,47 @@ GENERIC_QUESTION = (
 )
 
 
-def compare_question(idx_a, idx_b, wins, wtexts, style):
-    """One A/B/C comparison of two windows under the shared prefix."""
+JOINT_ABS_QUESTION = (
+    "Does segment {L} contain content that itself expresses an endorsed attack on a protected "
+    "group, as defined by the rules above? Merely naming a group, or providing context that "
+    "explains another segment, does not itself count as an attack."
+)
+
+
+def two_segment_body(idx_a, idx_b, wins, wtexts, blind=False):
+    """The shared two-segment presentation used by every E0 style."""
     def seg(letter, k):
         t1, t2 = wins[k]
+        if blind:  # content-blind control: timestamps only
+            return f"Segment {letter}: from {t1:.1f}s to {t2:.1f}s of this video."
         body = (wtexts[k] or "").strip() or "(no speech)"
         return f"Segment {letter}: from {t1:.1f}s to {t2:.1f}s of this video. Transcript in {letter}: {body}"
 
-    core = CARRIER_QUESTION if style == "carrier" else GENERIC_QUESTION
-    return (
-        "Consider two segments of this video.\n\n"
-        f"{seg('A', idx_a)}\n\n{seg('B', idx_b)}\n\n"
+    look = ("Use the rest of the video to resolve who is being referred to, whether a statement is "
+            "quoted or endorsed, and who is speaking.") if blind else (
         "Look at the frames whose timestamps fall inside each segment. Use the rest of the video to "
-        "resolve who is being referred to, whether a statement is quoted or endorsed, and who is "
-        "speaking.\n\n"
-        f"{core}\n\n"
-        'Answer "A", "B", or "C", where C means they are equal or there is not enough evidence.'
-    )
+        "resolve who is being referred to, whether a statement is quoted or endorsed, and who is speaking.")
+    return f"Consider two segments of this video.\n\n{seg('A', idx_a)}\n\n{seg('B', idx_b)}\n\n{look}\n\n"
+
+
+def compare_question(idx_a, idx_b, wins, wtexts, style):
+    """One A/B/C comparison of two windows under the shared prefix.
+
+    carrier: the carrier-versus-context wording; generic: "which more clearly violates the rules";
+    blind: carrier wording with both transcripts withheld (content-blind control).
+    """
+    core = GENERIC_QUESTION if style == "generic" else CARRIER_QUESTION
+    return (two_segment_body(idx_a, idx_b, wins, wtexts, blind=(style == "blind")) + core + "\n\n"
+            'Answer "A", "B", or "C", where C means they are equal or there is not enough evidence.')
+
+
+def joint_abs_question(idx_a, idx_b, wins, wtexts, letter):
+    """Absolute Yes/No about ONE of the two segments, asked from the identical two-segment prompt.
+
+    Isolates "the relative question helps" from "seeing the other segment in the prompt helps".
+    """
+    return (two_segment_body(idx_a, idx_b, wins, wtexts) + JOINT_ABS_QUESTION.format(L=letter)
+            + '\n\nAnswer "Yes" or "No".')
 
 
 def window_labels(y4, wins):
@@ -184,6 +208,21 @@ def run_video(judge, row, segments, zmap, y4, args, choice_ids, verify=False):
                "label_i": labels[i], "label_j": labels[j], "z_i": zmap[i], "z_j": zmap[j],
                "t_i": wins[i], "t_j": wins[j], "z_video": z_video, "stance": stance}
         for style in args.questions:
+            if style == "jointabs":
+                # absolute Yes/No about each segment from the identical two-segment prompt, both orderings
+                zs = {}
+                for orient, (a, b) in (("ij", (i, j)), ("ji", (j, i))):
+                    for letter, w in (("A", a), ("B", b)):
+                        q = joint_abs_question(a, b, wins, wtexts, letter)
+                        bids, _ = judge.branch_ids(msgs, q, history, head_text=head)
+                        zs[(orient, w)] = judge.cached_margin(cache, bids)
+                rec["jointabs_z_i"] = [zs[("ij", i)], zs[("ji", i)]]
+                rec["jointabs_z_j"] = [zs[("ij", j)], zs[("ji", j)]]
+                rec["jointabs_d_ij"] = zs[("ij", i)] - zs[("ij", j)]
+                rec["jointabs_d_ji"] = zs[("ji", j)] - zs[("ji", i)]
+                rec["jointabs_l"] = (rec["jointabs_d_ij"] - rec["jointabs_d_ji"]) / 2.0
+                rec["jointabs_pC_ij"] = rec["jointabs_pC_ji"] = 0.0
+                continue
             ds_ij = {}
             for orient, (a, b) in (("ij", (i, j)), ("ji", (j, i))):
                 q = compare_question(a, b, wins, wtexts, style)
@@ -202,6 +241,23 @@ def run_video(judge, row, segments, zmap, y4, args, choice_ids, verify=False):
     return rows, info
 
 
+def _boot_gain(R, truth, base, l, n_boot=2000):
+    """95 % CI of (acc(l) - acc(base)) resampling VIDEOS, not pairs (pairs inside a video are dependent)."""
+    vids = np.array([r["video_id"] for r in R])
+    uniq = np.unique(vids)
+    idx = {v: np.where(vids == v)[0] for v in uniq}
+    rng = np.random.default_rng(SEED)
+    hit_l = (np.sign(l) == np.sign(truth)).astype(float)
+    hit_b = (np.sign(base) == np.sign(truth)).astype(float)
+    diffs = []
+    for _ in range(n_boot):
+        pick = rng.choice(len(uniq), size=len(uniq), replace=True)
+        sel = np.concatenate([idx[uniq[p]] for p in pick])
+        diffs.append(hit_l[sel].mean() - hit_b[sel].mean())
+    lo, hi = np.percentile(diffs, [2.5, 97.5])
+    return float(lo), float(hi)
+
+
 def summarize(rows, styles):
     """Accuracy of the comparison against the GT label difference, versus the SPVL-r2 score difference."""
     out = {}
@@ -215,12 +271,22 @@ def summarize(rows, styles):
             l = np.array([r[f"{style}_l"] for r in R], dtype=float)
             dij = np.array([r[f"{style}_d_ij"] for r in R], dtype=float)
             dji = np.array([r[f"{style}_d_ji"] for r in R], dtype=float)
-            pc = np.array([r[f"{style}_pC_ij"] for r in R] + [r[f"{style}_pC_ji"] for r in R], dtype=float)
             e[f"acc_{style}"] = float(np.mean(np.sign(l) == np.sign(truth)))
             e[f"acc_{style}_single_order"] = float(np.mean(np.sign(dij) == np.sign(truth)))
             e[f"swap_agreement_{style}"] = float(np.mean(np.sign(dij) == -np.sign(dji)))
-            e[f"mean_pC_{style}"] = float(pc.mean())
             e[f"gain_over_z_{style}"] = e[f"acc_{style}"] - e["acc_z_diff"]
+            lo, hi = _boot_gain(R, truth, zdiff, l)
+            e[f"gain_over_z_{style}_ci95"] = [lo, hi]
+            e[f"frac_small_l_{style}"] = float(np.mean(np.abs(l) < 0.1))
+            if f"{style}_lp_ij" in R[0]:
+                lp = np.array([r[f"{style}_lp_ij"] for r in R] + [r[f"{style}_lp_ji"] for r in R], dtype=float)
+                p = np.exp(lp); p = p / p.sum(1, keepdims=True)
+                e[f"letter_marginals_{style}"] = [float(x) for x in p.mean(0)]  # P(A), P(B), P(C)
+                e[f"mean_pC_{style}"] = float(p[:, 2].mean())
+        # do the comparison styles agree with the absolute score, or make different errors?
+        for style in styles:
+            l = np.array([r[f"{style}_l"] for r in R], dtype=float)
+            e[f"sign_agreement_with_z_{style}"] = float(np.mean(np.sign(l) == np.sign(zdiff)))
         out[ds] = e
     return out
 
@@ -235,7 +301,8 @@ def main():
     ap.add_argument("--frames", type=int, default=20)
     ap.add_argument("--window-seconds", type=float, default=WINDOW_SECONDS)
     ap.add_argument("--pairs-per-video", type=int, default=PAIRS_PER_VIDEO)
-    ap.add_argument("--questions", nargs="+", default=["carrier", "generic"], choices=["carrier", "generic"])
+    ap.add_argument("--questions", nargs="+", default=["carrier", "generic", "blind", "jointabs"],
+                    choices=["carrier", "generic", "blind", "jointabs"])
     ap.add_argument("--limit", type=int, default=0)
     args = ap.parse_args()
     torch.manual_seed(SEED)
@@ -249,6 +316,7 @@ def main():
     cfg = dict(vars(args))
     cfg.update({"code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"), "host": socket.gethostname(),
                 "seed": SEED, "carrier_question": CARRIER_QUESTION, "generic_question": GENERIC_QUESTION,
+                "joint_abs_question": JOINT_ABS_QUESTION,
                 "video_question": VIDEO_QUESTION, "spvl_run": str(SPVL_RUN)})
     (out_dir / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False))
 
