@@ -238,6 +238,33 @@ on both corpora, either alone (`--curve actmargin`) or as an equal-weight rank s
 (`--curve act_plus_margin`). Diagnostics recorded: the distribution over the five acts, the share of
 windows whose argmax is `unrelated`, and Spearman(act_margin, a).
 
+### Round 2 result — also falsified (`runs/20260912_tad/e0_acts/`, 573 s, 3.13 s/video)
+
+| curve | HateMM within | HCS within |
+|---|---|---|
+| act `a` (baseline) | **.6926** | **.6007** |
+| `act_margin` alone | .6800 (−.013) | .5998 (−.001) |
+| rank sum of `a` and `act_margin` | .6945 (+.002) | .6076 (+.007) |
+
+**The gate (≥ .01 on both) fails.** The rank sum is the better of the two and is inside the noise floor on
+both corpora.
+
+Mechanism reading, from the recorded diagnostics: **the model never uses the carve-outs.** Argmax over the
+five acts is `attacks` on 79.6 % of HateMM windows and 56.0 % of HCS windows, `unrelated` on 18.6 % / 34.9 %,
+and the three exemption options together take 1.9 % / 9.2 % (`reports` .2 % / 5.3 %, `quotes` 1.6 % / 3.4 %,
+`condemns` .1 % / .5 %). The five-way decision therefore collapses to `attacks` versus `unrelated`, which is
+the topic axis again — median Spearman(a, act_margin) = .725 / .704, and the GT gap in `act_margin`
+(+7.16 / +5.72) is the same size as in `a`. Re-specifying the decision does not make the model apply the
+distinction; it re-labels the same axis.
+
+### Disposition (rule 9)
+
+Two modification rounds, neither reaching +.01 on both corpora: subtraction (round 1) and re-specifying
+the decision (round 2). The directory is archived as a negative result. What survives is the measurement,
+not the correction: the per-window judgement is substantially a topic judgement, the model can report the
+topic dimension separately (Spearman .70 / .48), and neither removing it nor re-framing the decision
+recovers ordering.
+
 ## 5d. Oracle ceiling of the per-window feature family (2026-09-12, diagnostic only)
 
 `oracle_ceiling.py`, run on `runs/20260912_tad/e0/`. A classifier is fitted **on the test GT** with
