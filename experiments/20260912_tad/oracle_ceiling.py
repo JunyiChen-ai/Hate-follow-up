@@ -56,8 +56,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--datasets", nargs="+", default=["HateMM", "HateClipSeg"])
-    ap.add_argument("--sets", nargs="+", default=["reads", "shape", "audio", "temporal"])
+    ap.add_argument("--sets", nargs="+", default=["reads", "shape", "audio", "temporal"],
+                    choices=["reads", "shape", "audio", "temporal", "hidden"])
     ap.add_argument("--model", choices=["logreg", "gbt"], default="logreg")
+    ap.add_argument("--hidden-dims", type=int, default=64,
+                    help="PCA dims kept from the branch hidden state")
     ap.add_argument("--audio-dims", type=int, default=32, help="PCA dims kept from the 1024-d audio vector")
     args = ap.parse_args()
     rows = [json.loads(l) for l in open(Path(args.run_dir) / "predictions.jsonl") if l.strip()]
@@ -69,6 +72,7 @@ def main():
         R = [r for r in rows if r["dataset"] == ds and not r.get("error") and r.get("extra")]
         X, Y, G, base = [], [], [], []
         aud_dir = ROOT / f"data/omsl_v6_inputs/audio_embeddings/{ds}"
+        hid_dir = Path(args.run_dir) / "hidden"
         for r in R:
             y = gt.get(r["video_id"])
             if y is None:
@@ -86,6 +90,13 @@ def main():
                 except Exception:  # noqa: BLE001
                     emb = None
             dur = float(r["duration"])
+            hmap = {}
+            if "hidden" in args.sets:
+                hp = hid_dir / f"{ds}__{r['video_id']}.npz"
+                if hp.exists():
+                    z = np.load(hp)
+                    for key, vec in zip(z["keys"], z["H"]):
+                        hmap[int(str(key).split("_")[0])] = vec.astype(np.float32)
             for k, w in enumerate(W):
                 reads = [w.get("a", 0.0), w.get("t", 0.0), w.get("act_margin", 0.0),
                          w.get("z_visual", 0.0), w.get("z_speech", 0.0)]
@@ -93,7 +104,7 @@ def main():
                 shape = [k / max(len(W) - 1, 1), w["end"] - w["start"], float(bool(txt.strip())),
                          len(txt.split())]
                 av = audio_window_vec(emb, w["start"], w["end"], dur)
-                X.append((reads, shape, av, k))
+                X.append((reads, shape, av, k, hmap.get(k)))
                 Y.append(lab[k]); G.append(r["video_id"]); base.append(w.get("a", 0.0))
         Y = np.asarray(Y); G = np.asarray(G); base = np.asarray(base)
         have_audio = sum(1 for x in X if x[2] is not None)
@@ -121,6 +132,16 @@ def main():
                     nxt = base_f[i + 1] if i + 1 < len(X) and G[i + 1] == G[i] else base_f[i]
                     nb.append(np.concatenate([base_f[i], prev[:5], nxt[:5]]))
                 F = np.array(nb, float)
+            elif name == "hidden":  # the branch hidden state, i.e. what the Yes/No projection discards
+                vecs = [x[4] for x in X if x[4] is not None]
+                if not vecs:
+                    print("  hidden: no vectors saved for this run, skipped"); continue
+                dim = len(vecs[0])
+                H = np.array([x[4] if x[4] is not None else np.zeros(dim) for x in X], float)
+                H = H - H.mean(0)
+                U, S, Vt = np.linalg.svd(H, full_matrices=False)
+                F = np.hstack([np.array([x[0] + x[1] for x in X], float),
+                               U[:, :args.hidden_dims] * S[:args.hidden_dims]])
             else:
                 dim = len(next((x[2] for x in X if x[2] is not None), []))
                 if not dim:
