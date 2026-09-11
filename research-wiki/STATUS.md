@@ -30,10 +30,34 @@ PR 的随机水平 = 帧正例率：HateMM .242、HateClipSeg .473。within 只�
 
 HVL（假设–验证闭环，`experiments/20260911_hvl/`）2026-09-11 试运行两轮结束：假设条件化、顺序状态链、相邻窗语境、判定修订全部低于 SPVL-r2（within 子集基线 .693 / .601），机制诊断见其 README §7–§8；按规则 9 归档为负结果，SPVL-r2 仍是当前方法。MLLM family / 尺寸鲁棒性研究（spvl README §11）2026-09-11 04:24 全部完成：7 个模型 × 7 个臂，结果表 `runs/20260910_spvl/mllm_table.md`，解读在 README §11 Results。结论：方法在 7 个 MLLM 上都有效（within 从模型自身的 .62–.64 / .49–.58 提到 .65–.70 / .55–.60），固定窗、M3、帧三个部件在 ≥5/7 模型上方向一致；立场条件化只在 HateMM 上过数；整段转录语境只对 Qwen3-VL 系列和 Gemma 有用。派发记录：2026-09-10 21:00 起并行跑在 uoa-lab3（Qwen3-VL-8B 一致性检查、4B、2B）、uoa-lab2（InternVL3.5-8B、LLaVA-OneVision-7B）、lab-server（Gemma-3-12B）、uoa-campus1（Qwen3-VL-32B，job 16689）、uoa-campus2（Qwen2.5-VL-7B，job 19985）。输出 `runs/20260910_spvl/mllm/<tag>/<arm>/`，汇总 `runs/20260910_spvl/mllm_table.md`。round-3 消融已完成（`runs/20260910_spvl/abl3_*/`）。
 
+## 2026-09-12 这一轮：PWC 负结果 + 机制诊断
+
+**PWC（窗间成对比较，`experiments/20260912_pwc/`）在 E0 被证伪，已归档。** 声明的门是比较的准确率比
+`sign(z_i − z_j)` 在两语料都高 ≥5 点；实际 −1.0（HateMM）/ +0.5（HCS）。704 对，
+`runs/20260912_pwc/e0b/summary.json`。读出本身没问题：交换一致率 .82–.86、A/B/C 边缘概率无偏好、撤掉转录
+掉 .119/.054。所有读出方式（绝对、相对、联合上下文）都落在 .55–.69 同一带内，彼此符号一致率 .71–.83。
+结论：视频内排序的上限不是读出方式，是模型能分辨多少（H2 而非 H1）。
+
+顺带零成本否掉的机制：**语境对比**（`z(全局语境) − z(窗单独)`）within .467/.494，对照 `z(全局语境)`
+的 .699/.602（`runs/20260910_spvl/mllm/q3vl-8b/{full,winonly}`）。
+
+**机制诊断（PWC README §7c）**：把窗按 GT 标签 × 该窗是否提到目标群体交叉列表，"提到目标群体"值
+**+8.1（HateMM）/ +7.0（HCS）** log-odds，"真的是仇恨窗"只值 **+4.3**。冻结 MLLM 的窗级判断主要是
+话题检测而不是行为检测。这解释了 PWC 的失败、七个模型同一个 within 天花板、以及视频级强而窗级弱。
+
+**当前在跑**：`experiments/20260912_tad/`——把话题维度测出来并从窗分里减掉（每窗多一次"是否指涉受保护
+群体、不论敌意"的读），round 2 备选是把窗级决策从二元违规改成五选一的言语行为
+（attacks / reports / quotes / condemns / unrelated）。E0 kill test 在 lab-server 上跑 within 子集。
+
+**新增 secondary 评测**（用户裁定 2026-09-12）：`data/gt_4fps_hate_only/HateClipSeg.npz`，只取 Hateful 这
+一类（base rate .198 vs 主表 .471，含正负帧的视频 51 vs 99）。主表不变，只作并列诊断，区分"方法弱"和
+"标签口径与 prompt 不一致"。
+
 ## 下一步
 
-1. LELA（GPT-4o-mini）对照在本评测器下重跑或说明不可行（规则 14f，需要 API 费用，待用户裁定）。
-2. HCS 无语音仇恨子集低于随机：GT 是 offensive 并集而 prompt 是仇恨规则，属标签定义问题，写进论文的 limitation。
+1. TAD E0 判定：若 `Spearman(act, topic) ≥ .9` 则该方向当场停；否则校正后的残差要比 act 残差在两语料
+   within 都高 ≥.01 才进 E1 全量。
+2. LELA（GPT-4o-mini）对照在本评测器下重跑（规则 14f）。用户 2026-09-12 裁定：先不做，专心做方法，投稿前再补。
 3. 方法改进从 SPVL-r2 出发；OMSL-v6 目录保留为对照，下次整理时移入 `archive/experiments/`。
 
 ## 资料与历史
