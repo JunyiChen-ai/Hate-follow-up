@@ -302,10 +302,16 @@ def main():
                 s0 = window_scores(specs, zs0, len(P["wins"]))
                 have = [i for i, v in enumerate(s0) if v is not None]
                 y = labels[key]
+                rng_w = np.random.default_rng(SEED * 7919 + step)
                 if y == 1 and args.pool == "max":
-                    pick = [max(have, key=lambda i: s0[i])]
+                    # the argmax carries the max term; the sampled rest carry the sparsity term, which is
+                    # what pushes the non-evidence windows down. Without them the sparsity term would act
+                    # on the argmax itself and cancel the contrast.
+                    top = max(have, key=lambda i: s0[i])
+                    rest = [i for i in have if i != top]
+                    k = min(args.grad_windows - 1, len(rest))
+                    pick = [top] + (sorted(rng_w.choice(rest, size=k, replace=False).tolist()) if k > 0 else [])
                 else:
-                    rng_w = np.random.default_rng(SEED * 7919 + step)
                     k = min(args.grad_windows, len(have))
                     pick = sorted(rng_w.choice(have, size=k, replace=False).tolist())
                 gspecs = [sp for sp in specs if sp[0] in pick]
@@ -321,7 +327,7 @@ def main():
                     opt.step(); opt.zero_grad(set_to_none=True)
                 if n % 20 == 0:
                     logging.info("ep%d %d/%d %s y=%d zv=%.1f loss=%.4f %.0fs mem=%.1fG", ep, n, len(rows),
-                                 row["video_id"], labels[key], zv_frozen, float(loss) * args.accum,
+                                 row["video_id"], labels[key], zv_frozen, float(loss.detach()) * args.accum,
                                  time.time() - t0, torch.cuda.max_memory_allocated() / 1e9)
         torch.save({("%d" % i): {"A": m.A.weight.detach().cpu(), "B": m.B.weight.detach().cpu()}
                     for i, m in enumerate(lora_modules(judge.model))}, out_dir / "adapter.pt")
