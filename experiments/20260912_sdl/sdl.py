@@ -117,13 +117,22 @@ def act_question(i, n, t1, t2, text, kind):
 
 
 def branch_specs(judge, P, stance, args):
-    """(window index, kind, token ids) for every branch, conditioned on the stance turn."""
+    """(window index, kind, token ids) for every branch.
+
+    With args.stance == "none" the branches are conditioned on the prefix alone. That matters for the MIL
+    objective: the stance turn carries the model's own Yes/No, which IS the bag label, so a branch that can
+    read it satisfies the loss without looking at the window at all (round 1, see README section 5b).
+    """
     msgs, wins, wtexts = P["msgs"], P["wins"], P["wtexts"]
-    b0, b0_text = judge.branch_ids(msgs, VIDEO_QUESTION)
-    a0, a0_text = judge.answer_ids(msgs, VIDEO_QUESTION, stance)
-    history = [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]},
-               judge.turn("assistant", stance)]
-    head = P["prefix_text"] + b0_text + a0_text
+    if args.stance == "none":
+        history, head = None, P["prefix_text"]
+        b0, a0 = judge.branch_ids(msgs, VIDEO_QUESTION)[0], []
+    else:
+        b0, b0_text = judge.branch_ids(msgs, VIDEO_QUESTION)
+        a0, a0_text = judge.answer_ids(msgs, VIDEO_QUESTION, stance)
+        history = [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]},
+                   judge.turn("assistant", stance)]
+        head = P["prefix_text"] + b0_text + a0_text
     out = []
     for i, ((t1, t2), txt) in enumerate(zip(wins, wtexts)):
         for kind in ("visual", "speech"):
@@ -217,6 +226,9 @@ def main():
     ap.add_argument("--accum", type=int, default=4)
     ap.add_argument("--lam", type=float, default=0.05)
     ap.add_argument("--pool", choices=["max", "mean"], default="max")
+    ap.add_argument("--stance", choices=["verdict", "none"], default="none",
+                    help="verdict reproduces SPVL-r2's stance turn; none removes it so the window branches "
+                         "cannot read the bag label off the context (required by the MIL objective)")
     ap.add_argument("--adapter-scope", choices=["branches", "all"], default="branches",
                     help="branches: inference matches training (adapter off for prefix/verdict/stance); "
                          "all: also let it perturb the video representation (control arm)")
@@ -303,9 +315,13 @@ def main():
                     b0, _ = judge.branch_ids(P["msgs"], VIDEO_QUESTION)
                     zv_frozen = judge.cached_margin(cache, b0, in_place=True)
                     stance = "Yes" if pseudo[key] > 0 else "No"
-                    a0, _ = judge.answer_ids(P["msgs"], VIDEO_QUESTION, stance)
-                    judge.extend_cache(cache, a0)
-                    ctx_len = prefix_len + len(b0) + len(a0)
+                    if args.stance == "verdict":
+                        a0, _ = judge.answer_ids(P["msgs"], VIDEO_QUESTION, stance)
+                        judge.extend_cache(cache, a0)
+                        ctx_len = prefix_len + len(b0) + len(a0)
+                    else:  # the verdict branch was read in place; roll the cache back to the prefix
+                        crop_cache(cache, len(b0))
+                        ctx_len = prefix_len
                     set_lora(judge.model, True)
                 specs, _, _ = branch_specs(judge, P, stance, args)
                 if not specs:
@@ -403,9 +419,13 @@ def main():
             b0, _ = judge.branch_ids(P["msgs"], VIDEO_QUESTION)
             z_video = judge.cached_margin(cache, b0, in_place=True)
             stance = "Yes" if z_video > 0 else "No"
-            a0, _ = judge.answer_ids(P["msgs"], VIDEO_QUESTION, stance)
-            judge.extend_cache(cache, a0)
-            ctx_len = prefix_len + len(b0) + len(a0)
+            if args.stance == "verdict":
+                a0, _ = judge.answer_ids(P["msgs"], VIDEO_QUESTION, stance)
+                judge.extend_cache(cache, a0)
+                ctx_len = prefix_len + len(b0) + len(a0)
+            else:
+                crop_cache(cache, len(b0))
+                ctx_len = prefix_len
             set_lora(judge.model, True)
             specs, _, _ = branch_specs(judge, P, stance, args)
             zs = branch_margins(judge, cache, ctx_len, specs, grad=False)
