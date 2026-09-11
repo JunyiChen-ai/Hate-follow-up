@@ -44,7 +44,8 @@ def ols_beta(a, t):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
-    ap.add_argument("--curve", choices=["act", "topic", "corrected", "permuted"], default="corrected")
+    ap.add_argument("--curve", choices=["act", "topic", "corrected", "permuted", "actmargin",
+                                        "act_plus_margin"], default="corrected")
     ap.add_argument("--beta", default="ols", help="ols | a float")
     ap.add_argument("--tag", default=None)
     ap.add_argument("--datasets", nargs="+", default=["HateMM", "HateClipSeg"])
@@ -78,6 +79,10 @@ def main():
                 cur = av
             elif a.curve == "topic":
                 cur = np.array([w.get("t", 0.0) for w in W], float)
+            elif a.curve == "actmargin":  # round 2: log P(attacks) - logsumexp(other speech acts)
+                cur = np.array([w["act_margin"] for w in W], float)
+            elif a.curve == "act_plus_margin":  # rank-sum of the binary evidence read and the speech-act read
+                cur = centered_rank(av) + centered_rank(np.array([w["act_margin"] for w in W], float))
             else:
                 if a.curve == "permuted":
                     src = perm[(r["dataset"], r["video_id"])]
