@@ -42,8 +42,32 @@ TOPIC_QUESTION = (
 )
 
 
+# Round 2: the window decision as a speech act towards the group, not a binary rule violation.
+# The five options are the confusion set the hate definition itself carves out: the 2026-08 policy text
+# says "Quotation, neutral reporting, counterspeech, satire, and condemnation are not endorsement".
+ACTS = ("attacks", "reports", "quotes", "condemns", "unrelated")
+ACT_QUESTION = (
+    "In THIS window, what does the video do with respect to a group defined by a protected "
+    "characteristic (race, ethnicity, national origin, religion, gender, sexual orientation, "
+    "disability, immigration status)?\n"
+    "  attacks   - it attacks, dehumanises, threatens, excludes or stereotypes such a group, and the "
+    "video endorses this\n"
+    "  reports   - it neutrally describes or reports on such a group or on someone else's attack\n"
+    "  quotes    - it quotes or shows someone else's words without endorsing them\n"
+    "  condemns  - it criticises or condemns such an attack\n"
+    "  unrelated - it does not refer to such a group at all\n\n"
+    "Answer with exactly one word from: attacks, reports, quotes, condemns, unrelated."
+)
+
+
 def window_head(i, n, t1, t2):
     return f"Consider only window {i + 1} of {n}, from {t1:.1f}s to {t2:.1f}s of this video."
+
+
+def act_type_question(i, n, t1, t2, text):
+    body = text.strip() if text and text.strip() else "(no speech)"
+    return (f"{window_head(i, n, t1, t2)} Transcript in this window: {body}\n"
+            f"Look at the frames whose timestamps fall inside this window.\n\n{ACT_QUESTION}")
 
 
 def act_question(i, n, t1, t2, text, kind):
@@ -93,6 +117,14 @@ def score_video(judge, row, segments, args, verify=False):
     head = prefix_text + b0_text + a0_text
 
     n = len(wins)
+    act_ids = getattr(judge, "_act_ids", None)
+    if args.acts and act_ids is None:
+        act_ids = [judge.label_ids(w) for w in ACTS]
+        flat = [t for c in act_ids for t in c]
+        if len(flat) != len(set(flat)):
+            raise SystemExit(f"act token sets are not disjoint: {dict(zip(ACTS, act_ids))}")
+        judge._act_ids = act_ids
+        logging.info("act ids %s", dict(zip(ACTS, act_ids)))
     per = []
     for i, ((t1, t2), txt) in enumerate(zip(wins, wtexts)):
         rec = {"i": i, "start": t1, "end": t2}
@@ -110,6 +142,14 @@ def score_video(judge, row, segments, args, verify=False):
             q = topic_question(i, n, t1, t2, txt)
             bids, _ = judge.branch_ids(msgs, q, history, head_text=head)
             rec["t"] = judge.cached_margin(cache, bids)
+        if args.acts:
+            q = act_type_question(i, n, t1, t2, txt)
+            bids, _ = judge.branch_ids(msgs, q, history, head_text=head)
+            lp = judge.cached_choices(cache, bids, act_ids)
+            rec["acts"] = {k: float(v) for k, v in zip(ACTS, lp)}
+            other = [v for k, v in zip(ACTS, lp) if k != "attacks"]
+            m = max(other)
+            rec["act_margin"] = float(lp[0] - (m + math.log(sum(math.exp(v - m) for v in other))))
         rec["z"] = rec["a"]  # score_curve is the act curve; tad_compose builds the corrected variants
         per.append(rec)
 
@@ -145,6 +185,7 @@ def main():
     ap.add_argument("--frames", type=int, default=20)
     ap.add_argument("--window-seconds", type=float, default=8.0)
     ap.add_argument("--topic", type=int, default=1, help="0 reproduces SPVL-r2 (act branches only)")
+    ap.add_argument("--acts", type=int, default=0, help="1 adds the speech-act read (round 2)")
     ap.add_argument("--only-within-defined", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--method-name", default=None)
@@ -157,10 +198,12 @@ def main():
                         handlers=[logging.FileHandler(out_dir / "run.log"), logging.StreamHandler(sys.stdout)])
     logging.info("host %s", socket.gethostname())
     (out_dir / "run.pid").write_text(str(os.getpid()))
-    args.method_name = args.method_name or f"tad_f{args.frames}_w{args.window_seconds:g}_topic{args.topic}"
+    args.method_name = args.method_name or (f"tad_f{args.frames}_w{args.window_seconds:g}"
+                                            f"_topic{args.topic}_acts{args.acts}")
     cfg = dict(vars(args))
     cfg.update({"code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"), "host": socket.gethostname(),
-                "seed": SEED, "topic_question": TOPIC_QUESTION, "video_question": VIDEO_QUESTION})
+                "seed": SEED, "topic_question": TOPIC_QUESTION, "video_question": VIDEO_QUESTION,
+                "act_question": ACT_QUESTION, "acts": list(ACTS)})
     (out_dir / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False))
 
     rows = load_manifest(args.manifest, args.datasets)
