@@ -225,6 +225,9 @@ def main():
     ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--accum", type=int, default=4)
     ap.add_argument("--lam", type=float, default=0.05)
+    ap.add_argument("--loss", choices=["bce", "hinge"], default="bce",
+                    help="hinge: non-saturating margin loss on the raw log-odds (round 3)")
+    ap.add_argument("--margin", type=float, default=2.0, help="hinge margin in log-odds units")
     ap.add_argument("--pool", choices=["max", "mean"], default="max")
     ap.add_argument("--stance", choices=["verdict", "none"], default="none",
                     help="verdict reproduces SPVL-r2's stance turn; none removes it so the window branches "
@@ -249,7 +252,8 @@ def main():
                         handlers=[logging.FileHandler(out_dir / "run.log"), logging.StreamHandler(sys.stdout)])
     logging.info("host %s", socket.gethostname())
     (out_dir / "run.pid").write_text(str(os.getpid()))
-    args.method_name = args.method_name or f"sdl_r{args.rank}_{args.pool}_lam{args.lam:g}_e{args.epochs}"
+    args.method_name = (args.method_name
+                        or f"sdl_r{args.rank}_{args.pool}_{args.loss}_lam{args.lam:g}_e{args.epochs}")
     cfg = dict(vars(args))
     cfg.update({"code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"), "host": socket.gethostname(),
                 "seed": SEED, "targets": list(TARGETS)})
@@ -366,7 +370,20 @@ def main():
                     sw = zsw[0]
                     for extra in zsw[1:]:
                         sw = torch.maximum(sw, extra)
-                    if y == 1 and args.pool == "max":
+                    if args.loss == "hinge":
+                        # log-odds run to |s| ~ 15, where sigmoid and logsigmoid have vanishing gradients,
+                        # so the BCE form gives almost no update on the videos the frozen model already
+                        # gets right. The hinge is on the raw log-odds: constant gradient while the
+                        # constraint is violated, exactly zero once satisfied.
+                        m = args.margin
+                        if y == 1 and args.pool == "max":
+                            term = (torch.relu(m - sw) if wi == top
+                                    else args.lam * torch.relu(sw + m) * w_rest * N)
+                        elif y == 1:
+                            term = torch.relu(m - sw) / max(K, 1)
+                        else:
+                            term = torch.relu(sw + m) / max(K, 1)
+                    elif y == 1 and args.pool == "max":
                         if wi == top:
                             term = (args.lam * torch.sigmoid(sw) / N
                                     - torch.nn.functional.logsigmoid(sw))
