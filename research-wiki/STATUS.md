@@ -65,8 +65,17 @@ HVL（假设–验证闭环，`experiments/20260911_hvl/`）2026-09-11 试运行
 在表示上训练轻量 MIL 头（用模型自己的视频级裁定当伪标签），还是必须动模型本身。
 
 **新增 secondary 评测**（用户裁定 2026-09-12）：`data/gt_4fps_hate_only/HateClipSeg.npz`，只取 Hateful 这
-一类（base rate .198 vs 主表 .471，含正负帧的视频 51 vs 99）。主表不变，只作并列诊断，区分"方法弱"和
-"标签口径与 prompt 不一致"。
+一类（base rate .198 vs 主表 .471，含正负帧的视频 51 vs 99）。主表不变，只作并列诊断。
+
+SPVL-r2 在两个口径下（`runs/20260910_spvl/full2_dual_evid_stance/metrics_izv_plus_mean_rrank{,__hate_only}.json`）：
+
+| GT 口径 | pooled ROC | pooled PR | 随机水平 | within | n |
+|---|---|---|---|---|---|
+| 主表（offensive 并集） | .7119 | .6664 | .473 | .6001 | 99 |
+| 只取 Hateful | **.7774** | .4323 | .200 | **.6236** | 51 |
+
+PR 对随机水平的倍数：1.41 → **2.16**。口径对齐后三项全部变好，说明主表上 HCS 的数字被标签定义压低，
+这一点现在有量化依据。
 
 ## 下一步
 
