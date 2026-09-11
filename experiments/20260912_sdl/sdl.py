@@ -137,24 +137,33 @@ def branch_specs(judge, P, stance, args):
     return out, b0, a0
 
 
-def crop_cache(cache, n):
-    if hasattr(cache, "crop"):
-        cache.crop(n)
-        return cache
-    for layer in cache:  # older layouts: list of (k, v)
-        pass
-    raise RuntimeError("cache has no crop(); use a transformers version that supports DynamicCache.crop")
+def step_grad(judge, cache, ids):
+    """judge._step with gradients: src/mllm_judge.py decorates its own _step with @torch.no_grad()."""
+    out = judge.model.model(input_ids=torch.tensor([ids], device=judge.device),
+                            past_key_values=cache, use_cache=True)
+    h = out.last_hidden_state[0, -1]
+    del out
+    return h
+
+
+def crop_cache(cache, n_added):
+    """Remove the n_added tokens the branch just appended (negative form; positive is deprecated)."""
+    cache.crop(-int(n_added))
+    return cache
 
 
 def branch_margins(judge, cache, prefix_len, specs, grad):
     """Yes/No log-odds for every branch, each read on the prefix cache which is restored afterwards."""
     zs = []
-    ctx = torch.enable_grad() if grad else torch.no_grad()
-    with ctx:
-        for _, _, ids in specs:
+    for _, _, ids in specs:
+        if grad:
+            with torch.enable_grad():
+                h = step_grad(judge, cache, ids)
+                zs.append(judge.margins_fp32_t(h[None])[0])
+        else:
             h = judge._step(cache, ids)
-            zs.append(judge.margins_fp32_t(h[None])[0] if grad else judge.margins_fp32(h[None])[0])
-            crop_cache(cache, prefix_len)
+            zs.append(judge.margins_fp32(h[None])[0])
+        crop_cache(cache, len(ids))
     return zs
 
 
