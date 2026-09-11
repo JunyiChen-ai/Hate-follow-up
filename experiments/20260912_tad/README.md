@@ -287,6 +287,22 @@ The single exception is gradient boosting with the audio embedding on HateMM (+.
 transfer to HCS (−.069). Temporal context (the neighbours' reads) does not help either, which matches
 HVL's neighbour-context arm (−.017).
 
+**Representation ceiling** (`runs/20260912_tad/e0_hidden/`, 371 s, 53 MB of fp16 vectors): the same oracle
+fitted on the *hidden state* at the window-branch read position — i.e. everything the Yes/No projection
+discards — does not beat the scalar read either.
+
+| features | HateMM within | HCS within |
+|---|---|---|
+| act read alone, no fitting | **.7581** | **.6212** |
+| hidden state, 64 PCA dims, logistic regression | .7470 | .6078 |
+| hidden state, 256 PCA dims, logistic regression | .6980 | .5520 |
+| hidden state, 128 PCA dims, gradient boosting | .7460 | .5942 |
+
+Limitation of this test, stated: the vector is read at the answer position of the window branch, which is
+already downstream of the model's decision. The model's *pre-decision* contextual representation of the
+window inside the prefix was not probed; that would need a token-to-time mapping through the image
+expansion and was not built.
+
 Consequence for the direction of the project: the per-window feature family is at its ceiling. Any method
 that reweights, calibrates, combines or re-ranks these reads — including a self-training or pseudo-label
 head over them — is bounded by a number the frozen read already reaches. The remaining levers are what the
