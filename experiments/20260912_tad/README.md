@@ -238,8 +238,41 @@ on both corpora, either alone (`--curve actmargin`) or as an equal-weight rank s
 (`--curve act_plus_margin`). Diagnostics recorded: the distribution over the five acts, the share of
 windows whose argmax is `unrelated`, and Spearman(act_margin, a).
 
+## 5d. Oracle ceiling of the per-window feature family (2026-09-12, diagnostic only)
+
+`oracle_ceiling.py`, run on `runs/20260912_tad/e0/`. A classifier is fitted **on the test GT** with
+grouped 5-fold cross-validation by video, and its out-of-fold score is evaluated — an upper bound on what
+any label-free combination of the same features could reach. It is a rule-10 error-analysis read; the
+fitted model is never a method arm and never enters a gate.
+
+Window-level within, HateMM (75 videos, 1522 windows) / HCS (96, 2912):
+
+| features | logistic regression | gradient boosting |
+|---|---|---|
+| the act read alone, **no fitting** | **.7581 / .6212** | — |
+| MLLM reads (a, t, act_margin, visual, speech) | .7422 / .6250 | .6140 / .5582 |
+| + window position, length, speech presence, transcript length | .7310 / .6258 | .6883 / .5628 |
+| + ImageBind audio embedding of the window (32 PCA dims) | .7442 / .6141 | **.7928** / .5525 |
+| + the neighbouring windows' reads | — | .6921 / .5476 |
+
+**With real labels, a fitted combination of everything cached does not reliably beat the raw act read.**
+The single exception is gradient boosting with the audio embedding on HateMM (+.035), which does not
+transfer to HCS (−.069). Temporal context (the neighbours' reads) does not help either, which matches
+HVL's neighbour-context arm (−.017).
+
+Consequence for the direction of the project: the per-window feature family is at its ceiling. Any method
+that reweights, calibrates, combines or re-ranks these reads — including a self-training or pseudo-label
+head over them — is bounded by a number the frozen read already reaches. The remaining levers are what the
+model is *asked* to compute per window (round 2) or changing the model's own representation (adaptation),
+not another combination of the current outputs.
+
 ## 6. Test-read log (rule 10)
 
+- 2026-09-12: `oracle_ceiling.py` fitted a logistic regression and a gradient-boosting classifier on the
+  **test** window labels with grouped cross-validation, to bound what any combination of the cached
+  per-window features could reach (§5d). Finding: the fitted models do not reliably beat the unfitted act
+  read. Design decision taken from it: do not pursue a learned head or a pseudo-label self-training stage
+  over these features; the lever has to be what the model computes, not how its outputs are combined.
 - 2026-09-12: the §1 cross-tabulation (PWC README §7c) — GT window labels read to build the four cells;
   no model input touched. Design decision taken from it: measure and remove the protected-group reference
   dimension.
