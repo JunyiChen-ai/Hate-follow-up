@@ -132,6 +132,63 @@ Rule 8 comparison gate vs T3AL and promotion gate vs SPVL-r2 (.8919 / .6831 / .6
 .7119 / .6664 / .6001), noise floor pooled .005 / within .01. Rule 14g ablation on every claimed
 component. Cross-model repeat on at least one further MLLM if E1 passes.
 
+## 5b. Round 1 — the stance turn leaks the bag label (falsified, `runs/20260912_sdl/e1_max/`)
+
+333 videos, 3 epochs, grad-windows 4, 999 steps, 48 min training + 11 min inference on lab-server.
+
+| composition | HateMM ROC / PR / within | HCS ROC / PR / within |
+|---|---|---|
+| SDL round 1 | .8719 / .6065 / **.5026** | .6760 / .6122 / **.5091** |
+| same run, frozen intercept (`--intercept frozen`) | .8908 / .6763 / .5026 | .7114 / .6632 / .5091 |
+| frozen SPVL-r2 reference | .8920 / .6825 / .6968 | .7132 / .6675 / .6020 |
+
+Within collapsed to chance. It is not a numerical collapse of the scores: the within-video standard
+deviation of the window curve **rose** from 4.46 to 6.90 (HateMM) and 5.40 to 6.72 (HCS), and only 1.9 % /
+0 % of videos ended with a constant curve. What collapsed is the *correlation with the labels*
+(Spearman against the frozen curve fell to .495 / .442).
+
+Diagnosis, measured: the adapter learned to shift whole videos by their pseudo label rather than to
+separate windows inside a video — mean adapted window score is **−17.67 on pseudo-negative HateMM videos
+versus +1.09 on pseudo-positive ones** (HCS: −15.69 vs −3.40). The cause is structural. SPVL-r2 conditions
+every window branch on a stance turn that contains the model's own whole-video Yes/No — and that Yes/No
+**is** the MIL bag label. A branch that can read it satisfies the objective without looking at the window.
+
+Fix carried into round 2: `--stance none`, so the branches see the prefix only. The stance turn is worth
++.008 / +.012 within in the frozen method, below the noise floor on HateMM.
+
+## 5c. Round 2 — the BCE form of the objective has no gradient here (falsified before completion)
+
+With the stance turn removed the objective is sound, but the measured per-video losses in the first 40
+videos were 0.0335, 0.0000, 0.0010: essentially zero. Two reasons, both structural rather than accidental:
+
+1. **The frozen model already satisfies the bag constraint.** Positive videos have a window at s ≈ +17,
+   negative videos sit at s ≈ −14. There is nothing for `-log sigmoid(max_i s_i)` or
+   `-mean log sigmoid(-s_i)` to correct at bag level.
+2. **The read-out is saturated.** Window log-odds run to |s| ≈ 15, where `sigmoid` and `logsigmoid` have
+   vanishing derivatives, so even the violated terms contribute almost no gradient.
+
+The run was stopped rather than spending an hour to confirm a no-op.
+
+## 5d. Round 3 — non-saturating hinge on the raw log-odds
+
+Same objective, expressed so that it bites where the information is:
+
+```
+positive video:  relu(m - s_top)                       + lam * sum_{i != top} relu(s_i + m)
+negative video:  mean_i relu(s_i + m)
+m = 2 (log-odds), lam = 0.05, estimated on the sampled windows as in round 2
+```
+
+Constant gradient while a constraint is violated, exactly zero once satisfied. The terms that actually
+carry information are the ones the BCE form could not express: the windows of a **negative** video that
+the frozen model scores positive (45.8 % / 50.7 % of all windows are judged positive), and the non-top
+windows of a positive video. Those are also where the topic/act confound lives — non-hateful videos
+contain windows that mention a protected group, and pushing them down is the only label-free signal
+available for "mentioning is not attacking".
+
+Declared risk: in videos with a large hateful extent (HCS median positive fraction .47) pushing every
+non-top window down is wrong. If round 3 shows that pattern, round 4 replaces max with top-K.
+
 ## 6. Risks, stated before the run
 
 - The pseudo label is the frozen verdict, so on videos the verdict gets wrong the objective trains the
