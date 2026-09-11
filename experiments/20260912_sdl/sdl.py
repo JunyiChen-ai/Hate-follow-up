@@ -212,6 +212,8 @@ def main():
     ap.add_argument("--accum", type=int, default=4)
     ap.add_argument("--lam", type=float, default=0.05)
     ap.add_argument("--pool", choices=["max", "mean"], default="max")
+    ap.add_argument("--grad-windows", type=int, default=4,
+                    help="windows carried with gradient per step (positives use the argmax window only)")
     ap.add_argument("--shuffle-pseudo", action="store_true", help="control: permute the pseudo labels")
     ap.add_argument("--only-within-defined", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
@@ -292,12 +294,27 @@ def main():
                 if not specs:
                     del cache
                     continue
-                zs = branch_margins(judge, cache, ctx_len, specs, grad=True)
-                scores = window_scores(specs, zs, len(P["wins"]))
+                # Pass 1, no gradient: all window scores. Pass 2, with gradient: only the windows the loss
+                # actually needs -- max() propagates through its argmax alone, and the mean terms are
+                # estimated on a fixed-size random subset (declared: --grad-windows).
+                with torch.no_grad():
+                    zs0 = branch_margins(judge, cache, ctx_len, specs, grad=False)
+                s0 = window_scores(specs, zs0, len(P["wins"]))
+                have = [i for i, v in enumerate(s0) if v is not None]
+                y = labels[key]
+                if y == 1 and args.pool == "max":
+                    pick = [max(have, key=lambda i: s0[i])]
+                else:
+                    rng_w = np.random.default_rng(SEED * 7919 + step)
+                    k = min(args.grad_windows, len(have))
+                    pick = sorted(rng_w.choice(have, size=k, replace=False).tolist())
+                gspecs = [sp for sp in specs if sp[0] in pick]
+                zs = branch_margins(judge, cache, ctx_len, gspecs, grad=True)
+                scores = window_scores(gspecs, zs, len(P["wins"]))
                 fn = mil_loss if args.pool == "max" else mil_loss_mean
-                loss = fn(scores, labels[key], args.lam) / args.accum
+                loss = fn(scores, y, args.lam) / args.accum
                 loss.backward()
-                del cache, zs, scores
+                del cache, zs, zs0, scores, s0
                 step += 1
                 if step % args.accum == 0:
                     torch.nn.utils.clip_grad_norm_(params, 1.0)
