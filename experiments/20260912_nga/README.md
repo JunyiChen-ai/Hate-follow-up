@@ -1,6 +1,6 @@
 # NGA — negative-only group adaptation (label-free)
 
-Status: 2026-09-12 proposal + run. Development-selected numbers only (rule 10). Successor to
+Status: **2026-09-12 archived as a negative result after three rounds (§5b).** Development-selected numbers only (rule 10). Successor to
 `experiments/20260912_sdl/` (archived after three rounds); the constraint it drops is the one that
 falsified SDL.
 
@@ -96,7 +96,7 @@ path: HateMM .8920 / .6825 / **.6968**, HCS .7132 / .6675 / **.6020**
 |---|---|---|---|
 | r1 negative-only, no anchor | 0 | .8913 / .6797 / .6787 | .6960 / .6554 / .5875 |
 | r2 + anchor on pseudo-positive videos | 0.1 | .8928 / .6838 / **.6812** | .7092 / .6641 / **.5996** |
-| r3 (declared scan, rule 7) | 0.03 | running | running |
+| r3 (declared scan, rule 7) | 0.03 | .8930 / .6810 / .6723 | .7053 / .6607 / .6009 |
 
 Mechanism diagnostics against the frozen curve:
 
@@ -113,9 +113,24 @@ compression completely — spread, positive rate and ordering all return to the 
 same token it pins the model, and the small movement that remains is net slightly negative
 (−.016 HateMM, −.002 HCS, the latter inside the noise floor).
 
-The two rounds bracket the trade-off: too little anchoring and the model pays for the negative constraint
-with a global shift; too much and there is nothing left to learn. Round 3 is the single declared
-intermediate value.
+The three rounds bracket the trade-off: too little anchoring and the model pays for the negative
+constraint with a global shift; too much and there is nothing left to learn. The declared intermediate
+value does not find a middle — HateMM reads .6787 (anchor 0), .6723 (0.03), .6812 (0.1), all below the
+frozen .6968, with no monotone trend; HCS reads .5875, .6009, .5996 against .6020, i.e. inside the noise
+floor everywhere.
+
+### Disposition (rule 9)
+
+Three modification rounds, none reaching the gate. **NGA is archived, and with it the whole adaptation
+family** (SDL three rounds, NGA three rounds). Best numbers: within .6812 / .6009.
+
+The family's combined result is a single statement: **a video-level pseudo label produced by the model
+itself does not contain enough information to teach that model where inside a video the hate is.** The
+three ways of using it fail for three different and individually diagnosed reasons — the label leaks into
+the context of the thing it supervises, the positive-side bag constraint is factually false for this task,
+and the negative-side constraint alone is satisfiable by a global shift. Once all three are fixed
+simultaneously (round 3 here), what remains is 79 supervising videos out of 333, ten of them on
+HateClipSeg, and the model does not move.
 
 **Supervision budget, which bounds all of this:** only 79 of 333 videos are pseudo-negative (69 HateMM,
 **10 HCS**). The HCS side of the objective is supervised by ten videos, which is the declared risk in §3
