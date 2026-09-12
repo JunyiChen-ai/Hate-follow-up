@@ -1,6 +1,15 @@
 # CVA — counterfactual attribution of the video verdict to time intervals
 
-Status: **2026-09-12 proposal.** Not yet reviewed, not yet run.
+Status: **2026-09-12 proposal, rule-4 review 放行.** Not yet run.
+
+The reviewer verified criterion 1 by searching the literature: leave-one-out / occlusion attribution
+appears as LLM text-context attribution (AttriBoT 2411.15102), as post-hoc explanation of trained
+classifiers (occlusion sensitivity 2207.12859, meme modality ablation 2410.13488) and as a training-time
+erasure regulariser in weakly supervised video anomaly detection (DEN 2312.01764), but not as an
+inference-time label-free localization score. In hateful video specifically: LELA (2602.09637) scores
+segments absolutely (`max` over per-modality caption scores, no erasure), MultiHateLoc (2512.10408) is
+MIL with video-level labels, TANDEM (2601.11178) fine-tunes LoRA. Reviewer also flagged six factual
+errors in this README; all six are corrected in the text below.
 
 ## 1. What the 2026-09-12 measurements leave standing
 
@@ -15,7 +24,8 @@ Two measurements say the problem is in (3), not in the model:
 
 **(a) The per-window absolute read is dominated by a video-constant term.** `experiments/20260912_pwc/`
 §7c: mentioning the target group moves the window log-odds by +8.1 (HateMM) / +7.0 (HCS), while the
-window actually being GT-positive moves it by +6.3 / +4.7. That nuisance term is near-constant inside a
+window actually being GT-positive moves it by +4.3 on both (main effects, averaged over the other
+factor; count-weighted the nuisance/signal ratio is 1.15x on HateMM and 1.47x on HCS). That nuisance term is near-constant inside a
 video, because a hateful video talks about the same group throughout. `experiments/20260912_tad/` tried
 to remove it by subtracting a *different* read (an auxiliary topic question) and made things
 monotonically worse, because the topic read also carries signal.
@@ -78,9 +88,12 @@ Per video, on the **same** cached prefix SPVL-r2 already builds (20 frames + ful
 | whole-video verdict `z_video` | 1 | identical to SPVL-r2 |
 | exclusion read `z_excl(i)` | N | one per 8-second window, on the cached prefix |
 
-SPVL-r2 costs 1 + 1 (stance) + up to 2N branch reads. CVA costs 1 + N. **Cheaper than the current
-method**, on the same cache, with no new inputs, no new encoder and no new extraction. Median N is 15
-(HateMM) / 30 (HCS). Estimated 40 min (HateMM) / 70 min (HCS) on one 5090, from the SPVL-r2 timings.
+SPVL-r2 costs 1 prefix forward + up to 2N branch reads (its stance turn is a cache extension, not a
+scored read). CVA costs 1 prefix forward + N + 1 branch reads: 3983 reads on HateMM and 3709 on HCS,
+about half of SPVL-r2's. **Cheaper than the current method**, on the same cache, with no new inputs, no
+new encoder and no new extraction. Median N is 15 (HateMM) / 30 (HCS).
+`runs/20260910_spvl/full2_dual_evid_stance/run.log` finished all 333 videos of both corpora in 523 s on
+one 5090, so the estimate here is roughly 5 minutes per corpus, not tens of minutes.
 
 No new cache. Reuses `data/frames_k20/`, `data/asr_whisper_large_v3/`.
 
