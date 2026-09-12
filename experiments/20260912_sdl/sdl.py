@@ -395,7 +395,16 @@ def main():
                     else:
                         term = (-torch.nn.functional.logsigmoid(-sw)
                                 + args.lam * torch.sigmoid(sw)) / max(K, 1)
-                    (term / args.accum).backward()
+                    try:
+                        (term / args.accum).backward()
+                    except torch.OutOfMemoryError:
+                        logging.warning("OOM in backward on %s window %d: skipping the rest of this video",
+                                        row["video_id"], wi)
+                        opt.zero_grad(set_to_none=True)
+                        torch.cuda.empty_cache()
+                        oom = True
+                        del zsw, sw, term
+                        break
                     total += float(term.detach())
                     del zsw, sw, term
                 loss = total
