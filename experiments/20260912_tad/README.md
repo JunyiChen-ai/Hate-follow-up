@@ -298,10 +298,25 @@ discards — does not beat the scalar read either.
 | hidden state, 256 PCA dims, logistic regression | .6980 | .5520 |
 | hidden state, 128 PCA dims, gradient boosting | .7460 | .5942 |
 
-Limitation of this test, stated: the vector is read at the answer position of the window branch, which is
-already downstream of the model's decision. The model's *pre-decision* contextual representation of the
-window inside the prefix was not probed; that would need a token-to-time mapping through the image
-expansion and was not built.
+**Pre-decision probe** (`prefix_probe.py` + `prefix_oracle.py`, `runs/20260912_tad/prefix_probe/`, 183
+videos, 67 s): the same oracle over the model's contextual encoding of each window's frames **inside the
+prefix**, with no question asked. Restricted to windows that contain at least one of the 20 frames.
+
+| | HateMM within | HCS within |
+|---|---|---|
+| frozen read on the same windows, no fitting | **.7303** | **.6143** |
+| prefix visual representation, 64 dims, logistic regression | .6568 (−.074) | .5042 (−.110) |
+| prefix visual representation, 128 dims, gradient boosting | .6067 (−.124) | .5178 (−.097) |
+
+The pre-decision representation is **worse** than the decision, on both corpora, including HateClipSeg —
+the corpus that depends on the picture (removing the frames costs it .080 pooled ROC against .006 for the
+transcript). So the within-video ordering is not something the Yes/No projection discards; it is not in
+the representation to begin with, and the question-answering path is the best extraction of what is there.
+
+Limitation, stated: only the image tokens are located, because frames are identifiable in the token
+sequence by the image token id and arrive in order with known timestamps. Locating the transcript lines
+would need a character-to-token mapping through the image expansion and was not built, so the probe covers
+the visual side of the prefix only.
 
 Consequence for the direction of the project: the per-window feature family is at its ceiling. Any method
 that reweights, calibrates, combines or re-ranks these reads — including a self-training or pseudo-label
