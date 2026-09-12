@@ -86,6 +86,41 @@ Controls, run only if the gate passes:
 - **frozen baseline on this code path** (`--train 0`, exact by construction: the LoRA B matrix is zero-init);
 - **oracle** — real video-level labels instead of the pseudo labels (rule-10 diagnostic, never a method arm).
 
+## 5b. Results
+
+All numbers through the shared evaluator, 333 videos, both corpora. Frozen reference on the same code
+path: HateMM .8920 / .6825 / **.6968**, HCS .7132 / .6675 / **.6020**
+(`runs/20260910_spvl/mllm/q3vl-8b/full/`).
+
+| round | anchor | HateMM ROC / PR / within | HCS ROC / PR / within |
+|---|---|---|---|
+| r1 negative-only, no anchor | 0 | .8913 / .6797 / .6787 | .6960 / .6554 / .5875 |
+| r2 + anchor on pseudo-positive videos | 0.1 | .8928 / .6838 / **.6812** | .7092 / .6641 / **.5996** |
+| r3 (declared scan, rule 7) | 0.03 | running | running |
+
+Mechanism diagnostics against the frozen curve:
+
+| | Spearman(adapted, frozen) | within-video std | windows judged positive |
+|---|---|---|---|
+| frozen | — | 4.46 / 5.40 | 45.8 % / 50.7 % |
+| r1 (anchor 0) | .829 / .787 | **1.33 / 1.45** | **2.8 % / 0.0 %** |
+| r2 (anchor 0.1) | .950 / .938 | 4.40 / 5.50 | 48.2 % / 50.8 % |
+
+Reading. Round 1 confirmed the failure mode the anchor was designed for: with no term on pseudo-positive
+videos the objective is satisfiable by lowering every window everywhere, and the resulting compression
+costs within even though the ordering itself is largely preserved. Round 2's anchor removes the
+compression completely — spread, positive rate and ordering all return to the frozen values — but by the
+same token it pins the model, and the small movement that remains is net slightly negative
+(−.016 HateMM, −.002 HCS, the latter inside the noise floor).
+
+The two rounds bracket the trade-off: too little anchoring and the model pays for the negative constraint
+with a global shift; too much and there is nothing left to learn. Round 3 is the single declared
+intermediate value.
+
+**Supervision budget, which bounds all of this:** only 79 of 333 videos are pseudo-negative (69 HateMM,
+**10 HCS**). The HCS side of the objective is supervised by ten videos, which is the declared risk in §3
+and is consistent with HCS moving least in every round.
+
 ## 6. Test-read log (rule 10)
 
 - 2026-09-12: the §1 findings are the PWC, TAD and SDL test reads already logged in those READMEs.
