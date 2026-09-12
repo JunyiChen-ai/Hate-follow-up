@@ -1,6 +1,9 @@
 # CVA — counterfactual attribution of the video verdict to time intervals
 
-Status: **2026-09-12 proposal, rule-4 review 放行.** Not yet run.
+
+**归档原因（2026-09-12）**：E0 六项指标全部低于 SPVL-r2，规则 9 无提升即归档。机制本身成立（打乱对照掉到 .508/.514，说明模型确实按区间响应），但反事实差分比直接问窗口弱；§2 声称的"抵消视频内常数项"对 within 指标是空操作，因为残差本来就是视频内秩。
+Status: **2026-09-12 archived as a negative result** (rule 9: no metric improved on any corpus).
+Rule-4 review 放行, rule-6 code review clean. Development-selected numbers only (rule 10).
 
 The reviewer verified criterion 1 by searching the literature: leave-one-out / occlusion attribution
 appears as LLM text-context attribution (AttriBoT 2411.15102), as post-hoc explanation of trained
@@ -163,3 +166,75 @@ Read: `runs/20260910_spvl/mllm/q3vl-8b/full/predictions.jsonl` (per-window `z`, 
 Found: §1(b) above — frame coverage of the 8-second grid, and the paired framed/frameless split of the
 visual branch. Changed: the decision moved from an absolute per-window read to a counterfactual
 difference of two video-level reads. Numbers in §1(b) are development-selected.
+
+
+---
+
+## 9. Result (`runs/20260912_cva/e0/`, one run, both corpora, 333 videos, 0 errors)
+
+`metrics_izv_plus_mean_rrank.json`, pooled ROC / pooled PR / within (n videos with both classes):
+
+| | HateMM | HateClipSeg |
+|---|---|---|
+| SPVL-r2 (baseline) | .8919 / .6831 / **.6976** (84) | .7119 / .6664 / **.6001** (99) |
+| CVA | .8834 / .6572 / .6747 (84) | .6724 / .6215 / .5779 (99) |
+| delta | −.0085 / −.0259 / −.0229 | −.0395 / −.0449 / −.0222 |
+
+All six numbers below baseline. No metric improves on either corpus, so rule 9 archives this without a
+second round.
+
+Runtime: HateMM 215 videos in 186 s, HCS 118 in 173 s, one 5090 (`uoa-lab3`) — as predicted in §3, and
+about half of SPVL-r2's read count. The cost claim held; the accuracy claim did not.
+
+## 10. What the controls say
+
+Window-level within AUC on the same windows (74 HateMM / 96 HCS videos with both window classes):
+
+| curve | HateMM | HCS |
+|---|---|---|
+| SPVL-r2's direct window read `z` | **.7563** | **.6190** |
+| CVA `s = z_video − z_excl` | .7183 | .5908 |
+| `−z_excl` alone (the `--score raw` control) | .7183 | .5908 |
+| `s` shuffled within each video (seed 0) | .5079 | .5143 |
+
+**(a) The model does honour the exclusion instruction.** Shuffling `s` inside a video drops it to chance,
+so the read genuinely depends on *which* interval was excluded. The mechanism is not fictional: it
+produces a real, interval-specific localization signal at .718 / .591. It is simply weaker than asking
+about the window directly.
+
+**(b) The cancellation argument in §2 is void for the within metric, and the control proves it.**
+`rank(s) == rank(−z_excl)` on **100 %** of videos, so the two rows above are identical by construction:
+inside one video `z_video` is a constant, and the residual is a *within-video centred rank*, which
+already removes any within-video constant. Subtracting a video-constant term therefore cannot change the
+within-video ordering at all. The nuisance that §2 promised to cancel was already cancelled by the rank
+residual before CVA was written.
+
+This is the substantive error in the proposal. TAD's subtraction was not equivalent to this: it
+subtracted a *per-window varying* topic read, which does move the ranks (and moved them the wrong way).
+A cancellation argument can only help here if the term being removed varies inside the video.
+
+**(c) The interval-specific part of the read is small.** `s` has mean +3.57 (HateMM) / +3.98 (HCS) — the
+exclusion clause costs about 4 log-odds no matter which interval it names — while the within-video
+standard deviation of `s` is only 0.70 / 0.51, against 6.20 / 5.69 for SPVL-r2's direct window read. The
+clause's own effect is roughly six times the interval's.
+
+## 11. Where this leaves the question
+
+CVA answers a question the earlier archived rounds did not: *is "would the verdict survive without
+interval i" a better per-window quantity than "is interval i violating"?* Measured: no, .718 / .591
+against .756 / .619. Asking the model about the whole video and differencing loses more than the
+absolute per-window read loses to the topic confound.
+
+The §1(b) diagnosis that motivated this — 24.2 % / 34.1 % of windows contain no prefix frame, and the
+visual branch orders better on exactly those windows — is **not** addressed by CVA and remains open. CVA
+changed what is asked; it did not change the decision unit, which is still the same fixed 8-second grid.
+
+## 12. Code review notes carried forward (rule 6, non-blocking)
+
+- The declared exclusion string in §4 uses an em dash and omits the trailing `Answer "Yes" or "No".`;
+  `cva.py:47` uses `--` and appends the answer instruction. The run used the code's string.
+- §5's `--score raw` arm has no `--score` flag in `cva.py`; it was computed post hoc from the persisted
+  `extra.windows[].z_excl`, which is exact (see §10). `run_e0.sh` references a `run_keeponly.sh` that was
+  never written — the keeponly arm was not run, because rule 9 archives the candidate on the E0 result.
+- Error rows are written with `"method": "cva"` while good rows use `"method": "cva_exclude"`. There were
+  0 errors, so this never triggered.
