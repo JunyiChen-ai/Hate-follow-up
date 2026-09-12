@@ -234,6 +234,9 @@ def main():
     ap.add_argument("--loss", choices=["bce", "hinge"], default="hinge",
                     help="hinge: non-saturating margin loss on the raw log-odds (round 3)")
     ap.add_argument("--margin", type=float, default=2.0, help="hinge margin in log-odds units")
+    ap.add_argument("--anchor", type=float, default=0.0,
+                    help="negonly: squared-error weight anchoring pseudo-POSITIVE videos to their frozen "
+                         "window scores, so the objective cannot be satisfied by a global downward shift")
     ap.add_argument("--pool", choices=["max", "mean", "negonly"], default="negonly",
                     help="negonly: no term at all on pseudo-positive videos (NGA); max/mean reproduce SDL")
     ap.add_argument("--stance", choices=["verdict", "none"], default="none",
@@ -260,7 +263,8 @@ def main():
     logging.info("host %s", socket.gethostname())
     (out_dir / "run.pid").write_text(str(os.getpid()))
     args.method_name = (args.method_name
-                        or f"nga_r{args.rank}_{args.pool}_{args.loss}_m{args.margin:g}_e{args.epochs}")
+                        or f"nga_r{args.rank}_{args.pool}_{args.loss}_m{args.margin:g}"
+                           f"_a{args.anchor:g}_e{args.epochs}")
     cfg = dict(vars(args))
     cfg.update({"code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"), "host": socket.gethostname(),
                 "seed": SEED, "targets": list(TARGETS)})
@@ -279,11 +283,13 @@ def main():
         rows = rows[:args.limit]
     asr = {ds: load_asr(ds) for ds in args.datasets}
 
-    pseudo = {}
+    pseudo, frozen_w = {}, {}
     for line in open(args.pseudo_from):
         r = json.loads(line)
         if r.get("extra") and r["extra"].get("z_video") is not None:
             pseudo[(r["dataset"], r["video_id"])] = float(r["extra"]["z_video"])
+            if r["extra"].get("windows"):
+                frozen_w[(r["dataset"], r["video_id"])] = [float(w["z"]) for w in r["extra"]["windows"]]
     rows = [r for r in rows if (r["dataset"], r["video_id"]) in pseudo]
     labels = {k: int(v > 0) for k, v in pseudo.items()}
     if args.shuffle_pseudo:
@@ -334,7 +340,7 @@ def main():
                         crop_cache(cache, len(b0))
                         ctx_len = prefix_len
                     set_lora(judge.model, True)
-                if args.pool == "negonly" and labels[key] == 1:
+                if args.pool == "negonly" and labels[key] == 1 and args.anchor <= 0:
                     del cache
                     continue  # pseudo-positive videos carry no window-level constraint
                 specs, _, _ = branch_specs(judge, P, stance, args)
@@ -380,7 +386,15 @@ def main():
                     sw = zsw[0]
                     for extra in zsw[1:]:
                         sw = torch.maximum(sw, extra)
-                    if args.loss == "hinge":
+                    if args.pool == "negonly" and y == 1:
+                        # anchor: no constraint is asserted about a hateful video's windows, but the score
+                        # must not drift. Without this the negative-only objective is satisfiable by
+                        # lowering every window everywhere (round 1: mean -22.6, std 4.46 -> 1.33).
+                        fw = frozen_w.get(key)
+                        tgt = torch.tensor(float(fw[wi]) if fw and wi < len(fw) else 0.0,
+                                           device=sw.device, dtype=sw.dtype)
+                        term = args.anchor * (sw - tgt) ** 2 / max(K, 1)
+                    elif args.loss == "hinge":
                         # log-odds run to |s| ~ 15, where sigmoid and logsigmoid have vanishing gradients,
                         # so the BCE form gives almost no update on the videos the frozen model already
                         # gets right. The hinge is on the raw log-odds: constant gradient while the
