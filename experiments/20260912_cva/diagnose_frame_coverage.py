@@ -31,6 +31,7 @@ import numpy as np
 warnings.filterwarnings("ignore")
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
+from scipy.stats import spearmanr  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
 
 TS = re.compile(r"_t(\d+(?:\.\d+)?)\.jpg$")
@@ -72,6 +73,7 @@ def main():
         fr_s, nf_s = [], []                                 # speech branch
         std_fr, std_nf, vis_std_fr, vis_std_nf = [], [], [], []
         vis_wins_framed = vis_wins_frameless = spk_n_fr = spk_n_nf = 0
+        pair_fr, pair_nf, sp_vs = [], [], []   # paired: same video, both subsets have both classes
 
         for r in rows:
             if r["dataset"] != ds or r.get("error") or not r.get("extra"):
@@ -100,6 +102,13 @@ def main():
             n_framed += int(has.sum())
 
             all_p.append((lab, z)); all_v.append((lab, np.nan_to_num(zv, nan=-99.0)))
+            mv = ~np.isnan(zv) & ~np.isnan(zs)
+            if mv.sum() > 2 and np.ptp(zv[mv]) > 0 and np.ptp(zs[mv]) > 0:
+                sp_vs.append(float(spearmanr(zv[mv], zs[mv]).correlation))
+            ka, kb = has & ~np.isnan(zv), (~has) & ~np.isnan(zv)
+            if (ka.sum() > 1 and kb.sum() > 1 and len(set(lab[ka])) == 2 and len(set(lab[kb])) == 2
+                    and np.ptp(zv[ka]) > 0 and np.ptp(zv[kb]) > 0):
+                pair_fr.append(roc_auc_score(lab[ka], zv[ka])); pair_nf.append(roc_auc_score(lab[kb], zv[kb]))
             if has.any():
                 fr_p.append((lab[has], z[has]))
                 m = has & ~np.isnan(zv)
@@ -133,6 +142,11 @@ def main():
         print(f"  within-video std of visual read: framed {np.mean(vis_std_fr):.2f}   frameless {np.mean(vis_std_nf):.2f}")
         print(f"  visual branch wins the max on:   framed {vis_wins_framed}   frameless {vis_wins_frameless} windows")
         print(f"  windows carrying a speech branch: framed {spk_n_fr}   frameless {spk_n_nf}")
+        print(f"  PAIRED, same {len(pair_fr)} videos (both subsets have both classes):")
+        print(f"    visual branch, windows WITH a frame    = {np.mean(pair_fr):.4f}")
+        print(f"    visual branch, windows WITHOUT a frame = {np.mean(pair_nf):.4f}"
+              f"   ({np.mean(pair_nf) - np.mean(pair_fr):+.4f})")
+        print(f"  median within-video Spearman(visual read, speech read) = {np.median(sp_vs):+.3f}")
 
 
 if __name__ == "__main__":

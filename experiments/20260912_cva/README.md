@@ -21,16 +21,17 @@ to remove it by subtracting a *different* read (an auxiliary topic question) and
 monotonically worse, because the topic read also carries signal.
 
 **(b) The visual branch is not reading the window.** Measured today
-(`diagnose_frame_coverage.py`, `runs/20260912_cva/diag/`): the shared prefix holds 20 uniformly sampled
-frames, so at an 8-second grid **24.2 % (HateMM) / 34.1 % (HCS) of windows contain no frame at all**.
-Paired within the same videos, the visual branch orders *better* on the windows where it has no frame:
+(`diagnose_frame_coverage.py`, output in `runs/20260912_cva/diag/frame_coverage.txt`, on the STATUS-authoritative
+run `runs/20260910_spvl/full2_dual_evid_stance/`): the shared prefix holds 20 uniformly sampled frames,
+so at an 8-second grid **24.2 % (HateMM) / 34.1 % (HCS) of windows contain no frame at all**. Paired
+within the same videos, the visual branch orders *better* on the windows where it has no frame:
 
 | | HateMM (23 videos) | HCS (77 videos) |
 |---|---|---|
-| visual branch, windows containing a frame | .5710 | .5394 |
-| visual branch, windows containing no frame | **.7338** (+.163) | **.5664** (+.027) |
+| visual branch, windows containing a frame | .5663 | .5417 |
+| visual branch, windows containing no frame | **.7251** (+.159) | **.5622** (+.020) |
 
-Its median within-video Spearman with the speech branch is only +.154 / +.184, so on frameless windows
+Its median within-video Spearman with the speech branch is only +.111 / +.176, so on frameless windows
 it is not simply re-reading the speech branch — it is producing a judgement from the global context.
 When a frame *is* present the model looks at it, and a single uniformly sampled still from a hateful
 video is usually unremarkable, so the local evidence pushes the answer the wrong way.
@@ -112,11 +113,17 @@ Identical for both corpora (rule 13).
 **Parity check before any arm is believed** (this is what caught the resampling bug in
 `experiments/20260912_tad/`): `cva_compose.py` is run on `runs/20260910_spvl/mllm/q3vl-8b/full/predictions.jsonl`
 and must reproduce SPVL-r2's authoritative row exactly.
-**Run 2026-09-12: passes.** `metrics_paritychk.json` is identical to
-`runs/20260910_spvl/mllm/q3vl-8b/full/metrics_izv_plus_mean_rrank.json` —
-HateMM `.8920 / .6825 / .6968` (n=84), HCS `.7132 / .6675 / .6020` (n=99). Those are the baseline
-numbers CVA is compared against; the `.8938 / .6863 / .6783` row in
-`experiments/20260910_spvl/README.md` §7 is an earlier run and is not the comparison baseline.
+**Run 2026-09-12: passes on both SPVL-r2 runs.** `metrics_paritychk.json` is byte-for-byte the same
+metrics as the run's own `metrics_izv_plus_mean_rrank.json`:
+
+| run | HateMM | HCS |
+|---|---|---|
+| `full2_dual_evid_stance/` (the STATUS row, **the comparison baseline**) | .8919 / .6831 / .6976 | .7119 / .6664 / .6001 |
+| `mllm/q3vl-8b/full/` (same method, separate run) | .8920 / .6825 / .6968 | .7132 / .6675 / .6020 |
+
+The two runs differ by at most .0019 pooled and .0019 within, inside the noise floor. The
+`.8938 / .6863 / .6783` row in `experiments/20260910_spvl/README.md` §7 is an earlier configuration and
+is not a baseline.
 
 ## 6. Predicted outcome and the failure signal
 
