@@ -1,6 +1,7 @@
 # SDL — self-distilled localization: a label-free MIL objective from the model's own verdict
 
-Status: 2026-09-12 proposal. No run yet. Development-selected numbers only (rule 10).
+Status: **2026-09-12 archived as a negative result after three modification rounds (§5b–§5e).**
+Development-selected numbers only (rule 10). Successor: `experiments/20260912_nga/`.
 
 Predecessors, all archived as negative results today: `experiments/20260912_pwc/` (read-out change),
 `experiments/20260912_tad/` (auxiliary read, subtraction and decision re-specification). Together they
@@ -188,6 +189,54 @@ available for "mentioning is not attacking".
 
 Declared risk: in videos with a large hateful extent (HCS median positive fraction .47) pushing every
 non-top window down is wrong. If round 3 shows that pattern, round 4 replaces max with top-K.
+
+## 5e. Round 3 result — the push-down term flattens the curve (falsified; SDL archived)
+
+`runs/20260912_sdl/e3_hinge/`, 333 videos, 3 epochs, hinge on the raw log-odds, no stance turn.
+
+| composition | HateMM ROC / PR / within | HCS ROC / PR / within |
+|---|---|---|
+| SDL round 3 | .8838 / .6358 / **.5092** | .6861 / .6319 / **.5337** |
+| same run, frozen intercept | .8905 / .6737 / .5092 | .7120 / .6645 / .5337 |
+| frozen SPVL-r2 reference | .8920 / .6825 / .6968 | .7132 / .6675 / .6020 |
+
+The round-1 shortcut is gone: the gap between the mean adapted window score of pseudo-negative and
+pseudo-positive videos is 1.2 log-odds (round 1: 18.8). The objective now acts inside videos. It acts the
+wrong way:
+
+| | frozen | after adaptation |
+|---|---|---|
+| windows judged positive | 45.8 % / 50.7 % | **12.3 % / 7.3 %** |
+| within-video standard deviation of the curve | 4.46 / 5.40 | **1.73 / 1.81** |
+| Spearman(adapted, frozen) per video, median | — | .526 / .531 |
+
+The push-down term dominated: nearly every window was driven below the margin and the curve was
+compressed, so half the ordering the frozen model had was destroyed and nothing replaced it. This is the
+risk declared in §5d, and it is a property of the objective, not of the optimisation: the bag constraint
+"one window up, all others down" is factually wrong for this task, because hateful videos have a median
+positive fraction of .24 (HateMM) and .47 (HCS) — most windows of a hateful video are hateful. The model
+complied with a false constraint.
+
+### Disposition (rule 9)
+
+Three modification rounds used — stance removal, objective form, non-saturating hinge — none reaching the
+gate. **SDL is archived.** Best numbers: within .5337 (HCS, round 3) and .5092 (HateMM, round 3), both far
+below the frozen baseline.
+
+What the three rounds establish, and what a successor must respect:
+
+1. The supervision signal must not appear in the context of the thing it supervises (round 1).
+2. A saturated log-odds read-out needs a non-saturating loss (round 2).
+3. **A bag constraint of the form "exactly one positive instance" is false for this task.** The only part
+   of the video-level pseudo label that is unambiguously true at window level is the *negative* side: in a
+   non-hateful video, every window is non-hateful. The positive side carries no reliable window-level
+   constraint without an extent estimate.
+
+Point 3 identifies a different objective — constrain only pseudo-negative videos, leave positive videos
+untouched — which is the successor in `experiments/20260912_nga/`. It also happens to be exactly the
+signal the topic/act diagnosis needs: non-hateful videos do contain windows that mention a protected
+group, and teaching the model to score those low is the only label-free way to express "mentioning is not
+attacking".
 
 ## 6. Risks, stated before the run
 
