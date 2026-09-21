@@ -169,3 +169,55 @@ bash experiments/20260922_til/launch/run_infer.sh
 ## 8. Results
 
 (filled after the runs)
+
+Measurement runs: `runs/20260922_til/gridA/` (sc474398 = uoa-lab3, 2026-09-22 08:31–08:40, 333 videos, 0 errors,
+1.4 s/video) and `runs/20260922_til/gridB/` (sc474399 = uoa-lab2, 08:37–08:47, 333 videos, 0 errors). Verify gate
+on the first video: cache vs plain-forward |Δz_video| = 0.03. All arms: `runs/20260922_til/infer/<tag>/metrics.json`,
+table `runs/20260922_til/table.txt`. pooled ROC / pooled PR / within (84 / 99 videos):
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| SPVL-r2 (STATUS row, mask path) | .8919 / .6831 / .6976 | .7119 / .6664 / .6001 |
+| A0 replicate (grid A, raw max, no prior) | .8919 / .6820 / .6926 | .7129 / .6673 / .6007 |
+| A1b grid A, scaled max, no prior | .8918 / .6816 / .6746 | .7129 / .6673 / .6014 |
+| **A1 grid A, scaled max, prior D = 80 s** | **.8921 / .6840 / .7486** | **.7131 / .6677 / .6247** |
+| A1 with D = 40 s / 160 s | .7459 / .7462 (within) | .6232 / .6210 (within) |
+| A1p as A1, `s_m` pooled over corpora | .8921 / .6840 / .7479 | .7131 / .6677 / .6239 |
+| A1s as A1, sum fusion | .8919 / .6831 / .7194 | .7125 / .6668 / .6017 |
+| A2 grids A + B averaged, no prior | .8918 / .6808 / .6685 | .7130 / .6674 / .6083 |
+| A3 grids A + B averaged, prior 80 s | .8920 / .6836 / .7366 | .7130 / .6677 / .6232 |
+| A4 grids A + B, interval model, prior 80 s (the candidate) | .8920 / .6835 / .7321 | .7129 / .6677 / .6203 |
+| A4 with D = 40 s / 160 s | .7256 / .7336 (within) | .6236 / .6127 (within) |
+| A4p as A4, `s_m` pooled | .8920 / .6835 / .7320 | .7129 / .6676 / .6197 |
+| A5 grids A + B, interval model, no prior | .8918 / .6806 / .6675 | .7129 / .6671 / .6076 |
+| A6 as A4, sum fusion | .8919 / .6832 / .7158 | .7124 / .6667 / .6002 |
+| B1 grid B alone, prior 80 s (within only) | .7237 (within) | .6103 (within) |
+
+**Decision by the declared rule.** A4 passes the rule-8 gate against SPVL-r2 (within +.035 / +.020, pooled within
+noise) but fails the mechanism test: A4 − A3 = −.005 / −.003 (the interval-support model adds nothing beyond
+averaging + smoothing), and adding grid B at all is negative: A3 − A1 = −.012 / −.002, A2 − A1b = −.006 / +.007,
+B1 − A1 = −.025 / −.014. The shifted-grid measurement claim is **refuted**; the paradigm claim ("interval
+measurements + observation model") is withdrawn as declared in §5.
+
+What remains is the single-grid explicit temporal prior (A1): within +.051 / +.025 over SPVL-r2 with all pooled
+numbers inside noise, stable over the dwell scan (worst .7459 / .6210), over pooled vs per-corpus scaling, and
+(from §6 item 1) over 7 of 8 MLLMs. Its ablation passes rule 14g: removing the prior (A1 → A1b) costs .074 / .023
+within. Under rule 4 case (3) this is not a new method; it is an explicit component of SPVL-r2 (rule 3). Fusion
+must stay max: sum loses .029 / .023 (A1s). Note that the per-modality scaling alone (A1b vs A0) costs .018 within on
+HateMM: max of scaled reads lets the visual branch win more often; with the prior this is more than recovered, but the
+scaling is not a free choice.
+
+**Why grid B measures worse (development read, rule 10; files: both `predictions.jsonl`, `data/gt_4fps`).** The two
+grids' reads on half-overlapping windows agree only moderately (median within-video Spearman .57 HateMM / .63 HCS)
+although z_video is bit-identical on every video; grid B's own window-level discrimination is lower (pooled window
+AUC .849 vs .853 HateMM, .702 vs .718 HCS; per-video AUC on full windows .698 vs .705, .584 vs .619). So a window
+read is not a stable function of the content inside the window: shifting the grid by 4 s changes the answers by
+about as much as it changes the content, and averaging two such reads onto a 4 s cell behaves like a 12 s window
+(the 16 s grid was already worse than 8 s). There is no boundary information to invert. B1 additionally leaves the
+0–4 s cell unmeasured, which explains part of its own deficit but not A3's.
+
+**Disposition.** Shifted grids: archived as a negative result (this README stays as the record). Temporal prior:
+proposed to the user as a component of the current method (SPVL-r2 + duration prior, "SPVL-r3"), claimed at the level
+of rule-4 case (3): an explicit temporal prior over isolated interval reads, with the cross-model evidence of §6 and
+the HVL contrast (the same persistence imposed in-context by the model loses .03 / .04–.07; imposed as an explicit
+prior over independent reads it gains .05 / .02). Cost of the component: CPU, milliseconds per video, no new calls.
