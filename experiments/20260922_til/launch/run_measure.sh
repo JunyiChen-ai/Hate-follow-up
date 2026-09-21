@@ -11,6 +11,6 @@ set +e
 "$PY" experiments/20260922_til/til_measure.py --run-name "$RUN" --window-offset "$OFF" --datasets "${DS[@]}" >> "$OUT/launch.log" 2>&1
 RC=$?
 set -e
-grep -E "VERIFY|progress|DONE|FAILED|OOM|Traceback|GATE" "$OUT/launch.log" | tail -5
+grep -E "VERIFY|progress|DONE|FAILED|OOM|Traceback|GATE" "$OUT/launch.log" | tail -5 || true
 if [ $RC -ne 0 ] || ! grep -q "DONE videos" "$OUT/launch.log"; then echo "RUN_FAILED $RUN rc=$RC" | tee -a "$OUT/launch.log"; exit 1; fi
 echo "RUN_DONE $RUN $(date -Is)" | tee -a "$OUT/launch.log"

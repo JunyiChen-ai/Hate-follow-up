@@ -7,6 +7,7 @@ A=runs/20260922_til/gridA; B=runs/20260922_til/gridB
 I="$PY experiments/20260922_til/til_infer.py"
 {
 $I --runs $A --model none --dwell 0 --tag A0_spvl_replicate
+$I --runs $A --model average --dwell 0 --tag A1b_gridA_scaledmax_noprior
 $I --runs $A --model average --dwell 80 --tag A1_gridA_prior80
 $I --runs $A $B --model average --dwell 0 --tag A2_AB_average
 $I --runs $A $B --model average --dwell 80 --tag A3_AB_average_prior80
@@ -14,6 +15,7 @@ $I --runs $A $B --model interval --dwell 80 --tag A4_AB_interval_prior80
 $I --runs $A $B --model interval --dwell 0 --tag A5_AB_interval_noprior
 $I --runs $A $B --model interval --dwell 80 --fusion sum --tag A6_AB_interval_prior80_sum
 $I --runs $B --model average --dwell 80 --tag B1_gridB_prior80
+$I --runs $A $B --model interval --dwell 80 --scale pooled --tag A4p_AB_interval_prior80_pooledscale
 for D in 40 160; do
   $I --runs $A --model average --dwell $D --tag A1_gridA_prior$D
   $I --runs $A $B --model average --dwell $D --tag A3_AB_average_prior$D

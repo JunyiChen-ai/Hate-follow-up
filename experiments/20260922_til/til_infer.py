@@ -112,6 +112,7 @@ def main():
     ap.add_argument("--fusion", choices=["sum", "max"], default="max")
     ap.add_argument("--dwell", type=float, default=80.0, help="mean dwell in seconds; 0 = no temporal coupling")
     ap.add_argument("--cell", type=float, default=4.0)
+    ap.add_argument("--scale", choices=["corpus", "pooled"], default="corpus", help="modality std per corpus (transductive) or pooled over all corpora")
     ap.add_argument("--tag", required=True)
     ap.add_argument("--out-root", default=str(ROOT / "runs/20260922_til/infer"))
     ap.add_argument("--datasets", nargs="+", default=["HateMM", "HateClipSeg"])
@@ -123,7 +124,8 @@ def main():
     scale = {}
     for ds in a.datasets:
         for m in MODS:
-            vals = [w[f"z_{m}"] for r in runs for k, rec in r.items() if k[0] == ds for w in rec["extra"]["windows"] if f"z_{m}" in w]
+            vals = [w[f"z_{m}"] for r in runs for k, rec in r.items() if (a.scale == "pooled" or k[0] == ds)
+                    for w in rec["extra"]["windows"] if f"z_{m}" in w]
             scale[(ds, m)] = float(np.std(vals)) if len(vals) > 1 else 1.0
     out_dir = Path(a.out_root) / a.tag
     out_dir.mkdir(parents=True, exist_ok=True)
