@@ -26,7 +26,12 @@ from scipy.stats import rankdata
 
 ROOT = Path(__file__).resolve().parents[2]
 FPS = 4.0
-MODS = ("visual", "speech")
+
+
+def mods_of(windows):
+    """Modality keys present in a run's windows: z_visual / z_speech / z_joint ...; a run with only "z" has one modality "z"."""
+    keys = sorted({k for w in windows for k in w if k.startswith("z_")})
+    return keys or ["z"]
 
 
 def load_run(path):
@@ -108,25 +113,29 @@ def chain_pair(n, obs, p_stay):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", nargs="+", required=True, help="measurement run dirs; the first is grid A (intercept source)")
-    ap.add_argument("--model", choices=["interval", "average", "none"], default="interval")
+    ap.add_argument("--model", choices=["interval", "average", "none", "smooth"], default="interval")
     ap.add_argument("--fusion", choices=["sum", "max"], default="max")
     ap.add_argument("--dwell", type=float, default=80.0, help="mean dwell in seconds; 0 = no temporal coupling")
     ap.add_argument("--cell", type=float, default=4.0)
     ap.add_argument("--scale", choices=["corpus", "pooled"], default="corpus", help="modality std per corpus (transductive) or pooled over all corpora")
+    ap.add_argument("--shuffle", action="store_true", help="control: chain applied to a within-video shuffled window order (seed 0), scores mapped back")
+    ap.add_argument("--gt-dir", default=str(ROOT / "data/gt_4fps"))
     ap.add_argument("--tag", required=True)
     ap.add_argument("--out-root", default=str(ROOT / "runs/20260922_til/infer"))
     ap.add_argument("--datasets", nargs="+", default=["HateMM", "HateClipSeg"])
     a = ap.parse_args()
     runs = [load_run(p) for p in a.runs]
-    keys = [k for k in runs[0] if all(k in r for r in runs)]
+    keys = [k for k in runs[0] if k[0] in a.datasets and all(k in r for r in runs)]
     p_stay = 0.5 if a.dwell <= 0 else max(0.5, 1.0 - a.cell / a.dwell)
     # label-free modality scales per corpus from the reads themselves
+    MODS = mods_of([w for r in runs for rec in r.values() for w in rec["extra"]["windows"]])
     scale = {}
     for ds in a.datasets:
         for m in MODS:
-            vals = [w[f"z_{m}"] for r in runs for k, rec in r.items() if (a.scale == "pooled" or k[0] == ds)
-                    for w in rec["extra"]["windows"] if f"z_{m}" in w]
+            vals = [w[m] for r in runs for k, rec in r.items() if (a.scale == "pooled" or k[0] == ds)
+                    for w in rec["extra"]["windows"] if m in w]
             scale[(ds, m)] = float(np.std(vals)) if len(vals) > 1 else 1.0
+    rng = np.random.RandomState(0)
     out_dir = Path(a.out_root) / a.tag
     out_dir.mkdir(parents=True, exist_ok=True)
     pred_path = out_dir / "predictions.jsonl"
@@ -138,7 +147,9 @@ def main():
             dur = float(recA["duration"]); L = len(recA["score_curve"])
             n_cells = max(1, int(np.ceil(dur / a.cell - 1e-9)))
             wins = [w for r in (runs if a.model != "none" else runs[:1]) for w in r[key]["extra"]["windows"]]
-            if a.model == "none":
+            if not wins:  # ASR-window run, video without transcript: no measurement at all
+                cell_lo = np.zeros(n_cells)
+            elif a.model == "none":
                 v = np.full(n_cells, np.nan)
                 for w in wins:
                     for k in cover(w["start"], w["end"], n_cells, a.cell):
@@ -148,17 +159,31 @@ def main():
             else:
                 fused = []
                 for w in wins:
-                    reads = [w[f"z_{m}"] / scale[(ds, m)] for m in MODS if f"z_{m}" in w]
+                    reads = [w[m] / scale[(ds, m)] for m in MODS if m in w]
                     if not reads:
                         continue
                     fused.append((sum(reads) if a.fusion == "sum" else max(reads), cover(w["start"], w["end"], n_cells, a.cell)))
-                if a.model == "average":
-                    acc = np.zeros(n_cells); cnt = np.zeros(n_cells)
-                    for r, ks in fused:
-                        for k in ks:
-                            acc[k] += r; cnt[k] += 1
-                    v = np.where(cnt > 0, acc / np.maximum(cnt, 1), 0.0)
-                    cell_lo = chain2(v, p_stay)
+                if a.model in ("average", "smooth"):
+                    if a.shuffle or a.model == "smooth":  # window-level operations (single fixed grid only)
+                        if len(runs) != 1:
+                            raise SystemExit("--shuffle / --model smooth need a single run")
+                        wv = np.array([r for r, _ in fused]); n = len(wv)
+                        if a.model == "smooth":
+                            q = np.pad(wv, 1, mode="edge"); wv2 = (0.5 * q[:-2] + q[1:-1] + 0.5 * q[2:]) / 2.0 if n >= 3 else wv
+                        else:
+                            perm = rng.permutation(n); rep = np.repeat(wv[perm], 2)
+                            post = chain2(rep, p_stay)[0::2]; wv2 = np.empty(n); wv2[perm] = post
+                        cell_lo = np.zeros(n_cells)
+                        for (r, ks), val in zip(fused, wv2):
+                            for k in ks:
+                                cell_lo[k] = val
+                    else:
+                        acc = np.zeros(n_cells); cnt = np.zeros(n_cells)
+                        for r, ks in fused:
+                            for k in ks:
+                                acc[k] += r; cnt[k] += 1
+                        v = np.where(cnt > 0, acc / np.maximum(cnt, 1), 0.0)
+                        cell_lo = chain2(v, p_stay)
                 else:
                     obs = [[] for _ in range(n_cells)]
                     for r, ks in fused:
@@ -170,14 +195,14 @@ def main():
             idx = np.clip((centers // a.cell).astype(int), 0, n_cells - 1)
             curve = np.asarray(cell_lo, float)[idx]
             zv = float(recA["extra"]["z_video"])
-            intercept = zv + float(np.mean([w["z"] for w in recA["extra"]["windows"]]))
+            intercept = zv + (float(np.mean([w["z"] for w in recA["extra"]["windows"]])) if recA["extra"]["windows"] else 0.0)
             final = intercept + centered_rank(curve)
             fh.write(json.dumps({**recA, "method": f"til__{a.tag}", "score_curve": [float(x) for x in final],
                                  "extra": {"z_video": zv, "intercept": intercept, "cell_logodds": [float(x) for x in cell_lo]}}) + "\n")
             n_ok += 1
     metrics_path = out_dir / "metrics.json"
     subprocess.run([sys.executable, str(ROOT / "src/eval/evaluate_four_datasets.py"), "--predictions", str(pred_path),
-                    "--gt-dir", str(ROOT / "data/gt_4fps"), "--out", str(metrics_path), "--datasets", *a.datasets],
+                    "--gt-dir", a.gt_dir, "--out", str(metrics_path), "--datasets", *a.datasets],
                    check=True, cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)}, stdout=subprocess.DEVNULL)
     cfg = {**vars(a), "p_stay": p_stay, "scale": {f"{k[0]}/{k[1]}": v for k, v in scale.items()}, "n_videos": n_ok}
     (out_dir / "config.json").write_text(json.dumps(cfg, indent=2))

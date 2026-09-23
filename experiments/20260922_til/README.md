@@ -221,3 +221,43 @@ proposed to the user as a component of the current method (SPVL-r2 + duration pr
 of rule-4 case (3): an explicit temporal prior over isolated interval reads, with the cross-model evidence of §6 and
 the HVL contrast (the same persistence imposed in-context by the model loses .03 / .04–.07; imposed as an explicit
 prior over independent reads it gains .05 / .02). Cost of the component: CPU, milliseconds per video, no new calls.
+
+## 9. Ablations of the final composition (SPVL-r2 + duration prior), 2026-09-23
+
+All CPU, on cached runs (`launch/run_ablations.sh`; outputs `runs/20260922_til/ablation/<tag>/metrics.json`, table
+`runs/20260922_til/ablation_table.txt`). Each cached run is composed without the prior (`--dwell 0`) and with it
+(`--dwell 80`); the r2 component runs are the cache-path Qwen3-VL-8B runs of the cross-model study
+(`runs/20260910_spvl/mllm/q3vl-8b/*`), which share the final method's code path. Within-video AUC (HateMM / HCS);
+Δ is relative to the final method (r2 full + prior: .7494 / .6252; pooled .8922 / .6847, .7133 / .6679).
+
+| removed from the final method | without prior | with prior | Δ within (with prior) | pooled Δ worth noting |
+|---|---|---|---|---|
+| nothing (final method) | .6745 / .6012 | **.7494 / .6252** | — | — |
+| the prior itself | — | — | −.075 / −.024 | pooled ±.003 |
+| fixed 8 s windows (ASR segments instead) | .5963 / .5384 | .6857 / .5676 | −.064 / −.058 | HCS ROC −.023 |
+| transcript context | .6051 / .5736 | .7060 / .6147 | −.043 / −.011 | HateMM ROC −.148, PR −.185 |
+| frames | .6415 / .5917 | .7170 / .5819 | −.032 / −.043 | HCS ROC −.080 |
+| dual branches (one joint branch) | .6984 / .5727 | .7607 / .5694 | **+.011** / −.056 | HCS ROC −.025, PR −.015 |
+| stance turn | .6576 / .5865 | .7446 / .5900 | −.005 / −.035 | HCS ROC −.011, PR −.010 |
+| all of the above (window alone) | .6207 / .5765 | .6928 / .5631 | −.057 / −.062 | HateMM ROC −.034, HCS ROC −.077 |
+| add one frame per window (5× cost) | .6736 / .5983 | .7549 / .6232 | +.006 / −.002 | HCS PR +.012 |
+
+Grid constants (round-1 base: joint branch, no stance; `runs/20260910_spvl/{full,abl_s4,abl_s16,abl_k8}`), with the
+prior: S = 8 s .7484 / .5642, 4 s .7114 / .5571, 16 s .7330 / .5636; K = 20 frames .7484 / .5642, 8 frames .7396 / .5581
+(pooled HCS ROC −.021). 8 s and 20 frames stay the best with the prior.
+
+Controls on grid A: [.5, 1, .5] kernel smoothing .6939 / .6128 (+.019 / +.011 over no prior; the chain gives
++.074 / +.023); chain on a within-video shuffled window order .6168 / .5585 (below no prior). The gain needs the
+true adjacency and is not reproduced by plain smoothing.
+
+Cross-model (cache-path full runs, same constants, without → with prior): HateMM 2B .679→.767, 4B .677→.730,
+32B .682→.754, Qwen2.5-VL-7B .678→.688, InternVL3.5-8B .652→.715, LLaVA-OV-7B .649→.742, Gemma-3-12B .654→.719
+(7/7 up, 6/7 by ≥ .05); HCS .570→.583, .565→.587, .600→.602, .553→.532, .594→.586, .565→.597, .574→.592 (4/7 up
+≥ .01, Qwen2.5-VL down .021, two within noise). Pooled unchanged on every model (±.008).
+
+HateClipSeg hate-only GT (secondary, 51 videos): see the last two lines of `ablation_table.txt`.
+
+Reading: with the prior in place, four components are needed on both corpora (the prior, fixed 8 s windows,
+transcript context, frames); two are needed on HCS only (dual branches, stance), and on HateMM the single joint
+branch is even slightly better (+.011, at the noise line). One frame per window remains useless. The prior does not
+replace any input component: every removal still costs at least as much as before, on the corpus where it mattered.
