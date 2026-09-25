@@ -115,7 +115,66 @@ bash experiments/20260926_glr/launch/run_analysis.sh
   ASR bug; 9 of the 12 worst HCS videos have no Hateful-category frames; the top-scored HateMM non-hate videos
   contain slurs in what read like songs, satire or historical clips. Changed: the ASR loader; the choice to test a
   generative read-out with a compliant same-topic counter-hypothesis.
+- 2026-09-26, after the runs: `runs/20260926_glr/{base_gridA,glr_pilot}/predictions.jsonl`, `data/gt_4fps/*.npz`,
+  the fixed ASR. Found: the diagnostics of §8 (no length artifact, signal between videos only, right sign but
+  small on clear windows). Changed: nothing; the pilot is archived as a negative result.
 
-## 8. Results
+## 8. Results (2026-09-26)
 
-(filled after the runs)
+Runs: `runs/20260926_glr/base_gridA` (fixed-ASR SPVL-r2 grid A, host sc448960) and `runs/20260926_glr/glr_pilot`
+(host sc448960, 333 videos, 0 errors, 3953 s, about 11.8 s per video, peak 21.1 GB). Plumbing (`verify.json`,
+hate_video_1): cache vs plain .0040 / .0031 per token (assistant / document), crop vs deep copy 0.0; token seams
+matched. Window grids of the two runs matched on every video.
+
+**Primary comparison: fails on both corpora for every variant.** Source `runs/20260926_glr/analysis/table.txt`
+(window-level within AUC on speech windows; difference to `z_speech` with the paired 95 % interval):
+
+| signal | HateMM (68 videos) | HateClipSeg (94 videos) |
+|---|---|---|
+| `z_speech` (SPVL-r2 speech branch) | .6935 | .6035 |
+| LLR full, assistant (declared primary) | .5082, −.185 [−.264, −.108] | .4987, −.105 [−.158, −.051] |
+| LLR full, document | .4878, −.206 [−.297, −.114] | .4883, −.115 [−.166, −.066] |
+| LLR none, assistant | .5166, −.177 [−.252, −.097] | .5379, −.066 [−.114, −.016] |
+| LLR none, document | .5661, −.127 [−.208, −.047] | .5437, −.060 [−.108, −.011] |
+| full, assistant, H0 = discuss only | .4835 | .4992 |
+| full, assistant, H0 = report only | .4334 | .5176 |
+| full, assistant, H0 = crude only | .5218 | .5009 |
+
+Mechanism check (OLS on within-video standardized scores): `z_speech` b_gt +.445 / +.221, mention/GT ratio 1.18 /
+2.71; LLR full|assistant b_gt +.113 / −.026, ratio .81 / −6.07. The ratio is smaller on HateMM only because the GT
+coefficient itself is small; on HCS the LLR carries no GT information at all. The topic did not cancel into an act
+signal; both terms shrank.
+
+Frame level (shared evaluator, `runs/20260926_glr/infer/<tag>/metrics.json`, pooled ROC / pooled PR / within):
+
+| composition | HateMM | HateClipSeg |
+|---|---|---|
+| SPVL-r2, fixed ASR (`base_gridA_spvlr2`) | .8952 / .6867 / .6800 | .7134 / .6667 / .6101 |
+| + duration prior 80 s (`base_gridA_d80`) | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 |
+| `z_speech` := LLR full, assistant, prior 80 s | .8940 / .6827 / .5804 | .7122 / .6656 / .5571 |
+| `z_speech` := LLR none, document, prior 80 s | .8943 / .6831 / .6314 | .7121 / .6657 / .5828 |
+| best LLR variant without the prior | .8939 / .6796 / .5630 | .7121 / .6648 / .5508 |
+
+Pooled metrics barely move because the intercept (`z_video` + mean window z) is kept from the base run; within
+drops by .12–.22 / .05–.08 whenever the speech branch is replaced.
+
+Diagnostics (CPU, on the same speech windows; scripts were throwaway, numbers reproducible from the two runs):
+
+- Not a length artifact: with the window's token count regressed out inside each video, none|assistant stays at
+  .480 / .545 within; stratified by token-count tertile, its pooled AUC is .57–.71 in every stratum.
+- The signal that exists is between videos: mean LLR over a video's speech windows separates hateful from non-hate
+  videos at AUC .63–.74 (HateMM) / .61–.77 (HCS), pooled window AUC .48–.66, against `z_speech` .891 / .788 and
+  .855 / .661. Inside a video the LLR hardly follows the judge (median within-video Spearman with `z_speech`
+  .04–.12).
+- The effect has the right sign but is small: in hateful videos, windows the judge is confident about and GT marks
+  positive have a mean per-token LLR .1–.37 higher than windows the judge is confident about and GT marks negative
+  (0 for none|document on HCS), while the per-token LLR varies across windows with SD .7–1.5.
+- Why it is small: the words are hard to predict whatever the speaker (mean log-probability −5.6 / −6.5 nats per
+  token under H1), and the condition changes it by +.012 / −.004 nats per token on average (SD .66 / .78). The
+  unpredictability of ordinary speech, not hatefulness, decides most of the per-window likelihood.
+
+**Decision.** The declared rule fails for the primary variant and for every scanned variant; archived as a negative
+result. SPVL-r2 (+ duration prior, pending the user's ruling) stays the current method. What was learned: asking
+the frozen MLLM how probable the spoken words are under a violating vs compliant speaker does not measure the act
+at 8 s windows; the discriminative per-window read is far stronger (.69 / .60 vs .49–.57). Longer units would
+average out more of the word-level noise but give up the localization the method is for.

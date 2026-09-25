@@ -193,6 +193,39 @@ lab3 / lab2，各 333 视频 0 错误）。推断：4 秒格上的显式时序�
   bug；四条表述待改（帧覆盖线索只在 HateMM 成立；前缀表示探针受因果掩码限制，"排序不在表示里"无证据；隐状态探针误用
   visual 分支，speech 分支 HateMM +.010 到噪声线；SDL/NGA 基线应为无立场路径 .6899 / .5881）。尚未写入上面各节。
 
+## 2026-09-26：ASR 修复、基线重测、平滑对照、GLR 负结果
+
+**ASR bug 修复**（`src/video_inputs.py` `load_asr`）：Whisper 最后一段缺结束时间戳（偶尔也缺开始）时，这一段此前被整段丢掉。
+测试集 HateMM 42 条、HCS 95 条转录受影响（例：hate_video_321 在 14 秒之后没有转录）。现在补上：缺开始取上一段的结束，缺结束取
+音频时长；`fill_untimed=False` 复现旧行为。SPVL 以来的所有 run 都受影响；`experiments/20260910_spvl/spvl.py` 里的旧副本没改。
+
+**修复后重测**（lab-server，`runs/20260926_glr/base_gridA`，`til_measure.py` 网格 A，代码不变），pooled ROC / pooled PR / within：
+
+| 组合 | HateMM | HateClipSeg | 来源 |
+|---|---|---|---|
+| SPVL-r2，修复前 | .8919 / .6820 / .6926 | .7129 / .6673 / .6007 | `runs/20260922_til/infer/A0_spvl_replicate/metrics.json` |
+| SPVL-r2，修复后 | .8952 / .6867 / .6800 | .7134 / .6667 / .6101 | `runs/20260926_glr/infer/base_gridA_spvlr2/metrics.json` |
+| + 时长先验 80 s，修复前 | .8921 / .6840 / .7486 | .7131 / .6677 / .6247 | `runs/20260922_til/infer/A1_gridA_prior80/metrics.json` |
+| + 时长先验 80 s，修复后 | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 | `runs/20260926_glr/infer/base_gridA_d80/metrics.json` |
+
+变化都在按视频抽样的噪声内（within 均值的标准误 .028 / .021；规则里 .01 的噪声下限只考虑了换种子，没考虑换视频）。
+之后的比较以修复后的数字为基线。
+
+**平滑对照**（`experiments/20260922_til/README.md` §10）：同一批读数上用高斯平滑代替时长先验。σ = 8 s 最好
+（within .6877 / .6312），σ ≥ 32 s（与先验时长同量级）比不平滑（.6642 / .6153）还差。先验的涨幅不是线性平滑能给的：
+它在证据变化大的地方保留边界，只填弱的空隙。HCS 上最好的高斯只差 .005，HateMM 上差 .067。
+
+**GLR（生成式似然比，`experiments/20260926_glr/`）负结果，已归档。** 思路：不再问模型"这一窗是不是仇恨"，而是比较这一窗
+实际说的话在"违规说话人"和"合规说话人"（讨论 / 转述批评 / 粗口但不针对群体）两种条件下的概率，希望话题在两边抵消、只剩行为。
+lab-server，333 视频 0 错误，约 12 s / 视频。预先声明的门（窗级 within 相对语音分支 `z_speech`，按视频配对 bootstrap，
+两语料 95% 区间都 > 0）主变体和三个扫描变体全部不过：窗级 within .49–.57，`z_speech` 是 .6935 / .6035，差值区间全在 0 以下
+（`runs/20260926_glr/analysis/table.txt`）。帧级把语音分支换成它，within 掉 .12–.22 / .05–.08
+（`runs/20260926_glr/infer/glr_*/metrics.json`）。不是代码问题（校验通过、窗对齐无误、去掉长度影响后不变）。原因：口语的词
+本身很难预测（每 token −5.6 / −6.5 nats），两种说话人条件平均只改 ±.01 nats / token；判断最明确的窗上方向是对的，但差值只有
+窗间波动的四分之一左右。它剩下的那点信号在视频之间（视频级 AUC .61–.77），视频内部接近随机。
+
+当前方法不变：SPVL-r2（+ 时长先验，是否定为报数方法仍等用户裁定）。
+
 ## 资料与历史
 
 [CLAUDE.md](../CLAUDE.md)、[1 fps 协议与 baseline 表（历史）](../docs/protocol_1fps_legacy/)、[基础论文 TRIAGE 与检测时代记录](../archive/README.md)、[2026-08 idea discovery 报告](../archive/idea-stage-2026-08/idea-stage/IDEA_REPORT.md)。
