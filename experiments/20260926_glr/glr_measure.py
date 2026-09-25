@@ -221,6 +221,7 @@ def main():
     ap.add_argument("--frames", type=int, default=20)
     ap.add_argument("--window-seconds", type=float, default=8.0)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--only", default="", help="comma-separated video ids (sanity checks only)")
     ap.add_argument("--verify-only", action="store_true")
     args = ap.parse_args()
     torch.manual_seed(SEED)
@@ -237,6 +238,9 @@ def main():
                 "head_assistant_example": head_text("assistant", "H1", 8.0, 16.0, "<CLOSE>"),
                 "head_document_example": head_text("document", "H1", 8.0, 16.0, "")})
     rows = load_manifest(args.manifest, args.datasets)
+    if args.only:
+        keep = set(args.only.split(","))
+        rows = [r for r in rows if r["video_id"] in keep]
     if args.limit:
         rows = rows[:args.limit]
     asr = {ds: load_asr(ds) for ds in args.datasets}
