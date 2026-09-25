@@ -20,13 +20,31 @@ def load_manifest(path, datasets):
     return [r for r in rows if r["dataset"] in datasets]
 
 
-def load_asr(dataset):
+def load_asr(dataset, fill_untimed=True):
+    """Whisper segments per video as (start, end, text).
+
+    The Whisper pipeline sometimes leaves the last chunk without an end (and rarely a start) timestamp; in the
+    cached files this only ever happens to the last chunk of a video (42 HateMM / 95 HateClipSeg records).
+    fill_untimed=True (default since 2026-09-26): a missing start takes the previous chunk's end (0 for the
+    first chunk) and a missing end takes the audio duration. fill_untimed=False reproduces the behaviour of
+    every run before 2026-09-26, which dropped such chunks (e.g. hate_video_321 lost all speech after 14 s).
+    """
     path = ROOT / f"data/asr_whisper_large_v3/{dataset}/timestamped_chunks.jsonl"
     out = {}
     for line in open(path):
         r = json.loads(line)
-        segs = [(float(c["start"]), float(c["end"]), (c.get("text") or ""))
-                for c in (r.get("chunks") or []) if c.get("end") is not None and c.get("start") is not None]
+        chunks = r.get("chunks") or []
+        dur = r.get("wav_duration") or r.get("container_duration")
+        segs, prev_end = [], 0.0
+        for k, c in enumerate(chunks):
+            s, e = c.get("start"), c.get("end")
+            if s is None or e is None:
+                if not fill_untimed:
+                    continue
+                s = prev_end if s is None else s
+                e = (dur if dur else s) if e is None else e
+            segs.append((float(s), float(e), (c.get("text") or "")))
+            prev_end = float(e)
         out[r["video_id"]] = [s for s in segs if s[1] > s[0]]
     return out
 

@@ -325,6 +325,32 @@ class Judge:
         return self.tok.decode(gen, skip_special_tokens=True).strip(), gen
 
     @torch.no_grad()
+    def cached_logprobs(self, cache, head_ids, cont_ids, in_place=False):
+        """Teacher forcing: log-probability (fp32 lm_head, full vocabulary) of every token of `cont_ids` when it
+        follows `head_ids` on `cache`. No generation. in_place=False: on a deep copy (independent branch);
+        in_place=True: the cache keeps the tokens and the caller restores it (DynamicCache.crop)."""
+        c = cache if in_place else copy.deepcopy(cache)
+        ids = list(head_ids) + list(cont_ids)
+        out = self.model.model(input_ids=torch.tensor([ids], device=self.device), past_key_values=c, use_cache=True)
+        m, n = len(head_ids), len(cont_ids)
+        h = out.last_hidden_state[0, m - 1:m + n - 1]
+        del out
+        lp = self.token_logprobs(h, cont_ids)
+        if not in_place:
+            del c
+        return lp
+
+    def token_logprobs(self, hidden_rows, token_ids):
+        """log p(token_ids[j] | position j) from hidden rows, fp32 lm_head over the full vocabulary."""
+        if getattr(self, "_W32", None) is None:
+            self._W32 = self.model.get_output_embeddings().weight.float()
+        lg = hidden_rows.float() @ self._W32.T
+        if self.softcap:
+            lg = torch.tanh(lg / self.softcap) * self.softcap
+        idx = torch.tensor(list(token_ids), device=self.device)[:, None]
+        return torch.log_softmax(lg, -1).gather(1, idx)[:, 0].tolist()
+
+    @torch.no_grad()
     def plain_margin(self, msgs, image_files, question, history=None):
         """Reference: one ordinary full call (no cache)."""
         from PIL import Image
