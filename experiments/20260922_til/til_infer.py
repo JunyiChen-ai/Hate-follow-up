@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from scipy.ndimage import gaussian_filter1d
 from scipy.stats import rankdata
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -113,7 +114,8 @@ def chain_pair(n, obs, p_stay):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", nargs="+", required=True, help="measurement run dirs; the first is grid A (intercept source)")
-    ap.add_argument("--model", choices=["interval", "average", "none", "smooth"], default="interval")
+    ap.add_argument("--model", choices=["interval", "average", "none", "smooth", "gauss"], default="interval")
+    ap.add_argument("--sigma", type=float, default=0.0, help="--model gauss: Gaussian smoothing of the averaged cell values, sigma in seconds (control added 2026-09-26)")
     ap.add_argument("--fusion", choices=["sum", "max"], default="max")
     ap.add_argument("--dwell", type=float, default=80.0, help="mean dwell in seconds; 0 = no temporal coupling")
     ap.add_argument("--cell", type=float, default=4.0)
@@ -163,7 +165,7 @@ def main():
                     if not reads:
                         continue
                     fused.append((sum(reads) if a.fusion == "sum" else max(reads), cover(w["start"], w["end"], n_cells, a.cell)))
-                if a.model in ("average", "smooth"):
+                if a.model in ("average", "smooth", "gauss"):
                     if a.shuffle or a.model == "smooth":  # window-level operations (single fixed grid only)
                         if len(runs) != 1:
                             raise SystemExit("--shuffle / --model smooth need a single run")
@@ -183,7 +185,7 @@ def main():
                             for k in ks:
                                 acc[k] += r; cnt[k] += 1
                         v = np.where(cnt > 0, acc / np.maximum(cnt, 1), 0.0)
-                        cell_lo = chain2(v, p_stay)
+                        cell_lo = gaussian_filter1d(v, a.sigma / a.cell, mode="nearest") if a.model == "gauss" else chain2(v, p_stay)
                 else:
                     obs = [[] for _ in range(n_cells)]
                     for r, ks in fused:

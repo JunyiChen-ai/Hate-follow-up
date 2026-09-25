@@ -261,3 +261,27 @@ Reading: with the prior in place, four components are needed on both corpora (th
 transcript context, frames); two are needed on HCS only (dual branches, stance), and on HateMM the single joint
 branch is even slightly better (+.011, at the noise line). One frame per window remains useless. The prior does not
 replace any input component: every removal still costs at least as much as before, on the corpus where it mattered.
+
+## 10. Width-matched smoothing control (2026-09-26)
+
+Question from the user: the [.5, 1, .5] kernel of §9 spans 24 s while the prior's dwell is 80 s, so "plain smoothing
+gets only a fraction" was not width-matched. Control added to `til_infer.py`: `--model gauss --sigma S` = Gaussian
+smoothing (seconds) of the same averaged 4 s cell values the chain receives, same intercept and centred rank.
+Run on the fixed-ASR grid-A measurements `runs/20260926_glr/base_gridA` (ASR loader fix of 2026-09-26, see
+`experiments/20260926_glr/README.md` §3); outputs `runs/20260926_glr/infer/base_gridA_{d0,d80,gauss*}/metrics.json`.
+Within (HateMM / HCS; pooled moves by at most .004):
+
+| composition | HateMM | HCS |
+|---|---|---|
+| no coupling (`--dwell 0`) | .6642 | .6153 |
+| Gaussian sigma 8 s | .6877 | .6312 |
+| Gaussian sigma 16 s | .6726 | .6212 |
+| Gaussian sigma 32 s | .6603 | .6003 |
+| Gaussian sigma 64 s | .6361 | .5917 |
+| Gaussian sigma 128 s | .6099 | .5671 |
+| two-state chain, dwell 80 s | **.7546** | **.6364** |
+
+Linear smoothing peaks at the narrowest width and falls below no smoothing from 32 s on; at the chain's own scale it
+loses .12 (HateMM) / .045 (HCS) against the chain. The chain's gain is therefore not reproduced by smoothing of any
+width: it keeps sharp boundaries where the evidence changes strongly and fills only weak gaps, which a linear kernel
+cannot do. On HCS the best Gaussian comes within .005 of the chain; on HateMM it stays .067 below.
