@@ -118,6 +118,14 @@ bash experiments/20260926_glr/launch/run_analysis.sh
 - 2026-09-26, after the runs: `runs/20260926_glr/{base_gridA,glr_pilot}/predictions.jsonl`, `data/gt_4fps/*.npz`,
   the fixed ASR. Found: the diagnostics of §8 (no length artifact, signal between videos only, right sign but
   small on clear windows). Changed: nothing; the pilot is archived as a negative result.
+- 2026-09-26, to check a follow-up (condition the likelihood on the model's own video-level claims instead of a
+  generic speaker): `runs/20260911_hvl/e0_hypothesis/predictions.jsonl` (HVL step S1: TARGET / FORM / EVIDENCE),
+  `runs/20260926_glr/base_gridA/predictions.jsonl`, `data/gt_4fps/*.npz`, the fixed ASR. Found: HVL E0 already had
+  the model write its evidence, quoting the speech in 293 of 393 (HateMM) / 325 of 399 (HCS) items. Matching the
+  quotes to window words (share of the quote's words present in the window, best quote) gives window-level within
+  .598 / .552 on the same 68 / 94 videos as §8, against .580 / .526 for the cited timestamps and .694 / .604 for
+  `z_speech`. Changed: the follow-up was not run; it would re-test HVL E0 with a softer matcher, and the model's
+  choice of what to cite, not the matching, is what localizes poorly.
 
 ## 8. Results (2026-09-26)
 
