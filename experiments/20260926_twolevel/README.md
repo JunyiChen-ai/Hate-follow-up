@@ -407,3 +407,58 @@ without scaling the evidence down by hand. The current method gets the same effe
 geometric chain and weakens the evidence by the corpus std.
 
 Development-selected (rule 10): k = 4, OR fusion, removing the leak term (§10.2, §10.8).
+
+## 11. Composition: calibrated video key (2026-09-26, declared before the declared runs)
+
+### 11.1 What was seen first (test-read log)
+
+These diagnostics use the reduced round-2 time level. Outputs are in `runs/20260926_twolevel/diag_r2v_*`; the code is
+`diag_vlevel.py`.
+
+Composition as now: score = K + centred rank, where K = z_video + mean window z in raw MLLM logits and the rank term
+spans 1. Multiplying K by a scale s changes how much frames of different videos interleave. Pooled ROC / PR:
+
+| s | 100 (pure video-first order) | 4 | 1 (now) | .5 | .25 | .125 |
+|---|---|---|---|---|---|---|
+| HateMM | .8940 / .6840 | .8946 / .6858 | .8955 / .6888 | .8965 / .6938 | .8978 / .6984 | .8993 / .7010 |
+| HCS | .7113 / .6633 | .7118 / .6638 | .7137 / .6664 | .7155 / .6689 | .7185 / .6720 | .7217 / .6749 |
+
+Readings:
+- Pooled rises steadily as s falls, on both corpora. The raw key is overweighted against the within-video order.
+- The label-free calibration below gives s = .357 / .341 and pooled .8970 / .6959, .7170 / .6706.
+- Replacing K by a model posterior was worse (§10.2 item 6). A posterior over the verdict and the mean reads, used as
+  the key at s = 1, gives .8960 / .6735 and .7114 / .6490. Used video-first, it gives .8940 / .6688 and .7084 /
+  .6464.
+- The expected-hate-fraction key (log P(V) + log mean P(h | V)) gives .8632 / .6180 and .7272 / .6722.
+
+The unit of K against the rank term's span of 1 is an undeclared constant of the current composition.
+
+### 11.2 Change
+
+The key becomes a log-odds: logit P(V = 1 | K) = a K + b. Here a and b come from a two-component 1-D Gaussian mixture
+with a shared variance, fitted by EM to the corpus's keys without labels (`key_calibration` in `twolevel_r2.py`).
+The composition becomes logit P(V = 1 | K) + the centred rank of logit P(hateful at t | V = 1), where the rank term
+is a within-video adjustment of at most ±.5 nats. For intervals, P(V = 1 | K) replaces the joint video posterior in
+the product. The time level is `r2_noleak`.
+
+The test-best scale (s ≤ .125) is not used. The declared primary is the label-free calibration.
+
+### 11.3 Arms
+
+| arm | what |
+|---|---|
+| `c_m2` | primary: calibrated key + centred rank |
+| `c_full` | P(V = 1 \| K) × P(hateful at t \| V = 1), intervals |
+| `c_norank` | ablation: calibrated key only (no within-video term) |
+| `c_nokey` | ablation: centred rank only (no video term) |
+| `c_s0.5`, `c_s0.25`, `c_s0.125` | declared scan: raw key × s (sensitivity; values already seen in §11.1) |
+
+Baseline: `r2_noleak` (raw key, s = 1).
+
+### 11.4 Decision rule
+
+- **No drop:** `c_m2` against `r2_noleak` and against `current`. None of the six numbers may fall by more than the
+  noise floor.
+- **The video term still does its job:** `c_nokey` − `c_m2` pooled ROC ≤ −.01 on both corpora.
+- **The within term still does its job:** `c_norank` − `c_m2` within ≤ −.01 on both corpora.
+- Gains are reported, and are development evidence only (§11.1 was seen first).

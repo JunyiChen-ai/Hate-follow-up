@@ -26,6 +26,9 @@ ARMS_R2NL = ["current", "r2_noleak", "r2nl_full", "r2nl_k1", "r2nl_k2", "r2nl_k8
 PAIRS_R2NL = [("r2_noleak", "current"), ("r2nl_full", "current"), ("r2nl_k1", "r2_noleak"),
               ("r2nl_nocoupling", "r2_noleak"), ("r2nl_carrier", "r2_noleak"), ("r2nl_k2", "r2_noleak"),
               ("r2nl_k8", "r2_noleak"), ("r2nl_d40", "r2_noleak"), ("r2nl_d160", "r2_noleak")]
+# composition step (README §11)
+ARMS_C = ["current", "r2_noleak", "c_m2", "c_full", "c_norank", "c_nokey", "c_s0.5", "c_s0.25", "c_s0.125"]
+PAIRS_C = [("c_m2", "r2_noleak"), ("c_m2", "current"), ("c_norank", "c_m2"), ("c_nokey", "c_m2")]
 
 
 def per_video(arm, ds, Y):
@@ -42,10 +45,11 @@ def per_video(arm, ds, Y):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--round", type=int, choices=[1, 2, 3], default=1, help="3 = ablations of the reduced round-2 model")
+    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4], default=1,
+                    help="3 = ablations of the reduced round-2 model, 4 = composition step")
     a = ap.parse_args()
     arms, pairs, sub = {1: (ARMS, PAIRS, "analysis"), 2: (ARMS_R2, PAIRS_R2, "analysis_r2"),
-                        3: (ARMS_R2NL, PAIRS_R2NL, "analysis_r2nl")}[a.round]
+                        3: (ARMS_R2NL, PAIRS_R2NL, "analysis_r2nl"), 4: (ARMS_C, PAIRS_C, "analysis_c")}[a.round]
     rng = np.random.default_rng(0)
     lines, summary = [], {}
     for ds in ["HateMM", "HateClipSeg"]:

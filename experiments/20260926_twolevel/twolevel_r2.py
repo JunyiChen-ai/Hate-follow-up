@@ -249,6 +249,23 @@ def vlevel_mixture(videos, max_it=500, tol=1e-9):
                 "var": var.tolist(), "loglik": prev}
 
 
+def key_calibration(keys, it=2000):
+    """Label-free calibration of the video key K = z_video + mean window z: a two-component 1-D Gaussian mixture with
+    a shared variance (EM from the 10th / 90th percentiles). Returns (a, b) with logit P(V = 1 | K) = a K + b."""
+    x = np.asarray(keys, float)
+    mu = np.percentile(x, [10, 90]).astype(float); var = float(x.var()); pi = 0.5
+    for _ in range(it):
+        l0 = math.log(1 - pi) - 0.5 * (x - mu[0]) ** 2 / var; l1 = math.log(pi) - 0.5 * (x - mu[1]) ** 2 / var
+        r = expit(l1 - l0); pi = float(np.clip(r.mean(), EPS, 1 - EPS))
+        mu = np.array([((1 - r) * x).sum() / (1 - r).sum(), (r * x).sum() / r.sum()])
+        var = float(((1 - r) * (x - mu[0]) ** 2 + r * (x - mu[1]) ** 2).mean())
+    if mu[1] < mu[0]:
+        mu = mu[::-1]; pi = 1 - pi
+    a = (mu[1] - mu[0]) / var
+    b = math.log(pi) - math.log(1 - pi) - (mu[1] ** 2 - mu[0] ** 2) / (2 * var)
+    return float(a), float(b)
+
+
 def residual_icc(videos, P, flags):
     """One-way random-effects ICC of the reads' residuals (read minus its posterior expected mean), per modality.
     Label-free: uses the fitted model only."""
@@ -353,6 +370,11 @@ def main():
     ap.add_argument("--noleak", action="store_true", help="ablation: mu10 = mu00 (no stance leak term)")
     ap.add_argument("--fusion", choices=["or", "carrier"], default="or", help="per-modality chains + OR, or one chain with carrier fusion")
     ap.add_argument("--arm", choices=["m2", "full", "lexi"], default="m2")
+    ap.add_argument("--key", choices=["raw", "calib", "scaled", "none"], default="raw",
+                    help="video key: raw z_video + mean window z; calib = its label-free log-odds (key_calibration); "
+                         "scaled = raw times --key-scale (declared scan); none = no video term (ablation)")
+    ap.add_argument("--key-scale", type=float, default=1.0)
+    ap.add_argument("--norank", action="store_true", help="ablation: no within-video term (video key only)")
     ap.add_argument("--vlevel", choices=["joint", "mix"], default="joint", help="video posterior: joint model (round 1) or mixture over verdict + mean reads")
     ap.add_argument("--vtemper", choices=["none", "icc"], default="none", help="video level: reads counted as ICC-effective reads")
     ap.add_argument("--kappa", type=float, default=1.0, help="diagnostic: time-level emissions tempered at inference")
@@ -412,8 +434,18 @@ def main():
                 p = np.clip(1.0 - miss, 1e-12, 1 - 1e-12)
                 lo = params[ds]["vmix_fn"](v) if a.vlevel == "mix" else (t["lo_icc"] if a.vtemper == "icc" else t["lo"])
                 intervals = []
+                K = intercept(v)
+                if a.key == "calib":
+                    ka, kb = params[ds]["key_ab"]; key = ka * K + kb; lo = key
+                elif a.key == "scaled":
+                    key = a.key_scale * K
+                elif a.key == "none":
+                    key = 0.0
+                else:
+                    key = K
                 if a.arm == "m2":
-                    score = intercept(v) + centered_rank(to_frames(np.log(p) - np.log1p(-p), v["L"]))
+                    score = key + (0.0 if a.norank else centered_rank(to_frames(np.log(p) - np.log1p(-p), v["L"])))
+                    score = np.full(v["L"], score) if np.ndim(score) == 0 else score
                 elif a.arm == "lexi":
                     score = lo + centered_rank(to_frames(np.log(p) - np.log1p(-p), v["L"]))
                 else:
