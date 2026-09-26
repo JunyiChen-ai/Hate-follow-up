@@ -82,6 +82,13 @@ def emission(v, mods, P, ch, kappa=1.0):
     """log emission over augmented states, shape (n, 2S), for the chain of modalities `mods` under V = 1."""
     masks = on_masks(ch)
     E = np.zeros((v["n"], 2 * ch["S"]))
+    if P.get("linear"):
+        for w in v["wins"]:
+            on = masks["pair"] if w["pair"] else masks["single"]
+            ys = [w["y"][m] / P["linear"][m] for m in mods if m in w["y"]]
+            if ys:
+                E[w["cell"]] += kappa * np.where(on == 1, max(ys), 0.0)
+        return E
     if P.get("carrier") is not None:
         lc = np.log(np.asarray(P["carrier"]))
         for w in v["wins"]:
@@ -178,7 +185,8 @@ def set_modalities(run):
 def init_params(videos, flags):
     zs = np.array([v["zv"] for v in videos])
     P = {"pi": 0.5, "m0": float(np.percentile(zs, 10)), "m1": float(np.percentile(zs, 90)), "t2": max(float(zs.var()), EPS),
-         "emit": {}, "iota": {mods: 0.5 for mods in chains_of(flags)}}   # EPS floor: runs without a verdict (constant z_video)
+         "emit": {}, "iota": {mods: (flags["d_hate"] / (flags["d_hate"] + flags["d_gap"]) if flags.get("iota_stationary") else 0.5)
+                              for mods in chains_of(flags)}}   # EPS floor: runs without a verdict (constant z_video)
     for m in MODS:
         ys = np.array([w["y"][m] for v in videos for w in v["wins"] if m in w["y"]])
         mu00, mu10, mu11 = (float(np.percentile(ys, q)) for q in (10, 50, 90))
@@ -360,6 +368,8 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
                             "s2": max(float(ss / max(S[m][:, 0].sum(), EPS)), EPS)}
         for mods in io:
             P["iota"][mods] = float(np.clip(io[mods][0] / max(io[mods][1], EPS), EPS, 1 - EPS))
+            if flags.get("iota_stationary"):   # diagnostic (§12): start distribution = stationary phase share, not fitted
+                P["iota"][mods] = flags["d_hate"] / (flags["d_hate"] + flags["d_gap"])
         if P.get("carrier") is not None:
             P["carrier"] = [float(x) for x in np.clip(CR / max(CR.sum(), EPS), 1e-4, 1.0)]
             P["carrier"] = [x / sum(P["carrier"]) for x in P["carrier"]]
@@ -379,7 +389,11 @@ def main():
     ap.add_argument("--sharedchain", action="store_true")
     ap.add_argument("--nocoupling", action="store_true", help="ablation: independent cells")
     ap.add_argument("--noleak", action="store_true", help="ablation: mu10 = mu00 (no stance leak term)")
-    ap.add_argument("--fusion", choices=["or", "carrier"], default="or", help="per-modality chains + OR, or one chain with carrier fusion")
+    ap.add_argument("--evidence", choices=["em", "linear"], default="em",
+                    help="diagnostic: linear = y / corpus std (current method's evidence), no EM; with --fusion max one chain on the max")
+    ap.add_argument("--transform", choices=["none", "nscore"], default="none")
+    ap.add_argument("--iota-stationary", action="store_true", help="diagnostic: start distribution fixed to the stationary phase share")
+    ap.add_argument("--fusion", choices=["or", "carrier", "max"], default="or", help="per-modality chains + OR, or one chain with carrier fusion")
     ap.add_argument("--arm", choices=["m2", "full", "lexi"], default="m2")
     ap.add_argument("--key", choices=["raw", "calib", "scaled", "none"], default="raw",
                     help="video key: raw z_video + mean window z; calib = its label-free log-odds (key_calibration); "
@@ -412,13 +426,33 @@ def main():
         log(f"selftest explicit-duration forward-backward vs brute force and vs round 1 (k = 1): max abs difference {worst:.2e}")
         if worst > 1e-8:
             raise SystemExit("SELFTEST_FAILED")
-    flags = {"k": a.k, "d_gap": a.d_gap, "d_hate": a.d_hate, "sharedchain": a.sharedchain, "carrier": a.fusion == "carrier",
-             "nocoupling": a.nocoupling, "noleak": a.noleak}
+    flags = {"k": a.k, "d_gap": a.d_gap, "d_hate": a.d_hate, "sharedchain": a.sharedchain or a.fusion == "max", "carrier": a.fusion == "carrier",
+             "nocoupling": a.nocoupling, "noleak": a.noleak, "iota_stationary": a.iota_stationary}
     run = load_run(a.run)
     log(f"modalities {set_modalities(run)}")
     videos = {ds: [prep(r, a.center) for k, r in sorted(run.items()) if k[0] == ds] for ds in a.datasets}
+    if a.transform == "nscore":
+        # diagnostic (§12): each modality's reads -> normal scores of their rank within the corpus (only the order of
+        # reads is used, not their scale); the key keeps the raw reads
+        from scipy.stats import norm, rankdata
+        for ds in a.datasets:
+            for m in MODS:
+                refs = [w for v in videos[ds] for w in v["wins"] if m in w["y"]]
+                ys = np.array([w["y"][m] for w in refs])
+                sc = norm.ppf((rankdata(ys) - 0.5) / len(ys))
+                for w, z in zip(refs, sc):
+                    w["y"][m] = float(z)
     params = {}
     for ds in a.datasets:
+        if a.evidence == "linear":
+            P = init_params(videos[ds], flags)
+            P["linear"] = {m: float(np.std([w["y"][m] for v in videos[ds] for w in v["wins"] if m in w["y"]])) for m in MODS}
+            P["iota"] = {mods: 0.5 for mods in chains_of(flags)}
+            params[ds] = P
+            if a.key == "calib":
+                P["key_ab"] = key_calibration([intercept(v) for v in videos[ds]])
+            log(f"[{ds}] linear evidence, corpus std " + " ".join(f"{m} {x:.3f}" for m, x in P["linear"].items()))
+            continue
         P = em(videos[ds], flags, log=lambda m, ds=ds: log(f"[{ds}] {m}"))
         if a.vtemper == "icc":
             P["icc"] = residual_icc(videos[ds], P, flags)

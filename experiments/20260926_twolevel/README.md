@@ -550,3 +550,98 @@ Result (2026-09-26, `runs/20260926_twolevel/c_viterbi/metrics.json`; 274 interva
 Viterbi is slightly better on HateMM and worse on HCS. HCS has more and shorter GT segments: 3.3 per video, mean
 37 s. A single most probable path with a mean duration of 80 s merges them. The thresholded product (`c_full`)
 stays the interval output.
+
+### 12.3 Results (2026-09-26, uoa-lab1, CPU)
+
+Source: `runs/20260926_twolevel/robust/table.txt`.
+
+- The first launch stopped at the window-only run, whose verdict is a constant (z_video = −5.53 for every video):
+  the initial verdict variance was 0.
+- Fix: a variance floor of 1e-6 (other runs are unchanged). The window-only arm was re-run.
+
+**12.1 Other MLLMs.** Within, new − current:
+
+| model | HateMM | HCS |
+|---|---|---|
+| Qwen3-VL-2B | −.042 | +.004 |
+| Qwen3-VL-4B | +.021 | +.024 |
+| Qwen3-VL-8B | +.014 | +.015 |
+| Qwen3-VL-32B | +.006 | +.031 |
+| Qwen2.5-VL-7B | +.060 | +.047 |
+| InternVL3.5-8B | +.031 | +.038 |
+| LLaVA-OV-7B | −.060 | −.026 |
+| Gemma-3-12B | −.015 | +.014 |
+
+- Models not below current beyond the noise floor: ROC 8/8 and 8/8, PR 6/8 and 6/8, within 5/8 and 7/8.
+- The drops go with extreme fitted evidence. The EM evidence per read, as a multiple of the current y / std, is
+  13–20 for the LLaVA and Gemma visual branches and 2.5–8 elsewhere. LLaVA's visual chain also gets an initial hate
+  probability of 1.00.
+
+**12.2 Reading components under the new method.** Within, arm − full; current method in brackets:
+
+| removed | HateMM | HCS |
+|---|---|---|
+| stance turn | −.021 (−.005) | −.010 (−.035) |
+| transcript context | −.045 (−.043) | −.011 (−.010) |
+| frames | −.076 (−.033) | −.104 (−.043) |
+| dual branches (one joint branch) | −.016 (+.011) | −.075 (−.056) |
+| all of these | −.063 (−.057) | −.087 (−.062) |
+
+Under the new method every reading component costs ≥ .01 within on both corpora. Under the current method, the
+stance turn and the dual branches do not reach .01 on HateMM. HateMM pooled also falls without the transcript
+(−.147 / −.185).
+
+**Diagnostics after 12.1** (development reads; `runs/20260926_twolevel/robust/*_{iotast,nscore}`,
+`runs/20260926_twolevel/diag_{lin_*,c_m2_iotast,c_m2_nscore}`):
+- **Start distribution fixed to the stationary share (.5).** LLaVA .7239 / .5692, Qwen3-VL-2B .7338 / .5785,
+  main run .7545 / .6426. Not a fix.
+- **Current evidence (y / std, max fusion, one chain) with the new durations.** k = 1 reproduces the pair-state
+  TIL arm (.7601 / .6303). k = 4 gives .7513 / .6147, so with weak evidence the negative-binomial shape hurts. The
+  two routes to smoothing (weak evidence + geometric, fitted evidence + no one-window segments) are alternatives,
+  not additive.
+- **Normal scores before EM.** Each modality's reads are replaced by the normal score of their rank within the
+  corpus; the key keeps the raw reads. Within:
+  - main run .7525 / .6397;
+  - across the 8 MLLMs, against current: HateMM −.027 (2B), +.027, +.005, −.001, +.069, +.032, −.006, +.067;
+    HCS −.002, +.022, +.011, +.024, +.046, +.036, +.019, +.042.
+  This leads to round 3 (§14).
+
+## 14. Round 3 of the time level: normal-score reads (declared before the declared runs)
+
+### 14.1 Change
+
+Before EM, each modality's window reads are replaced by Φ⁻¹((rank − .5) / N), with the rank taken over all windows
+of that modality in the corpus. Only the order of the reads within a corpus is used, not the MLLM's logit scale,
+which differs between models and saturates differently (§12.3). Everything else is `c_m2`:
+- EM Gaussian emissions without the leak term;
+- negative-binomial durations (k = 4, 80 / 80 s);
+- per-modality chains + OR;
+- calibrated key with the raw reads, plus the centred rank.
+
+This is the third and last revision of the time level (rule 9). Normal scores were chosen after seeing §12.3,
+so they are development-selected.
+
+### 14.2 Arms
+
+| arm | what |
+|---|---|
+| `r3_m2` | primary (main run `runs/20260926_glr/base_gridA`) |
+| `r3_full` | product composition, intervals |
+| `r3_k1`, `r3_nocoupling` | ablations: geometric durations; independent cells |
+| `r3_k2`, `r3_k8`, `r3_d40`, `r3_d160` | declared scans |
+| `robust/<model>_r3` | the eight family-study runs (§12.1) |
+| `robust/<arm>_r3` | the Qwen3-VL-8B reading ablations (§12.2) |
+
+### 14.3 Decision rule
+
+- **No drop:** `r3_m2` against `current`, all six numbers within the noise floor.
+- **Mechanism at work:** `r3_nocoupling` − `r3_m2` ≤ −.01 within on both corpora.
+- **Robustness (reported, compared with §12.1):** the number of MLLMs not below current beyond the noise floor on
+  each metric, and the mean within change.
+- **Reading components (reported):** each must cost ≥ .01 on a main metric on both corpora.
+- **Choice between `c_m2` (round 2) and `r3_m2`.** Both must pass the no-drop rule. The one with more MLLMs not
+  below current on within (summed over the two corpora) is kept. On a tie, the one with the higher mean within
+  change is kept.
+
+Launch: `launch/run_r3.sh`; bootstrap `analyze.py --round 5` (`analysis_r3/`); robustness table
+`summarize_robust.py --suffix r3`.

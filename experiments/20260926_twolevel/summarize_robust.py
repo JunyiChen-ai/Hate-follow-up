@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Table of README §12 from the evaluator outputs (metrics.json only; no GT read here)."""
+import argparse
 import json
 from pathlib import Path
 
@@ -19,24 +20,30 @@ def fmt(v):
     return " / ".join(f"{x:.4f}" for x in v)
 
 
-lines = ["## 12.1 other MLLMs (pooled ROC / PR / within; new - current)"]
+ap = argparse.ArgumentParser()
+ap.add_argument("--suffix", default="new", help="method suffix of the tags: new (§12) or r3 (§14)")
+SUF = ap.parse_args().suffix
+lines = [f"## other MLLMs (pooled ROC / PR / within; {SUF} - current)"]
 ok = {ds: [0, 0, 0] for ds in ["HateMM", "HateClipSeg"]}
+mean_w = {}
 for m in MODELS:
-    c, n = load(f"{m}_cur"), load(f"{m}_new")
+    c, n = load(f"{m}_cur"), load(f"{m}_{SUF}")
     for ds in c:
         d = [b - a for a, b in zip(c[ds], n[ds])]
         for i in range(3):
             ok[ds][i] += d[i] >= -FLOOR[i]
-        lines.append(f"  {m:14s} {ds:11s} current {fmt(c[ds])}  new {fmt(n[ds])}  diff " + " / ".join(f"{x:+.4f}" for x in d))
+        lines.append(f"  {m:14s} {ds:11s} current {fmt(c[ds])}  {SUF} {fmt(n[ds])}  diff " + " / ".join(f"{x:+.4f}" for x in d))
+        mean_w.setdefault(ds, []).append(d[2])
 for ds, v in ok.items():
-    lines.append(f"  {ds}: models where new is not below current beyond the noise floor: ROC {v[0]}/8, PR {v[1]}/8, within {v[2]}/8")
-lines.append("## 12.2 reading-module components (Qwen3-VL-8B cache path; each arm minus full)")
-base = {meth: load(f"full_{meth}") for meth in ("cur", "new")}
+    lines.append(f"  {ds}: models where {SUF} is not below current beyond the noise floor: ROC {v[0]}/8, PR {v[1]}/8, "
+                 f"within {v[2]}/8; mean within change {sum(mean_w[ds]) / len(mean_w[ds]):+.4f}")
+lines.append("## reading-module components (Qwen3-VL-8B cache path; each arm minus full)")
+base = {meth: load(f"full_{meth}") for meth in ("cur", SUF)}
 for arm in ARMS:
-    for meth in ("cur", "new"):
+    for meth in ("cur", SUF):
         x = load(f"{arm}_{meth}")
         for ds in x:
             d = [b - a for a, b in zip(base[meth][ds], x[ds])]
             lines.append(f"  {arm:9s} {meth} {ds:11s} {fmt(x[ds])}  minus full " + " / ".join(f"{v:+.4f}" for v in d))
-(R / "table.txt").write_text("\n".join(lines) + "\n")
+(R / ("table.txt" if SUF == "new" else f"table_{SUF}.txt")).write_text("\n".join(lines) + "\n")
 print("\n".join(lines))
