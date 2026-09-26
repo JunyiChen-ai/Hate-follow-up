@@ -40,6 +40,9 @@ frames, Whisper large-v3 transcripts. These are the same settings as `runs/20260
   - their 1 fps test scores are repeated 4 times per second onto the 4 fps grid;
   - each is padded with its last value to `ceil(duration * 4)` frames;
   - each is scored per seed by the shared evaluator; the table reports the seed mean.
+  - Branch: the one the Retrieval-hate run reports as its headline number (its README §5.1). These are Fed-WSVAD
+    `score_align`, MultiHateLoc `score_fused`, DSANet `score_mlp` and MACIL-SD `score_av`
+    (`convert_weaksup.py`; the choice was added before any number of ours existed).
 
 **Cohort and gold (`scripts/dehate/prepare_dehate_4fps.py`).**
 - Official test split: 1341 videos.
@@ -102,7 +105,34 @@ python experiments/20260927_dehate_external/summarize.py
 
 ## 6. Runs
 
-(filled in as they run)
+**Inputs (uoa-lab1, 2026-09-27).**
+- Videos: copied from uoa-lab2, 1341 files, same total size.
+- Manifest: 1341 rows, all with a duration and a video stream.
+- Transcripts: 1341 rows, 0 error rows.
+- Gold: 1151 videos, 234 hateful, base rate .0760, 222 videos with both classes, 190 excluded by rule (b). This is the
+  same cohort as the Retrieval-hate 1 fps run.
+- Frames: 1339 complete, 2 with 19 of 20 frames (`runs/20260927_dehate_external/prep_frames.log`).
+
+**Reads (`reads_gridA`).**
+- Host: lab-server (sc448960, the host of `base_gridA`), HateVLM env, commit f7d1c5b, from 08:54.
+- Smoke test on 2 videos: 0 errors.
+- Plumbing check: cache vs plain forward differs by .18 logits on a verdict of 3.8, bf16 rounding. On `base_gridA` it
+  was .03 on 17.6. The script has no stop threshold for it.
+- The smoke output was deleted before the full run.
+
+**ZS-ImageBind (`zs_imagebind`).**
+- Host: uoa-lab2 (sc474399, where the videos live), HateVideo env, commit f7d1c5b, from 08:49.
+- Weights and the ImageBind code were copied from uoa-lab1.
+- A 2-video smoke test passed and was deleted.
+- Speed is about 8 s per video.
+
+**Weakly supervised references (`weaksup`).**
+- Test scores copied from uoa-lab2 to `runs/20260927_dehate_external/weaksup_src/`: 12 files, 1151 videos each.
+- Converted and evaluated by `convert_weaksup.py`.
+- Padding: the median video needs no padding (−1 frame). One video needs 237 frames (59 s): its 1 fps curve ends at
+  the audio length.
+- The 4 fps numbers reproduce the 1 fps originals within about .002 (e.g. Fed-WSVAD seed 234: .6922 / .1925 at 4 fps
+  vs .6925 / .1918 at 1 fps).
 
 ## 7. Results
 
