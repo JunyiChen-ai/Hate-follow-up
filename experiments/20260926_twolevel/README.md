@@ -539,3 +539,14 @@ value as `c_full`'s threshold.
 
 Arm: `c_viterbi`. It is compared with `c_full` on interval F1@.3 / .5 / .7. There is no gate: this is a new output,
 and the current method has none.
+
+Result (2026-09-26, `runs/20260926_twolevel/c_viterbi/metrics.json`; 274 intervals). Interval F1@.3 / .5 / .7:
+
+| arm | HateMM | HCS |
+|---|---|---|
+| `c_viterbi` | .324 / .276 / .235 | .245 / .131 / .072 |
+| `c_full` | .318 / .262 / .217 | .316 / .180 / .079 |
+
+Viterbi is slightly better on HateMM and worse on HCS. HCS has more and shorter GT segments: 3.3 per video, mean
+37 s. A single most probable path with a mean duration of 80 s merges them. The thresholded product (`c_full`)
+stays the interval output.

@@ -177,8 +177,8 @@ def set_modalities(run):
 
 def init_params(videos, flags):
     zs = np.array([v["zv"] for v in videos])
-    P = {"pi": 0.5, "m0": float(np.percentile(zs, 10)), "m1": float(np.percentile(zs, 90)), "t2": float(zs.var()),
-         "emit": {}, "iota": {mods: 0.5 for mods in chains_of(flags)}}
+    P = {"pi": 0.5, "m0": float(np.percentile(zs, 10)), "m1": float(np.percentile(zs, 90)), "t2": max(float(zs.var()), EPS),
+         "emit": {}, "iota": {mods: 0.5 for mods in chains_of(flags)}}   # EPS floor: runs without a verdict (constant z_video)
     for m in MODS:
         ys = np.array([w["y"][m] for v in videos for w in v["wins"] if m in w["y"]])
         mu00, mu10, mu11 = (float(np.percentile(ys, q)) for q in (10, 50, 90))
