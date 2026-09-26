@@ -303,3 +303,60 @@ Paired bootstrap of within as in §4 (`analyze.py --round 2`, output `runs/20260
 ```
 bash experiments/20260926_twolevel/launch/run_r2.sh
 ```
+
+### 10.8 Results (2026-09-26, uoa-lab1, CPU)
+
+Source: `runs/20260926_twolevel/analysis_r2/table.txt` and `runs/20260926_twolevel/r2_*/metrics.json`. Numbers are
+pooled ROC / pooled PR / within.
+
+Plumbing checks:
+- The self-test passes: 2.1e-14 against brute force and against round 1 at k = 1.
+- The four declared runs that repeat a pilot reproduce it exactly.
+- EM is monotone in every arm.
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `current` | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 |
+| `r2_m2` | .8954 / .6882 / .7548 | .7134 / .6664 / .6296 |
+| `r2_full` | .8662 / .6385 / .7548; F1@.3/.5/.7 .331 / .265 / .221 | .7259 / .6611 / .6296; F1 .267 / .141 / .055 |
+| `r2_k1` (geometric) | .8952 / .6859 / .7192 | .7136 / .6661 / .6297 |
+| `r2_nocoupling` | .8949 / .6829 / .6278 | .7134 / .6661 / .6096 |
+| `r2_noleak` | .8955 / .6888 / .7579 | .7137 / .6664 / .6428 |
+| `r2_carrier` | .8954 / .6878 / .7418 | .7135 / .6667 / .6347 |
+| scans k = 2 / 8, D = 40 / 160 s (within) | .7178 / .7497 / .7415 / .7525 | .6261 / .6236 / .6310 / .6247 |
+
+Paired bootstrap of within (HateMM; HCS):
+
+| comparison | HateMM | HCS |
+|---|---|---|
+| `r2_m2` − `current` | +.000 [−.031, +.036] | −.007 [−.029, +.017] |
+| `r2_nocoupling` − `r2_m2` | −.127 [−.181, −.076] | −.020 [−.049, +.008] |
+| `r2_k1` − `r2_m2` | −.036 [−.065, −.009] | +.000 [−.018, +.018] |
+| `r2_noleak` − `r2_m2` | +.003 [−.009, +.015] | +.013 [−.003, +.030] |
+| `r2_carrier` − `r2_m2` | −.013 [−.038, +.009] | +.005 [−.009, +.019] |
+
+**Decision (§10.5):**
+- **No drop: passes.** All six numbers of `r2_m2` are within the noise floor of `current`.
+- **Mechanism at work: passes.** Without temporal coupling, within falls by .127 / .020.
+- **Duration shape: HateMM only.** Geometric durations cost .036 on HateMM and nothing on HCS, so the shape is not
+  a rule-14g claim.
+- **Sensitivity.** Worst within over the scans: .7178 (HateMM, k = 2) / .6236 (HCS, k = 8).
+- **New output.** `r2_full` gives interval F1@.3 of .331 / .267.
+- **Leak term fails its ablation.** Removing μ10 ≠ μ00 raises within by .003 / .013, so under rule 14g the term is
+  dropped. The reduced model (`r2_noleak`) is the round-2 result: .8955 / .6888 / .7579 and .7137 / .6664 / .6428,
+  development-selected. Its own ablations are re-run in §10.9 so that the ablation evidence refers to the final
+  model.
+
+### 10.9 Ablations of the reduced model (declared before running)
+
+The reduced model is `r2_m2` with μ10 = μ00, i.e. one non-hate mean per modality for all videos. Its arms repeat
+§10.4 with `--noleak` added:
+
+- `r2nl_full` (intervals);
+- `r2nl_k1` (geometric);
+- `r2nl_nocoupling`;
+- `r2nl_carrier`;
+- scans `r2nl_k2`, `r2nl_k8`, `r2nl_d40`, `r2nl_d160`.
+
+Decision rules are as in §10.5, with `r2_noleak` in place of `r2_m2`. The no-drop check is `r2_noleak` against
+`current`. Bootstrap: `analyze.py --round 3` (output `analysis_r2nl/`).

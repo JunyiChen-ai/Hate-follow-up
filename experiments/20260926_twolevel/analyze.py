@@ -20,6 +20,12 @@ ARMS_R2 = ["current", "r2_m2", "r2_full", "r2_k1", "r2_k2", "r2_k8", "r2_d40", "
 PAIRS_R2 = [("r2_m2", "current"), ("r2_full", "current"), ("r2_k1", "r2_m2"), ("r2_nocoupling", "r2_m2"),
             ("r2_noleak", "r2_m2"), ("r2_carrier", "r2_m2"), ("r2_k2", "r2_m2"), ("r2_k8", "r2_m2"),
             ("r2_d40", "r2_m2"), ("r2_d160", "r2_m2")]
+# ablations of the reduced round-2 model (README §10.9)
+ARMS_R2NL = ["current", "r2_noleak", "r2nl_full", "r2nl_k1", "r2nl_k2", "r2nl_k8", "r2nl_d40", "r2nl_d160",
+             "r2nl_nocoupling", "r2nl_carrier"]
+PAIRS_R2NL = [("r2_noleak", "current"), ("r2nl_full", "current"), ("r2nl_k1", "r2_noleak"),
+              ("r2nl_nocoupling", "r2_noleak"), ("r2nl_carrier", "r2_noleak"), ("r2nl_k2", "r2_noleak"),
+              ("r2nl_k8", "r2_noleak"), ("r2nl_d40", "r2_noleak"), ("r2nl_d160", "r2_noleak")]
 
 
 def per_video(arm, ds, Y):
@@ -36,9 +42,10 @@ def per_video(arm, ds, Y):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--round", type=int, choices=[1, 2], default=1)
+    ap.add_argument("--round", type=int, choices=[1, 2, 3], default=1, help="3 = ablations of the reduced round-2 model")
     a = ap.parse_args()
-    arms, pairs, sub = (ARMS, PAIRS, "analysis") if a.round == 1 else (ARMS_R2, PAIRS_R2, "analysis_r2")
+    arms, pairs, sub = {1: (ARMS, PAIRS, "analysis"), 2: (ARMS_R2, PAIRS_R2, "analysis_r2"),
+                        3: (ARMS_R2NL, PAIRS_R2NL, "analysis_r2nl")}[a.round]
     rng = np.random.default_rng(0)
     lines, summary = [], {}
     for ds in ["HateMM", "HateClipSeg"]:
