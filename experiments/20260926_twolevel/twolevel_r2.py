@@ -416,6 +416,9 @@ def main():
             P["vmix"] = info
             log(f"[{ds}] video mixture: pi {info['pi']:.3f} violating means {np.round(info['mu_violating'], 2).tolist()} "
                 f"other {np.round(info['mu_other'], 2).tolist()} sd {np.round(np.sqrt(info['var']), 2).tolist()}")
+        if a.key == "calib":
+            P["key_ab"] = key_calibration([intercept(v) for v in videos[ds]])
+            log(f"[{ds}] key calibration: logit P(V = 1 | K) = {P['key_ab'][0]:.4f} K {P['key_ab'][1]:+.4f}")
         params[ds] = P
         if P.get("carrier") is not None:
             log(f"[{ds}] carrier visual / speech / both {np.round(P['carrier'], 3).tolist()}")
