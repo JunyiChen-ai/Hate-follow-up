@@ -165,3 +165,141 @@ context. Independent Gaussian draws do not capture this. Secondary: forcing spee
 
 Test-read log addition: the diagnostics above read only evaluator outputs (`metrics.json`), and the bootstrap read
 `data/gt_4fps/*.npz`. Changed: nothing in this round.
+
+## 10. Round 2 (2026-09-26): explicit segment durations
+
+Status: declared before the declared runs; pilots listed in §10.2 were run first (development reads, rule 10).
+
+### 10.1 Why a second round
+
+Rule 9: round 1 failed the no-drop rule, but `full` raised HCS pooled ROC by .011, so the same method may be revised
+(at most 3 rounds). Round 2 targets the cause found in §9: the EM-fitted time level does not smooth.
+
+### 10.2 Error analysis and pilots before round 2 (test-read log)
+
+Files read: `runs/20260926_glr/base_gridA/predictions.jsonl`, `data/gt_4fps/{HateMM,HateClipSeg}.npz`,
+`runs/20260926_twolevel/*/{metrics.json,run.log}`. The analysis scripts ran from the session scratchpad; their
+numbers are given here. Pilot outputs: `runs/20260926_twolevel/diag_r2_*`. Numbers are HateMM / HCS.
+
+1. **Structure of the reads (label-free).**
+   - Most read variance is between videos: visual 86% / 75%, speech 69% / 49%.
+   - After removing each video's mean read, the correlation of adjacent windows is .50 / .59 (visual) and
+     .40 / .32 (speech). It is about 0 by 32 s.
+   - Visual–speech correlation of the video-centred reads is .18 / .09.
+2. **How strong a read is as evidence (test-read).** Logistic slope of window GT (hate fraction ≥ .5) on the
+   read, in videos with both classes:
+   - visual .055 / .101 per unit, speech .068 / .044;
+   - on video-centred reads: visual .067 / .066, speech .056 / .035.
+   For comparison, the current evidence 1 / corpus std gives .150 / .177 and .079 / .093, and round 1's EM gives
+   .785 / .957 and .748 / .319. So a read is weak evidence, and EM overstates it 5–14 times; the current scaling
+   overstates it 1.3–2.7 times.
+3. **Pilot a: fixed video effect.** Reads centred within each video, round-1 model, `m2`, no speech forcing
+   (`twolevel.py --center`): .7030 / .6138. EM then fits rare short bursts as the hate state (visual hate dwell
+   16 s, initial hate probability .12).
+4. **Pilot b: evidence tempering and the leave-one-read-out criterion.** The time-level emissions are multiplied by κ
+   at inference (EM unchanged; `m2`, no forcing).
+
+   | κ | 1 | .5 | .25 | .125 | .0625 |
+   |---|---|---|---|---|---|
+   | within | .7143 / .6279 | .7369 / .6284 | .7423 / .6197 | .7490 / .6100 | .7429 / .6021 |
+   | leave-one-read-out log density per read | −3.06 / −3.01 | −3.14 / −3.21 | −3.21 / −3.24 | −3.23 / −3.26 | — |
+
+   The label-free criterion is best at κ = 1 on both corpora, which is the round-1 setting. The reason: a read is
+   predictable from its neighbours whether or not they share the GT state. This refutes the round-2 idea proposed
+   after round 1 (choose the evidence strength by predicting held-out reads). Not used.
+5. **Pilot c: explicit durations (this round's change).** Settings: `m2`, no forcing, no constraint, mean durations
+   80 / 80 s, shape k (sub-states per segment).
+
+   | k | 1 | 2 | 4 | 8 |
+   |---|---|---|---|---|
+   | within | .7192 / .6297 | .7178 / .6261 | .7548 / .6296 | .7497 / .6236 |
+   | with video-centred reads | — | .6889 / .6047 | .6931 / .5927 | .6777 / .5739 |
+
+   The fitted evidence barely changes with k (visual slope .83 at k = 1, .81 at k = 4). The gain comes from the
+   duration shape. With k = 1 (geometric), a single window's strong read can form its own hate segment. With
+   k = 4, a segment lasts at least 4 cells (16 s, two windows), with its most likely length about 64 s.
+6. **Pilot d: video level with k = 4.** Pooled ROC / PR:
+
+   | video level | as the intercept (+ centred rank) | as the product P(V) × P(h \| V) |
+   |---|---|---|
+   | joint posterior (round 1) | .8235 / .5499, .7060 / .6317 | .8662 / .6385, .7259 / .6611 |
+   | reads counted as ICC-effective reads (residual ICC .53 / .23 visual / speech on HateMM, .31 / .27 on HCS) | .8939 / .6756, .7154 / .6384 | .8657 / .6401, .7332 / .6648 |
+   | two-component mixture over verdict + mean read per modality | .8961 / .6725, .7109 / .6490 | .8730 / .6604, .7287 / .6668 |
+
+   The current intercept `z_video + mean window z` gives .8956 / .6888, .7136 / .6671. Every principled video level
+   loses at least .013 pooled PR on at least one corpus. The video level stays unchanged in this round.
+7. **Pilot e: carrier fusion.** One shared chain. A hateful window shows hate in visual only, speech only, or both,
+   with carrier probabilities fitted by EM. Result: k = 4 .7418 / .6347, k = 1 .6984 / .6296. It is better on HCS
+   and worse on HateMM than per-modality chains + OR.
+
+Changed for round 2:
+- Explicit durations with k = 4, development-selected from {1, 2, 4, 8}.
+- Per-modality chains + OR, development-selected over carrier fusion.
+- Speech forcing and the at-least-one constraint dropped (§9 diagnostics).
+- Composition unchanged.
+
+### 10.3 Model changes against §1
+
+- **Durations.** Each hate segment and each gap lasts a negative-binomial number of 4 s cells: k sub-states in a
+  row, each left with probability 4k / D per cell, where D is the declared mean in seconds. k = 1 is round 1's
+  geometric chain. A segment shorter than k cells has probability 0. Exact inference: forward–backward over
+  (previous cell's hate bit, sub-state).
+- **Silent windows.** A window without speech has no speech observation; nothing is forced.
+- **Constraint.** No at-least-one constraint.
+- **Composition (primary, `r2_m2`).** Intercept `z_video + mean window z`, plus the centred rank of
+  logit P(hateful at t | V = 1, reads). This is round 1's `m2`.
+- **Intervals (`r2_full`).** Frame probability = P(V = 1 | ·) × P(hateful at t | V = 1, ·), with the joint video
+  posterior of round 1; intervals are runs of frames with probability ≥ .5.
+
+The persistence prior is still the only temporal coupling. The new shape states what the prior assumes: segments
+have a typical length, and one window cannot make a segment. The emissions are fitted without labels instead of
+being scaled by the corpus std.
+
+### 10.4 Constants and arms
+
+Constants, the same for both corpora:
+- cell 4 s;
+- k = 4 (development-selected, §10.2 item 5);
+- D_gap = D_hate = 80 s (the current method's dwell);
+- EM initialisation and stopping as §2 (without the constraint);
+- interval threshold .5.
+
+| arm | what |
+|---|---|
+| `r2_m2` | primary: new time level, current composition |
+| `r2_full` | same time level, joint video posterior, product composition, intervals |
+| `r2_k1` | ablation of the duration shape: geometric (k = 1) |
+| `r2_nocoupling` | ablation of persistence: independent cells, P(hate) fitted by EM |
+| `r2_noleak` | ablation of the stance-leak term: μ10 = μ00 |
+| `r2_carrier` | fusion alternative (§10.2 item 7) |
+| `r2_k2`, `r2_k8`, `r2_d40`, `r2_d160` | declared scans: k = 2, 8; D = 40, 160 s (both durations) |
+
+`current` is round 1's run `runs/20260926_twolevel/current` (not re-run).
+
+### 10.5 Decision rule
+
+- **No drop:** `r2_m2` against `current`. None of the six numbers may fall by more than the noise floor
+  (pooled .005, within .01).
+- **Mechanism at work:** `r2_nocoupling` − `r2_m2` ≤ −.01 within on both corpora.
+- **Duration shape as a claim (rule 14g):** `r2_k1` − `r2_m2` ≤ −.01 on at least one main metric on both corpora.
+  Otherwise it is reported as a HateMM-only effect, not a claim.
+- **Sensitivity:** the worst value over the scans is reported.
+- **New output:** interval F1 of `r2_full`.
+- If the no-drop rule fails, a third (last) round may follow.
+
+Paired bootstrap of within as in §4 (`analyze.py --round 2`, output `runs/20260926_twolevel/analysis_r2/`).
+
+### 10.6 Plumbing checks
+
+1. The explicit-duration forward–backward must equal brute-force enumeration (k ≤ 2, up to 5 cells). For k = 1 it
+   must also equal round 1's pair-state forward–backward. Tolerance 1e-8; logged in `r2_m2/run.log`.
+2. Declared runs whose settings match a pilot must reproduce the pilot's numbers. The pairs are `r2_m2` /
+   `diag_r2_k4`, `r2_k1` / `diag_r2_k1`, `r2_carrier` / `diag_r2_k4_carrier`, `r2_full` /
+   `diag_r2_k4_full_vnone`.
+3. Scoring never opens a GT file. EM is monotone (asserted).
+
+### 10.7 How to run
+
+```
+bash experiments/20260926_twolevel/launch/run_r2.sh
+```

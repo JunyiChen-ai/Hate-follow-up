@@ -42,7 +42,7 @@ def load_run(path):
     return {(r["dataset"], r["video_id"]): r for r in rows if not r.get("error")}
 
 
-def prep(rec):
+def prep(rec, center=False):
     dur = float(rec["duration"])
     n = max(1, int(math.ceil(dur / CELL - 1e-9)))
     wins = []
@@ -54,6 +54,12 @@ def prep(rec):
             raise SystemExit(f"{rec['video_id']}: window covers cells {ks}")
         wins.append({"cell": ks[-1], "pair": len(ks) == 2, "y": {m: float(w[m]) for m in MODS if m in w},
                      "z": float(w["z"])})
+    if center:   # diagnostic (round 2 pilot): each modality's reads minus the video's mean read of that modality
+        for m in MODS:
+            ys = [w["y"][m] for w in wins if m in w["y"]]
+            for w in wins:
+                if m in w["y"]:
+                    w["y"][m] -= float(np.mean(ys))
     return {"key": (rec["dataset"], rec["video_id"]), "n": n, "wins": wins, "zv": float(rec["extra"]["z_video"]),
             "L": len(rec["score_curve"]), "rec": rec}
 
@@ -68,6 +74,7 @@ def emission(v, chain, P):
     """log emission E[c, s] over pair states for a chain (tuple of modalities) under V = 1."""
     E = np.zeros((v["n"], 4))
     force = chain == ("z_speech",) and not P.get("noforce", False)
+    kap = P.get("kappa", 1.0)
     for w in v["wins"]:
         c, on = w["cell"], (ANY if w["pair"] else CUR)
         ys = [(m, w["y"][m]) for m in chain if m in w["y"]]
@@ -80,7 +87,7 @@ def emission(v, chain, P):
             if "lin_scale" in p:      # diagnostic: log-likelihood ratio y / corpus std, as the current method
                 E[c] += np.where(on == 1, y / p["lin_scale"], 0.0)
             else:
-                E[c] += np.where(on == 1, lognorm(y, p["mu11"], p["s2"]), lognorm(y, p["mu10"], p["s2"]))
+                E[c] += kap * np.where(on == 1, lognorm(y, p["mu11"], p["s2"]), lognorm(y, p["mu10"], p["s2"]))
     return E
 
 
@@ -311,6 +318,29 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
     return P, trace
 
 
+def loo_logpred(v, P, flags):
+    """Sum over the video's reads of log p(y_w | other reads of the same chain, V = 1): the read's own (tempered)
+    emission is divided out of the pair-state posterior at its cell; the predictive density is untempered.
+    Unconstrained chains (the at-least-one constraint is ignored here)."""
+    kap = P.get("kappa", 1.0); tot, cnt = 0.0, 0
+    for ch in spec_chains(flags):
+        c = P["chain"][ch]
+        ll, g, logz, logp0 = fb(emission(v, ch, P), c["iota"], c["a"], c["b"])
+        for w in v["wins"]:
+            on = ANY if w["pair"] else CUR
+            for m in ch:
+                if m not in w["y"]:
+                    continue
+                e = P["emit"][m]
+                le = np.where(on == 1, lognorm(w["y"][m], e["mu11"], e["s2"]), lognorm(w["y"][m], e["mu10"], e["s2"]))
+                with np.errstate(divide="ignore"):
+                    lg = np.log(np.maximum(g[w["cell"]], 0.0)) - kap * le
+                ok = np.isfinite(lg)
+                lg = lg[ok] - logsumexp(lg[ok])
+                tot += float(logsumexp(lg + le[ok])); cnt += 1
+    return tot, cnt
+
+
 # ----------------------------------------------------------------------------------------------- scoring
 
 def centered_rank(v):
@@ -416,6 +446,8 @@ def main():
     ap.add_argument("--out-root", default=str(ROOT / "runs/20260926_twolevel"))
     ap.add_argument("--gt-dir", default=str(ROOT / "data/gt_4fps"))
     ap.add_argument("--datasets", nargs="+", default=["HateMM", "HateClipSeg"])
+    ap.add_argument("--kappa", type=float, default=1.0, help="diagnostic: time-level emissions tempered by kappa at inference (EM unchanged)")
+    ap.add_argument("--center", action="store_true", help="diagnostic: reads centred within each video before the model")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     out = Path(a.out_root) / a.tag
@@ -438,7 +470,7 @@ def main():
     flags = {"nocoupling": a.nocoupling, "sharedchain": a.sharedchain, "noleak": a.noleak, "noatleast": a.noatleast,
              "fixdwell": a.fixdwell, "noforce": a.noforce}
     run = load_run(a.run)
-    videos = {ds: [prep(r) for k, r in sorted(run.items()) if k[0] == ds] for ds in a.datasets}
+    videos = {ds: [prep(r, a.center) for k, r in sorted(run.items()) if k[0] == ds] for ds in a.datasets}
     params, traces = {}, {}
     if a.linear:
         for ds in a.datasets:
@@ -469,6 +501,17 @@ def main():
         for m in MODS:
             vals = [w["y"][m] for v in videos[ds] for w in v["wins"] if m in w["y"]]
             scale[(ds, m)] = float(np.std(vals))
+    if a.kappa != 1.0 or a.arm == "m2":
+        for g in params.values():
+            if "_P" in g:
+                g["_P"]["kappa"] = a.kappa
+        for ds in a.datasets:
+            P = params[ds if a.scope == "corpus" else "pooled"]["_P"]
+            tot = cnt = 0.0; wsum = 0.0
+            for v in videos[ds]:
+                t = video_terms(v, P, flags); wv = float(expit(t["lo"]))
+                lp, n_ = loo_logpred(v, P, flags); tot += wv * lp; cnt += wv * n_
+            log(f"[{ds}] kappa {a.kappa:g}: leave-one-read-out log predictive per read (V=1 weighted) {tot / max(cnt, 1e-9):.4f}")
     pred_path = out / "predictions.jsonl"
     with open(pred_path, "w") as fh:
         for ds in a.datasets:
