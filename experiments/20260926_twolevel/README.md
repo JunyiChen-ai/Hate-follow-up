@@ -523,3 +523,19 @@ its job under the new method if removing it costs ≥ .01 on at least one main m
 
 Outputs: `runs/20260926_twolevel/robust/<model or arm>_{cur,new}/`, table
 `runs/20260926_twolevel/robust/table.txt` (`summarize_robust.py`). Launch: `launch/run_robust.sh`.
+
+## 13. Interval output by MAP decoding (declared before running)
+
+`c_full` makes intervals by thresholding P(V = 1 | K) × P(hateful at t | V = 1) at .5. The explicit-duration model
+can instead give its most probable segmentation. `decode.py` does this:
+- The time level and the key are as in `c_m2`.
+- A video gets intervals only if P(V = 1 | K) ≥ .5.
+- For such a video, each modality chain's Viterbi path gives its hate cells, and a cell is hateful if any chain's
+  path is in the hate phase.
+- Intervals are runs of hateful cells, in seconds.
+
+The score curve is the `c_m2` composition, so frame metrics equal `c_m2`. The only constant is the .5 gate, the same
+value as `c_full`'s threshold.
+
+Arm: `c_viterbi`. It is compared with `c_full` on interval F1@.3 / .5 / .7. There is no gate: this is a new output,
+and the current method has none.
