@@ -33,6 +33,9 @@ PAIRS_C = [("c_m2", "r2_noleak"), ("c_m2", "current"), ("c_norank", "c_m2"), ("c
 ARMS_R3 = ["current", "c_m2", "r3_m2", "r3_full", "r3_k1", "r3_nocoupling", "r3_k2", "r3_k8", "r3_d40", "r3_d160"]
 PAIRS_R3 = [("r3_m2", "current"), ("r3_m2", "c_m2"), ("r3_nocoupling", "r3_m2"), ("r3_k1", "r3_m2"),
             ("r3_k2", "r3_m2"), ("r3_k8", "r3_m2"), ("r3_d40", "r3_m2"), ("r3_d160", "r3_m2")]
+# three phases with learned durations (README §15)
+ARMS_S = ["current", "r3_m2", "s_m2", "s_full", "s_noslip", "s_nocoupling"]
+PAIRS_S = [("s_m2", "current"), ("s_m2", "r3_m2"), ("s_noslip", "s_m2"), ("s_nocoupling", "s_m2")]
 
 
 def per_video(arm, ds, Y):
@@ -49,12 +52,12 @@ def per_video(arm, ds, Y):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4, 5], default=1,
+    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4, 5, 6], default=1,
                     help="3 = ablations of the reduced round-2 model, 4 = composition step")
     a = ap.parse_args()
     arms, pairs, sub = {1: (ARMS, PAIRS, "analysis"), 2: (ARMS_R2, PAIRS_R2, "analysis_r2"),
                         3: (ARMS_R2NL, PAIRS_R2NL, "analysis_r2nl"), 4: (ARMS_C, PAIRS_C, "analysis_c"),
-                        5: (ARMS_R3, PAIRS_R3, "analysis_r3")}[a.round]
+                        5: (ARMS_R3, PAIRS_R3, "analysis_r3"), 6: (ARMS_S, PAIRS_S, "analysis_s")}[a.round]
     rng = np.random.default_rng(0)
     lines, summary = [], {}
     for ds in ["HateMM", "HateClipSeg"]:

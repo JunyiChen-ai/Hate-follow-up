@@ -712,3 +712,116 @@ HCS pooled without the stance turn: −.010 / −.013.
 4. **Composition.** The key K = z_video + mean window z becomes logit P(V = 1 | K) from a label-free two-component
    mixture, plus the centred rank. This replaces raw K plus the rank.
 5. **New output.** Intervals from P(V = 1 | K) × P(hateful at t | V = 1) ≥ .5.
+
+## 15. Three phases with learned durations: normal, hate, slip (declared before the declared runs)
+
+### 15.1 Why (test-read log, 2026-09-27)
+
+Files read:
+- `runs/20260926_glr/base_gridA/predictions.jsonl`;
+- `data/gt_4fps/*.npz`;
+- `runs/20260926_twolevel/{current,r3_m2}/predictions.jsonl`;
+- `runs/20260926_glr/infer/base_gridA_gauss8/predictions.jsonl`;
+- `runs/20260910_spvl/mllm/q3vl-8b/{full,nostance}/predictions.jsonl`.
+
+The analysis scripts ran from the session scratchpad; their numbers are given here. Numbers are HateMM / HCS.
+
+1. **Wrong high reads are brief.**
+   - Method: a window is "high" when its fused read (max of the corpus-std-scaled branches) is above the corpus
+     median. A run of consecutive high windows with no GT-hateful window is a false alarm.
+   - Inside violating videos, false-alarm runs last one window in 55% / 74% of cases and ≥ 4 windows in 21% / 5%.
+     With the corpus 70th percentile as the threshold: 53% / 79% and 6% / 2%.
+   - GT hate segments last a median of 4 / 3 windows (mean 61 / 43 s). 22% / 25% of them are a single window.
+   - In benign videos, with the median threshold, false alarms are longer on HateMM (24% ≥ 4 windows). These are
+     whole-video errors.
+2. **Where lone false alarms (single-window false-alarm runs) end up.** Mean within-video percentile, 1 = first:
+
+   | order by | HateMM | HCS |
+   |---|---|---|
+   | raw reads | .63 | .78 |
+   | Gaussian smoothing, 8 s | .47 | .59 |
+   | current method | .45 | .54 |
+   | `r3_m2` | .34 | .49 |
+   | GT-hateful windows (all methods) | .55–.56 | .54–.55 |
+
+   False-alarm runs of two or more windows barely move (.65 to .63, .72 to .66).
+3. **The stance shifts every window.** With the stance turn, all window reads of videos with a Yes verdict rise by
+   2.39 / 2.08 logits; with a No verdict, by .68 / .60. The within-video order hardly changes: median Spearman
+   between reads with and without the stance .93 / .92.
+
+Change motivated by item 1: the time level gets an explicit phase for brief wrong reads. The durations of all
+phases are learned instead of the declared shape 4 and mean 80 s of rounds 2–3.
+
+### 15.2 Model (`slip.py`)
+
+Per modality, each 4 s cell is in one of three phases:
+- **normal** (read distribution N(μ0, σ²));
+- **hate** (N(μ1, σ²));
+- **slip** (N(μ1, σ²)): a window the MLLM reads as hateful although it is not.
+
+Rules:
+- Hate and slip windows share the same read distribution. They differ only in two respects: slip can occur in any
+  video but hate only in a violating video (V = 1), and their durations differ.
+- Every phase lasts a geometric number of cells with a learned mean. There is no declared shape or mean.
+- Transitions: normal to hate with rate h (V = 1 only); normal to slip with rate s (any video); hate to normal;
+  slip to normal.
+- Each 8 s window's read observes "hate or slip in any of the window's cells", through pair states as in rounds 1–3.
+- Videos judged benign therefore show what slips look like, and the fitted slip duration is then used inside
+  violating videos.
+
+Unchanged from `r3_m2`:
+- normal-score reads;
+- one chain per modality;
+- P(hateful at t | V = 1) = 1 − Π over modalities of (1 − P(hate phase));
+- the verdict model within EM;
+- the calibrated key plus the centred rank;
+- intervals from the product.
+
+Inference is exact forward–backward over (previous cell high, phase). The M-step has a closed form:
+- s = (normal-to-slip counts under V = 1 and V = 0) / (all transitions out of normal, V = 1 and V = 0);
+- h = (normal-to-hate counts) · (1 − s) / (normal-to-normal + normal-to-hate counts under V = 1);
+- the stay probabilities of hate and slip are their self-transition shares.
+
+EM initialisation:
+- h = s = .025, i.e. normal lasts 80 s on average in a violating video;
+- hate stay .95 (80 s); slip stay .5 (8 s);
+- start distribution (.5, .25, .25) under V = 1 and (.75, 0, .25) under V = 0;
+- μ0 and μ1 at the 10th and 90th percentiles of the normal scores; σ² = their variance.
+
+Stopping: 300 iterations or a relative gain < 1e-7. Monotonicity is asserted. Rates are clipped to [1e-6, .5].
+
+### 15.3 Arms
+
+| arm | what |
+|---|---|
+| `s_m2` | primary |
+| `s_full` | product composition, intervals |
+| `s_noslip` | ablation: no slip phase (normal / hate with learned durations) |
+| `s_nocoupling` | ablation: independent cells |
+| `robust/<model>_s` | the eight family-study runs (§12.1) |
+| `robust/<arm>_s` | the Qwen3-VL-8B reading ablations (§12.2) |
+
+Also reported for each corpus and modality: the learned mean durations (normal, hate, slip) and the start rates.
+
+### 15.4 Decision rule
+
+1. **No drop:** `s_m2` against `current`, all six numbers within the noise floor.
+2. **The slip phase does its job:** `s_noslip` − `s_m2` ≤ −.01 within on both corpora.
+3. **Persistence does its job:** `s_nocoupling` − `s_m2` ≤ −.01 within on both corpora.
+4. **Story check (reported, not gated):** the learned slip duration is shorter than the hate duration for every
+   corpus and modality.
+5. **Robustness:** over the eight MLLMs, the within count not below current (summed over both corpora) must be
+   ≥ 14 (`r3_m2` has 15).
+6. **Outcome:** if 1, 2, 3 and 5 pass, `s_m2` replaces `r3_m2` as the candidate, since it removes the declared
+   shape and mean durations. Otherwise `r3_m2` stays.
+
+Paired bootstrap as before: `analyze.py --round 6` (`analysis_s/`). Robustness table: `summarize_robust.py --suffix s`.
+
+### 15.5 Plumbing checks
+
+1. The three-phase forward–backward equals brute-force enumeration over phase paths (up to 5 cells) in likelihood,
+   hate marginals and expected transition counts, to 1e-8. Logged in `s_m2/run.log`. The value was 8.9e-15 before
+   this declaration.
+2. Scoring never opens a GT file. EM is monotone (asserted).
+
+Launch: `launch/run_slip.sh`.
