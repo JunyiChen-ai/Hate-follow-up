@@ -825,3 +825,65 @@ Paired bootstrap as before: `analyze.py --round 6` (`analysis_s/`). Robustness t
 2. Scoring never opens a GT file. EM is monotone (asserted).
 
 Launch: `launch/run_slip.sh`.
+
+### 15.6 Results (2026-09-27, uoa-lab1, CPU)
+
+Sources: `runs/20260926_twolevel/analysis_s/table.txt` and `runs/20260926_twolevel/robust/table_s.txt`. The self-test
+passes (8.9e-15).
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `current` | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 |
+| `r3_m2` | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 |
+| `s_m2` | .8968 / .6923 / .7567 | .7160 / .6719 / .6178 |
+| `s_full` | .8940 / .7131 / .7567; F1@.3/.5/.7 .335 / .293 / .250 | .7286 / .6490 / .6178; F1 .215 / .131 / .072 |
+| `s_noslip` | .8970 / .6930 / .7586 | .7163 / .6694 / .6284 |
+| `s_nocoupling` | .8958 / .6848 / .6347 | .7155 / .6689 / .6045 |
+
+Learned mean durations of `s_m2`:
+
+| corpus, modality | normal | hate | slip |
+|---|---|---|---|
+| HateMM visual | 682 s | 1429 s | 73 s |
+| HateMM speech | 101 s | 315 s | 104 s |
+| HCS visual | 216 s | 890 s | 89 s |
+| HCS speech | 99 s | 246 s | 48 s |
+
+Robustness over the eight MLLMs:
+- within not below current: 6/8 on HateMM, 5/8 on HCS (11 in total; the rule needs 14);
+- mean within change −.009 / +.001.
+
+**Decision (§15.4): fails.**
+- **No drop fails:** HCS within falls by .019.
+- **The slip phase does no work:** removing it changes within by +.002 / +.011.
+- **Robustness fails:** 11 < 14.
+- **Story check:** slip is shorter than hate in every corpus and modality, but it is not brief (48–104 s).
+- **Outcome:** `r3_m2` stays the candidate.
+
+**Why.** Without labels, a brief wrong high read and a brief real hate segment look the same: 22–25% of GT hate
+segments are one window. EM uses the extra phase for medium-length high stretches instead, and treats hate as
+lasting most of a violating video. So the finding "wrong high reads are brief" (§15.1) cannot be learned as a
+separate phase from unlabeled reads. "Hate lasts" has to enter as a declared assumption, which is what the minimum
+duration of rounds 2–3 does.
+
+Side result: `s_noslip` (normal / hate, geometric durations learned by EM, no declared shape or mean) gives
+.7586 / .6284. Against current that is +.004 / −.008 within, inside the noise floor. Its learned durations are long
+(hate 160–980 s), so strong persistence also comes from learned geometric durations when the reads are normal
+scores. Round 3's `r3_k1` used geometric durations fixed at 80 s. It was not a declared candidate; see §15.7.
+
+### 15.7 Follow-up: learned durations without a slip phase (declared before running)
+
+The candidate is `s_noslip`: normal-score reads, two phases (normal / hate), geometric durations and start
+probabilities learned by EM, composition as `r3_m2`. It has no declared duration constant.
+
+Runs:
+- `s_noslip_nocoupling` (persistence ablation);
+- `robust/<model>_sn` for the eight family-study runs;
+- `robust/<arm>_sn` for the reading ablations.
+
+Decision:
+- **No drop:** against `current` (already measured: passes).
+- **Persistence:** `s_noslip_nocoupling` − `s_noslip` ≤ −.01 within on both corpora.
+- **Robustness:** within count not below current ≥ 14 over the eight MLLMs.
+- **Outcome:** if all pass, it is reported as the alternative with no declared durations, and the user chooses between
+  it and `r3_m2`. If not, `r3_m2` stays.
