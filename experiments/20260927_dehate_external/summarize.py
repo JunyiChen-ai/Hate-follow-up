@@ -19,7 +19,8 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 
 ROOT = Path(__file__).resolve().parents[2]
 R = ROOT / "runs/20260927_dehate_external"
-OURS = {"spvl_r2": "SPVL-r2", "current": "SPVL-r2 + duration prior (current)", "r3_m2": "r3_m2 (candidate)"}
+OURS = {"spvl_r2": "SPVL-r2", "current": "SPVL-r2 + duration prior (current)", "r3_m2": "r3_m2 (candidate)",
+        "r3_full": "r3_full (candidate, interval output)"}
 ZERO = {"zs_imagebind": "ZS-ImageBind (zero-label)"}
 WEAK = {"fed_wsvad_3client": "Fed-WSVAD, 3 clients (video labels)", "multihateloc": "MultiHateLoc (video labels)",
         "dsanet": "DSANet (video labels)", "macilsd": "MACIL-SD (video labels)"}
@@ -120,7 +121,7 @@ def main():
         sd = p.get("sd")
         cells = [f"{p[k]:.4f}" + (f" ({sd[k]:.3f})" if sd else "") for k in METRICS]
         extra = ""
-        if tag == "r3_m2":
+        if tag == "r3_full":
             extra = f"   interval F1@.3/.5/.7 {p['interval_F1@0.3']:.3f} / {p['interval_F1@0.5']:.3f} / {p['interval_F1@0.7']:.3f}"
         lines.append(f"{label:42s} " + " / ".join(cells) + extra)
     lines.append("")

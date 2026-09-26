@@ -69,6 +69,15 @@ Paired bootstrap over videos (4000 resamples, seed 0) for:
 
 No threshold, constant or design is chosen on DeHate.
 
+**Correction (2026-09-27 09:24, after the `r3_m2` frame numbers were seen).** The `m2` arm writes no intervals. On
+HateMM and HateClipSeg the interval F1 of round 3 came from the `r3_full` arm:
+- same reads and time level;
+- composition `log P(V=1|K) + log P(hate at t | V=1)`, intervals where the product is at least .5;
+- `runs/20260926_twolevel/analysis_r3/table.txt`.
+
+`r3_full` is therefore added, unchanged, as the interval-output arm. It was a fixed arm of round 3, not a choice made
+on DeHate.
+
 ## 3. Inputs (derived caches, provenance in each directory)
 
 | cache | source |
@@ -102,6 +111,9 @@ python experiments/20260927_dehate_external/summarize.py
 - 2026-09-27, before any run: the DeHate label file (split and label counts, the span string format) and the
   Retrieval-hate DeHate README (its protocol and 1 fps results). No per-video prediction or error was read.
   Nothing in the method was changed.
+- 2026-09-27, after the results of §7: a video-level diagnostic. It read the gold video label, our verdict and key
+  from `runs/20260927_dehate_external/{r3_m2,weaksup}/predictions.jsonl`, and the platform column. Findings are in
+  §7. Nothing in the method was changed.
 
 ## 6. Runs
 
@@ -136,4 +148,48 @@ python experiments/20260927_dehate_external/summarize.py
 
 ## 7. Results
 
-(filled in after the runs)
+Source: `runs/20260927_dehate_external/summary/table.txt` and `summary.json` (from `summarize.py`), which read each
+method's evaluator output.
+- Grid and cohort: test split, 4 fps, 1151 scored videos (234 hateful), frame base rate .076.
+- Weakly supervised rows are seed means, with the sd in brackets.
+- ZS-ImageBind was still running when this was written.
+
+| method | pooled ROC | pooled PR | within |
+|---|---|---|---|
+| SPVL-r2 | .6993 | .1570 | .6406 |
+| SPVL-r2 + duration prior (current) | .6996 | .1570 | .6364 |
+| r3_m2 (candidate) | .7009 | .1578 | .6539 |
+| r3_full (candidate, interval output; F1@.3 / .5 / .7 = .174 / .127 / .104) | .7028 | .1626 | .6539 |
+| Fed-WSVAD, 3 clients (video labels) | .7007 (.011) | .1752 (.017) | .5055 (.009) |
+| MultiHateLoc (video labels) | .6102 (.007) | .1289 (.003) | .5420 (.013) |
+| DSANet (video labels) | .6325 (.010) | .1207 (.009) | .4873 (.014) |
+| MACIL-SD (video labels) | .5620 (.010) | .0881 (.002) | .5272 (.011) |
+
+Paired bootstrap over videos (4000, seed 0), 95 % intervals:
+
+| comparison | ROC | PR | within |
+|---|---|---|---|
+| r3_m2 − current | +.0013 [+.0002, +.0024] | +.0008 [−.0008, +.0022] | +.0175 [−.0187, +.0539] |
+| current − strongest baseline | −.0012 [−.061, +.058] (Fed-WSVAD) | −.0182 [−.079, +.037] (Fed-WSVAD) | +.0945 [+.042, +.147] (MultiHateLoc) |
+| r3_m2 − strongest baseline | +.0001 [−.060, +.059] | −.0174 [−.078, +.038] | +.1119 [+.062, +.159] |
+
+**Answers to the two declared questions.**
+- (1) Within-video ROC: every variant of ours is above every baseline. The margin is +.09 to +.11 over the best one,
+  MultiHateLoc, and the interval excludes 0.
+- (1) Pooled ROC: we are level with Fed-WSVAD, the strongest baseline, which is trained on 4680 DeHate training
+  videos with labels.
+- (1) Pooled PR: we are below Fed-WSVAD by .017–.018. The interval includes 0. We are above the other three
+  weakly supervised baselines.
+- (2) `r3_m2` is not below `current` on any metric. Within is +.0175, above the .01 floor, but its interval includes
+  0. The no-drop result from HateMM and HateClipSeg holds on a corpus it was not developed on.
+
+**Why pooled PR and interval F1 are lower than on HateMM (diagnostic, test labels read, method unchanged).**
+- Video ranking: our calibrated key ranks videos better than Fed-WSVAD's max-pooled score by AUC (.727 vs .699).
+  It is worse by AP (.361 vs .381).
+- The MLLM verdict is positive for 84 % of hateful videos, but also for 57 % of non-hateful ones (BitChute 63 %,
+  TikTok 42 %). Over all 1341 test videos it is positive for 60 %; the EM video prior is .62.
+- Confident false-positive videos at the top of the ranking lower pooled PR. They also produce intervals: at IoU .3,
+  precision is .115 and recall .364.
+- Likely cause, not yet checked video by video: DeHate's non-hateful side holds offensive, conspiratorial or political
+  videos (mostly BitChute) that the policy prompt judges violating. That would be a label-definition gap like
+  HateClipSeg's. It is not a localization failure: the within-video ordering is the strongest result here.
