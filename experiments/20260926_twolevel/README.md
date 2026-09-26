@@ -360,3 +360,50 @@ The reduced model is `r2_m2` with μ10 = μ00, i.e. one non-hate mean per modali
 
 Decision rules are as in §10.5, with `r2_noleak` in place of `r2_m2`. The no-drop check is `r2_noleak` against
 `current`. Bootstrap: `analyze.py --round 3` (output `analysis_r2nl/`).
+
+### 10.10 Results of §10.9 (2026-09-26, uoa-lab1, CPU)
+
+Source: `runs/20260926_twolevel/analysis_r2nl/table.txt` and `runs/20260926_twolevel/r2nl_*/metrics.json`. Numbers
+are pooled ROC / pooled PR / within.
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `current` | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 |
+| **`r2_noleak`** (round-2 result) | **.8955 / .6888 / .7579** | **.7137 / .6664 / .6428** |
+| `r2nl_full` | .8686 / .6448 / .7579; F1@.3/.5/.7 .321 / .265 / .220 | .7354 / .6631 / .6428; F1 .283 / .157 / .079 |
+| `r2nl_k1` (geometric) | .8952 / .6861 / .7126 | .7139 / .6668 / .6406 |
+| `r2nl_nocoupling` | .8949 / .6828 / .6108 | .7129 / .6660 / .6002 |
+| `r2nl_carrier` | .8954 / .6880 / .7422 | .7129 / .6659 / .5983 |
+| scans k = 2 / 8, D = 40 / 160 s (within) | .7234 / .7475 / .7413 / .7495 | .6372 / .6303 / .6204 / .6327 |
+
+Paired bootstrap of within (HateMM; HCS):
+
+| comparison | HateMM | HCS |
+|---|---|---|
+| `r2_noleak` − `current` | +.003 [−.031, +.041] | +.006 [−.015, +.031] |
+| `r2nl_nocoupling` − `r2_noleak` | −.147 [−.207, −.091] | −.043 [−.073, −.013] |
+| `r2nl_k1` − `r2_noleak` | −.045 [−.080, −.015] | −.002 [−.019, +.014] |
+| `r2nl_carrier` − `r2_noleak` | −.016 [−.042, +.010] | −.045 [−.073, −.017] |
+
+**Decision:**
+- **No drop: passes.** All six numbers of `r2_noleak` are within the noise floor of `current`. Within is higher by
+  .003 / .006; that is inside the noise floor, so it is not a gain.
+- **Mechanism at work: passes.** Without temporal coupling, within falls by .147 / .043, and both intervals exclude 0.
+- **Duration shape: HateMM only.** Geometric durations cost .045 on HateMM and nothing on HCS, so the shape is not a
+  rule-14g claim.
+- **Fusion.** One shared chain with carrier fusion is below per-modality chains + OR on both corpora (−.016 / −.045).
+- **Sensitivity.** Worst within over the scans: .7234 (HateMM, k = 2) / .6204 (HCS, D = 40 s).
+- **New output.** Interval F1@.3 .321 / .283 (`r2nl_full`). The current method outputs no intervals.
+
+What changed against the current method, in the time level only (composition unchanged):
+- **Evidence.** Emissions fitted by EM on the unlabeled reads (one non-hate mean, one hate mean and one variance per
+  modality) replace the corpus-std scaling.
+- **Durations.** Negative-binomial durations (shape 4, mean 80 s) replace the geometric chain.
+- **Fusion.** Per-modality chains, combined by "either chain is in the hate state", replace the max of scaled reads.
+
+Mechanism finding: with fitted evidence, a geometric chain lets a single window's strong read form its own
+hate segment, and smoothing stops (§9). A duration model in which one window cannot make a segment restores it,
+without scaling the evidence down by hand. The current method gets the same effect differently: it keeps the
+geometric chain and weakens the evidence by the corpus std.
+
+Development-selected (rule 10): k = 4, OR fusion, removing the leak term (§10.2, §10.8).
