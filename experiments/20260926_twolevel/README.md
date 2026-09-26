@@ -645,3 +645,70 @@ so they are development-selected.
 
 Launch: `launch/run_r3.sh`; bootstrap `analyze.py --round 5` (`analysis_r3/`); robustness table
 `summarize_robust.py --suffix r3`.
+
+### 14.4 Results (2026-09-26, uoa-lab1, CPU)
+
+Sources: `runs/20260926_twolevel/analysis_r3/table.txt`, `runs/20260926_twolevel/robust/table_r3.txt`.
+- The self-test passes (2.1e-14).
+- `r3_m2` reproduces the pilot `diag_c_m2_nscore`.
+- The robustness runs reproduce the `*_new_nscore` pilots.
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `current` | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 |
+| `c_m2` (round 2 + calibrated key) | .8970 / .6959 / .7579 | .7170 / .6706 / .6428 |
+| **`r3_m2`** | **.8971 / .6953 / .7525** | **.7168 / .6705 / .6397** |
+| `r3_full` | .8903 / .7070 / .7525; F1@.3/.5/.7 .322 / .282 / .230 | .7321 / .6709 / .6397; F1 .273 / .158 / .085 |
+| `r3_k1` (geometric) | .8967 / .6925 / .7389 | .7166 / .6695 / .6296 |
+| `r3_nocoupling` | .8961 / .6881 / .6367 | .7144 / .6689 / .5801 |
+| scans k = 2 / 8, D = 40 / 160 s (within) | .7426 / .7469 / .7281 / .7530 | .6344 / .6277 / .6196 / .6308 |
+
+Paired bootstrap of within (HateMM; HCS):
+
+| comparison | HateMM | HCS |
+|---|---|---|
+| `r3_m2` − `current` | −.002 [−.030, +.028] | +.003 [−.021, +.029] |
+| `r3_nocoupling` − `r3_m2` | −.116 [−.179, −.050] | −.060 [−.095, −.024] |
+| `r3_k1` − `r3_m2` | −.014 [−.034, +.006] | −.010 [−.028, +.008] |
+
+Robustness (the eight MLLMs, against current):
+- HateMM: ROC 8/8, PR 6/8, within 7/8; mean within change +.021.
+- HCS: ROC 7/8, PR 7/8, within 8/8; mean within change +.025.
+- Drops beyond the noise floor:
+  - Qwen3-VL-2B: HateMM within −.027; HCS ROC −.005, PR −.007.
+  - Qwen2.5-VL-7B: HateMM PR −.005, while its within is +.069.
+  - LLaVA-OV-7B: HateMM PR −.014.
+
+Reading components under `r3` (within, arm − full; current method in brackets):
+
+| removed | HateMM | HCS |
+|---|---|---|
+| stance turn | −.014 (−.005) | −.011 (−.035) |
+| transcript context | −.039 (−.043) | +.001 (−.010) |
+| frames | −.060 (−.033) | −.109 (−.043) |
+| dual branches | +.009 (+.011) | −.074 (−.056) |
+
+HCS pooled without the stance turn: −.010 / −.013.
+
+**Decision (§14.3):**
+- **No drop: passes.** All six numbers are within the noise floor of `current`.
+- **Mechanism at work: passes.** Without coupling, within falls by .116 / .060; both intervals exclude 0.
+- **Duration shape.** Geometric durations now cost ≥ .01 on both corpora (−.014 / −.010), so the shape meets the
+  rule-14g point threshold. The intervals still include 0.
+- **Choice.** The tie-break rule keeps `r3_m2`: its within count over the eight MLLMs is 7 + 8 = 15, against 5 + 7
+  = 12 for `c_m2`. The price:
+  - `c_m2` is .005 / .003 higher on within in the main run (inside noise);
+  - under `r3`, the transcript context no longer reaches .01 on HCS and the dual branches do not on HateMM, while
+    under `c_m2` all four reading components did.
+- **Development-selected:** normal scores, k = 4, OR fusion, no leak term, the calibrated key.
+
+**Redesigned method (`r3_m2`), changes against the current method:**
+1. **Reads to evidence.** Each modality's reads become normal scores of their rank within the corpus. Gaussian
+   emissions are fitted by EM without labels. This replaces y / corpus std.
+2. **Duration prior.** Negative-binomial segment lengths (shape 4, mean 80 s), so one window cannot form a segment.
+   This replaces the geometric chain.
+3. **Modalities.** One chain per modality; a moment is hateful if either chain is in the hate state. This replaces
+   the max of scaled reads.
+4. **Composition.** The key K = z_video + mean window z becomes logit P(V = 1 | K) from a label-free two-component
+   mixture, plus the centred rank. This replaces raw K plus the rank.
+5. **New output.** Intervals from P(V = 1 | K) × P(hateful at t | V = 1) ≥ .5.
