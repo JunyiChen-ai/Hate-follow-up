@@ -462,3 +462,32 @@ Baseline: `r2_noleak` (raw key, s = 1).
 - **The video term still does its job:** `c_nokey` − `c_m2` pooled ROC ≤ −.01 on both corpora.
 - **The within term still does its job:** `c_norank` − `c_m2` within ≤ −.01 on both corpora.
 - Gains are reported, and are development evidence only (§11.1 was seen first).
+
+### 11.5 Results (2026-09-26, uoa-lab1, CPU)
+
+Source: `runs/20260926_twolevel/analysis_c/table.txt` and `runs/20260926_twolevel/c_*/metrics.json`. The first
+launch crashed on a bug: the calibration was not stored. It was fixed in the next commit with the design unchanged,
+then re-run. Label-free calibration: logit P(V = 1 | K) = .3575 K + .399 (HateMM), .3406 K + 3.508 (HCS).
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `current` | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 |
+| `r2_noleak` (raw key) | .8955 / .6888 / .7579 | .7137 / .6664 / .6428 |
+| **`c_m2`** (calibrated key) | **.8970 / .6959 / .7579** | **.7170 / .6706 / .6428** |
+| `c_full` | .8829 / .7010 / .7579; F1@.3/.5/.7 .318 / .262 / .217 | .7375 / .6775 / .6428; F1 .316 / .180 / .079 |
+| `c_norank` | .8935 / .6813 / .5000 | .7107 / .6631 / .5000 |
+| `c_nokey` | .5696 / .2778 / .7579 | .5699 / .5238 / .6428 |
+| scan s = .5 / .25 / .125 (pooled) | .8965 / .6938, .8978 / .6984, .8993 / .7010 | .7155 / .6689, .7185 / .6720, .7217 / .6749 |
+
+**Decision (§11.4):**
+- **No drop: passes.** Against `current`, `c_m2` changes by +.0014 / +.0071 / +.0033 (HateMM) and +.0034 / +.0035 /
+  +.0064 (HCS). Only HateMM pooled PR is above the noise floor.
+- **The video term does its job:** without it, pooled ROC falls by .327 / .147.
+- **The within term does its job:** without it, within falls to .5 (−.258 / −.143), and pooled falls by .004–.015.
+- **The product composition (`c_full`) is mixed.** HCS rises by +.024 / +.010, HateMM PR rises by +.012, but HateMM
+  ROC falls by .013. It is kept only as the source of intervals (F1@.3 .318 / .316).
+
+Composition after this step: logit P(V = 1 | K) + centred rank of logit P(hateful at t | V = 1). Here K = z_video +
+mean window z, and the rank term is a within-video adjustment of at most ±.5 nats. The remaining constant is the
+rank term's span. The scan says a wider span (equivalently a smaller s) raises pooled on both corpora. No label-free
+rule for it was found, so it stays at the rank's natural range.
