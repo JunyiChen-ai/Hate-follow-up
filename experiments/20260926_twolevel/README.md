@@ -887,3 +887,19 @@ Decision:
 - **Robustness:** within count not below current ≥ 14 over the eight MLLMs.
 - **Outcome:** if all pass, it is reported as the alternative with no declared durations, and the user chooses between
   it and `r3_m2`. If not, `r3_m2` stays.
+
+### 15.8 Results of §15.7 (2026-09-27, uoa-lab1, CPU)
+
+Source: `runs/20260926_twolevel/robust/table_sn.txt` and `runs/20260926_twolevel/s_noslip_nocoupling/metrics.json`.
+
+- **Persistence passes.** `s_noslip_nocoupling` gives .6398 / .6047, i.e. −.119 / −.024 against `s_noslip`.
+- **Robustness fails.** Over the eight MLLMs, within is not below current for 6/8 on HateMM and 7/8 on HCS: 13, below
+  the required 14. The mean within change is +.003 / +.014; `r3_m2` had +.021 / +.025.
+- **Largest drops.** LLaVA-OV-7B HateMM −.102; Qwen3-VL-2B −.035 / −.021.
+
+**Decision: fails.** `r3_m2` stays the candidate.
+
+Together with §15.6, learning the durations from unlabeled reads is fragile. With a slip phase, the extra phase is
+used for the wrong structure. Without it, the learned persistence varies by MLLM. The declared minimum duration of
+round 3 (negative binomial, shape 4, mean 80 s) is the robust choice. In the method, "hate lasts" is an assumption
+about the task and cannot be learned from the reads.
