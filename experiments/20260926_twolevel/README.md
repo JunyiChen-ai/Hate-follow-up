@@ -491,3 +491,35 @@ Composition after this step: logit P(V = 1 | K) + centred rank of logit P(hatefu
 mean window z, and the rank term is a within-video adjustment of at most ±.5 nats. The remaining constant is the
 rank term's span. The scan says a wider span (equivalently a smaller s) raises pooled on both corpora. No label-free
 rule for it was found, so it stays at the rank's natural range.
+
+## 12. Robustness checks of the redesigned method (declared before running; CPU, cached reads)
+
+"New" = `r2_noleak` time level + calibrated key (`c_m2` settings). "Current" = `til_infer.py --model average
+--fusion max --dwell 80` with the raw key (the current method). Both run on the same cached reads. These runs predate
+the 2026-09-26 ASR loader fix, so their numbers differ slightly from the main runs.
+
+### 12.1 Other MLLMs
+
+These are the eight `full` runs of the family study (`runs/20260910_spvl/mllm/<model>/full`):
+Qwen3-VL 2B / 4B / 8B / 32B, Qwen2.5-VL-7B, InternVL3.5-8B, LLaVA-OneVision-7B and Gemma-3-12B. For each model the
+report gives the six numbers of both methods and their differences. Summary: for each metric, the number of models
+where "new" is not below "current" by more than the noise floor.
+
+### 12.2 Reading-module components under the new method
+
+These are the Qwen3-VL-8B cache-path ablation runs (`runs/20260910_spvl/mllm/q3vl-8b/<arm>`):
+- `full`;
+- `nostance` (no stance turn);
+- `noctx` (no transcript context);
+- `noframes` (no frames; branches are joint and speech);
+- `joint` (one joint branch instead of two);
+- `winonly` (all of the above removed).
+
+The ASR-segment run is skipped: its windows are longer than two cells, and the observation model needs fixed 8 s
+windows. The new model takes the branch keys of each run, one chain per branch.
+
+The report gives, for each method, each arm's change against `full`. A reading component counts as still doing
+its job under the new method if removing it costs ≥ .01 on at least one main metric on both corpora (rule 14g).
+
+Outputs: `runs/20260926_twolevel/robust/<model or arm>_{cur,new}/`, table
+`runs/20260926_twolevel/robust/table.txt` (`summarize_robust.py`). Launch: `launch/run_robust.sh`.

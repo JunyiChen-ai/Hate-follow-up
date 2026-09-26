@@ -161,7 +161,18 @@ def selftest(trials=100, seed=0):
 # ----------------------------------------------------------------------------------------------- EM
 
 def chains_of(flags):
-    return [("z_visual", "z_speech")] if flags.get("sharedchain") or flags.get("carrier") else [("z_visual",), ("z_speech",)]
+    return [tuple(MODS)] if flags.get("sharedchain") or flags.get("carrier") else [(m,) for m in MODS]
+
+
+def set_modalities(run):
+    """Branch keys of a cached run (README §12). The two-branch runs keep the order (z_visual, z_speech) of the main
+    runs; other runs (e.g. a joint branch) use their own keys, sorted."""
+    import twolevel as r1
+    keys = sorted({k for rec in run.values() for w in rec["extra"]["windows"] for k in w if k.startswith("z_")})
+    mods = ("z_visual", "z_speech") if set(keys) == {"z_visual", "z_speech"} else tuple(keys)
+    globals()["MODS"] = mods
+    r1.MODS = mods
+    return mods
 
 
 def init_params(videos, flags):
@@ -404,6 +415,7 @@ def main():
     flags = {"k": a.k, "d_gap": a.d_gap, "d_hate": a.d_hate, "sharedchain": a.sharedchain, "carrier": a.fusion == "carrier",
              "nocoupling": a.nocoupling, "noleak": a.noleak}
     run = load_run(a.run)
+    log(f"modalities {set_modalities(run)}")
     videos = {ds: [prep(r, a.center) for k, r in sorted(run.items()) if k[0] == ds] for ds in a.datasets}
     params = {}
     for ds in a.datasets:
