@@ -2,28 +2,35 @@
 
 截至 **2026-09-27**。旧的 2026-09-09 引言保留在本页下方各节。
 
-## 当前方法：r3_m2（2026-09-27 用户定为默认方法，development-selected）
+## 当前方法：r6_bma（2026-09-27，K2 第 6 轮通过后替换 r3_m2；development-selected）
 
+r6_bma = r3_m2（用户 2026-09-27 定的默认方法）去掉时序层里以秒设定的常数，其余不变。
 - M1 读取，与 SPVL-r2 相同。Qwen3-VL-8B 先读共享前缀（规则 + 20 帧 + 整段转录），给出整段裁定，再过立场轮，然后每个 8 秒窗读画面、语音两个隔离分支。
 - M2 读数变证据。每个模态的读数先换成语料内排名的正态分数，再由 EM 估"违规 / 非违规"两类读数分布。
-- M3 时序。每个模态一条链，段长服从负二项分布（形状 4，平均 80 秒）；任一条链处在违规状态即算违规。
-- M4 组合。整段分 = 两类混合无标签校准后的对数几率；帧分 = 整段分 + 视频内居中秩。`r3_full` 臂输出区间。
-- 代码：`experiments/20260926_twolevel/twolevel_r2.py --noleak --transform nscore --key calib --k 4 --arm m2`，读数 `runs/20260926_glr/base_gridA`。
+- M3 时序。每个模态一条链，任一条链处在违规状态即算违规。最短段 = 两个读数窗（形状 4 由读取网格推出，不是选的）。平均段长不再设定，在每个视频内对 [两窗, 视频长度] 按长度均匀先验积分掉。
+- M4 组合。整段分 = 两类混合无标签校准后的对数几率；帧分 = 整段分 + 视频内居中秩。`--arm full` 输出区间。
+- 代码：`experiments/20260926_twolevel/twolevel_r2.py --noleak --transform nscore --key calib --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2`，读数 `runs/20260926_glr/base_gridA`。最终运行与消融见该 README §20。
 
 结果（test，4 fps；pooled ROC / pooled PR / within）：
 
 | 方法 | HateMM | HateClipSeg | DeHate（external，1151 视频） |
 |---|---|---|---|
-| **r3_m2**（`runs/20260926_twolevel/r3_m2/metrics.json`；DeHate `runs/20260927_dehate_external/r3_m2/metrics.json`） | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 | .7009 / .1578 / .6539 |
-| SPVL-r2 + 时长先验（前一默认，`runs/20260926_glr/infer/base_gridA_d80/metrics.json`） | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 | .6996 / .1570 / .6364 |
+| **r6_bma**（`runs/20260926_twolevel/r6_bma/metrics.json`；DeHate `runs/20260927_dehate_external/r6_bma/metrics.json`） | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 | .7011 / .1582 / .6431 |
+| r3_m2（用户定的默认，`runs/20260926_twolevel/r3_m2/metrics.json`；DeHate `runs/20260927_dehate_external/r3_m2/metrics.json`） | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 | .7009 / .1578 / .6539 |
+| SPVL-r2 + 时长先验（`runs/20260926_glr/infer/base_gridA_d80/metrics.json`） | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 | .6996 / .1570 / .6364 |
 | SPVL-r2（`runs/20260926_glr/infer/base_gridA_spvlr2/metrics.json`） | .8952 / .6867 / .6800 | .7134 / .6667 / .6101 | .6993 / .1570 / .6406 |
 | T3AL 重跑，零标签 | .6091 / .3096 / .5068 | .6246 / .5645 / .5003 | 未跑 |
 | ZS-ImageBind，零标签（DeHate `runs/20260927_dehate_external/zs_imagebind/metrics.json`） | .5928 / .3108 / .5343 | .5917 / .5495 / .5241 | .5538 / .0962 / .5131 |
 | MultiHateLoc，视频级标签 | .7618 / .5188 / .6108 | .5056 / .4885 / .4996 | .6102 / .1289 / .5420 |
 | Fed-WSVAD 3 clients，视频级标签（DeHate `runs/20260927_dehate_external/weaksup/metrics.json`，3 seed 均值） | — | — | .7007 / .1752 / .5055 |
 
-DeHate 是 external validation（`experiments/20260927_dehate_external/README.md`）。within 超过所有 baseline .09–.11；pooled ROC 与 Fed-WSVAD 持平；pooled PR 低 .018（区间含 0）。
-三语料 error analysis：`experiments/20260927_error_analysis/README.md`。
+- r6_bma 相对 r3_m2：六个数都在噪声内；8 个 MLLM 上 within 两语料都 8/8 不低于 r3（`experiments/20260926_twolevel/README.md` §19.3）。DeHate within 低 .011（external，不作门）。
+- DeHate 是 external validation（`experiments/20260927_dehate_external/README.md`）：within 比所有 baseline 高 .10 以上；pooled ROC 与 Fed-WSVAD 持平；pooled PR 低 .017。
+- 三语料 error analysis：`experiments/20260927_error_analysis/README.md`。
+- 最终 novelty 复查（K6）：`docs/reviews/20260927_final_novelty_review.md`。整体对仇恨视频是新的，但每个部件都有近邻工作。
+  - 可写的贡献：M1 整体；模型外、无标签、以读数窗为单位的显式时长时序层（去耦合 within −.11 / −.06）；8 个 MLLM 上都有效；DeHate within 超过弱监督 baseline。
+  - 不能写成贡献：M2 正态分数、M4 校准与组合、隔离 / 前缀缓存、双分支、转录语境；也不能写"比平滑好"（HCS 只高于最佳高斯 .006–.009）。
+  - 论文前的缺口（该文档 §8）：同 backbone 的 training-free 对照（规则 14f）；M1 各部件在最终读数上重测；逐条核对引文。
 
 ## 2026-09-27 自主迭代：concern 清单（用户要求全部关闭后停止）
 
@@ -34,11 +41,11 @@ DeHate 是 external validation（`experiments/20260927_dehate_external/README.md
 | # | concern | 做法 | 状态 |
 |---|---|---|---|
 | K1 | 默认方法换成 r3_m2 | 更新 STATUS、`CLAUDE.md` 项目条 | 已关闭（2026-09-27） |
-| K2 | 时序模块里人为设秒（平均 80 秒、形状 4） | 段长不再以秒设定：最短 = 两个读数窗（由读取网格决定），平均段长在 [两窗, 视频长度] 上按尺度无关先验积分掉 | 进行中：第 4 轮（按视频积分段长）主结果不掉，但 8 个 MLLM 里 HateMM 只有 4/8 不掉（要求 7/8），未过；按声明做第 5 轮（全语料共用段长后验），再不过做第 6 轮 |
+| K2 | 时序模块里人为设秒（平均 80 秒、形状 4） | 段长不再以秒设定：最短 = 两个读数窗（由读取网格决定），平均段长在 [两窗, 视频长度] 上积分掉 | **已关闭，第 6 轮通过**（2026-09-27）。第 4 轮（对数均匀先验）8 个 MLLM 里 HateMM 只有 4/8；第 5 轮（全语料共用）HCS within −.0103，且画面链停在网格上限；第 6 轮（长度均匀先验）四条全过：不掉分、去耦合 −.114 / −.057、MLLM 8/8 与 8/8、网格一致。r6_bma 成为当前方法。代价：最短长度在此先验下只值 .030 / .009；DeHate within −.011。`experiments/20260926_twolevel/README.md` §16–§19 |
 | K3 | 整段判断误报：非仇恨视频 49–67% 判违规；DeHate PR 低于 Fed-WSVAD；区间精度 .115 | 按仇恨定义拆开整段判断（针对受保护群体 T / 说话人认同 E），在视频层做合取（DVD） | **已关闭，未过门**（2026-09-27）。HCS pooled ROC −.022、PR −.033。原因：HCS 的 GT 把非仇恨的冒犯内容也算正例，测试集 104 个正例视频里 51 个没有仇恨片段，T 对其中 26% 答否。DeHate +.012 / +.028；只用裁定 + T 为 +.035 / +.038，超过 Fed-WSVAD。HCS 只算仇恨类（诊断，不是协议）+.018 / +.008。E 不起作用。`experiments/20260927_dvd/README.md` §9 |
 | K4 | 窗级话题混淆：提到群体的效应 ≥ 真实标签；视频内远处误报 | 用 K3 得到的定义条件去问窗 | **已关闭，记为冻结读取器的上限**。之前 8 个方向都已按轮数归档；用 test 标签在全部窗级输出（含隐藏状态）上拟合分类器也不超过原始读数（TAD §5d）。T 本身是话题问题；E 在视频层也不起作用；逐窗问动作已由 TAD 五类动作做过。`experiments/20260927_error_analysis/README.md` 末节 |
 | K5 | 短而稀疏的仇恨 within 弱 | 随 K2 检查（覆盖率 < 25% 子集） | **已关闭，时序层解决不了**。每语料 19 个视频：按视频段长 HateMM +.032、HCS −.019，区间都含 0；去掉最短长度或去掉耦合也没有两语料一致更好。同上 |
-| K6 | 故事：r3_m2 = 默认机制 + 补丁 | K2 去掉秒常数；排名正态分数写成对单调变换不变的观测模型；K3 提供新机制；最终 novelty 复查 | 待做 |
+| K6 | 故事：r3_m2 = 默认机制 + 补丁 | K2 去掉秒常数；K3 提供新机制；最终 novelty 复查 | **已关闭**。秒常数已去掉（K2）。K3 没有带来新机制（DVD 未过门）。最终复查定了可写与不可写的贡献，并按"任务挑战 → 模块 → 消融"给出故事骨架：上下文依赖 → M1；仇恨持续、无标签也不调宽度 → M3；pooled 指标主要反映视频排序 → M4 + 报 within；多次调用成本 → M1 的共享前缀。`docs/reviews/20260927_final_novelty_review.md` |
 | K7 | 画面分支弱于语音 | 在已有每窗一帧读数上用 r3 组合复查（CPU） | **已关闭，未过门**。每窗补一帧：HCS within +.016、PR +.013；HateMM within +.006、PR −.006。门要求两语料 within +.01 且 pooled 不掉。`experiments/20260926_twolevel/README.md` §17.1 |
 
 ## 前一方法：SPVL-r2（2026-09-10 晋级，development-selected）
