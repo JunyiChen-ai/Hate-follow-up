@@ -1092,3 +1092,55 @@ If it fails, round 6 (§16.4 fallback 2) follows.
 - Self-test: the corpus combination against brute force over (joint pair, hateful or not, every path of every chain)
   on tiny random corpora of three videos. Likelihood, P(V = 1) and P(hate) per cell must match to 1e-8.
 - `--bma-fixed 80` must reproduce `r3_m2` exactly.
+
+### 18.5 Results (2026-09-27, uoa-lab1, CPU; development-selected)
+
+Source: `runs/20260926_twolevel/launch_r5.out`. The pinned grid (`r5_plumb_fixed80`) reproduces `r3_m2` exactly.
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `r3_m2` (reference) | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 |
+| `r5_bma` (G = 6) | .8970 / .6970 / .7446 | .7164 / .6715 / .6317 |
+| `r5_bma_g4` | .8970 / .6969 / .7409 | .7160 / .6709 / .6198 |
+| `r5_bma_g10` | .8970 / .6971 / .7440 | .7163 / .6712 / .6294 |
+
+The corpus posterior over the mean lengths (G = 6, mode and its weight):
+
+| chain | HateMM (gap, hate) | HateClipSeg (gap, hate) |
+|---|---|---|
+| visual | (1000 s, 1000 s), weight .91 | (336 s, 336 s), weight .99 |
+| speech | (191 s, 437 s), weight 1.00 | (183 s, 183 s), weight .84 |
+
+For the visual chain on both corpora, the mode is the top of the grid, which is the corpus's longest video.
+
+**Decision (§18.3): fails.**
+- G = 4 and G = 6 differ on HateClipSeg within by .012, beyond the floor. So G = 10 is used, as §16.4 says.
+- With G = 10, HateClipSeg within is below `r3_m2` by .0103, beyond the .01 floor.
+- The shared posterior also puts the visual chain at the upper bound of the grid. The result then depends on that
+  bound, so this round would not remove the constant in any useful sense.
+
+The remaining arms (`r5_k1`, `r5_full`, the eight MLLMs, DeHate) were stopped at 22:30, since they could not change
+the decision. Next is round 6 (§19).
+
+## 19. Round 6 of the time level: per-video lengths, prior uniform in length (declared before any run, 2026-09-27)
+
+Second and last fallback declared in §16.4.
+
+### 19.1 Change
+
+Round 4 exactly, except the prior over each video's (mean gap, mean hate) grid.
+- Round 4 used weights uniform on the log grid, which is uniform in log length.
+- Round 6 is uniform in length: on the same log grid, each point stands for a stretch of lengths proportional to the
+  point, so its prior weight is proportional to (gap × hate). This puts more prior mass on long segments than round 4
+  does.
+- Flag: `--duration bma --bma-prior length`.
+
+### 19.2 Arms, rule, checks
+
+- Arms: `r6_bma` (G = 6), `r6_bma_g4`, `r6_bma_g10`, `r6_k1`, `r6_full`, the eight MLLMs `robust/<m>_r6`, DeHate
+  `r6_bma`. The coupling ablation is `r4_nocoupling`.
+- Decision rule: §16.4 unchanged.
+- Plumbing: the self-test already covers model averaging with non-uniform weights. `--bma-fixed 80` must reproduce
+  `r3_m2`.
+- If round 6 fails, K2 closes as "not solvable without loss" (§16.4). The mean lengths then stay a declared prior,
+  stated in reading windows: 10 windows (80 s). The shape stays derived from the reading grid (two windows).
