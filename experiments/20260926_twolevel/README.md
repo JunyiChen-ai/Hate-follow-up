@@ -1165,3 +1165,71 @@ Round 4 exactly, except the prior over each video's (mean gap, mean hate) grid.
   `r3_m2`.
 - If round 6 fails, K2 closes as "not solvable without loss" (§16.4). The mean lengths then stay a declared prior,
   stated in reading windows: 10 windows (80 s). The shape stays derived from the reading grid (two windows).
+
+### 19.3 Results (2026-09-27, uoa-lab1, CPU; development-selected)
+
+Sources:
+- `runs/20260926_twolevel/launch_r6.out`, `analysis_r6/table.txt`, `robust/table_r6.txt`;
+- DeHate `runs/20260927_dehate_external/r6_bma/metrics.json`.
+
+The pinned grid (`r6_plumb_fixed80`) reproduces `r3_m2` exactly.
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `r3_m2` (reference) | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 |
+| **`r6_bma`** (G = 6) | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 |
+| `r6_bma_g4` / `r6_bma_g10` (within) | .7520 / .7501 | .6369 / .6382 |
+| `r6_k1` (no minimum length) | .8966 / .6915 / .7206 | .7165 / .6697 / .6286 |
+| `r6_full` | .8904 / .7133 / .7508; F1@.3/.5/.7 .325 / .295 / .235 | .7391 / .6779 / .6373; F1 .246 / .145 / .077 |
+
+Within, paired bootstrap (HateMM; HateClipSeg):
+
+| comparison | HateMM | HateClipSeg |
+|---|---|---|
+| `r6_bma` − `r3_m2` | −.0017 [−.018, +.014] | −.0023 [−.017, +.012] |
+| `r4_nocoupling` − `r6_bma` | −.1141 [−.175, −.052] | −.0572 [−.091, −.023] |
+| `r6_k1` − `r6_bma` | −.0302 [−.058, −.005] | −.0088 [−.021, +.003] |
+
+- Posterior mean hate length per video, median (10–90 %): HateMM 67–74 s (18–202 s), HateClipSeg 127–156 s.
+- Eight MLLMs against `<m>_r3`: pooled ROC 8/8, pooled PR 8/8, within 8/8 on both corpora. The mean within change is
+  +.0003 on HateMM and +.0029 on HateClipSeg.
+- DeHate (external, not a gate): `r6_bma` .7011 / .1582 / .6431, against `r3_m2` .7009 / .1578 / .6539 (within
+  −.011).
+- K5 subset (hate covers < 25 %): HateMM +.027 [−.004, +.062], HateClipSeg −.007 [−.044, +.028].
+
+**Decision (§16.4): passes all four parts. K2 closes, and `r6_bma` replaces `r3_m2` as the current method.** The
+time level has no constant in seconds:
+- the minimum segment is two reading windows;
+- the mean lengths are integrated out per video, on [two windows, the video's length], with a prior uniform in length.
+
+Caveats:
+- Under this prior, the minimum length costs .030 / .009. It reaches .01 only on HateMM, so it is not a rule-14g
+  component on its own. Under round 4's log-uniform prior it cost .10 / .04: the length prior and the minimum length
+  partly do the same job.
+- `r6_full` intervals on HateClipSeg are below `r3_full` (F1@.5 .145 against .158).
+- DeHate within is .011 lower than `r3_m2`.
+
+After the run, the `--duration bma_corpus --nocoupling` crash (§18.6) was fixed. The run now completes and equals
+`r4_nocoupling`. The self-test is unchanged at 2.1e-14.
+
+## 20. Final run of the current method (declared 2026-09-27; reporting run, no gate)
+
+Method `r6_bma`: `twolevel_r2.py --noleak --transform nscore --key calib --duration bma --bma-prior length
+--min-windows 2 --bma-grid 6`, on the reads `runs/20260926_glr/base_gridA`. `final_m2` must equal `r6_bma`.
+
+| arm | what is removed or replaced |
+|---|---|
+| `final_m2`, `final_full` | the method; the interval output |
+| `final_nocoupling` | the time level: independent cells |
+| `final_k1` | the minimum length (0.5 window, so k = 1) |
+| `final_sharedchain` | per-modality chains with OR: one chain reads both modalities |
+| `final_rawscale` | normal scores: raw reads into EM |
+| `final_rawkey` | calibrated key: raw K = z_video + mean window read |
+| `final_nokey`, `final_norank` | the video term; the within term |
+| `final_gauss{2,4,8,16}` | the time level replaced by Gaussian smoothing (sigma in s) of the same reads (`til_infer.py`) |
+| DeHate: `final_m2`, `final_full`, `final_nocoupling`, `final_gauss{4,8}` | external |
+
+- Within intervals: `analyze.py --round 11`.
+- Pooled and within intervals: `experiments/20260927_dvd/analyze_dvd.py`, a generic paired bootstrap over videos.
+- Launch: `launch/run_final.sh`. Output `runs/20260926_twolevel/final_*`, `final_dehate/`,
+  `analysis_final*/`.

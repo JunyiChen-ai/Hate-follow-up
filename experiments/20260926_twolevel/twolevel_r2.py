@@ -454,7 +454,7 @@ def residual_icc(videos, P, flags):
 
 def em(videos, flags, max_it=300, tol=1e-7, log=print):
     P = init_params(videos, flags)
-    if flags.get("duration") == "bma_corpus":   # README §18: one grid per corpus, [k cells, longest video]
+    if flags.get("duration") == "bma_corpus" and not flags.get("nocoupling"):   # README §18: one grid per corpus
         P["grid"] = length_grid(max(v["n"] for v in videos), flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
     prev, it = None, 0
     for it in range(max_it):
@@ -740,7 +740,7 @@ def main():
                    check=True, cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)}, stdout=subprocess.DEVNULL)
     for P in params.values():
         P.pop("vmix_fn", None)
-        if "grid" in P:                            # README §18: corpus grid and posterior over (gap, hate) pairs
+        if "pair_post" in P:                       # README §18: corpus grid and posterior over (gap, hate) pairs
             P["grid"] = [float(x) for x in P["grid"]]
             P["pair_post"] = {"+".join(k_): [float(x) for x in v_] for k_, v_ in P["pair_post"].items()}
     (out / "params.json").write_text(json.dumps({ds: {**P, "iota": {"+".join(k_): v_ for k_, v_ in P["iota"].items()}}
