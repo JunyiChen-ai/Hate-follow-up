@@ -124,6 +124,28 @@ def fb(E, ch):
     return float(np.log(cs).sum() + m.sum()), g
 
 
+def bma_fb(E, chains, logw):
+    """Model averaging over chains that share one state space (README §16): log p(E) = logsumexp_j(logw_j + ll_j),
+    posterior = sum_j w_j g_j with w_j proportional to exp(logw_j + ll_j). Returns (log p, posterior, w)."""
+    lls, gs = [], []
+    for ch in chains:
+        ll, g = fb(E, ch)
+        lls.append(ll); gs.append(g)
+    a = np.asarray(logw, float) + np.asarray(lls)
+    LL = float(np.logaddexp.reduce(a))
+    w = np.exp(a - LL)
+    return LL, np.tensordot(w, np.stack(gs), axes=1), w
+
+
+def length_grid(n_cells, k, G, fixed=None):
+    """Mean segment lengths (seconds) averaged over for one video (README §16): G values log-spaced from the smallest
+    possible mean, k cells, to the video's length. `fixed` pins a single value (plumbing check only)."""
+    if fixed:
+        return np.array([float(fixed)])
+    lo, hi = k * CELL, max(n_cells * CELL, k * CELL)
+    return np.array([lo]) if hi <= lo * (1 + 1e-9) or G == 1 else np.geomspace(lo, hi, G)
+
+
 def p_hate(g, ch):
     return g[:, np.tile(ch["hb"], 2) == 1].sum(1)
 
@@ -162,6 +184,24 @@ def selftest(trials=100, seed=0):
         ll, g = fb(E, build_chain(1, dg, dh, io))
         ll1, g1, _, _ = r1.fb(E, io, 1 - CELL / dg, 1 - CELL / dh)
         worst = max(worst, abs(ll - ll1), float(np.abs(p_hate(g, build_chain(1, dg, dh, io)) - (g1[:, 1] + g1[:, 3])).max()))
+    for _ in range(trials):                      # model averaging (README §16) vs brute force over (chain, path)
+        k = int(rng.integers(1, 3)); n = int(rng.integers(1, 5)); io = rng.uniform(.05, .95)
+        chs = [build_chain(k, rng.uniform(4 * k + 1, 60), rng.uniform(4 * k + 1, 60), io) for _ in range(3)]
+        logw = np.log(rng.dirichlet(np.ones(3)))
+        E = rng.normal(0, 2, size=(n, 2 * chs[0]["S"]))
+        LL, g, _ = bma_fb(E, chs, logw)
+        S = chs[0]["S"]; paths = list(itertools.product(range(S), repeat=n)); lps, owner = [], []
+        for j, ch in enumerate(chs):
+            A = ch["T"][:S, :S] + ch["T"][:S, S:]
+            for xs in paths:
+                lp = logw[j] + math.log(max(ch["pi0"][xs[0]], 1e-300)) + E[0, xs[0]]
+                for c in range(1, n):
+                    t = A[xs[c - 1], xs[c]]
+                    lp += (math.log(t) if t > 0 else -np.inf) + E[c, ch["hb"][xs[c - 1]] * S + xs[c]]
+                lps.append(lp); owner.append(xs)
+        lps = np.array(lps); LLb = np.logaddexp.reduce(lps); post = np.exp(lps - LLb)
+        marg = np.array([sum(p for p, xs in zip(post, owner) if chs[0]["hb"][xs[c]]) for c in range(n)])
+        worst = max(worst, abs(LL - LLb), float(np.abs(marg - p_hate(g, chs[0])).max()))
     return worst
 
 
@@ -204,8 +244,16 @@ def chain_for(P, mods, flags):
 def video_terms(v, P, flags, kappa=1.0):
     lv0 = lognorm(v["zv"], P["m0"], P["t2"]); lv1 = lognorm(v["zv"], P["m1"], P["t2"])
     l0 = sum(lognorm(y, P["emit"][m]["mu00"], P["emit"][m]["s2"]) for w in v["wins"] for m, y in w["y"].items())
-    per = []
+    per, lengths = [], {}
     for mods in chains_of(flags):
+        if flags.get("duration") == "bma" and not flags.get("nocoupling"):
+            grid = length_grid(v["n"], flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
+            chs = [build_chain(flags["k"], dg, dh, P["iota"][mods]) for dg in grid for dh in grid]
+            ll, g, w = bma_fb(emission(v, mods, P, chs[0], kappa), chs, np.full(len(chs), -math.log(len(chs))))
+            W2 = w.reshape(len(grid), len(grid))            # rows: gap length, columns: hate length
+            lengths[mods] = (float(np.exp(W2.sum(0) @ np.log(grid))), float(np.exp(W2.sum(1) @ np.log(grid))))
+            per.append((mods, chs[0], ll, g))
+            continue
         ch = chain_for(P, mods, flags)
         ll, g = fb(emission(v, mods, P, ch, kappa), ch)
         per.append((mods, ch, ll, g))
@@ -213,7 +261,7 @@ def video_terms(v, P, flags, kappa=1.0):
     lo_verdict = math.log(P["pi"]) - math.log(1 - P["pi"]) + lv1 - lv0
     lo = lo_verdict + l1 - l0
     total = float(np.logaddexp(math.log(P["pi"]) + lv1 + l1, math.log(1 - P["pi"]) + lv0 + l0))
-    out = {"per": per, "lo": lo, "lo_verdict": lo_verdict, "total": total}
+    out = {"per": per, "lo": lo, "lo_verdict": lo_verdict, "total": total, "lengths": lengths}
     if "icc" in P and not flags.get("sharedchain"):
         # reads of one video share its context: modality m's n reads count as n / (1 + (n - 1) icc_m) reads
         lo_r = 0.0
@@ -379,6 +427,8 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
 
 # ----------------------------------------------------------------------------------------------- main
 
+DVD_FIELD = {"T": "z_target", "E": "z_endorse", "A": "z_attack"}   # experiments/20260927_dvd reads
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default=str(ROOT / "runs/20260926_glr/base_gridA"))
@@ -403,6 +453,16 @@ def main():
     ap.add_argument("--vlevel", choices=["joint", "mix"], default="joint", help="video posterior: joint model (round 1) or mixture over verdict + mean reads")
     ap.add_argument("--vtemper", choices=["none", "icc"], default="none", help="video level: reads counted as ICC-effective reads")
     ap.add_argument("--kappa", type=float, default=1.0, help="diagnostic: time-level emissions tempered at inference")
+    ap.add_argument("--duration", choices=["fixed", "bma"], default="fixed",
+                    help="fixed: --d-gap / --d-hate; bma: mean lengths averaged per video over a log grid (README §16)")
+    ap.add_argument("--bma-grid", type=int, default=6, help="bma: grid points per mean length")
+    ap.add_argument("--bma-fixed", type=float, default=0.0, help="plumbing check only: pin the bma grid to one value (s)")
+    ap.add_argument("--min-windows", type=float, default=0.0,
+                    help="if > 0: shape k = min_windows x (window length of the reads) / cell length (README §16)")
+    ap.add_argument("--dvd-reads", nargs="*", default=[],
+                    help="experiments/20260927_dvd reads.jsonl files; with --dvd-conds the calibrated key becomes the "
+                         "logit of a product of calibrated condition probabilities (noisy AND)")
+    ap.add_argument("--dvd-conds", default="", help="comma list of viol (the current key K), T, E, A")
     ap.add_argument("--tag", required=True)
     ap.add_argument("--out-root", default=str(ROOT / "runs/20260926_twolevel"))
     ap.add_argument("--gt-dir", default=str(ROOT / "data/gt_4fps"))
@@ -427,9 +487,27 @@ def main():
         if worst > 1e-8:
             raise SystemExit("SELFTEST_FAILED")
     flags = {"k": a.k, "d_gap": a.d_gap, "d_hate": a.d_hate, "sharedchain": a.sharedchain or a.fusion == "max", "carrier": a.fusion == "carrier",
-             "nocoupling": a.nocoupling, "noleak": a.noleak, "iota_stationary": a.iota_stationary}
+             "nocoupling": a.nocoupling, "noleak": a.noleak, "iota_stationary": a.iota_stationary,
+             "duration": a.duration, "bma_grid": a.bma_grid, "bma_fixed": a.bma_fixed}
     run = load_run(a.run)
     log(f"modalities {set_modalities(run)}")
+    dvd_conds = [c for c in a.dvd_conds.split(",") if c]
+    dvd = {}
+    for path in a.dvd_reads:
+        for line in open(path):
+            r = json.loads(line)
+            if not r.get("error"):
+                dvd[(r["dataset"], r["video_id"])] = r
+    if dvd_conds:
+        need = [k_ for k_ in run if k_[0] in a.datasets]
+        missing = [x for x in need if x not in dvd]
+        if missing:
+            raise SystemExit(f"DVD reads missing for {len(missing)} videos, e.g. {missing[:3]}")
+        log(f"DVD key: conditions {dvd_conds} from {len(dvd)} read records")
+    if a.min_windows > 0:
+        wl = float(np.median([w["end"] - w["start"] for rec in run.values() for w in rec["extra"]["windows"]]))
+        flags["k"] = max(1, int(round(a.min_windows * wl / CELL)))
+        log(f"shape from the reading grid: {a.min_windows:g} windows x {wl:g} s / {CELL:g} s cells -> k = {flags['k']}")
     videos = {ds: [prep(r, a.center) for k, r in sorted(run.items()) if k[0] == ds] for ds in a.datasets}
     if a.transform == "nscore":
         # diagnostic (§12): each modality's reads -> normal scores of their rank within the corpus (only the order of
@@ -465,9 +543,25 @@ def main():
         if a.key == "calib":
             P["key_ab"] = key_calibration([intercept(v) for v in videos[ds]])
             log(f"[{ds}] key calibration: logit P(V = 1 | K) = {P['key_ab'][0]:.4f} K {P['key_ab'][1]:+.4f}")
+            if dvd_conds:
+                P["dvd_ab"] = {}
+                for c in dvd_conds:
+                    if c == "viol":
+                        continue
+                    xs = [dvd[(ds, v["rec"]["video_id"])][DVD_FIELD[c]] for v in videos[ds]]
+                    P["dvd_ab"][c] = key_calibration(xs)
+                    log(f"[{ds}] condition {c}: logit P = {P['dvd_ab'][c][0]:.4f} z {P['dvd_ab'][c][1]:+.4f}; "
+                        f"share P > .5 {np.mean([expit(P['dvd_ab'][c][0] * x + P['dvd_ab'][c][1]) > .5 for x in xs]):.3f}")
         params[ds] = P
         if P.get("carrier") is not None:
             log(f"[{ds}] carrier visual / speech / both {np.round(P['carrier'], 3).tolist()}")
+        if flags["duration"] == "bma" and not flags["nocoupling"]:
+            ln = [video_terms(v, P, flags)["lengths"] for v in videos[ds]]
+            for mods in chains_of(flags):
+                h = np.array([x[mods][0] for x in ln]); gp = np.array([x[mods][1] for x in ln])
+                log(f"[{ds}] {'+'.join(mods)} posterior mean length per video (geometric mean over the grid), "
+                    f"hate: median {np.median(h):.1f} s [10-90% {np.percentile(h, 10):.1f}-{np.percentile(h, 90):.1f}]  "
+                    f"gap: median {np.median(gp):.1f} s [10-90% {np.percentile(gp, 10):.1f}-{np.percentile(gp, 90):.1f}]")
         log(f"[{ds}] pi {P['pi']:.3f} verdict {P['m0']:.2f}/{P['m1']:.2f} sd {math.sqrt(P['t2']):.2f}  iota " +
             " ".join(f"{'+'.join(k_)} {v_:.3f}" for k_, v_ in P["iota"].items()) + "  " +
             "  ".join(f"{m}: mu00 {e['mu00']:.2f} mu10 {e['mu10']:.2f} mu11 {e['mu11']:.2f} sd {math.sqrt(e['s2']):.2f} "
@@ -484,7 +578,16 @@ def main():
                 lo = params[ds]["vmix_fn"](v) if a.vlevel == "mix" else (t["lo_icc"] if a.vtemper == "icc" else t["lo"])
                 intervals = []
                 K = intercept(v)
-                if a.key == "calib":
+                if a.key == "calib" and dvd_conds:
+                    lp = 0.0
+                    for c in dvd_conds:
+                        if c == "viol":
+                            ka, kb = params[ds]["key_ab"]; lp += float(log_expit(ka * K + kb))
+                        else:
+                            ca, cb = params[ds]["dvd_ab"][c]
+                            lp += float(log_expit(ca * dvd[(ds, v["rec"]["video_id"])][DVD_FIELD[c]] + cb))
+                    key = lp - float(np.log(-np.expm1(min(lp, -1e-12)))); lo = key     # logit of the product
+                elif a.key == "calib":
                     ka, kb = params[ds]["key_ab"]; key = ka * K + kb; lo = key
                 elif a.key == "scaled":
                     key = a.key_scale * K
