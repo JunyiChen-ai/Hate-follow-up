@@ -152,7 +152,7 @@ Source: `runs/20260927_dehate_external/summary/table.txt` and `summary.json` (fr
 method's evaluator output.
 - Grid and cohort: test split, 4 fps, 1151 scored videos (234 hateful), frame base rate .076.
 - Weakly supervised rows are seed means, with the sd in brackets.
-- ZS-ImageBind was still running when this was written.
+- ZS-ImageBind finished 11:44 on uoa-lab2 (1341/1341, 10516 s); it does not change the strongest baseline on any metric.
 
 | method | pooled ROC | pooled PR | within |
 |---|---|---|---|
@@ -160,6 +160,7 @@ method's evaluator output.
 | SPVL-r2 + duration prior (current) | .6996 | .1570 | .6364 |
 | r3_m2 (candidate) | .7009 | .1578 | .6539 |
 | r3_full (candidate, interval output; F1@.3 / .5 / .7 = .174 / .127 / .104) | .7028 | .1626 | .6539 |
+| ZS-ImageBind (zero-label) | .5538 | .0962 | .5131 |
 | Fed-WSVAD, 3 clients (video labels) | .7007 (.011) | .1752 (.017) | .5055 (.009) |
 | MultiHateLoc (video labels) | .6102 (.007) | .1289 (.003) | .5420 (.013) |
 | DSANet (video labels) | .6325 (.010) | .1207 (.009) | .4873 (.014) |
