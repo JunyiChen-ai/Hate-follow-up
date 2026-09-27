@@ -1122,6 +1122,27 @@ For the visual chain on both corpora, the mode is the top of the grid, which is 
 The remaining arms (`r5_k1`, `r5_full`, the eight MLLMs, DeHate) were stopped at 22:30, since they could not change
 the decision. Next is round 6 (§19).
 
+### 18.6 Rule-6 code review of ba7a6df (2026-09-27)
+
+No bug changes a round-5 number. The drop comes from the model, not the code: the HateMM EM log-likelihood is −8443
+at the visual chain's grid top, against −8945 for the 80 / 80 pair.
+
+- **Independent brute force.** The reviewer enumerated (joint pair, V, every path of every chain) on 24 random corpora:
+  C = 1–3 chains, k = 1–2, missing modalities, two-cell windows.
+  - `corpus_combine` and `corpus_terms` match it to 2e-14: likelihood, P(V = 1), pair marginals, P(hate) per cell,
+    P(on) per window.
+  - One EM step matches the brute-force M-step to 4e-13.
+- **Correction to §18.4.** The built-in self-test checks `corpus_combine` against brute force. Its P(hate) block
+  re-checks forward-backward only; it does not exercise `corpus_terms`. The reviewer's brute force above covers that
+  gap.
+- **Confirmed bug, outside the declared arms.** `--duration bma_corpus --nocoupling` writes correct predictions (equal
+  to `r4_nocoupling`) and then crashes on saving params (`KeyError 'pair_post'`). Fixed after round 6 finished.
+- **Approximations, both with no effect.**
+  - The OR over chains uses each chain's pair marginal. The exact joint differs by at most 4.9e-5 per cell, and the
+    metrics are identical to five decimals.
+  - The video log-odds is clipped at ±27.6. It is unused with the calibrated key.
+- Fixed and per-video paths are bit-identical to before (`r3_m2`, `r4_bma`, `r4_nocoupling` reproduced).
+
 ## 19. Round 6 of the time level: per-video lengths, prior uniform in length (declared before any run, 2026-09-27)
 
 Second and last fallback declared in §16.4.

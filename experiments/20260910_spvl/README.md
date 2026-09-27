@@ -331,7 +331,8 @@ gives on its own (whole-video verdict; per-window independent judgement); Q2 whe
 on another MLLM is comparable; Q3 whether the ablations point the same way on other MLLMs.
 
 **Models** (all native in transformers 5.15.1, non-thinking; chosen from what hateful-video and video-understanding
-papers actually use: arXiv 2601.15115, 2606.11953, 2608.15905, 2602.21854, 2508.18265):
+papers actually use: arXiv 2601.15115, 2606.11953, 2608.15905, 2508.18265; and 2602.21854, FewMMBench, a few-shot multimodal
+benchmark, not a hateful-video paper; corrected 2026-09-27):
 
 | tag | HF id | role | machine |
 |---|---|---|---|
