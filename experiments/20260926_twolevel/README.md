@@ -972,3 +972,27 @@ If all three fail, K2 closes as "not solvable without loss". The means then stay
   likelihood and posterior to 1e-8.
 - With G = 1 and the grid pinned to 80 s, `r4_bma` must reproduce `r3_m2` exactly. This uses the flag
   `--bma-fixed 80`, a test only.
+
+Result (2026-09-27): self-test difference 2.09e-14. The pinned grid (`r4_plumb_fixed80`) reproduces `r3_m2` exactly.
+Rule-6 code review of b0429ab..cc8c159 found no bug; it also checked the grid order (rows = gap, columns = hate) on a
+toy video.
+
+## 17. Concern K7: does the visual branch gain from its own frames under the new time level? (declared before running, 2026-09-27)
+
+Known since 2026-09-12 (`research-wiki/STATUS.md`): with the 20 shared frames, 24 % (HateMM) and 34 % (HateClipSeg) of
+the windows have no frame of their own. The error analysis of 2026-09-27 shows visual reads trailing speech reads on
+all three corpora.
+
+The reads with one centre frame per window already exist:
+- `runs/20260910_spvl/full3_dual_evid_stance_w8`, with 20 shared frames plus each window's centre frame;
+- `runs/20260910_spvl/full2_dual_evid_stance`, the same settings without the per-window frames.
+
+Both use the pre-2026-09-26 ASR loader, so they are compared only with each other.
+
+- Arms: the current time level (§16 if it passes, else `r3_m2`) on each of the two runs, `k17_k20` and `k17_w8`.
+  CPU only.
+- Rule:
+  - If `k17_w8` beats `k17_k20` in within by at least .01 on both corpora with no pooled drop beyond the floor, then
+    per-window frames become an input change. It is not a novelty claim; it costs about 5x the window-branch tokens.
+    The next full reads would be redone with them.
+  - Otherwise K7 closes with this evidence.

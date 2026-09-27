@@ -99,12 +99,32 @@ most 3 rounds; otherwise archive and close K3 with the evidence.
 ## 6. Process
 
 - Rule-4 proposal review: one independent agent, literature check (§7).
-- Rule-6 code review: one independent agent, before the full run.
+- Rule-6 code review: one independent agent, before the full run. Done 2026-09-27 on commits b0429ab..cc8c159: no bug.
+  - The re-read `z_video` equals the cached `z_video` on all 333 HateMM / HateClipSeg videos (difference 0.0000).
+  - Reads align with the manifests: 0 missing, 0 extra.
+  - The noisy-AND key matches logit(∏p) to 1e-14; no video reaches the clamp.
+  - Without `--dvd-conds` the old key path runs unchanged.
 - Test-read log: §8.
+
+Launch: `experiments/20260927_dvd/launch/run_arms.sh` (HateMM, HateClipSeg; the time level is `r3_m2`, the current
+method when the arms run) and `run_dehate.sh` (DeHate, external). Output `runs/20260927_dvd/arms/`,
+`runs/20260927_dvd/dehate/`; analysis `runs/20260927_dvd/analysis*/`.
+
+The `full` arm (intervals) runs as `base_full` and `dvd_full`, for the interval-precision check in §5.
 
 ## 7. Proposal review
 
-(filled in by the review)
+**Verdict: PASS.** Rule-4 review, 2026-09-27. No STOP case applies.
+
+- Case 1: no hateful video detection or localization method found reads the definition's conditions separately and combines them by AND. HVGuard ([EMNLP 2025](https://aclanthology.org/2025.emnlp-main.456/)) splits reasoning by modality. LELA ([arXiv 2602.09637](https://arxiv.org/abs/2602.09637)) and MARS ([arXiv 2601.15115](https://arxiv.org/abs/2601.15115)) make one overall hate judgment. MoRE, CLARA, IARE, TANDEM and MultiHateLoc (trained with labels) do not either.
+- Cases 2 to 4: T and E are new questions about different conditions, not a second model, a rewording, or a rescaling.
+
+Closest prior work, all outside hateful video:
+- Hypothesis Engineering, TRAC@COLING 2022 ([arXiv 2210.00910](https://arxiv.org/abs/2210.00910)). Zero-shot text NLI. Separate hypotheses for protected target, support for quoted hate, and self-directed slurs are combined by fixed AND / AND-NOT rules. It was built from the same three false-positive types. Same mechanism, hard thresholds.
+- xList-Hate, arXiv 2026 ([2602.05874](https://arxiv.org/abs/2602.05874)). An LLM answers ten questions separately, including protected target and endorsement versus quotation. A decision tree trained on labels combines them.
+- CLUE, arXiv 2025 ([2501.00192](https://arxiv.org/abs/2501.00192)). Label-free MLLM image-safety judge. A rule is violated only if all separately read preconditions hold.
+
+New claim allowed: first use of this conjunction for hateful video and for label-free temporal localization, as a soft noisy-AND of MLLM condition reads, each calibrated on the corpus without labels. Reading the conditions separately and AND-combining them without labels is not new; cite it as a transfer from text. The mixture calibration is the existing key calibration, not a contribution. Rule 14g applies to T and E each.
 
 ## 8. Test-read log
 
