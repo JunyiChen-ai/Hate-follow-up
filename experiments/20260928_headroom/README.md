@@ -95,7 +95,41 @@ frame per window.
    new way to combine the existing ones. The 8-MLLM study already shows that a larger reader of the same family does
    not change this. Under r6, Qwen3-VL-32B is +.009 / −.003 within against the 8B reads.
 
+## Is it worth trying: combining several MLLM readers (2026-09-28)
+
+The headroom above needs information that one reader lacks. The only such source already on disk is the other seven
+MLLMs' reads from the family study. They use the older ASR loader, so every comparison below stays inside those reads.
+
+`ensemble_reads.py` builds combined reads without labels:
+- each model's reads become normal scores within the corpus, per modality, and so does each model's verdict;
+- they are averaged over the models, window by window.
+
+The time level is `r6_bma`. Tables: `runs/20260928_headroom/analysis_ensemble/table.txt` and
+`analysis_verdict8/table.txt`. The reference is Qwen3-VL-8B alone through the same path (`r6_single8`). Differences
+carry a paired bootstrap 95 % interval.
+
+| reads | HateMM ROC / PR / within | HateClipSeg ROC / PR / within | reading cost against the 8B alone (rough) |
+|---|---|---|---|
+| 8B alone | .8899 / .6776 / .7636 | .7191 / .6587 / .6372 | 1× |
+| all 8 models | +.006 / +.003 / **+.029 [+.001, +.061]** | +.007 / **+.023 [−.002, +.051]** / −.007 | about 10× |
+| 4 Qwen3-VL sizes (2B, 4B, 8B, 32B) | +.004 / +.004 / +.030 [−.001, +.062] | −.003 / +.011 / −.001 | about 6× |
+| 3 small Qwen3-VL (2B, 4B, 8B) | +.003 / +.001 / +.030 | **−.018 / −.000 / −.017** | about 2× |
+| verdict of all 8, windows from the 8B only | +.002 / −.008 / +.000 | **−.100 / −.070** / −.001 | about 2–3× |
+
+Video AUC: all 8 models .912 → .933 (HateMM) and .818 → .870 (HateClipSeg).
+
+Reading:
+- Several readers carry information that one reader lacks.
+  - Within: +.03 on HateMM, borderline. HateClipSeg does not move.
+  - Video level: HateClipSeg PR +.02.
+- The cheap variants fail on HateClipSeg. Averaging only the verdict breaks the calibrated key: 23 % of positive
+  videos fall below .5.
+- The combinations that help cost about 6–10× the current reading.
+
 ## Test-read log
 
+
 2026-09-28: the gold of all three corpora (hate share per video and per 4 s cell), used only for the bounds above. No
+method changed.
+2026-09-28 (worth trying): `runs/20260928_headroom/analysis_ensemble`, `analysis_verdict8` (gold for the metrics only). No
 method changed.
