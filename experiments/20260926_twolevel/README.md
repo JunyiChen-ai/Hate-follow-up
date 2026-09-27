@@ -1035,6 +1035,23 @@ Both use the pre-2026-09-26 ASR loader, so they are compared only with each othe
     The next full reads would be redone with them.
   - Otherwise K7 closes with this evidence.
 
+### 17.1 Results (2026-09-27, uoa-lab1, CPU; development-selected)
+
+Time level `r3_m2`, since round 4 did not pass. Sources: `runs/20260926_twolevel/launch_k17.out` and
+`analysis_k17/table.txt`.
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `k17_k20` (20 shared frames) | .8941 / .6920 / .7567 | .7149 / .6695 / .6363 |
+| `k17_w8` (plus each window's centre frame) | .8954 / .6861 / .7625 | .7229 / .6828 / .6523 |
+| difference | +.0013 / −.0059 / +.0058 [−.025, +.041] | +.0080 / +.0133 / +.0159 [−.003, +.035] |
+
+**The rule is not met.** HateMM within rises by only .006, and HateMM pooled PR falls by .006, beyond the .005 floor.
+HateClipSeg gains on all three metrics, but the rule needs both corpora.
+
+**K7 closes.** Under the current time level, a frame per window does not repair the visual branch on both corpora. At
+about 5× the window-branch tokens it is not adopted. The HateClipSeg gain is recorded for a future input change.
+
 ## 18. Round 5 of the time level: segment lengths shared by the corpus (declared before any run, 2026-09-27)
 
 First fallback declared in §16.4. Round 4 failed only on the eight-MLLM rule: per-video time scales hurt weak readers
