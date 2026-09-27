@@ -1233,3 +1233,49 @@ Method `r6_bma`: `twolevel_r2.py --noleak --transform nscore --key calib --durat
 - Pooled and within intervals: `experiments/20260927_dvd/analyze_dvd.py`, a generic paired bootstrap over videos.
 - Launch: `launch/run_final.sh`. Output `runs/20260926_twolevel/final_*`, `final_dehate/`,
   `analysis_final*/`.
+
+### 20.1 Results (2026-09-27, uoa-lab1, CPU; development-selected)
+
+Sources:
+- `runs/20260926_twolevel/launch_final.out`;
+- `analysis_final/table.txt` (within, paired bootstrap over videos);
+- `analysis_final_pooled/table.txt` (pooled and within);
+- `analysis_final_dehate/table.txt`;
+- `final_dehate/*/metrics.json`.
+
+`final_m2` reproduces `r6_bma` exactly.
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| **`final_m2`** | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 |
+| `final_full` | .8904 / .7133 / .7508; F1@.3/.5/.7 .325 / .295 / .235 | .7391 / .6779 / .6373; F1 .246 / .145 / .077 |
+
+Ablations, as the difference to `final_m2` with a 95 % interval (within unless stated):
+
+| removed or replaced | HateMM | HateClipSeg | ≥ .01 on both corpora |
+|---|---|---|---|
+| time coupling (independent cells) | −.1141 [−.175, −.053] | −.0572 [−.092, −.022] | yes |
+| minimum length (k = 1) | −.0302 [−.057, −.005] | −.0088 [−.021, +.004] | no |
+| per-modality chains + OR (one shared chain) | −.0074 [−.034, +.018] | −.0425 [−.073, −.013] | no |
+| normal scores (raw reads into EM) | **+.0113** [−.020, +.046] | **+.0114** [−.001, +.023] | no; removing them helps |
+| calibrated key (raw key), pooled ROC / PR | −.0016 / −.0059 | −.0032 / −.0045 | no |
+| video term, pooled ROC | −.325 | −.147 | yes |
+| within term | within .50 (−.251) | within .50 (−.137) | yes |
+| time level replaced by Gaussian smoothing, best σ = 8 s (σ 2, 4, 16 s are lower) | −.0631 [−.116, −.011] | −.0062 [−.043, +.026] | no |
+
+DeHate (external):
+- `final_m2`: .7011 / .1582 / .6431. `final_full`: .6947 / .1559 / .6431; F1@.3/.5/.7 .178 / .133 / .105; interval
+  precision .118 / .088 / .070.
+- The time level against independent cells: within +.020 [−.017, +.057].
+- Gaussian smoothing with σ = 8 s: .6996 / .1570 / .6468, which is .004 above the time level in within.
+
+Reading of the final table:
+- The time level beats independent cells clearly on both corpora.
+- Against the best linear smoothing it wins clearly only on HateMM (+.063). On HateClipSeg it is +.006, and on DeHate
+  it is −.004.
+- Only the coupling as a whole, the video term and the within term meet rule 14g. The minimum length, the
+  per-modality OR, the calibrated key and the normal scores do not.
+- Under this time level, raw reads into EM are .011 higher on both corpora than normal scores. The normal scores were
+  kept in round 3 for robustness across the eight MLLMs under the fixed 80 s level (§14.4). Whether they are still
+  needed under `r6_bma` has not been checked. That would be a new declared round: the eight-MLLM rule of §16.4
+  against `robust/<m>_r6`, CPU, about 20 minutes.

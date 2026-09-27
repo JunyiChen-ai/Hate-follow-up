@@ -26,6 +26,10 @@ r6_bma = r3_m2（用户 2026-09-27 定的默认方法）去掉时序层里以秒
 
 - r6_bma 相对 r3_m2：六个数都在噪声内；8 个 MLLM 上 within 两语料都 8/8 不低于 r3（`experiments/20260926_twolevel/README.md` §19.3）。DeHate within 低 .011（external，不作门）。
 - DeHate 是 external validation（`experiments/20260927_dehate_external/README.md`）：within 比所有 baseline 高 .10 以上；pooled ROC 与 Fed-WSVAD 持平；pooled PR 低 .017。
+- 最终运行与消融（`experiments/20260926_twolevel/README.md` §20.1，区间为按视频的配对 bootstrap）。
+  - 去掉时间耦合 within −.114 / −.057，两语料都过 .01；视频项、within 项也过。最短长度（−.030 / −.009）、分模态 OR（−.007 / −.043）、校准 key（pooled −.002 到 −.006）都只在一个语料或都不到 .01。
+  - 正态分数：去掉反而 +.011 / +.011（区间含 0）。是否在 r6 下仍需要，未查；要查需另起一轮声明（8 个 MLLM，CPU 约 20 分钟）。
+  - 对最佳高斯平滑（σ 8 秒）：HateMM +.063（区间不含 0），HCS +.006，DeHate −.004。
 - 三语料 error analysis：`experiments/20260927_error_analysis/README.md`。
 - 最终 novelty 复查（K6）：`docs/reviews/20260927_final_novelty_review.md`。整体对仇恨视频是新的，但每个部件都有近邻工作。
   - 可写的贡献：M1 整体；模型外、无标签、以读数窗为单位的显式时长时序层（去耦合 within −.11 / −.06）；8 个 MLLM 上都有效；DeHate within 超过弱监督 baseline。
