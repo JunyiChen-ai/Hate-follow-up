@@ -40,6 +40,9 @@ PAIRS_S = [("s_m2", "current"), ("s_m2", "r3_m2"), ("s_noslip", "s_m2"), ("s_noc
 ARMS_R4 = ["r3_m2", "r4_bma", "r4_bma_g4", "r4_bma_g10", "r4_nocoupling", "r4_k1"]
 PAIRS_R4 = [("r4_bma", "r3_m2"), ("r4_nocoupling", "r4_bma"), ("r4_k1", "r4_bma"), ("r4_bma_g4", "r4_bma"),
             ("r4_bma_g10", "r4_bma")]
+# concern K7 (README §17): per-window frames under the current time level
+ARMS_K7 = ["k17_k20", "k17_w8"]
+PAIRS_K7 = [("k17_w8", "k17_k20")]
 
 
 def per_video(arm, ds, Y):
@@ -56,13 +59,13 @@ def per_video(arm, ds, Y):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4, 5, 6, 7], default=1,
+    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4, 5, 6, 7, 8], default=1,
                     help="3 = ablations of the reduced round-2 model, 4 = composition step")
     a = ap.parse_args()
     arms, pairs, sub = {1: (ARMS, PAIRS, "analysis"), 2: (ARMS_R2, PAIRS_R2, "analysis_r2"),
                         3: (ARMS_R2NL, PAIRS_R2NL, "analysis_r2nl"), 4: (ARMS_C, PAIRS_C, "analysis_c"),
                         5: (ARMS_R3, PAIRS_R3, "analysis_r3"), 6: (ARMS_S, PAIRS_S, "analysis_s"),
-                        7: (ARMS_R4, PAIRS_R4, "analysis_r4")}[a.round]
+                        7: (ARMS_R4, PAIRS_R4, "analysis_r4"), 8: (ARMS_K7, PAIRS_K7, "analysis_k17")}[a.round]
     rng = np.random.default_rng(0)
     lines, summary = [], {}
     for ds in ["HateMM", "HateClipSeg"]:
