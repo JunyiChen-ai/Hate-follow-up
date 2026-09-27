@@ -1,12 +1,45 @@
 # 当前研究状态
 
-截至 **2026-09-09**。依据：`runs/20260829_omsl_v6/v6_migrated_seed0_20260909/metrics.json`（当前代码，本机 uoa-lab1，conda HateVideo）和 `runs/20260829_omsl_v6/orthogonal_mobius_semantic_localizer_full643_v6_metrics.json`（2026-08-29 原始）。
+截至 **2026-09-27**。旧的 2026-09-09 引言保留在本页下方各节。
 
-## 当前目标与结论
+## 当前方法：r3_m2（2026-09-27 用户定为默认方法，development-selected）
 
-项目定义为 label-free hateful video temporal localization（零仇恨标注），主数据集 HateMM + HateClipSeg，4 fps 协议，主指标 pooled ROC / PR（2026-09-09 裁定，见 `CLAUDE.md`）。当前方法 OMSL-v6 在这两个数据集上三项指标都高于同协议的 MultiHateLoc（视频级标签训练）和 T3AL（零标签）重跑值。这是在同一批数据上反复选出来的开发期结果，不是未揭盲的确认结果（2026-08-29 审计定性 exploratory，见 `archive/root-2026-09/EXPERIMENT_AUDIT.md`）。
+- M1 读取，与 SPVL-r2 相同。Qwen3-VL-8B 先读共享前缀（规则 + 20 帧 + 整段转录），给出整段裁定，再过立场轮，然后每个 8 秒窗读画面、语音两个隔离分支。
+- M2 读数变证据。每个模态的读数先换成语料内排名的正态分数，再由 EM 估"违规 / 非违规"两类读数分布。
+- M3 时序。每个模态一条链，段长服从负二项分布（形状 4，平均 80 秒）；任一条链处在违规状态即算违规。
+- M4 组合。整段分 = 两类混合无标签校准后的对数几率；帧分 = 整段分 + 视频内居中秩。`r3_full` 臂输出区间。
+- 代码：`experiments/20260926_twolevel/twolevel_r2.py --noleak --transform nscore --key calib --k 4 --arm m2`，读数 `runs/20260926_glr/base_gridA`。
 
-## 当前方法：SPVL-r2（2026-09-10 晋级，development-selected）
+结果（test，4 fps；pooled ROC / pooled PR / within）：
+
+| 方法 | HateMM | HateClipSeg | DeHate（external，1151 视频） |
+|---|---|---|---|
+| **r3_m2**（`runs/20260926_twolevel/r3_m2/metrics.json`；DeHate `runs/20260927_dehate_external/r3_m2/metrics.json`） | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 | .7009 / .1578 / .6539 |
+| SPVL-r2 + 时长先验（前一默认，`runs/20260926_glr/infer/base_gridA_d80/metrics.json`） | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 | .6996 / .1570 / .6364 |
+| SPVL-r2（`runs/20260926_glr/infer/base_gridA_spvlr2/metrics.json`） | .8952 / .6867 / .6800 | .7134 / .6667 / .6101 | .6993 / .1570 / .6406 |
+| T3AL 重跑，零标签 | .6091 / .3096 / .5068 | .6246 / .5645 / .5003 | 未跑 |
+| ZS-ImageBind，零标签（DeHate `runs/20260927_dehate_external/zs_imagebind/metrics.json`） | .5928 / .3108 / .5343 | .5917 / .5495 / .5241 | .5538 / .0962 / .5131 |
+| MultiHateLoc，视频级标签 | .7618 / .5188 / .6108 | .5056 / .4885 / .4996 | .6102 / .1289 / .5420 |
+| Fed-WSVAD 3 clients，视频级标签（DeHate `runs/20260927_dehate_external/weaksup/metrics.json`，3 seed 均值） | — | — | .7007 / .1752 / .5055 |
+
+DeHate 是 external validation（`experiments/20260927_dehate_external/README.md`）。within 超过所有 baseline .09–.11；pooled ROC 与 Fed-WSVAD 持平；pooled PR 低 .018（区间含 0）。
+三语料 error analysis：`experiments/20260927_error_analysis/README.md`。
+
+## 2026-09-27 自主迭代：concern 清单（用户要求全部关闭后停止）
+
+关闭 = 通过声明的门，或用完声明的轮数（同一方向最多 3 轮，规则 9）并写明证据。每项的门在各自实验 README 里先声明后运行。
+
+| # | concern | 做法 | 状态 |
+|---|---|---|---|
+| K1 | 默认方法换成 r3_m2 | 更新 STATUS、`CLAUDE.md` 项目条 | 已关闭（2026-09-27） |
+| K2 | 时序模块里人为设秒（平均 80 秒、形状 4） | 段长不再以秒设定：最短 = 两个读数窗（由读取网格决定），平均段长在 [两窗, 视频长度] 上按尺度无关先验积分掉 | 进行中 |
+| K3 | 整段判断误报：非仇恨视频 49–67% 判违规；DeHate PR 低于 Fed-WSVAD；区间精度 .115 | 按仇恨定义拆开整段判断（针对受保护群体 / 攻击 / 说话人认同），在视频层做合取 | 待做 |
+| K4 | 窗级话题混淆：提到群体的效应 ≥ 真实标签；视频内远处误报 | 用 K3 得到的定义条件去问窗 | 待做（依赖 K3） |
+| K5 | 短而稀疏的仇恨 within 弱 | 随 K2 检查（覆盖率 < 25% 子集） | 待做 |
+| K6 | 故事：r3_m2 = 默认机制 + 补丁 | K2 去掉秒常数；排名正态分数写成对单调变换不变的观测模型；K3 提供新机制；最终 novelty 复查 | 待做 |
+| K7 | 画面分支弱于语音 | 在已有每窗一帧读数上用 r3 组合复查（CPU） | 待做 |
+
+## 前一方法：SPVL-r2（2026-09-10 晋级，development-selected）
 
 `experiments/20260910_spvl/README.md`。范式：stance-conditioned evidence localization。Qwen3-VL-8B 两次前向 / 视频：(1) 公共前缀 = 规则 + 20 帧带时间戳 + 整段 Whisper 转录带时间戳，读整视频裁定 log-odds；(2) 模型自己的裁定接进前缀，每个 8 秒窗一个画面分支和一个语音分支（"这一窗是否是违规内容所在片段"），分支之间用 block-diagonal mask 隔离，窗口分 = 两分支最大值；帧分 = (裁定 + 逐窗均值) + 视频内中心化秩残差。零训练、零标签；预处理只有 Whisper 和抽帧；去掉了 v6 的 CLIP、Vid-Group、ImageBind 和十几次文本调用。
 
