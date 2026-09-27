@@ -977,6 +977,44 @@ Result (2026-09-27): self-test difference 2.09e-14. The pinned grid (`r4_plumb_f
 Rule-6 code review of b0429ab..cc8c159 found no bug; it also checked the grid order (rows = gap, columns = hate) on a
 toy video.
 
+### 16.6 Results (2026-09-27, uoa-lab1, CPU; development-selected)
+
+Sources:
+- `runs/20260926_twolevel/launch_r4.out`, `analysis_r4/table.txt`;
+- `robust/table_r4.txt` (`summarize_robust.py --suffix r4 --base r3`);
+- DeHate `runs/20260927_dehate_external/r4_bma/metrics.json`.
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `r3_m2` (reference) | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 |
+| **`r4_bma`** (G = 6) | .8970 / .6943 / .7542 | .7169 / .6714 / .6384 |
+| `r4_bma_g4` / `r4_bma_g10` (within) | .7547 / .7550 | .6394 / .6378 |
+| `r4_nocoupling` | .8961 / .6881 / .6367 | .7144 / .6689 / .5801 |
+| `r4_k1` (no minimum length) | .8958 / .6837 / .6506 | .7155 / .6676 / .5960 |
+| `r4_full` | .8873 / .7064 / .7542; F1@.3/.5/.7 .322 / .292 / .234 | .7379 / .6735 / .6384; F1 .270 / .133 / .082 |
+
+Posterior mean lengths per video (median; 10–90 %):
+- HateMM: hate about 45 s (18–188 s).
+- HateClipSeg: hate 75–107 s.
+- DeHate: hate 32–36 s.
+
+DeHate (external): `r4_bma` .7011 / .1583 / .6417, against `r3_m2` .7009 / .1578 / .6539.
+
+Decision rule (§16.4):
+- **No drop against `r3_m2`: passes.** All six differences are at most .0017.
+- **Coupling: passes.** Within −.1175 [−.177, −.057] / −.0582 [−.090, −.027].
+- **G = 4 and G = 10 agree:** yes, within ±.002.
+- **Eight MLLMs: fails.** Within is not below `<m>_r3` by more than .01 on HateMM for only 4 of 8 models, and 8 of 8
+  on HateClipSeg; the rule needs 7 of 8.
+  - The HateMM drops: Qwen3-VL-2B −.0101, Qwen3-VL-4B −.0156, LLaVA-OV-7B −.0102, Gemma-3-12B −.0180.
+  - Mean within change: −.0024 on HateMM, +.0040 on HateClipSeg.
+  - Pooled ROC and PR: 8 of 8 on both corpora.
+
+**Round 4 does not pass.** When each video chooses its own time scale from its own reads, weaker readers get
+posteriors that favour short segments, and within falls on HateMM. DeHate within also falls, by .012 (external, not a
+gate). The K5 subset result is in `experiments/20260927_error_analysis/README.md`. Next is the first declared fallback,
+round 5 (§18).
+
 ## 17. Concern K7: does the visual branch gain from its own frames under the new time level? (declared before running, 2026-09-27)
 
 Known since 2026-09-12 (`research-wiki/STATUS.md`): with the 20 shared frames, 24 % (HateMM) and 34 % (HateClipSeg) of
@@ -996,3 +1034,44 @@ Both use the pre-2026-09-26 ASR loader, so they are compared only with each othe
     per-window frames become an input change. It is not a novelty claim; it costs about 5x the window-branch tokens.
     The next full reads would be redone with them.
   - Otherwise K7 closes with this evidence.
+
+## 18. Round 5 of the time level: segment lengths shared by the corpus (declared before any run, 2026-09-27)
+
+First fallback declared in §16.4. Round 4 failed only on the eight-MLLM rule: per-video time scales hurt weak readers
+on HateMM. Here one time scale per corpus is inferred from all of its videos' reads, still without a constant in
+seconds.
+
+### 18.1 Change (everything else is `r4_bma`: minimum two windows, so k = 4; EM; OR; calibrated key; centred rank)
+
+- For each modality chain, one (mean gap, mean hate) pair is shared by every video of the corpus.
+  - The pair lies on a log grid of G = 6 values per length, from two windows (k cells) to the corpus's longest video.
+  - The prior is uniform over the G × G pairs of each chain, independently for the two chains, so there are
+    (G × G)² joint pairs.
+- The posterior over the joint pairs uses every video's reads. For each joint pair it multiplies, over the videos,
+  the video's two-branch likelihood: hateful, with the two chains, or not hateful.
+  - Each video's chain posterior is the average over the pairs, weighted by P(pair, video hateful | all reads).
+  - The pair is a corpus-level latent variable with a fixed prior, so EM stays monotone.
+- Flag: `--duration bma_corpus`. The run log records the posterior mode per chain and its weight.
+
+### 18.2 Arms (CPU, cached reads)
+
+- `r5_bma` (primary, G = 6), `r5_bma_g4`, `r5_bma_g10`, `r5_k1` (`--min-windows 0.5`), `r5_full`.
+- The eight MLLMs `robust/<m>_r5`.
+- DeHate `r5_bma` (external, not a gate).
+- The coupling ablation is `r4_nocoupling`. Independent cells have no segment length, so it is the same model.
+
+### 18.3 Decision rule
+
+§16.4 unchanged, with `r5_*` in place of `r4_*`:
+- no drop against `r3_m2`;
+- coupling −.01 within on both corpora;
+- the eight MLLMs not below `<m>_r3` in within by more than .01 on at least 7 of 8 per corpus;
+- G = 4 and G = 10 agree.
+
+If it fails, round 6 (§16.4 fallback 2) follows.
+
+### 18.4 Plumbing checks
+
+- Self-test: the corpus combination against brute force over (joint pair, hateful or not, every path of every chain)
+  on tiny random corpora of three videos. Likelihood, P(V = 1) and P(hate) per cell must match to 1e-8.
+- `--bma-fixed 80` must reproduce `r3_m2` exactly.
