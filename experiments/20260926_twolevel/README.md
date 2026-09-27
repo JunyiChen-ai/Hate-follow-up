@@ -903,3 +903,72 @@ Together with §15.6, learning the durations from unlabeled reads is fragile. Wi
 used for the wrong structure. Without it, the learned persistence varies by MLLM. The declared minimum duration of
 round 3 (negative binomial, shape 4, mean 80 s) is the robust choice. In the method, "hate lasts" is an assumption
 about the task and cannot be learned from the reads.
+
+## 16. Round 4 of the time level: segment lengths without hand-set seconds (declared before any run, 2026-09-27)
+
+### 16.1 Why
+
+User concern (2026-09-27, concern K2 in `research-wiki/STATUS.md`): the time level sets seconds by hand. The mean
+hate-segment length and the mean gap length are both 80 s, and the shape is 4. Both values were chosen on test:
+- round 2 chose the shape;
+- `experiments/20260922_til` chose the mean;
+- in `analysis_r3/table.txt`, mean 40 s costs within .024 / .020 against 80 s, and shape 2 or 8 costs .005–.012.
+
+No new test file was read for this round.
+
+### 16.2 Change (everything else is `r3_m2`)
+
+- **Minimum length, from the reading grid.** A hate segment or a gap spans at least two reading windows, so that one
+  window's read cannot form a segment on its own.
+  - The shape is k = 2 × (window length) / (cell length). The window length is taken from the reads (8 s), so
+    k = 2 × 8 / 4 = 4.
+  - This is the same k as `r3_m2`; it is now derived, not chosen. The flag is `--min-windows 2`.
+- **Mean lengths, integrated out per video.**
+  - For each video and each modality chain, the mean hate length and the mean gap length each take G = 6 values,
+    log-spaced from the smallest possible mean (k cells = two windows) to the video's length.
+  - Each of the G × G pairs has the same prior weight. A grid that is uniform on the log scale is the scale-invariant
+    prior for a length.
+  - The chain's posterior is the average of the G × G chains' posteriors, each weighted by its likelihood of the
+    video's reads (Bayesian model averaging).
+  - EM updates the emissions and the start probabilities with the averaged posteriors. The mean length is a latent
+    variable with a fixed prior, so EM stays monotone.
+- **Result.** The time level has no constant in seconds. Its lengths come from the window grid and from each video's
+  own length and reads, so a video can have a short or a long time scale (concern K5).
+
+### 16.3 Arms (CPU, cached reads, both corpora)
+
+- `r4_bma`: primary, G = 6.
+- `r4_bma_g4`, `r4_bma_g10`: grid resolution check. This is a numerical integration detail, not a constant to choose.
+- `r4_nocoupling`: ablation, independent cells.
+- `r4_k1`: ablation, no minimum length. The chain is geometric (k = 1), with the means averaged on
+  [one cell, video length].
+- Robustness: `r4_bma` on the eight MLLM runs `runs/20260910_spvl/mllm/<m>/full`, compared with `<m>_r3` in
+  `runs/20260926_twolevel/robust/`.
+- DeHate (external, not a gate): `r4_bma` on `runs/20260927_dehate_external/reads_gridA`.
+- Diagnostic (reads GT, analysis only): within on videos where hate covers less than 25 % of the frames, `r3_m2` vs
+  `r4_bma` (concern K5).
+
+### 16.4 Decision rule
+
+**Pass** (K2 closed; `r4_bma` replaces `r3_m2` as the current method) needs all three:
+- On HateMM and HateClipSeg, no metric of `r4_bma` is below `r3_m2` by more than the noise floor (pooled .005,
+  within .01).
+- `r4_nocoupling` is below `r4_bma` in within by at least .01 on both corpora.
+- On the eight MLLMs, `r4_bma`'s within is not below `<m>_r3` by more than .01 on at least 7 of 8 per corpus.
+
+G = 4 and G = 10 must agree with G = 6 within the noise floor. Otherwise G = 10 is used and the rule is applied again.
+
+**Fallbacks, declared now, in this order:**
+1. Round 5 shares the mean-length posterior across all videos of a corpus: one log grid on [two windows, the
+   corpus's longest video].
+2. Round 6 is per-video averaging with a prior uniform in length on the same bounds.
+
+If all three fail, K2 closes as "not solvable without loss". The means then stay a declared prior, stated in windows
+(10 windows), and the README says so.
+
+### 16.5 Plumbing checks
+
+- The self-test adds model averaging over two chains. Brute-force enumeration of (chain, path) must match the averaged
+  likelihood and posterior to 1e-8.
+- With G = 1 and the grid pinned to 80 s, `r4_bma` must reproduce `r3_m2` exactly. This uses the flag
+  `--bma-fixed 80`, a test only.
