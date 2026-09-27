@@ -44,6 +44,10 @@ PAIRS_R4 = [("r4_bma", "r3_m2"), ("r4_nocoupling", "r4_bma"), ("r4_k1", "r4_bma"
 ARMS_R5 = ["r3_m2", "r5_bma", "r5_bma_g4", "r5_bma_g10", "r4_nocoupling", "r5_k1"]
 PAIRS_R5 = [("r5_bma", "r3_m2"), ("r4_nocoupling", "r5_bma"), ("r5_k1", "r5_bma"), ("r5_bma_g4", "r5_bma"),
             ("r5_bma_g10", "r5_bma")]
+# round 6 (README §19): per-video lengths with a prior uniform in length
+ARMS_R6 = ["r3_m2", "r6_bma", "r6_bma_g4", "r6_bma_g10", "r4_nocoupling", "r6_k1"]
+PAIRS_R6 = [("r6_bma", "r3_m2"), ("r4_nocoupling", "r6_bma"), ("r6_k1", "r6_bma"), ("r6_bma_g4", "r6_bma"),
+            ("r6_bma_g10", "r6_bma")]
 # concern K7 (README §17): per-window frames under the current time level
 ARMS_K7 = ["k17_k20", "k17_w8"]
 PAIRS_K7 = [("k17_w8", "k17_k20")]
@@ -63,14 +67,14 @@ def per_video(arm, ds, Y):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4, 5, 6, 7, 8, 9], default=1,
+    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], default=1,
                     help="3 = ablations of the reduced round-2 model, 4 = composition step")
     a = ap.parse_args()
     arms, pairs, sub = {1: (ARMS, PAIRS, "analysis"), 2: (ARMS_R2, PAIRS_R2, "analysis_r2"),
                         3: (ARMS_R2NL, PAIRS_R2NL, "analysis_r2nl"), 4: (ARMS_C, PAIRS_C, "analysis_c"),
                         5: (ARMS_R3, PAIRS_R3, "analysis_r3"), 6: (ARMS_S, PAIRS_S, "analysis_s"),
                         7: (ARMS_R4, PAIRS_R4, "analysis_r4"), 8: (ARMS_K7, PAIRS_K7, "analysis_k17"),
-                        9: (ARMS_R5, PAIRS_R5, "analysis_r5")}[a.round]
+                        9: (ARMS_R5, PAIRS_R5, "analysis_r5"), 10: (ARMS_R6, PAIRS_R6, "analysis_r6")}[a.round]
     rng = np.random.default_rng(0)
     lines, summary = [], {}
     for ds in ["HateMM", "HateClipSeg"]:
@@ -93,7 +97,7 @@ def main():
             lo, hi = np.quantile(bs, [.025, .975])
             summary[f"{ds}:{x}-{b}"] = [float(d.mean()), float(lo), float(hi)]
             lines.append(f"  within {x} - {b}: {d.mean():+.4f} [{lo:+.4f}, {hi:+.4f}]")
-            if a.round in (7, 9):
+            if a.round in (7, 9, 10):
                 sel = np.array([Y[v].mean() < .25 for v in vids])
                 ds_ = d[sel]
                 bs = np.array([ds_[rng.integers(0, len(ds_), len(ds_))].mean() for _ in range(4000)])

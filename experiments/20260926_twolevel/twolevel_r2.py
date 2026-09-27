@@ -334,7 +334,12 @@ def video_terms(v, P, flags, kappa=1.0):
         if flags.get("duration") == "bma" and not flags.get("nocoupling"):
             grid = length_grid(v["n"], flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
             chs = [build_chain(flags["k"], dg, dh, P["iota"][mods]) for dg in grid for dh in grid]
-            ll, g, w = bma_fb(emission(v, mods, P, chs[0], kappa), chs, np.full(len(chs), -math.log(len(chs))))
+            if flags.get("bma_prior") == "length":    # README §19: uniform in length; a log-grid point spans a length ∝ it
+                lw = np.array([math.log(dg) + math.log(dh) for dg in grid for dh in grid])
+                lw = lw - np.logaddexp.reduce(lw)
+            else:                                        # README §16: uniform in log length
+                lw = np.full(len(chs), -math.log(len(chs)))
+            ll, g, w = bma_fb(emission(v, mods, P, chs[0], kappa), chs, lw)
             W2 = w.reshape(len(grid), len(grid))            # rows: gap length, columns: hate length
             lengths[mods] = (float(np.exp(W2.sum(0) @ np.log(grid))), float(np.exp(W2.sum(1) @ np.log(grid))))
             per.append((mods, chs[0], ll, g))
@@ -471,7 +476,7 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
                                 y = wi["y"][m]
                                 S[m][1] += w * (1 - pa) * np.array([1.0, y, y * y])
                                 S[m][2] += w * pa * np.array([1.0, y, y * y])
-        for v in (videos if total == 0.0 else []):
+        for v in ([] if flags.get("duration") == "bma_corpus" and not flags.get("nocoupling") else videos):
             t = video_terms(v, P, flags); total += t["total"]
             w = float(expit(t["lo"])); W.append(w); Z.append(v["zv"])
             for wi in v["wins"]:
@@ -559,6 +564,8 @@ def main():
                     help="fixed: --d-gap / --d-hate; bma: mean lengths averaged per video over a log grid (README §16); "
                          "bma_corpus: one pair per chain shared by the corpus, posterior from all videos (README §18)")
     ap.add_argument("--bma-grid", type=int, default=6, help="bma: grid points per mean length")
+    ap.add_argument("--bma-prior", choices=["log", "length"], default="log",
+                    help="bma: prior over the mean lengths, uniform in log length (README §16) or in length (§19)")
     ap.add_argument("--bma-fixed", type=float, default=0.0, help="plumbing check only: pin the bma grid to one value (s)")
     ap.add_argument("--min-windows", type=float, default=0.0,
                     help="if > 0: shape k = min_windows x (window length of the reads) / cell length (README §16)")
@@ -591,7 +598,7 @@ def main():
             raise SystemExit("SELFTEST_FAILED")
     flags = {"k": a.k, "d_gap": a.d_gap, "d_hate": a.d_hate, "sharedchain": a.sharedchain or a.fusion == "max", "carrier": a.fusion == "carrier",
              "nocoupling": a.nocoupling, "noleak": a.noleak, "iota_stationary": a.iota_stationary,
-             "duration": a.duration, "bma_grid": a.bma_grid, "bma_fixed": a.bma_fixed}
+             "duration": a.duration, "bma_grid": a.bma_grid, "bma_fixed": a.bma_fixed, "bma_prior": a.bma_prior}
     run = load_run(a.run)
     log(f"modalities {set_modalities(run)}")
     dvd_conds = [c for c in a.dvd_conds.split(",") if c]
