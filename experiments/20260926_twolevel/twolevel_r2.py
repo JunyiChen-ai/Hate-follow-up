@@ -146,6 +146,57 @@ def length_grid(n_cells, k, G, fixed=None):
     return np.array([lo]) if hi <= lo * (1 + 1e-9) or G == 1 else np.geomspace(lo, hi, G)
 
 
+def corpus_combine(A, B, Lc):
+    """Round 5 (README §18): one (gap, hate) pair per chain shared by all videos, uniform prior over each chain's J
+    pairs. A[v] = log pi + log p(verdict | hateful), B[v] = log(1 - pi) + log p(verdict | not) + log p(reads | not),
+    Lc[i][v, j] = log p(chain i's reads of video v | hateful, pair j). Returns the corpus log-likelihood, the
+    posterior over joint pairs (J, ..., J) and M[v, j...] = P(joint pair, video v hateful | all reads)."""
+    C = len(Lc); nv, J = Lc[0].shape
+    X = np.asarray(A, float).reshape((nv,) + (1,) * C)
+    for i, L in enumerate(Lc):
+        X = X + L.reshape((nv,) + tuple(J if d == i else 1 for d in range(C)))
+    Y = np.logaddexp(X, np.asarray(B, float).reshape((nv,) + (1,) * C))
+    lp = Y.sum(0) - C * math.log(J)
+    LL = float(np.logaddexp.reduce(lp.ravel()))
+    w = np.exp(lp - LL)
+    return LL, w, w[None] * np.exp(X - Y)
+
+
+def corpus_terms(videos, P, flags, kappa=1.0):
+    """Round 5 (README §18). Per video: P(V = 1 | all reads) and, per chain, the pair-averaged P(hate) per cell,
+    P(on) per window and P(hate) in the first cell, given V = 1. Also the corpus log-likelihood and the per-chain
+    posterior over pairs."""
+    grid, cs = P["grid"], chains_of(flags)
+    A, B, L, proj = [], [], [[] for _ in cs], []
+    for v in videos:
+        lv0 = lognorm(v["zv"], P["m0"], P["t2"]); lv1 = lognorm(v["zv"], P["m1"], P["t2"])
+        l0 = sum(lognorm(y, P["emit"][m]["mu00"], P["emit"][m]["s2"]) for w in v["wins"] for m, y in w["y"].items())
+        A.append(math.log(P["pi"]) + lv1); B.append(math.log(1 - P["pi"]) + lv0 + l0)
+        pv = []
+        for i, mods in enumerate(cs):
+            chs = [build_chain(flags["k"], dg, dh, P["iota"][mods]) for dg in grid for dh in grid]
+            E = emission(v, mods, P, chs[0], kappa)
+            lls, ph, pon = [], [], []
+            for ch in chs:
+                ll, g = fb(E, ch)
+                lls.append(ll); ph.append(p_hate(g, ch)); pon.append(p_on(v, g, ch))
+            L[i].append(lls); pv.append((chs[0], np.array(ph), np.array(pon).reshape(len(chs), -1)))
+        proj.append(pv)
+    LL, w, M = corpus_combine(A, B, [np.array(x) for x in L])
+    C = len(cs); others = lambda i: tuple(d for d in range(C) if d != i)
+    out = []
+    for n_, v in enumerate(videos):
+        Wv = float(M[n_].sum()); per = []
+        for i, mods in enumerate(cs):
+            a = M[n_].sum(axis=others(i)) if C > 1 else M[n_]
+            a = a / a.sum() if a.sum() > 1e-300 else (w.sum(axis=others(i)) if C > 1 else w)
+            ch, ph, pon = proj[n_][i]
+            per.append((mods, ch, a @ ph, a @ pon))
+        out.append({"W": Wv, "per": per})
+    marg = {mods: (w.sum(axis=others(i)) if C > 1 else w) for i, mods in enumerate(cs)}
+    return LL, marg, out
+
+
 def p_hate(g, ch):
     return g[:, np.tile(ch["hb"], 2) == 1].sum(1)
 
@@ -202,6 +253,40 @@ def selftest(trials=100, seed=0):
         lps = np.array(lps); LLb = np.logaddexp.reduce(lps); post = np.exp(lps - LLb)
         marg = np.array([sum(p for p, xs in zip(post, owner) if chs[0]["hb"][xs[c]]) for c in range(n)])
         worst = max(worst, abs(LL - LLb), float(np.abs(marg - p_hate(g, chs[0])).max()))
+
+    def paths(E, ch):                              # brute force over one chain's paths: log p and P(hate) per cell
+        S = ch["S"]; A = ch["T"][:S, :S] + ch["T"][:S, S:]; xs_all = list(itertools.product(range(S), repeat=E.shape[0]))
+        lps = []
+        for xs in xs_all:
+            lp = math.log(max(ch["pi0"][xs[0]], 1e-300)) + E[0, xs[0]]
+            for c in range(1, E.shape[0]):
+                t = A[xs[c - 1], xs[c]]
+                lp += (math.log(t) if t > 0 else -np.inf) + E[c, ch["hb"][xs[c - 1]] * S + xs[c]]
+            lps.append(lp)
+        lps = np.array(lps); LLp = np.logaddexp.reduce(lps); post = np.exp(lps - LLp)
+        return LLp, np.array([sum(p for p, xs in zip(post, xs_all) if ch["hb"][xs[c]]) for c in range(E.shape[0])])
+    for _ in range(trials // 5):                   # corpus-shared pairs (README §18) vs brute force over (pair, V, paths)
+        k = int(rng.integers(1, 3)); grid = rng.uniform(4 * k + 1, 60, size=2); J = 4
+        ios = rng.uniform(.05, .95, size=2); nv = 3
+        chs = [[build_chain(k, dg, dh, ios[i]) for dg in grid for dh in grid] for i in range(2)]
+        A = rng.normal(0, 2, nv); B = rng.normal(0, 2, nv); ns = rng.integers(1, 4, nv)
+        Es = [[rng.normal(0, 2, size=(ns[v], 2 * chs[0][0]["S"])) for _ in range(2)] for v in range(nv)]
+        Lc = [np.array([[fb(Es[v][i], ch)[0] for ch in chs[i]] for v in range(nv)]) for i in range(2)]
+        LL, w, M = corpus_combine(A, B, Lc)
+        br = [[[paths(Es[v][i], ch) for ch in chs[i]] for i in range(2)] for v in range(nv)]
+        lp = np.zeros((J, J)); r = np.zeros((nv, J, J))
+        for j1 in range(J):
+            for j2 in range(J):
+                x = [A[v] + br[v][0][j1][0] + br[v][1][j2][0] for v in range(nv)]
+                lp[j1, j2] = -2 * math.log(J) + sum(np.logaddexp(x[v], B[v]) for v in range(nv))
+                r[:, j1, j2] = [1 / (1 + math.exp(B[v] - x[v])) for v in range(nv)]
+        LLb = float(np.logaddexp.reduce(lp.ravel())); wb = np.exp(lp - LLb)
+        worst = max(worst, abs(LL - LLb), float(np.abs(M - wb[None] * r).max()))
+        for v in range(nv):                        # P(hate) per cell of chain 0 given V = 1, averaged over pairs
+            a = (wb * r[v]).sum(1); a = a / a.sum()
+            fast = sum(a[j] * p_hate(fb(Es[v][0], chs[0][j])[1], chs[0][j]) for j in range(J))
+            slow = sum(a[j] * br[v][0][j][1] for j in range(J))
+            worst = max(worst, float(np.abs(fast - slow).max()))
     return worst
 
 
@@ -364,12 +449,29 @@ def residual_icc(videos, P, flags):
 
 def em(videos, flags, max_it=300, tol=1e-7, log=print):
     P = init_params(videos, flags)
+    if flags.get("duration") == "bma_corpus":   # README §18: one grid per corpus, [k cells, longest video]
+        P["grid"] = length_grid(max(v["n"] for v in videos), flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
     prev, it = None, 0
     for it in range(max_it):
         S = {m: np.zeros((3, 3)) for m in MODS}; W, Z = [], []; io = {mods: [0.0, 0.0] for mods in chains_of(flags)}
         CR = np.zeros(3)
         total = 0.0
-        for v in videos:
+        if flags.get("duration") == "bma_corpus" and not flags.get("nocoupling"):
+            total, P["pair_post"], terms = corpus_terms(videos, P, flags)
+            for v, t in zip(videos, terms):
+                w = t["W"]; W.append(w); Z.append(v["zv"])
+                for wi in v["wins"]:
+                    for m, y in wi["y"].items():
+                        S[m][0] += (1 - w) * np.array([1.0, y, y * y])
+                for mods, ch, ph, pon in t["per"]:
+                    io[mods][0] += w * float(ph[0]); io[mods][1] += w
+                    for wi, pa in zip(v["wins"], pon):
+                        for m in mods:
+                            if m in wi["y"]:
+                                y = wi["y"][m]
+                                S[m][1] += w * (1 - pa) * np.array([1.0, y, y * y])
+                                S[m][2] += w * pa * np.array([1.0, y, y * y])
+        for v in (videos if total == 0.0 else []):
             t = video_terms(v, P, flags); total += t["total"]
             w = float(expit(t["lo"])); W.append(w); Z.append(v["zv"])
             for wi in v["wins"]:
@@ -453,8 +555,9 @@ def main():
     ap.add_argument("--vlevel", choices=["joint", "mix"], default="joint", help="video posterior: joint model (round 1) or mixture over verdict + mean reads")
     ap.add_argument("--vtemper", choices=["none", "icc"], default="none", help="video level: reads counted as ICC-effective reads")
     ap.add_argument("--kappa", type=float, default=1.0, help="diagnostic: time-level emissions tempered at inference")
-    ap.add_argument("--duration", choices=["fixed", "bma"], default="fixed",
-                    help="fixed: --d-gap / --d-hate; bma: mean lengths averaged per video over a log grid (README §16)")
+    ap.add_argument("--duration", choices=["fixed", "bma", "bma_corpus"], default="fixed",
+                    help="fixed: --d-gap / --d-hate; bma: mean lengths averaged per video over a log grid (README §16); "
+                         "bma_corpus: one pair per chain shared by the corpus, posterior from all videos (README §18)")
     ap.add_argument("--bma-grid", type=int, default=6, help="bma: grid points per mean length")
     ap.add_argument("--bma-fixed", type=float, default=0.0, help="plumbing check only: pin the bma grid to one value (s)")
     ap.add_argument("--min-windows", type=float, default=0.0,
@@ -555,6 +658,16 @@ def main():
         params[ds] = P
         if P.get("carrier") is not None:
             log(f"[{ds}] carrier visual / speech / both {np.round(P['carrier'], 3).tolist()}")
+        if flags["duration"] == "bma_corpus" and not flags["nocoupling"]:
+            if a.vtemper != "none" or a.vlevel != "joint" or a.fusion == "carrier":
+                raise SystemExit("bma_corpus supports only the default video level and OR / shared-chain fusion")
+            g_ = P["grid"]
+            for mods, wm in P["pair_post"].items():
+                W2 = wm.reshape(len(g_), len(g_)); j = int(np.argmax(wm))
+                log(f"[{ds}] {'+'.join(mods)} corpus posterior over (gap, hate) means: mode ({g_[j // len(g_)]:.1f} s, "
+                    f"{g_[j % len(g_)]:.1f} s) weight {wm[j]:.3f}; posterior geometric mean hate "
+                    f"{np.exp(W2.sum(0) @ np.log(g_)):.1f} s, gap {np.exp(W2.sum(1) @ np.log(g_)):.1f} s; grid "
+                    f"{g_[0]:.0f}-{g_[-1]:.0f} s")
         if flags["duration"] == "bma" and not flags["nocoupling"]:
             ln = [video_terms(v, P, flags)["lengths"] for v in videos[ds]]
             for mods in chains_of(flags):
@@ -567,13 +680,21 @@ def main():
             "  ".join(f"{m}: mu00 {e['mu00']:.2f} mu10 {e['mu10']:.2f} mu11 {e['mu11']:.2f} sd {math.sqrt(e['s2']):.2f} "
                       f"slope {(e['mu11'] - e['mu10']) / e['s2']:.3f}" for m, e in P["emit"].items()))
     pred_path = out / "predictions.jsonl"
+    corpus_mode = flags["duration"] == "bma_corpus" and not flags["nocoupling"]
     with open(pred_path, "w") as fh:
         for ds in a.datasets:
-            for v in videos[ds]:
-                t = video_terms(v, params[ds], flags, a.kappa)
+            cterms = corpus_terms(videos[ds], params[ds], flags, a.kappa)[2] if corpus_mode else None
+            for n_v, v in enumerate(videos[ds]):
                 miss = np.ones(v["n"])
-                for mods, ch, ll, g in t["per"]:
-                    miss *= 1.0 - p_hate(g, ch)
+                if corpus_mode:
+                    ct = cterms[n_v]; Wv = float(np.clip(ct["W"], 1e-12, 1 - 1e-12))
+                    t = {"lo": math.log(Wv) - math.log1p(-Wv)}
+                    for mods, ch, ph, pon in ct["per"]:
+                        miss *= 1.0 - ph
+                else:
+                    t = video_terms(v, params[ds], flags, a.kappa)
+                    for mods, ch, ll, g in t["per"]:
+                        miss *= 1.0 - p_hate(g, ch)
                 p = np.clip(1.0 - miss, 1e-12, 1 - 1e-12)
                 lo = params[ds]["vmix_fn"](v) if a.vlevel == "mix" else (t["lo_icc"] if a.vtemper == "icc" else t["lo"])
                 intervals = []
@@ -612,6 +733,9 @@ def main():
                    check=True, cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)}, stdout=subprocess.DEVNULL)
     for P in params.values():
         P.pop("vmix_fn", None)
+        if "grid" in P:                            # README §18: corpus grid and posterior over (gap, hate) pairs
+            P["grid"] = [float(x) for x in P["grid"]]
+            P["pair_post"] = {"+".join(k_): [float(x) for x in v_] for k_, v_ in P["pair_post"].items()}
     (out / "params.json").write_text(json.dumps({ds: {**P, "iota": {"+".join(k_): v_ for k_, v_ in P["iota"].items()}}
                                                  for ds, P in params.items()}, indent=2))
     (out / "config.json").write_text(json.dumps({**vars(a), "flags": flags, "cell_s": CELL}, indent=2))
