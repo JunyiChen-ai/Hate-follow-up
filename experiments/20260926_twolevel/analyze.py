@@ -36,6 +36,10 @@ PAIRS_R3 = [("r3_m2", "current"), ("r3_m2", "c_m2"), ("r3_nocoupling", "r3_m2"),
 # three phases with learned durations (README §15)
 ARMS_S = ["current", "r3_m2", "s_m2", "s_full", "s_noslip", "s_nocoupling"]
 PAIRS_S = [("s_m2", "current"), ("s_m2", "r3_m2"), ("s_noslip", "s_m2"), ("s_nocoupling", "s_m2")]
+# round 4 of the time level (README §16); round 7 also reports videos where hate covers < 25 % of the frames (K5)
+ARMS_R4 = ["r3_m2", "r4_bma", "r4_bma_g4", "r4_bma_g10", "r4_nocoupling", "r4_k1"]
+PAIRS_R4 = [("r4_bma", "r3_m2"), ("r4_nocoupling", "r4_bma"), ("r4_k1", "r4_bma"), ("r4_bma_g4", "r4_bma"),
+            ("r4_bma_g10", "r4_bma")]
 
 
 def per_video(arm, ds, Y):
@@ -52,12 +56,13 @@ def per_video(arm, ds, Y):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4, 5, 6], default=1,
+    ap.add_argument("--round", type=int, choices=[1, 2, 3, 4, 5, 6, 7], default=1,
                     help="3 = ablations of the reduced round-2 model, 4 = composition step")
     a = ap.parse_args()
     arms, pairs, sub = {1: (ARMS, PAIRS, "analysis"), 2: (ARMS_R2, PAIRS_R2, "analysis_r2"),
                         3: (ARMS_R2NL, PAIRS_R2NL, "analysis_r2nl"), 4: (ARMS_C, PAIRS_C, "analysis_c"),
-                        5: (ARMS_R3, PAIRS_R3, "analysis_r3"), 6: (ARMS_S, PAIRS_S, "analysis_s")}[a.round]
+                        5: (ARMS_R3, PAIRS_R3, "analysis_r3"), 6: (ARMS_S, PAIRS_S, "analysis_s"),
+                        7: (ARMS_R4, PAIRS_R4, "analysis_r4")}[a.round]
     rng = np.random.default_rng(0)
     lines, summary = [], {}
     for ds in ["HateMM", "HateClipSeg"]:
@@ -80,6 +85,14 @@ def main():
             lo, hi = np.quantile(bs, [.025, .975])
             summary[f"{ds}:{x}-{b}"] = [float(d.mean()), float(lo), float(hi)]
             lines.append(f"  within {x} - {b}: {d.mean():+.4f} [{lo:+.4f}, {hi:+.4f}]")
+            if a.round == 7:
+                sel = np.array([Y[v].mean() < .25 for v in vids])
+                ds_ = d[sel]
+                bs = np.array([ds_[rng.integers(0, len(ds_), len(ds_))].mean() for _ in range(4000)])
+                lo, hi = np.quantile(bs, [.025, .975])
+                summary[f"{ds}:{x}-{b}:cov<.25"] = [float(ds_.mean()), float(lo), float(hi), int(sel.sum())]
+                lines.append(f"    hate covers < 25 % ({sel.sum()} videos): {x} {np.mean([pv[x][v] for v, t in zip(vids, sel) if t]):.4f}"
+                             f"  {b} {np.mean([pv[b][v] for v, t in zip(vids, sel) if t]):.4f}  diff {ds_.mean():+.4f} [{lo:+.4f}, {hi:+.4f}]")
     (R / sub).mkdir(parents=True, exist_ok=True)
     (R / sub / "table.txt").write_text("\n".join(lines) + "\n")
     (R / sub / "summary.json").write_text(json.dumps(summary, indent=2))

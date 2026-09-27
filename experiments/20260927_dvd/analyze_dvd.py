@@ -3,7 +3,9 @@
 - the three main metrics, copied from the evaluator's metrics.json;
 - the video level: share of non-hateful and of hateful videos with P(V = 1) > .5 (key > 0), video AUC / AP of the key;
 - paired bootstrap over videos (4000, seed 0) of arm minus base, for pooled ROC / PR (sklearn with frame weights = the
-  video's multiplicity) and within (per-video ROC averaged over videos with both classes).
+  video's multiplicity) and within (per-video ROC averaged over videos with both classes);
+- among hateful videos only (added after the first results, README §8): pooled ROC / PR and the Spearman correlation of
+  the key with the video's hate coverage, i.e. whether the key orders hateful videos by how much of them is hate.
 """
 from __future__ import annotations
 
@@ -14,6 +16,7 @@ from pathlib import Path
 from multiprocessing import Pool
 
 import numpy as np
+from scipy.stats import spearmanr
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -69,8 +72,12 @@ def main():
     for ds in a.datasets:
         g = np.load(ROOT / f"data/gt_4fps/{ds}.npz", allow_pickle=True)
         Y = {str(v): np.asarray(y, int) for v, y in zip(g["video_ids"], g["y4"])}
-        vids = sorted(Y); lab = np.array([int(Y[v].any()) for v in vids])
-        P = {arm: pack(load(root / arm / "predictions.jsonl"), Y, vids, ds) for arm in a.arms}
+        recs = {arm: load(root / arm / "predictions.jsonl") for arm in a.arms}
+        # videos with GT and a prediction in every arm (the evaluator also scores only overlapping videos)
+        vids = sorted(v for v in Y if all((ds, v) in r for r in recs.values()))
+        lab = np.array([int(Y[v].any()) for v in vids])
+        cov = np.array([Y[v].mean() for v in vids])
+        P = {arm: pack(recs[arm], Y, vids, ds) for arm in a.arms}
         draws = [np.bincount(rng.integers(0, len(vids), len(vids)), minlength=len(vids)) for _ in range(4000)]
         base = a.arms[0]; ones = np.ones(len(vids), int)
         base_draws = boot(P[base], draws)
@@ -80,8 +87,11 @@ def main():
             row = {"metrics": m.tolist(), "fp_share": float((k[lab == 0] > 0).mean()),
                    "tp_share": float((k[lab == 1] > 0).mean()), "video_auc": float(roc_auc_score(lab, k)),
                    "video_ap": float(average_precision_score(lab, k))}
+            hm = metrics(p, lab.astype(int)); rho = spearmanr(k[lab == 1], cov[lab == 1])[0]
+            row.update({"hateful_only": hm[:2].tolist(), "rho_key_coverage_hateful": float(rho)})
             line = (f"  {arm:14s} {m[0]:.4f} / {m[1]:.4f} / {m[2]:.4f}   P(V)>.5: non-hateful {row['fp_share']:.3f} "
-                    f"hateful {row['tp_share']:.3f}   video AUC {row['video_auc']:.3f} AP {row['video_ap']:.3f}")
+                    f"hateful {row['tp_share']:.3f}   video AUC {row['video_auc']:.3f} AP {row['video_ap']:.3f}\n"
+                    f"{'':18s}hateful videos only: pooled {hm[0]:.4f} / {hm[1]:.4f}   Spearman(key, coverage) {rho:+.3f}")
             if arm != base:
                 d = boot(p, draws) - base_draws
                 lo, hi = np.quantile(d, [.025, .975], axis=0)

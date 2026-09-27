@@ -21,25 +21,26 @@ def fmt(v):
 
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--suffix", default="new", help="method suffix of the tags: new (§12) or r3 (§14)")
-SUF = ap.parse_args().suffix
-lines = [f"## other MLLMs (pooled ROC / PR / within; {SUF} - current)"]
+ap.add_argument("--suffix", default="new", help="method suffix of the tags: new (§12), r3 (§14) or r4 (§16)")
+ap.add_argument("--base", default="cur", help="suffix of the comparison tags: cur, or r3 for §16")
+A = ap.parse_args(); SUF, BASE = A.suffix, A.base
+lines = [f"## other MLLMs (pooled ROC / PR / within; {SUF} - {BASE})"]
 ok = {ds: [0, 0, 0] for ds in ["HateMM", "HateClipSeg"]}
 mean_w = {}
 for m in MODELS:
-    c, n = load(f"{m}_cur"), load(f"{m}_{SUF}")
+    c, n = load(f"{m}_{BASE}"), load(f"{m}_{SUF}")
     for ds in c:
         d = [b - a for a, b in zip(c[ds], n[ds])]
         for i in range(3):
             ok[ds][i] += d[i] >= -FLOOR[i]
-        lines.append(f"  {m:14s} {ds:11s} current {fmt(c[ds])}  {SUF} {fmt(n[ds])}  diff " + " / ".join(f"{x:+.4f}" for x in d))
+        lines.append(f"  {m:14s} {ds:11s} {BASE} {fmt(c[ds])}  {SUF} {fmt(n[ds])}  diff " + " / ".join(f"{x:+.4f}" for x in d))
         mean_w.setdefault(ds, []).append(d[2])
 for ds, v in ok.items():
-    lines.append(f"  {ds}: models where {SUF} is not below current beyond the noise floor: ROC {v[0]}/8, PR {v[1]}/8, "
+    lines.append(f"  {ds}: models where {SUF} is not below {BASE} beyond the noise floor: ROC {v[0]}/8, PR {v[1]}/8, "
                  f"within {v[2]}/8; mean within change {sum(mean_w[ds]) / len(mean_w[ds]):+.4f}")
 lines.append("## reading-module components (Qwen3-VL-8B cache path; each arm minus full)")
-base = {meth: load(f"full_{meth}") for meth in ("cur", SUF)}
-for arm in ARMS:
+base = {meth: load(f"full_{meth}") for meth in ("cur", SUF) if (R / f"full_{meth}").exists()}
+for arm in ARMS if len(base) == 2 else []:
     for meth in ("cur", SUF):
         x = load(f"{arm}_{meth}")
         for ds in x:

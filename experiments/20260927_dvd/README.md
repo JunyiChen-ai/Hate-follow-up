@@ -1,6 +1,7 @@
 # DVD: definition-conjunctive video verdict (2026-09-27, concern K3)
 
-Status: proposal, declared before any run. Hosts are in the first line of each `runs/20260927_dvd/<run>/run.log`.
+Status: round 1 done 2026-09-27. Gate failed under the current protocol; see §9 (cause: the HateClipSeg GT counts
+non-hate offensive content). Hosts are in the first line of each `runs/20260927_dvd/<run>/run.log`.
 
 ## 1. Problem (from `experiments/20260927_error_analysis/README.md`, test-read)
 
@@ -130,3 +131,84 @@ New claim allowed: first use of this conjunction for hateful video and for label
 
 - 2026-09-27: `runs/20260927_error_analysis/`; the 12 top-ranked non-hateful videos per corpus (transcripts, DeHate
   titles). This led to the three-condition design.
+- 2026-09-27, after the round-1 results: `runs/20260927_dvd/analysis*/`; HateClipSeg's segment annotation
+  (`~/data/HateClipSeg/Dataset/segment_level_annotation.csv`, `annotation(new).json`) and the GT builder's source
+  `Retrieval-hate/data/gt/HateClipSeg/gold_segments.json`. This led to the strict-label diagnostic (§9.3); no design
+  change.
+
+## 9. Results, round 1 (2026-09-27; development-selected)
+
+Time level `r3_m2`. `base` reproduces `r3_m2` exactly on all three corpora. Tables:
+`runs/20260927_dvd/analysis/table.txt`, `analysis_dehate/table.txt`, `analysis_hcs_strict/table.txt`. Paired bootstrap
+over videos, 4000 draws; within cannot change, because the key is constant inside a video.
+
+### 9.1 Gate corpora (pooled ROC / pooled PR / within; difference to `base` with 95 % interval)
+
+| arm | HateMM | HateClipSeg |
+|---|---|---|
+| `base` | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 |
+| `dvd` | .8974 / .6945 (+.0003, −.0007) | .6945 / .6370 (−.0223 [−.054, +.009], −.0334 [−.054, −.011]) |
+| `dvd_noT` | .8981 / .6957 (+.0010, +.0004) | .7159 / .6630 (−.0009, −.0075) |
+| `dvd_noE` | .8963 / .6938 (−.0007, −.0014) | .6851 / .6328 (−.0316 [−.063, −.004], −.0376 [−.058, −.016]) |
+| `dvd_ATE` | .8851 / .6208 (−.0120, −.0745) | .6766 / .6130 (−.0402, −.0575) |
+
+**Gate: fail.** HateClipSeg drops beyond the floor, and no main metric rises by .01 on either gate corpus.
+
+The video level moves the way it was designed to. Share of non-hateful videos with P(V = 1) > .5, `base` to `dvd`:
+HateMM .485 to .308, HateClipSeg .667 to .533. Video AUC: .927 to .932 and .803 to .825.
+
+### 9.2 DeHate (external, not a gate)
+
+| arm | pooled ROC / PR / within | vs `base` | video AUC / AP | non-hateful with P(V) > .5 |
+|---|---|---|---|---|
+| `base` | .7009 / .1578 / .6539 | | .727 / .361 | .565 |
+| `dvd` | .7127 / .1855 / .6539 | ROC +.0118 [−.018, +.033], PR +.0277 [+.007, +.061] | .774 / .462 | .382 |
+| `dvd_noE` (verdict and T) | .7362 / .1954 / .6539 | ROC +.0354 [+.022, +.048], PR +.0375 [+.018, +.068] | .787 / .481 | .408 |
+| `dvd_noT` | .6815 / .1602 / .6539 | ROC −.0193, PR +.0024 | .728 / .388 | .523 |
+
+`dvd` and `dvd_noE` are above the strongest DeHate baseline, Fed-WSVAD, which uses video-level labels: .7007 / .1752
+/ .5055. Intervals of the `full` arm, F1@.3 / .5 / .7: `base_full` .174 / .127 / .104, `dvd_full` .202 / .147 / .119.
+
+### 9.3 Why HateClipSeg drops: its GT counts offensive content that is not hate
+
+HateClipSeg labels each segment on six dimensions: normal, hateful, and four other offensive categories. The protocol
+GT marks a frame positive when any non-normal dimension is set (`archive/experiments/idea_discovery-2026-08/
+label_free_adapt/build_gt_4fps.py`, `any(dims[1:])`). `hcs_strict.py` rebuilds this GT from the same source and matches
+it on 119 of 119 videos.
+
+In the test split, 51 of the 104 positive videos have no hateful segment at all. Their video label is
+"Offensive", with the strict label "Normal". T asks whether the content targets a protected group. Its calibrated
+P(T) is below .5 on 13 of the 50 such videos that have reads (26 %), on none of the 53 strictly hateful ones, and on 6
+of the 15 normal ones. Under the protocol GT, that pushes positive videos down: 14.6 % of HateClipSeg's
+positive videos fall below P(V) = .5 under `dvd`, against 1.0 % under `base`.
+
+Among positive videos only, the key's Spearman correlation with the video's positive coverage drops from .450 to .356.
+Pooled ROC / PR on those videos drops from .6656 / .6859 to .6333 / .6503.
+
+Diagnostic with the strict GT: only the hateful dimension counts, 53 positive videos, frame base rate .200. This is not
+the protocol, and it is not used for any decision.
+
+| arm | pooled ROC / PR / within | video AUC / AP | negatives with P(V) > .5 |
+|---|---|---|---|
+| `base` | .7749 / .4299 / .5997 | .822 / .770 | .908 |
+| `dvd` | .7930 / .4382 / .5997 | .857 / .816 | .677 |
+| `dvd_noE` | .7944 / .4412 / .5997 | .864 / .815 | .708 |
+| `dvd_noT` | .7760 / .4239 / .5997 | .820 / .775 | .862 |
+
+### 9.4 Decision
+
+- **K3 closes under the current protocol, per §5.** DVD fails the gate, and a revision cannot fix the failure.
+  - The loss comes from HateClipSeg's GT counting non-hate offensive content as positive.
+  - A label-free method can follow only one definition. The one DVD reads (protected-group target) is the hate
+    definition that HateMM and DeHate use.
+  - This holds even if DeHate counted as "one corpus" in the routing rule. The only revision the analysis supports is
+    dropping E, and that arm (`dvd_noE`) fails the gate on HateClipSeg by more.
+- **Per condition.**
+  - T carries the whole gain on DeHate and on HateClipSeg-strict.
+  - E never pulls its weight: dropping it never costs .01. Under §5 it would be removed.
+- **Open for the user (protocol, not decided here).**
+  - Whether HateClipSeg should be scored with its hateful dimension only.
+  - If yes, the gate would be re-run with `dvd_noE` (verdict and T) as the declared arm. Under the strict labels and on
+    DeHate it rises by more than .01 in pooled ROC and PR, with within unchanged.
+- Code stays in place: `twolevel_r2.py --dvd-reads/--dvd-conds` does nothing unless asked. The reads are in
+  `runs/20260927_dvd/reads_main`, `reads_dehate`.
