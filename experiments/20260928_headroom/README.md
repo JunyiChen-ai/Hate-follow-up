@@ -125,6 +125,57 @@ Reading:
 - The cheap variants fail on HateClipSeg. Averaging only the verdict breaks the calibrated key: 23 % of positive
   videos fall below .5.
 - The combinations that help cost about 6–10× the current reading.
+- Rule 14(e) of `RESEARCH_ITERATION_RULES.md` excludes an ensemble from a claimed method. Adopting a reader average
+  therefore needs a rule change by the user. This was missed when this section was written. It was noted on
+  2026-09-28, after the Codex consultation below.
+
+## Codex consultation and a check of its first proposal (2026-09-28)
+
+The user asked whether the performance is close to what this paradigm can reach, and asked for Codex's view on making
+the mechanism more interesting. The full record is in `docs/reviews/20260928_codex_mechanism_review.md`.
+
+**Codex's view:**
+- The current scalar reads are close to their practical limit. It is not shown that the paradigm is at its ceiling.
+- It made two proposals:
+  1. **Coupling by speech continuity (M3).** Time coupling is driven by speech continuity instead of clock time:
+     strong across a boundary where the speech continues, weak across a break. No extra MLLM calls.
+  2. **A small dense student (M1–M3).** The student is trained from the current method's outputs, with temporal
+     consistency. It needs no MLLM calls at deployment and 2–8 GPU hours to train.
+- It asked for a check that separates the 8 s reading grid from the accuracy of the reads.
+
+**Check.** Script `continuity_check.py`, CPU; output `runs/20260928_headroom/continuity/table.txt`.
+- Label: a window is hateful if its gold hate share is ≥ .5.
+- A change is a boundary between neighbouring 8 s windows where that label differs. Only videos with both labels count.
+- Continuity measures:
+  - whether a Whisper segment runs across the boundary;
+  - the cosine of the two window transcripts under all-MiniLM-L6-v2.
+- Change prediction uses logistic regression with 5-fold CV by video. The interval is a bootstrap over videos.
+
+| | HateMM | HateClipSeg |
+|---|---|---|
+| boundaries (videos) | 1452 (75) | 2814 (96) |
+| change rate: Whisper segment runs across / speech on both sides without one / speech missing on a side | .115 / .128 / .246 | .190 / .224 / .196 |
+| change rate by transcript cosine quartile, lowest to highest | .141 / .111 / .117 / .096 | .198 / .219 / .207 / .163 |
+| predicting a change, AUC: reads / reads + continuity / continuity only | .602 / .604 / .562 | .545 / .554 / .515 |
+| added by continuity on top of the reads | +.002 [−.008, +.010] | +.008 [−.005, +.021] |
+| within: method / true share per 8 s window / true share per 4 s cell | .751 / .954 / .983 | .637 / .986 / .996 |
+| same, videos where hate covers < 25 % (19 each) | .694 / .957 / .982 | .680 / .992 / .997 |
+
+**Reading:**
+1. **Proposal 1 lacks the signal it needs.**
+   - Whether the speech continues across a boundary barely changes whether the label changes.
+   - Even a model fitted on the gold gains nothing significant from continuity on top of the reads.
+   - A coupling rule built on it cannot be expected to pass the gate or to show a ≥ .01 ablation.
+   - Caveat: the Whisper segments here are coarse (up to 100 s, no word timestamps). Finer pauses and speaker turns
+     were not tested.
+2. **The 8 s reading grid is not the limit.**
+   - If every window carried its true hate share, within would be .954 / .986, and the same for short hate.
+   - The gap to the method (.20 / .35) comes from the accuracy of the reads themselves.
+3. **Proposal 2 was not tested.** Three things weigh against it:
+   - Label-free methods built on features in this repository scored far below the MLLM reads (T3AL, HateMM .6091 /
+     .3096 / .5068).
+   - Self-training (SDL, NGA) failed.
+   - The method would no longer be training-free.
 
 ## Test-read log
 
@@ -133,3 +184,5 @@ Reading:
 method changed.
 2026-09-28 (worth trying): `runs/20260928_headroom/analysis_ensemble`, `analysis_verdict8` (gold for the metrics only). No
 method changed.
+2026-09-28 (Codex check): gold of HateMM and HateClipSeg test (hate share per 8 s window and 4 s cell), used only for
+`runs/20260928_headroom/continuity`. No method changed.
