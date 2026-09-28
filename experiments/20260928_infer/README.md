@@ -217,3 +217,17 @@ these reads is possible but does not show in the ablation, so it cannot be claim
 Code: `twolevel_r2.py` now describes a chain by its phases (`KINDS`), carries the previous cell's level id in the
 augmented state, and fits emitters per (modality, condition). With the defaults it is the same model and reproduces
 `final_m2` exactly (§9.2).
+
+## 10. DeHate (external, not a gate; declared 2026-09-29 before running)
+
+User request (2026-09-29): run the three redesigns on DeHate too, on a machine other than uoa-lab1. Same flags as §9,
+reads `runs/20260927_dehate_external/reads_gridA` (1151 videos, `experiments/20260927_dehate_external`),
+reference `runs/20260926_twolevel/final_dehate/final_m2` (r6_bma on DeHate: .7011 / .1582 / .6431). Arms: `c1_cond`,
+`c1_shuf` (control), `j_m2`, `l3_m2`, and `c1_plumb` (must reproduce `final_m2`). Conditions rebuilt for the DeHate
+reads with the fixed ASR loader (the DeHate reads used it). Launch `launch/run_dehate.sh`; output
+`runs/20260928_infer/dehate/`, analysis `runs/20260928_infer/dehate/analysis/table.txt` (paired bootstrap over
+videos). Nothing is decided on DeHate; the numbers are reported next to the main-corpus ones.
+
+### 10.1 Results
+
+(filled after the run)
