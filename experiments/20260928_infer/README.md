@@ -228,6 +228,26 @@ reads with the fixed ASR loader (the DeHate reads used it). Launch `launch/run_d
 `runs/20260928_infer/dehate/`, analysis `runs/20260928_infer/dehate/analysis/table.txt` (paired bootstrap over
 videos). Nothing is decided on DeHate; the numbers are reported next to the main-corpus ones.
 
-### 10.1 Results
+### 10.1 Results (2026-09-29, uoa-lab3 = sc474398, CPU; copied back to `runs/20260928_infer/dehate/`)
 
-(filled after the run)
+Sources: `runs/20260928_infer/dehate/<arm>/metrics.json`, `dehate/analysis/table.txt` (paired bootstrap over 1151
+videos), `dehate/<arm>/run.log`. Conditions on DeHate: 84 % of windows hold a frame, word median 20.
+
+| arm | DeHate pooled ROC / PR / within | within vs `final_m2` |
+|---|---|---|
+| `final_m2` (r6_bma) | .7011 / .1582 / .6431 | — |
+| `c1_plumb` | .7011 / .1582 / .6431 | 0 (exact) |
+| §1 `c1_cond` | .7012 / .1582 / .6444 | +.0013 [−.004, +.009] |
+| §1 `c1_shuf` (control) | .7012 / .1582 / .6439 | +.0009 [−.000, +.002] |
+| §3 `j_m2` | .7009 / .1579 / .6488 | +.0058 [−.007, +.019] |
+| §2 `l3_m2` | .7010 / .1583 / .6268 | −.0163 [−.045, +.013] |
+
+Pooled differences are all within ±.0003. The picture is the one of §9 on the two main corpora:
+- condition-dependent evidence: nothing, and the permuted control moves the same amount;
+- joint segmentation: a small within gain (+.006) with an interval that includes 0, pooled unchanged;
+- three levels: a loss (−.016), same fitted shape as before (middle level near 0, slope 9.1, 45 % of the cells in the
+  middle phase).
+
+Across the three corpora, the joint segmentation is +.008 / −.0075 / +.006 and never outside its interval; the
+condition-dependent evidence is within ±.003 everywhere; the three-level chain loses on HateMM and DeHate. The
+conclusion of §9.4 stands.
