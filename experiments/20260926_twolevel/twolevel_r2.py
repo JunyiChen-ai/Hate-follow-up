@@ -30,39 +30,96 @@ from twolevel import (CELL, EPS, MODS, ROOT, centered_rank, intercept, intervals
 
 # ----------------------------------------------------------------------------------------------- chain
 
-def build_chain(k, d_gap, d_hate, iota, nocoupling=False):
-    """Sub-states 0..k-1 = gap, k..2k-1 = hate. Mean durations d_gap, d_hate in seconds. Returns hate bit per
-    sub-state, augmented transition matrix over (previous cell's hate bit, sub-state), initial distribution.
-    nocoupling (ablation): k = 1 and independent cells with P(hate) = iota."""
+# Chain kinds (experiments/20260928_infer/README.md): "two" = the r6 chain (gap / hate); "three_nested" and
+# "three_free" = off topic / topic without attack / attack (§2); "joint" = one segmentation whose segments carry a
+# joint (visual, speech) label (§3). A chain is described by its phases: each phase has k sub-states in a row, a mean
+# length (gap or hate family), a hate bit and, per read modality, an observation level. The augmented state is
+# (previous cell's level id, sub-state), so that a window covering two cells observes the higher level of the two.
+KINDS = {
+    # phase -> (length family, hate bit, {modality: level}); "level" indexes the emitter's list of means
+    "two": {"phases": [("gap", 0, 0), ("hate", 1, 1)], "next": {0: {1: 1.0}, 1: {0: 1.0}}},
+    "three_nested": {"phases": [("gap", 0, 0), ("gap", 0, 1), ("hate", 1, 2)],
+                     "next": {0: {1: 1.0}, 1: {0: 0.5, 2: 0.5}, 2: {1: 1.0}}},
+    "three_free": {"phases": [("gap", 0, 0), ("gap", 0, 1), ("hate", 1, 2)],
+                   "next": {0: {1: .5, 2: .5}, 1: {0: .5, 2: .5}, 2: {0: .5, 1: .5}}},
+    # joint label (visual bit, speech bit): 00, 01, 10, 11; levels are per modality
+    "joint": {"phases": [("gap", 0, (0, 0)), ("hate", 1, (0, 1)), ("hate", 1, (1, 0)), ("hate", 1, (1, 1))],
+              "next": {p: {q: 1 / 3 for q in range(4) if q != p} for p in range(4)}},
+}
+
+
+def build_chain(k, d_gap, d_hate, iota, nocoupling=False, kind="two", mods=None):
+    """Explicit-duration chain of README §10 / §16, generalised to the kinds above. iota: start distribution over
+    phases (a scalar is P(hate) of the two-phase chain). mods: the modalities this chain emits (joint kind: both).
+    Returns sub-state matrix A, augmented transition matrix T over (previous level id, sub-state), start pi0, per
+    augmented state the hate bit and, per modality, the observation level for single-cell and two-cell windows.
+    nocoupling (ablation, two-phase): k = 1 and independent cells with P(hate) = iota."""
+    spec = KINDS[kind]
+    n_ph = len(spec["phases"])
+    io = np.array([1 - iota, iota]) if np.ndim(iota) == 0 else np.asarray(iota, float)
     if nocoupling:
         k = 1
-    S = 2 * k
-    hb = (np.arange(S) >= k).astype(int)
+    S = n_ph * k
+    ph = np.repeat(np.arange(n_ph), k)                      # phase of each sub-state
+    hb = np.array([spec["phases"][p][1] for p in ph])
     A = np.zeros((S, S))
     for x in range(S):
         if nocoupling:
-            A[x] = [1 - iota, iota]
+            A[x] = io[ph] / k
             continue
-        q = 1.0 - k * CELL / (d_hate if hb[x] else d_gap)
+        fam = spec["phases"][ph[x]][0]
+        q = 1.0 - k * CELL / (d_hate if fam == "hate" else d_gap)
         q = min(max(q, 0.0), 1 - 1e-9)
         A[x, x] = q
-        A[x, (x + 1) % S] += 1.0 - q          # last gap sub-state -> first hate sub-state and vice versa
-    T = np.zeros((2 * S, 2 * S))               # augmented state z = b * S + x, b = hate bit of the previous cell
-    for bp in range(2):
+        if (x + 1) % k:                                     # next sub-state of the same phase
+            A[x, x + 1] += 1.0 - q
+        else:                                               # last sub-state: leave to the first sub-state of a next phase
+            for p2, pr in spec["next"][ph[x]].items():
+                A[x, p2 * k] += (1.0 - q) * pr
+    # level ids carried to the next cell: the hate bit for the two-phase chain (as in round 2), else the phase
+    plv = hb if kind == "two" else ph
+    n_plv = 2 if kind == "two" else n_ph
+    T = np.zeros((n_plv * S, n_plv * S))
+    for bp in range(n_plv):
         for xp in range(S):
-            for x in range(S):
-                T[bp * S + xp, hb[xp] * S + x] = A[xp, x]
-    pi0 = np.zeros(2 * S)
-    pi0[:k] = (1 - iota) / k                   # first cell: previous hate bit 0, phase start uniform in the phase
-    pi0[k:S] = iota / k
-    return {"k": k, "S": S, "hb": hb, "T": T, "pi0": pi0}
+            T[bp * S + xp, plv[xp] * S:plv[xp] * S + S] = A[xp]
+    pi0 = np.zeros(n_plv * S)
+    pi0[:S] = io[ph] / k                                    # first cell: previous level id 0, start uniform in the phase
+    mods = tuple(mods) if mods else tuple(MODS)
+    lvl = {}
+    for j, m in enumerate(mods):
+        cur = np.array([spec["phases"][p][2][j] if kind == "joint" else spec["phases"][p][2] for p in ph])
+        prev = np.array([spec["phases"][p][2][j] if kind == "joint" else spec["phases"][p][2]
+                         for p in (range(n_ph) if kind != "two" else (0, 1))])   # level of each previous-level id
+        single = np.tile(cur, n_plv)
+        pair = np.maximum(np.repeat(prev, S), single)
+        lvl[m] = {"single": single, "pair": pair}
+    return {"k": k, "S": S, "n_plv": n_plv, "n_ph": n_ph, "kind": kind, "hb": hb, "A": A, "plv": plv, "ph": ph,
+            "T": T, "pi0": pi0, "hate": np.tile(hb, n_plv), "phase": np.tile(ph, n_plv), "lvl": lvl,
+            "n_lvl": {m: int(max(v["pair"].max(), v["single"].max())) + 1 for m, v in lvl.items()}}
 
 
 def on_masks(ch):
-    S, hb = ch["S"], ch["hb"]
-    b = np.repeat([0, 1], S)
-    cur = np.tile(hb, 2)
-    return {"pair": ((b + cur) > 0).astype(int), "single": cur}
+    """Two-level view (carrier and linear paths): a window's read is 'on' when its level is above 0."""
+    m = next(iter(ch["lvl"]))
+    return {"pair": (ch["lvl"][m]["pair"] > 0).astype(int), "single": (ch["lvl"][m]["single"] > 0).astype(int)}
+
+
+def ek(w, m):
+    """Emitter key of modality m in window w: the modality, or modality|condition (README of 20260928_infer §1)."""
+    c = w.get("cond", {}).get(m)
+    return m if c is None else f"{m}|{c}"
+
+
+def p_levels(v, g, ch, m):
+    """Per window, the posterior over modality m's observation levels (n_windows, n_levels)."""
+    L = ch["n_lvl"][m]
+    out = np.zeros((len(v["wins"]), L))
+    for i, w in enumerate(v["wins"]):
+        lv = ch["lvl"][m]["pair" if w["pair"] else "single"]
+        for l_ in range(L):
+            out[i, l_] = g[w["cell"], lv == l_].sum()
+    return out
 
 
 CARRIERS = ("visual", "speech", "both")
@@ -81,7 +138,7 @@ def carrier_terms(w, P):
 def emission(v, mods, P, ch, kappa=1.0):
     """log emission over augmented states, shape (n, 2S), for the chain of modalities `mods` under V = 1."""
     masks = on_masks(ch)
-    E = np.zeros((v["n"], 2 * ch["S"]))
+    E = np.zeros((v["n"], ch["n_plv"] * ch["S"]))
     if P.get("linear"):
         for w in v["wins"]:
             on = masks["pair"] if w["pair"] else masks["single"]
@@ -97,12 +154,11 @@ def emission(v, mods, P, ch, kappa=1.0):
             E[w["cell"]] += kappa * np.where(on == 1, float(np.logaddexp.reduce(lc + ons)), off)
         return E
     for w in v["wins"]:
-        on = masks["pair"] if w["pair"] else masks["single"]
         for m in mods:
             if m in w["y"]:
-                e = P["emit"][m]
-                E[w["cell"]] += kappa * np.where(on == 1, lognorm(w["y"][m], e["mu11"], e["s2"]),
-                                                 lognorm(w["y"][m], e["mu10"], e["s2"]))
+                e = P["emit"][ek(w, m)]
+                lv = ch["lvl"][m]["pair" if w["pair"] else "single"]
+                E[w["cell"]] += kappa * lognorm(w["y"][m], np.asarray(e["mu"], float)[lv], e["s2"])
     return E
 
 
@@ -198,36 +254,53 @@ def corpus_terms(videos, P, flags, kappa=1.0):
 
 
 def p_hate(g, ch):
-    return g[:, np.tile(ch["hb"], 2) == 1].sum(1)
+    return g[:, ch["hate"] == 1].sum(1)
+
+
+def p_phase(g_cells, ch):
+    """Posterior over phases, summed over the given cells' rows of g: shape (n_phases,)."""
+    return np.array([g_cells[:, ch["phase"] == p].sum() for p in range(ch["n_ph"])])
 
 
 def p_on(v, g, ch):
-    masks = on_masks(ch)
-    return [float(g[w["cell"], (masks["pair"] if w["pair"] else masks["single"]) == 1].sum()) for w in v["wins"]]
+    m = next(iter(ch["lvl"]))
+    return [float(1.0 - x) for x in p_levels(v, g, ch, m)[:, 0]]
 
 
 def selftest(trials=100, seed=0):
     rng = np.random.default_rng(seed)
     worst = 0.0
-    for _ in range(trials):
-        k = int(rng.integers(1, 3)); n = int(rng.integers(1, 6))
-        ch = build_chain(k, rng.uniform(4 * k + 1, 60), rng.uniform(4 * k + 1, 60), rng.uniform(.05, .95))
-        E = rng.normal(0, 2, size=(n, 2 * ch["S"]))
-        ll, g = fb(E, ch)
-        S = ch["S"]; tot = -np.inf; marg = np.zeros(n); lps = []; paths = list(itertools.product(range(S), repeat=n))
-        A = ch["T"][:S, :S] + ch["T"][:S, S:]           # sub-state transitions (previous bit 0 rows hold A)
-        for xs in paths:
-            b = 0; lp = math.log(max(ch["pi0"][xs[0]], 1e-300)) + E[0, xs[0]]
-            for c in range(1, n):
-                b = ch["hb"][xs[c - 1]]
-                t = A[xs[c - 1], xs[c]]
-                lp += math.log(t) if t > 0 else -np.inf
-                lp += E[c, b * S + xs[c]]
-            lps.append(lp)
-        lps = np.array(lps); LL = np.logaddexp.reduce(lps); post = np.exp(lps - LL)
-        for c in range(n):
-            marg[c] = sum(p for p, xs in zip(post, paths) if ch["hb"][xs[c]])
-        worst = max(worst, abs(ll - LL), float(np.abs(marg - p_hate(g, ch)).max()))
+    for kind in KINDS:                           # every chain kind vs brute force over sub-state paths
+        n_ph = len(KINDS[kind]["phases"])
+        for _ in range(trials if kind == "two" else trials // 2):
+            k = int(rng.integers(1, 3)); n = int(rng.integers(1, 5 if kind == "joint" else 6))
+            io = rng.dirichlet(np.ones(n_ph))
+            ch = build_chain(k, rng.uniform(4 * k + 1, 60), rng.uniform(4 * k + 1, 60), io, False, kind, MODS)
+            S = ch["S"]; E = rng.normal(0, 2, size=(n, ch["n_plv"] * S))
+            ll, g = fb(E, ch)
+            marg = np.zeros(n); lps = []; paths = list(itertools.product(range(S), repeat=n))
+            A = ch["A"]
+            for xs in paths:
+                lp = math.log(max(ch["pi0"][xs[0]], 1e-300)) + E[0, xs[0]]
+                for c in range(1, n):
+                    t = A[xs[c - 1], xs[c]]
+                    lp += math.log(t) if t > 0 else -np.inf
+                    lp += E[c, ch["plv"][xs[c - 1]] * S + xs[c]]
+                lps.append(lp)
+            lps = np.array(lps); LL = np.logaddexp.reduce(lps); post = np.exp(lps - LL)
+            for c in range(n):
+                marg[c] = sum(p for p, xs in zip(post, paths) if ch["hb"][xs[c]])
+            worst = max(worst, abs(ll - LL), float(np.abs(marg - p_hate(g, ch)).max()))
+            # the observation levels: a two-cell window sees the higher level of its two cells
+            for m in MODS:
+                lv = ch["lvl"][m]
+                for z in range(ch["n_plv"] * S):
+                    bp, x = divmod(z, S)
+                    spec = KINDS[kind]["phases"]; j = MODS.index(m)
+                    cur = spec[ch["ph"][x]][2][j] if kind == "joint" else spec[ch["ph"][x]][2]
+                    pl = [spec[p][2][j] if kind == "joint" else spec[p][2] for p in range(n_ph)]
+                    prv = (0, 1)[bp] if kind == "two" else pl[bp]
+                    assert lv["single"][z] == cur and lv["pair"][z] == max(prv, cur), (kind, m, z)
     import twolevel as r1
     for _ in range(trials):                      # k = 1 equals round 1's geometric pair-state chain
         n = int(rng.integers(1, 30)); dg, dh, io = rng.uniform(5, 200), rng.uniform(5, 200), rng.uniform(.05, .95)
@@ -293,7 +366,18 @@ def selftest(trials=100, seed=0):
 # ----------------------------------------------------------------------------------------------- EM
 
 def chains_of(flags):
-    return [tuple(MODS)] if flags.get("sharedchain") or flags.get("carrier") else [(m,) for m in MODS]
+    return [tuple(MODS)] if flags.get("sharedchain") or flags.get("carrier") or flags.get("kind") == "joint" \
+        else [(m,) for m in MODS]
+
+
+def emitters(videos):
+    """All emitter keys present in the videos, per modality (README of 20260928_infer §1: modality|condition)."""
+    out = {m: sorted({ek(w, m) for v in videos for w in v["wins"] if m in w["y"]}) for m in MODS}
+    return out
+
+
+def n_levels(flags):
+    return len(KINDS[flags.get("kind", "two")]["phases"]) if flags.get("kind", "two") != "joint" else 2
 
 
 def set_modalities(run):
@@ -307,33 +391,48 @@ def set_modalities(run):
     return mods
 
 
+def emit_entry(mu00, mu, s2):
+    """Emitter parameters: the V = 0 mean, the list of level means (level 0 = non-hate in a violating video, the last
+    level = hate) and one variance. mu10 / mu11 stay as aliases of the first / last level for the older code paths."""
+    return {"mu00": float(mu00), "mu": [float(x) for x in mu], "mu10": float(mu[0]), "mu11": float(mu[-1]), "s2": float(s2)}
+
+
 def init_params(videos, flags):
     zs = np.array([v["zv"] for v in videos])
+    kind = flags.get("kind", "two"); n_ph = len(KINDS[kind]["phases"])
+    if flags.get("iota_stationary"):
+        st = flags["d_hate"] / (flags["d_hate"] + flags["d_gap"]); io = [1 - st, st]
+    else:
+        io = [1.0 / n_ph] * n_ph
     P = {"pi": 0.5, "m0": float(np.percentile(zs, 10)), "m1": float(np.percentile(zs, 90)), "t2": max(float(zs.var()), EPS),
-         "emit": {}, "iota": {mods: (flags["d_hate"] / (flags["d_hate"] + flags["d_gap"]) if flags.get("iota_stationary") else 0.5)
-                              for mods in chains_of(flags)}}   # EPS floor: runs without a verdict (constant z_video)
+         "emit": {}, "iota": {mods: list(io) for mods in chains_of(flags)}}   # EPS floor: runs without a verdict (constant z_video)
+    L = n_levels(flags)
     for m in MODS:
-        ys = np.array([w["y"][m] for v in videos for w in v["wins"] if m in w["y"]])
-        mu00, mu10, mu11 = (float(np.percentile(ys, q)) for q in (10, 50, 90))
-        if flags.get("noleak"):
-            mu10 = mu00
-        P["emit"][m] = {"mu00": mu00, "mu10": mu10, "mu11": mu11, "s2": float(ys.var())}
+        for e in emitters(videos)[m]:
+            ys = np.array([w["y"][m] for v in videos for w in v["wins"] if m in w["y"] and ek(w, m) == e])
+            qs = np.linspace(10, 90, L + 1)
+            mu00, *mu = (float(np.percentile(ys, q)) for q in qs)
+            if flags.get("noleak"):
+                mu[0] = mu00
+            P["emit"][e] = emit_entry(mu00, mu, ys.var())
     P["carrier"] = [1 / 3, 1 / 3, 1 / 3] if flags.get("carrier") else None
     return P
 
 
 def chain_for(P, mods, flags):
-    return build_chain(flags["k"], flags["d_gap"], flags["d_hate"], P["iota"][mods], flags.get("nocoupling", False))
+    return build_chain(flags["k"], flags["d_gap"], flags["d_hate"], P["iota"][mods], flags.get("nocoupling", False),
+                       flags.get("kind", "two"), mods)
 
 
 def video_terms(v, P, flags, kappa=1.0):
     lv0 = lognorm(v["zv"], P["m0"], P["t2"]); lv1 = lognorm(v["zv"], P["m1"], P["t2"])
-    l0 = sum(lognorm(y, P["emit"][m]["mu00"], P["emit"][m]["s2"]) for w in v["wins"] for m, y in w["y"].items())
+    l0 = sum(lognorm(y, P["emit"][ek(w, m)]["mu00"], P["emit"][ek(w, m)]["s2"]) for w in v["wins"] for m, y in w["y"].items())
     per, lengths = [], {}
+    kind = flags.get("kind", "two")
     for mods in chains_of(flags):
         if flags.get("duration") == "bma" and not flags.get("nocoupling"):
             grid = length_grid(v["n"], flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
-            chs = [build_chain(flags["k"], dg, dh, P["iota"][mods]) for dg in grid for dh in grid]
+            chs = [build_chain(flags["k"], dg, dh, P["iota"][mods], False, kind, mods) for dg in grid for dh in grid]
             if flags.get("bma_prior") == "length":    # README §19: uniform in length; a log-grid point spans a length ∝ it
                 lw = np.array([math.log(dg) + math.log(dh) for dg in grid for dh in grid])
                 lw = lw - np.logaddexp.reduce(lw)
@@ -360,7 +459,7 @@ def video_terms(v, P, flags, kappa=1.0):
             n_m = sum(1 for w in v["wins"] if m in w["y"])
             if n_m == 0:
                 continue
-            l0_m = sum(lognorm(w["y"][m], P["emit"][m]["mu00"], P["emit"][m]["s2"]) for w in v["wins"] if m in w["y"])
+            l0_m = sum(lognorm(w["y"][m], P["emit"][ek(w, m)]["mu00"], P["emit"][ek(w, m)]["s2"]) for w in v["wins"] if m in w["y"])
             lo_r += (ll - l0_m) / (1.0 + (n_m - 1) * P["icc"][m])
         out["lo_icc"] = lo_verdict + lo_r
     return out
@@ -433,12 +532,13 @@ def residual_icc(videos, P, flags):
         pa = {}
         for mods, ch, ll, g in t["per"]:
             for m in mods:
-                pa[m] = p_on(v, g, ch)
+                pa[m] = p_levels(v, g, ch, m)
         for m in MODS:
-            e = P["emit"][m]; r = []
+            r = []
             for i, wi in enumerate(v["wins"]):
                 if m in wi["y"]:
-                    mean = (1 - w) * e["mu00"] + w * ((1 - pa[m][i]) * e["mu10"] + pa[m][i] * e["mu11"])
+                    e = P["emit"][ek(wi, m)]
+                    mean = (1 - w) * e["mu00"] + w * float(pa[m][i] @ np.asarray(e["mu"]))
                     r.append(wi["y"][m] - mean)
             if len(r) >= 2:
                 res[m].append(np.array(r))
@@ -457,8 +557,11 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
     if flags.get("duration") == "bma_corpus" and not flags.get("nocoupling"):   # README §18: one grid per corpus
         P["grid"] = length_grid(max(v["n"] for v in videos), flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
     prev, it = None, 0
+    L = n_levels(flags); n_ph = len(KINDS[flags.get("kind", "two")]["phases"])
     for it in range(max_it):
-        S = {m: np.zeros((3, 3)) for m in MODS}; W, Z = [], []; io = {mods: [0.0, 0.0] for mods in chains_of(flags)}
+        # sufficient statistics per emitter: row 0 = V = 0, rows 1..L = observation levels 0..L-1 under V = 1
+        S = {e: np.zeros((1 + L, 3)) for e in P["emit"]}; W, Z = [], []
+        io = {mods: [np.zeros(n_ph), 0.0] for mods in chains_of(flags)}
         CR = np.zeros(3)
         total = 0.0
         if flags.get("duration") == "bma_corpus" and not flags.get("nocoupling"):
@@ -467,26 +570,26 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
                 w = t["W"]; W.append(w); Z.append(v["zv"])
                 for wi in v["wins"]:
                     for m, y in wi["y"].items():
-                        S[m][0] += (1 - w) * np.array([1.0, y, y * y])
+                        S[ek(wi, m)][0] += (1 - w) * np.array([1.0, y, y * y])
                 for mods, ch, ph, pon in t["per"]:
-                    io[mods][0] += w * float(ph[0]); io[mods][1] += w
+                    io[mods][0] += w * np.array([1 - float(ph[0]), float(ph[0])]); io[mods][1] += w
                     for wi, pa in zip(v["wins"], pon):
                         for m in mods:
                             if m in wi["y"]:
                                 y = wi["y"][m]
-                                S[m][1] += w * (1 - pa) * np.array([1.0, y, y * y])
-                                S[m][2] += w * pa * np.array([1.0, y, y * y])
+                                S[ek(wi, m)][1] += w * (1 - pa) * np.array([1.0, y, y * y])
+                                S[ek(wi, m)][2] += w * pa * np.array([1.0, y, y * y])
         for v in ([] if flags.get("duration") == "bma_corpus" and not flags.get("nocoupling") else videos):
             t = video_terms(v, P, flags); total += t["total"]
             w = float(expit(t["lo"])); W.append(w); Z.append(v["zv"])
             for wi in v["wins"]:
                 for m, y in wi["y"].items():
-                    S[m][0] += (1 - w) * np.array([1.0, y, y * y])
+                    S[ek(wi, m)][0] += (1 - w) * np.array([1.0, y, y * y])
             for mods, ch, ll, g in t["per"]:
                 if flags.get("nocoupling"):
-                    io[mods][0] += w * float(p_hate(g, ch).sum()); io[mods][1] += w * v["n"]
+                    io[mods][0] += w * p_phase(g, ch); io[mods][1] += w * v["n"]
                 else:
-                    io[mods][0] += w * float(p_hate(g[:1], ch)[0]); io[mods][1] += w
+                    io[mods][0] += w * p_phase(g[:1], ch); io[mods][1] += w
                 if P.get("carrier") is not None:
                     lc = np.log(np.asarray(P["carrier"]))
                     for wi, pa in zip(v["wins"], p_on(v, g, ch)):
@@ -495,15 +598,16 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
                         CR += w * pa * r
                         hotw = {"z_visual": r[0] + r[2], "z_speech": r[1] + r[2]}
                         for m, y in wi["y"].items():
-                            S[m][1] += w * (1 - pa * hotw[m]) * np.array([1.0, y, y * y])
-                            S[m][2] += w * pa * hotw[m] * np.array([1.0, y, y * y])
+                            S[ek(wi, m)][1] += w * (1 - pa * hotw[m]) * np.array([1.0, y, y * y])
+                            S[ek(wi, m)][2] += w * pa * hotw[m] * np.array([1.0, y, y * y])
                     continue
-                for wi, pa in zip(v["wins"], p_on(v, g, ch)):
-                    for m in mods:
+                for m in mods:
+                    pl = p_levels(v, g, ch, m)
+                    for wi, pa in zip(v["wins"], pl):
                         if m in wi["y"]:
-                            y = wi["y"][m]
-                            S[m][1] += w * (1 - pa) * np.array([1.0, y, y * y])
-                            S[m][2] += w * pa * np.array([1.0, y, y * y])
+                            y = wi["y"][m]; e = ek(wi, m)
+                            for l_ in range(L):
+                                S[e][1 + l_] += w * pa[l_] * np.array([1.0, y, y * y])
         if prev is not None:
             if total < prev - 1e-6 * abs(prev):
                 raise AssertionError(f"EM log-likelihood decreased at iteration {it}: {prev} -> {total}")
@@ -514,17 +618,17 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
         P["pi"] = float(np.clip(W.mean(), EPS, 1 - EPS))
         P["m1"] = float((W * Z).sum() / max(W.sum(), EPS)); P["m0"] = float(((1 - W) * Z).sum() / max((1 - W).sum(), EPS))
         P["t2"] = max(float((W * (Z - P["m1"]) ** 2 + (1 - W) * (Z - P["m0"]) ** 2).mean()), EPS)
-        for m in MODS:
-            mu = S[m][:, 1] / np.maximum(S[m][:, 0], EPS)
+        for e in P["emit"]:
+            mu = S[e][:, 1] / np.maximum(S[e][:, 0], EPS)
             if flags.get("noleak"):
-                mu[0] = mu[1] = (S[m][0, 1] + S[m][1, 1]) / max(S[m][0, 0] + S[m][1, 0], EPS)
-            ss = sum(S[m][j, 2] - 2 * mu[j] * S[m][j, 1] + mu[j] ** 2 * S[m][j, 0] for j in range(3))
-            P["emit"][m] = {"mu00": float(mu[0]), "mu10": float(mu[1]), "mu11": float(mu[2]),
-                            "s2": max(float(ss / max(S[m][:, 0].sum(), EPS)), EPS)}
+                mu[0] = mu[1] = (S[e][0, 1] + S[e][1, 1]) / max(S[e][0, 0] + S[e][1, 0], EPS)
+            ss = sum(S[e][j, 2] - 2 * mu[j] * S[e][j, 1] + mu[j] ** 2 * S[e][j, 0] for j in range(1 + L))
+            P["emit"][e] = emit_entry(mu[0], mu[1:], max(float(ss / max(S[e][:, 0].sum(), EPS)), EPS))
         for mods in io:
-            P["iota"][mods] = float(np.clip(io[mods][0] / max(io[mods][1], EPS), EPS, 1 - EPS))
+            vec = np.clip(io[mods][0] / max(io[mods][1], EPS), EPS, 1 - EPS)
+            P["iota"][mods] = [float(x) for x in vec / vec.sum()]
             if flags.get("iota_stationary"):   # diagnostic (§12): start distribution = stationary phase share, not fitted
-                P["iota"][mods] = flags["d_hate"] / (flags["d_hate"] + flags["d_gap"])
+                st = flags["d_hate"] / (flags["d_hate"] + flags["d_gap"]); P["iota"][mods] = [1 - st, st]
         if P.get("carrier") is not None:
             P["carrier"] = [float(x) for x in np.clip(CR / max(CR.sum(), EPS), 1e-4, 1.0)]
             P["carrier"] = [x / sum(P["carrier"]) for x in P["carrier"]]
@@ -573,6 +677,13 @@ def main():
                     help="experiments/20260927_dvd reads.jsonl files; with --dvd-conds the calibrated key becomes the "
                          "logit of a product of calibrated condition probabilities (noisy AND)")
     ap.add_argument("--dvd-conds", default="", help="comma list of viol (the current key K), T, E, A")
+    ap.add_argument("--kind", choices=list(KINDS), default="two",
+                    help="chain kind (experiments/20260928_infer/README.md): two = r6; three_nested / three_free = off topic / "
+                         "topic / attack (§2); joint = one segmentation with a joint (visual, speech) label (§3)")
+    ap.add_argument("--conditions", default="", help="window_conditions.py output (20260928_infer §1): emitters per "
+                                                     "modality|reading condition")
+    ap.add_argument("--conditions-mode", choices=["both", "vis", "sp", "shuf"], default="both",
+                    help="which conditions to use; shuf = the labels permuted within the corpus (seed 0), a control")
     ap.add_argument("--tag", required=True)
     ap.add_argument("--out-root", default=str(ROOT / "runs/20260926_twolevel"))
     ap.add_argument("--gt-dir", default=str(ROOT / "data/gt_4fps"))
@@ -598,7 +709,10 @@ def main():
             raise SystemExit("SELFTEST_FAILED")
     flags = {"k": a.k, "d_gap": a.d_gap, "d_hate": a.d_hate, "sharedchain": a.sharedchain or a.fusion == "max", "carrier": a.fusion == "carrier",
              "nocoupling": a.nocoupling, "noleak": a.noleak, "iota_stationary": a.iota_stationary,
-             "duration": a.duration, "bma_grid": a.bma_grid, "bma_fixed": a.bma_fixed, "bma_prior": a.bma_prior}
+             "duration": a.duration, "bma_grid": a.bma_grid, "bma_fixed": a.bma_fixed, "bma_prior": a.bma_prior,
+             "kind": a.kind}
+    if a.kind != "two" and (a.nocoupling or a.sharedchain or a.fusion != "or" or a.evidence != "em" or a.duration == "bma_corpus"):
+        raise SystemExit("--kind other than two supports only the EM evidence, OR / joint fusion and fixed or bma durations")
     run = load_run(a.run)
     log(f"modalities {set_modalities(run)}")
     dvd_conds = [c for c in a.dvd_conds.split(",") if c]
@@ -619,6 +733,29 @@ def main():
         flags["k"] = max(1, int(round(a.min_windows * wl / CELL)))
         log(f"shape from the reading grid: {a.min_windows:g} windows x {wl:g} s / {CELL:g} s cells -> k = {flags['k']}")
     videos = {ds: [prep(r, a.center) for k, r in sorted(run.items()) if k[0] == ds] for ds in a.datasets}
+    if a.conditions:
+        cond = json.load(open(a.conditions))["conditions"]
+        use = {"z_visual": a.conditions_mode in ("both", "vis", "shuf"), "z_speech": a.conditions_mode in ("both", "sp", "shuf")}
+        rng = np.random.default_rng(0)
+        for ds in a.datasets:
+            for v in videos[ds]:
+                cv = cond[ds][v["rec"]["video_id"]]
+                if len(cv) != len(v["wins"]):
+                    raise SystemExit(f"{ds} {v['rec']['video_id']}: {len(cv)} conditions for {len(v['wins'])} windows")
+                for w, (f, s) in zip(v["wins"], cv):
+                    w["cond"] = {m: c for m, c in (("z_visual", f), ("z_speech", s)) if use[m] and c is not None and m in w["y"]}
+            if a.conditions_mode == "shuf":        # control: same label counts, labels permuted over the corpus's windows
+                for m in MODS:
+                    ws = [w for v in videos[ds] for w in v["wins"] if m in w.get("cond", {})]
+                    labs = [w["cond"][m] for w in ws]
+                    for w, c in zip(ws, rng.permutation(labs)):
+                        w["cond"][m] = str(c)
+            counts = {}
+            for v in videos[ds]:
+                for w in v["wins"]:
+                    for m in w["y"]:
+                        counts[ek(w, m)] = counts.get(ek(w, m), 0) + 1
+            log(f"[{ds}] emitters ({a.conditions_mode}): " + "  ".join(f"{e} {n}" for e, n in sorted(counts.items())))
     if a.transform == "nscore":
         # diagnostic (§12): each modality's reads -> normal scores of their rank within the corpus (only the order of
         # reads is used, not their scale); the key keeps the raw reads
@@ -683,9 +820,15 @@ def main():
                     f"hate: median {np.median(h):.1f} s [10-90% {np.percentile(h, 10):.1f}-{np.percentile(h, 90):.1f}]  "
                     f"gap: median {np.median(gp):.1f} s [10-90% {np.percentile(gp, 10):.1f}-{np.percentile(gp, 90):.1f}]")
         log(f"[{ds}] pi {P['pi']:.3f} verdict {P['m0']:.2f}/{P['m1']:.2f} sd {math.sqrt(P['t2']):.2f}  iota " +
-            " ".join(f"{'+'.join(k_)} {v_:.3f}" for k_, v_ in P["iota"].items()) + "  " +
-            "  ".join(f"{m}: mu00 {e['mu00']:.2f} mu10 {e['mu10']:.2f} mu11 {e['mu11']:.2f} sd {math.sqrt(e['s2']):.2f} "
+            " ".join(f"{'+'.join(k_)} {np.round(v_, 3).tolist()}" for k_, v_ in P["iota"].items()) + "  " +
+            "  ".join(f"{m}: mu00 {e['mu00']:.2f} levels {np.round(e['mu'], 2).tolist()} sd {math.sqrt(e['s2']):.2f} "
                       f"slope {(e['mu11'] - e['mu10']) / e['s2']:.3f}" for m, e in P["emit"].items()))
+        if a.kind != "two" and not (flags["duration"] == "bma_corpus"):
+            ph_share = np.zeros(len(KINDS[a.kind]["phases"]))
+            for v in videos[ds]:
+                for mods, ch, ll, g in video_terms(v, P, flags)["per"]:
+                    ph_share += p_phase(g, ch)
+            log(f"[{ds}] share of cells per phase under V = 1: {np.round(ph_share / ph_share.sum(), 3).tolist()}")
     pred_path = out / "predictions.jsonl"
     corpus_mode = flags["duration"] == "bma_corpus" and not flags["nocoupling"]
     with open(pred_path, "w") as fh:

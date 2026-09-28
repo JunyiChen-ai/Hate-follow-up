@@ -1,0 +1,219 @@
+# Three redesigns of the inference after the reads (declared before any run, 2026-09-28)
+
+User direction (2026-09-28): the method works, but the inference after the reads (M2–M4) is plain. Make it less plain
+along its own mechanisms. Gains are not required; no metric may drop, and each redesigned part must still show in the
+ablation. All three redesigns run on the cached reads `runs/20260926_glr/base_gridA` (Qwen3-VL-8B, fixed ASR), CPU
+only, no new MLLM calls. The reference is the current method `r6_bma` (`runs/20260926_twolevel/final_m2`).
+
+Everything not named below stays as in `r6_bma`: normal-score reads, EM without labels, no stance-leak term, minimum
+segment of two reading windows (k = 4), mean lengths averaged per video on [two windows, video length] with a prior
+uniform in length (G = 6), calibrated video key, centred within-video rank. Code: new flags of
+`experiments/20260926_twolevel/twolevel_r2.py` (as the DVD round did); launch scripts and checks live here.
+
+Closest earlier attempts were checked in `research-wiki/DIRECTIONS.md` before writing this; each section names them.
+
+## 1. Evidence whose reliability depends on what the reader saw (M2)
+
+**Mechanism.** A window read is a measurement whose noise depends on the input the reader had for that window. The
+visual branch of a window that holds none of the 20 prefix frames sees no picture of its own; the speech branch of a
+window with a few words has little to judge. Today every read of a modality shares one pair of emission
+distributions. Here the emission distributions are fitted per reading condition, still without labels.
+
+**Conditions (label-free, from the inputs of the reading run).**
+- Visual: the window holds at least one of the 20 uniform frames (`f1`) or none (`f0`). Frame times from the file
+  names in `data/frames_k20`. Share of `f1`: HateMM 72.7 %, HateClipSeg 65.7 % (counted before this declaration).
+- Speech: the number of words the speech branch was given (the window's transcript slice, `src.video_inputs.window_text`
+  on the fixed ASR, exactly as the reading run built it), split at the corpus median (`w0` at or below, `w1` above).
+  Medians: HateMM 18, HateClipSeg 15 words. Windows without speech have no speech read, as now.
+- The conditions are written once by `window_conditions.py` to `runs/20260928_infer/conditions/<reads>.json`.
+
+**Model change.** Each (modality, condition) pair is an emitter with its own non-hate mean, hate mean and variance,
+estimated by EM. The chains, the normal scores (per modality over the corpus) and everything else are unchanged.
+With one condition per modality this is exactly `r6_bma` (plumbing check).
+
+**Closest earlier attempts.** K7 changed the reads (a frame per window) and failed its gate; the silent-window rule
+forces the speech chain off where there is no speech read. Nobody has fitted the evidence per condition.
+
+**Arms** (`runs/20260928_infer/`): `c1_cond` (both conditions), `c1_vis` (visual condition only), `c1_sp` (speech
+condition only), `c1_shuf` (control: the condition labels permuted within the corpus, seed 0, same number of
+parameters), `c1_full` (interval output).
+
+## 2. Three read levels: no topic, topic without attack, attack (M3)
+
+**Mechanism.** The window read mostly tracks whether the window talks about the target group; attack adds a smaller
+step on top (`experiments/20260912_pwc/README.md` §7c: mentioning the group is worth +8.1 / +7.0 log-odds, being a
+true hate window +4.3). So the reads have three levels, and attack occurs inside stretches of topic. The time level
+gets three phases per modality chain: 0 = off topic, 1 = topic without attack, 2 = attack. Hate = phase 2. Phase
+changes are nested: 0 ↔ 1 and 1 ↔ 2 only; when phase 1 ends it goes to 0 or 2 with equal probability. Each phase
+lasts a negative-binomial number of cells (k = 4, as now). Mean lengths: phases 0 and 1 share one mean (non-attack),
+phase 2 has its own; both averaged per video on the same grid and prior as `r6_bma`. The emission means per emitter
+are ordered at initialisation (10th, 50th, 90th percentile) and fitted by EM; the start distribution over the three
+phases is fitted by EM.
+
+**Pre-check (reads the gold; analysis only; `topic_runs_check.py`).** The mechanism needs topic stretches to be longer
+than hate stretches. On the 183 videos that have window-level topic reads (`runs/20260912_tad/e0/predictions_topic.jsonl`,
+`t` = "does this window mention the target group", older ASR loader, same 8 s grid):
+- runs of gold-hate windows (hate share ≥ .5) against runs of high-topic windows (`t` above the corpus median);
+- for each gold-hate run, the length of the high-topic run that contains its first window, divided by its own length;
+- the mean act read (`a`) in three groups: no topic and no hate, topic and no hate, hate.
+Proceed only if, on both corpora, the median of that ratio is ≥ 1.5 and the median high-topic run is longer than the
+median hate run. Otherwise this direction is closed here without a model run.
+
+**Closest earlier attempts.** §15 of the twolevel README added a "slip" phase with the same read distribution as hate,
+allowed in any video; it failed because short slips and short hate are inseparable. Here the middle phase has its own,
+lower, read level and is nested under topic, which is a different identification. TAD subtracted the topic read and
+lost; here nothing is subtracted, the topic level is a state.
+
+**Arms.** `l3_m2`, `l3_full`, `l3_free` (ablation: direct 0 ↔ 2 changes allowed, i.e. no nesting; phases change to
+either other phase with equal probability). Reported: fitted level means per emitter, share of cells in each phase.
+
+## 3. One segment structure for both modalities (M3)
+
+**Mechanism.** Today each modality has its own chain and the fusion is OR; the earlier shared-chain arm forced the two
+modalities into one state and lost .043 within on HateClipSeg. In between: one segmentation per video whose segments
+carry a joint label (visual on or off, speech on or off), so the boundaries are shared while each modality keeps its
+own state. At a boundary the label changes to any of the other three with equal probability. Segment lengths:
+negative-binomial with k = 4; the label 00 uses the gap mean, the other three the hate mean; both averaged per video
+as in `r6_bma`. Emissions: the visual read observes the visual bit, the speech read the speech bit, through the same
+pair / single window rule as now. Hate = visual or speech bit on.
+
+**Closest earlier attempts.** `final_sharedchain` (one state for both reads) and `final_m2` (independent chains) are
+the two ends; both exist and are the ablations.
+
+**Arms.** `j_m2`, `j_full`.
+
+## 4. Decision rule (all three, declared before running)
+
+Noise floor as in rule 7: pooled .005, within .01. Reference `final_m2` (= `r6_bma`).
+
+- **No drop:** on HateMM and HateClipSeg none of the six numbers of the arm's `_m2` variant is below `final_m2` by more
+  than the floor. An arm that drops is closed.
+- **Mechanism visible (needed for any novelty claim, rule 14g):** the arm's within is above `final_m2` by ≥ .01 on
+  both corpora, with a paired bootstrap interval over videos (`experiments/20260927_dvd/analyze_dvd.py`, pooled and
+  within). For §1 the shuffle control `c1_shuf` must not reach the same gain. An arm that does not drop but does not
+  reach .01 is kept only as a design detail, not a contribution, and is reported as such.
+- Only an arm that passes both parts goes to the eight-MLLM check (`runs/20260910_spvl/mllm/<m>/full`, against
+  `runs/20260926_twolevel/robust/<m>_r6`; for §1 the conditions are rebuilt with the older ASR loader those reads
+  used) and to DeHate (external, not a gate). Rule: within not below `<m>_r6` by more than .01 on ≥ 7 of 8 models per
+  corpus.
+- No rescue tuning. Grid and prior are those of `r6_bma`.
+
+## 5. Plumbing checks (before any number is read)
+
+1. `twolevel_r2.py --selftest` extended: the three-phase chain and the joint-label chain against brute-force
+   enumeration over paths (log-likelihood and per-cell P(hate), ≤ 1e-8).
+2. `c1_plumb` (the new code with no conditions and kind `two`) reproduces `final_m2` to 4 decimals on all six numbers.
+3. The scoring code never opens a GT file; the pre-check and the analysis do, and are not part of any method.
+4. EM log-likelihood monotone (asserted, as before).
+
+## 6. Cost
+
+No model calls. CPU on uoa-lab1. `r6_bma` takes about 40 s per corpus; the three-phase chain has 36 augmented states
+against 8 and the joint chain 64, so a few minutes per corpus.
+
+## 7. How to run
+
+```
+bash experiments/20260928_infer/launch/run_all.sh
+```
+
+## 8. Test-read log (rule 10)
+
+- 2026-09-28, before writing the model code: `topic_runs_check.py` reads `data/gt_4fps/{HateMM,HateClipSeg}.npz` (hate
+  share per 8 s window) on the 183 videos with topic reads, for the §2 pre-check only. Results in §9.
+- Counts used in §1 (frame share, word medians) are label-free.
+
+## 9. Results (2026-09-28, uoa-lab1, CPU; development-selected)
+
+### 9.1 Pre-check of §2: topic stretches are not longer than hate stretches. Direction closed by its declared rule.
+
+`runs/20260928_infer/precheck_topic/table.txt` (183 videos with topic reads; hate = gold share ≥ .5 per 8 s window;
+topic = `t` above the corpus median):
+
+| | HateMM (84 videos) | HateClipSeg (99 videos) |
+|---|---|---|
+| hate runs, windows q25 / 50 / 75 | 2 / 4 / 9.5 (n 119) | 1.2 / 3 / 5 (n 318) |
+| high-topic runs, windows q25 / 50 / 75 | 1 / 2 / 6 (n 177) | 1 / 2 / 6 (n 258) |
+| topic run holding the hate run ÷ hate run length, q25 / 50 / 75 | 0 / .67 / 1.5 | 0 / 1.0 / 5.5 |
+| hate runs whose first window is not in a high-topic run | 33.6 % | 42.5 % |
+| mean act read: no topic and no hate / topic without hate / hate | +0.2 / +12.1 / +11.2 | −2.8 / +2.0 / +4.3 |
+
+- High-topic runs are shorter than hate runs, and a third to a half of hate runs begin outside any high-topic run. So
+  the topic read is not a slow stretch that contains hate; it flickers at the window scale.
+- On HateMM there is no middle level: windows that mention the group without hate read as high as hate windows. On
+  HateClipSeg a middle level exists (+2.0 against +4.3) but is not nested in time.
+- The declared criterion (median ratio ≥ 1.5 and median topic run longer than median hate run) fails on both corpora.
+  **Direction 2 is closed here.** Deviation from §2, recorded: the three-phase arms (`l3_*`) were still run, after the
+  pre-check and only for information, because they cost minutes. Their numbers cannot pass the gate by the
+  declaration, whatever they are.
+
+### 9.2 Plumbing
+
+- Self-test (all four chain kinds against brute-force enumeration, the model averaging, the corpus-shared pairs):
+  max difference 4.3e-14.
+- `c1_plumb` (the new code, no conditions, kind `two`) reproduces `final_m2` exactly: .8971 / .6942 / .7508 and
+  .7168 / .6711 / .6373, same EM log-likelihoods (−8621.3714, −8107.3928).
+
+### 9.3 Runs
+
+Sources: `runs/20260928_infer/<arm>/metrics.json`, `runs/20260928_infer/analysis/table.txt` (paired bootstrap over
+videos, 4000 draws, seed 0), `runs/20260928_infer/<arm>/run.log` (fitted parameters). `run_all.sh` stopped at `j_m2`
+on a bug (the emission array was sized for two previous-level ids; fixed to `n_plv × S`, which does not touch the
+two-phase arms); `run_rest.sh` ran the remaining arms and the analysis.
+
+Pooled ROC / pooled PR / within; differences to `final_m2` with 95 % intervals (within):
+
+| arm | HateMM | HateClipSeg | within vs `final_m2`, HateMM; HateClipSeg |
+|---|---|---|---|
+| `final_m2` (r6_bma) | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 | — |
+| §1 `c1_cond` (visual by own frame, speech by word count) | .8971 / .6942 / .7511 | .7169 / .6711 / .6350 | +.0003 [−.003, +.004]; −.0024 [−.014, +.009] |
+| §1 `c1_vis` | .8971 / .6942 / .7504 | .7168 / .6711 / .6376 | −.0004; +.0003 |
+| §1 `c1_sp` | .8971 / .6943 / .7522 | .7169 / .6711 / .6351 | +.0014; −.0022 |
+| §1 `c1_shuf` (control, labels permuted) | .8971 / .6940 / .7497 | .7168 / .6713 / .6385 | −.0011; +.0012 |
+| §1 `c1_full` (intervals) | .8910 / .7132 / .7511; F1@.3/.5/.7 .321 / .292 / .232 | .7392 / .6796 / .6350; F1 .239 / .134 / .065 | `final_full`: .325 / .295 / .235 and .246 / .145 / .077 |
+| §3 `j_m2` (one segmentation, joint label) | .8969 / .6943 / .7588 | .7163 / .6708 / .6298 | +.0080 [−.016, +.036]; −.0075 [−.018, +.003] |
+| §3 `j_full` | .8888 / .7052 / .7588; F1 .330 / .300 / .245 | .7349 / .6767 / .6298; F1 .224 / .133 / .075 | |
+| `final_sharedchain` (one state for both reads) | .8969 / .6943 / .7434 | .7148 / .6702 / .5949 | −.0074; −.0425 [−.073, −.013] |
+| §2 `l3_m2` (three levels, nested; pre-check failed) | .8963 / .6929 / .6879 | .7169 / .6716 / .6367 | **−.0629 [−.106, −.024]**; −.0006 |
+| §2 `l3_free` (three levels, free changes) | .8965 / .6936 / .7217 | .7168 / .6715 / .6391 | −.0291 [−.069, +.007]; +.0017 |
+| `final_nocoupling` (reference ablation) | .8961 / .6881 / .6367 | .7144 / .6689 / .5801 | −.1141; −.0572 |
+
+Pooled differences of every arm except `l3_*` are within ±.0005; `l3_m2` pooled ROC −.0008 / +.0001.
+
+**§1, condition-dependent evidence: no drop, no visible mechanism. Closed for a novelty claim; not adopted.**
+- All six numbers are within the noise floor of `final_m2`, and the permuted-label control moves the numbers by the
+  same amount. So the conditions carry nothing the ranking uses.
+- The fitted emitters differ a little: on HateClipSeg the speech read of a window with few words separates hate from
+  non-hate less (levels −.93 / +.32 against −.52 / +.86 for many words; slope 2.4 against 2.9); on HateMM the visual
+  read of a window without its own frame has a lower non-hate mean (−.55 against −.85). These shifts change the
+  posterior of a few windows but not the order inside videos.
+- Not adopted: it adds parameters and a preprocessing step (word counts, frame times) for no measured effect.
+
+**§2, three read levels: fails. Closed (by the pre-check, and confirmed by the run).**
+- HateMM within −.063 (interval excludes 0); HateClipSeg unchanged. Free changes (`l3_free`) lose less (−.029) but
+  still lose.
+- What EM does with the middle phase: it puts its mean near 0 on the normal-score scale (HateMM visual levels
+  −1.17 / +0.01 / +1.16), which triples the evidence slope (3.8 → 9.9), and it assigns 43–49 % of the cells of
+  violating videos to the middle phase. Only the top phase counts as hate, so much of the hate stretch is called
+  "topic without attack". This is the round-1 failure again (EM makes the evidence too strong and the persistence
+  stops mattering), reached through a third level instead of a geometric chain.
+
+**§3, one segmentation with a joint label: no drop, no visible mechanism. Closed for a novelty claim; not adopted.**
+- HateMM within +.008, HateClipSeg −.0075, both intervals include 0; pooled unchanged.
+- It sits between the two existing ends: independent chains (`final_m2`) and one shared state (`final_sharedchain`,
+  −.043 on HateClipSeg). Sharing only the boundaries costs HateClipSeg a little, where the two modalities' reads are
+  the most independent, and gains a little on HateMM.
+- Fitted joint-label shares under V = 1 (HateMM): 00 .35, 01 .16, 10 .17, 11 .32; HateClipSeg: .28 / .20 / .21 / .30.
+  A third of the hateful time is carried by one modality alone, which is why forcing one state loses.
+
+### 9.4 Conclusion
+
+None of the three redesigns of the inference passes the mechanism rule, and one (three levels) drops. The current
+method `r6_bma` stays. Together with `experiments/20260928_headroom` this says the same thing from the model side:
+on the current reads, changing how the reads are combined moves within by less than the noise floor, unless the
+change makes the evidence stronger than the reads warrant, in which case it drops. A more elaborate inference on
+these reads is possible but does not show in the ablation, so it cannot be claimed.
+
+Code: `twolevel_r2.py` now describes a chain by its phases (`KINDS`), carries the previous cell's level id in the
+augmented state, and fits emitters per (modality, condition). With the defaults it is the same model and reproduces
+`final_m2` exactly (§9.2).

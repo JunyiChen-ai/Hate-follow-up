@@ -1279,3 +1279,12 @@ Reading of the final table:
   kept in round 3 for robustness across the eight MLLMs under the fixed 80 s level (§14.4). Whether they are still
   needed under `r6_bma` has not been checked. That would be a new declared round: the eight-MLLM rule of §16.4
   against `robust/<m>_r6`, CPU, about 20 minutes.
+
+## 21. Code note (2026-09-28)
+
+For `experiments/20260928_infer` the chain code of `twolevel_r2.py` was generalised: a chain is described by its
+phases (`KINDS`: `two` = this README's chain; `three_nested`, `three_free`, `joint` = that experiment's §2–§3), the
+augmented state carries the previous cell's level id, and emitters are fitted per (modality, reading condition) when
+`--conditions` is given. With the default flags nothing changes: `runs/20260928_infer/c1_plumb` reproduces `final_m2`
+exactly (all six numbers and both EM log-likelihoods), and the self-test covers all four kinds against brute force
+(max difference 4.3e-14). The redesigns themselves did not pass (that README §9.4); `r6_bma` stays.
