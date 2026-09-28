@@ -81,19 +81,22 @@ frame per window.
      .927, .766 against .803).
    - The information needed to separate the remaining non-hateful videos is not in these reads. On DeHate it is,
      partly: the fitted PR is .217 against .158.
-2. **K4 and K5: within is at the limit of the reads.**
+2. **K4 and K5: no better within combination of the reads was found.**
    - With the gold, the same reads plus the method's own outputs give at most +.015 on HateMM, with an interval that
      includes 0, and nothing on HateClipSeg. The short-hate subset does not gain either.
-   - A better label-free combination of these reads cannot be expected to pass the .01 gate on both corpora.
+   - This does not show that none exists; see the caveat in 4. (Corrected 2026-09-28. The earlier wording said within
+     is at the limit of the reads and that a better combination cannot be expected to pass the gate.)
 3. **K7: the visual reads carry less within-video information than speech reads.** Visual only is .045 / .038 below
    speech only. One frame per window does not add fitted information to the visual reads: HateMM .718 → .684,
    HateClipSeg .556 → .535.
 4. **Caveat.** The fitted models are trained on 84–215 videos per corpus, so they give a lower bound on what the gold
    could teach, not an exact ceiling. They consistently fail to beat the label-free method on the same inputs. So the
-   data show no reachable headroom from the current reads.
-5. **Consequence.** Under the unchanged protocol, these concerns need new information: new reads or new inputs, not a
-   new way to combine the existing ones. The 8-MLLM study already shows that a larger reader of the same family does
-   not change this. Under r6, Qwen3-VL-32B is +.009 / −.003 within against the 8B reads.
+   fits found no headroom from the current reads. They do not show that there is none.
+5. **What this does not show.** It does not show that the method after the reads is at its limit, or that only new
+   reads can help. The fits are simple models on few videos, with per-cell features and no sequence model. (Corrected
+   2026-09-28. The earlier wording said these concerns need new information, not a new way to combine the reads.) A
+   larger reader of the same family does not help: under r6, Qwen3-VL-32B is +.009 / −.003 within against the 8B
+   reads.
 
 ## Is it worth trying: combining several MLLM readers (2026-09-28)
 
@@ -168,9 +171,13 @@ the mechanism more interesting. The full record is in `docs/reviews/20260928_cod
    - A coupling rule built on it cannot be expected to pass the gate or to show a ≥ .01 ablation.
    - Caveat: the Whisper segments here are coarse (up to 100 s, no word timestamps). Finer pauses and speaker turns
      were not tested.
-2. **The 8 s reading grid is not the limit.**
-   - If every window carried its true hate share, within would be .954 / .986, and the same for short hate.
-   - The gap to the method (.20 / .35) comes from the accuracy of the reads themselves.
+2. **The 8 s window size alone does not limit localisation.**
+   - With the true hate share of each window used as the read, within would be .954 / .986, and the same for short
+     hate. So short hate is not lost because the windows are 8 s long (K5).
+   - This puts the gold in as the input. It is not a bound for the method. It says nothing about how much better
+     inference from the same noisy reads could do.
+   - Corrected 2026-09-28. The earlier wording said the gap to the method comes from the accuracy of the reads. That
+     treated noisy reads as the problem, when they are the setting the method is built for.
 3. **Proposal 2 was not tested.** Three things weigh against it:
    - Label-free methods built on features in this repository scored far below the MLLM reads (T3AL, HateMM .6091 /
      .3096 / .5068).
