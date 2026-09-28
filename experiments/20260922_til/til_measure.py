@@ -52,6 +52,9 @@ def yesno_question(i, n, t1, t2, text, kind):
         ctx = (f"{head} Look only at the frames whose timestamps fall inside this window and judge the visual "
                f"content alone (imagery, gestures, symbols, on-screen text), ignoring the speech.\n\n")
         q = "Is THIS window one of the segments where visual content that violates the above rules occurs?"
+    elif kind == "joint":   # SPVL joint branch, evidence wording (experiments/20260910_spvl/spvl.py window_question)
+        ctx = f"{head} Transcript in this window: {body}\n\n"
+        q = "Is THIS window one of the segments where the content that violates the above rules occurs?"
     else:
         ctx = f"{head} Judge only what is spoken in this window: {body}\n\n"
         q = "Is THIS window one of the segments where speech that violates the above rules occurs?"
@@ -81,14 +84,21 @@ def score_video(judge, row, segments, args, verify=False):
     wtexts = [window_text(segments, a, b) for a, b in wins]
     per = [dict() for _ in wins]
     n_branch = 0
-    for kind in ("visual", "speech"):
-        for i, ((a, b), t) in enumerate(zip(wins, wtexts)):
-            if kind == "speech" and not (t and t.strip()):
-                continue  # SPVL-r2 semantics: no speech branch without speech
-            q = yesno_question(i, len(wins), a, b, t, kind)
-            bids, _ = judge.branch_ids(msgs, q, history, head_text=head)
-            per[i][kind] = judge.cached_margin(cache, bids, in_place=False)
-            n_branch += 1
+    kinds = {"dual": ("visual", "speech"), "joint": ("joint",)}[getattr(args, "branches", "dual")]
+    sequential = getattr(args, "isolation", "copy") == "sequential"
+    # isolated (default): every branch on a deep copy of the prefix cache, kind-major order (order is irrelevant).
+    # sequential (experiments/20260928_infer README §11): window-major order on one cache that keeps every branch's
+    # tokens, so a branch sees the question text and assistant header of all earlier branches.
+    order = ([(i, k) for i in range(len(wins)) for k in kinds] if sequential else
+             [(i, k) for k in kinds for i in range(len(wins))])
+    for i, kind in order:
+        (a, b), t = wins[i], wtexts[i]
+        if kind == "speech" and not (t and t.strip()):
+            continue  # SPVL-r2 semantics: no speech branch without speech
+        q = yesno_question(i, len(wins), a, b, t, kind)
+        bids, _ = judge.branch_ids(msgs, q, history, head_text=head)
+        per[i][kind] = judge.cached_margin(cache, bids, in_place=sequential)
+        n_branch += 1
     z_win = [max(d.values()) if d else FILL_UNCOVERED for d in per]
     del cache
     info.update({"n_branches": n_branch, "z_video": z_video, "stance": stance})
@@ -123,6 +133,12 @@ def main():
     ap.add_argument("--window-offset", type=float, default=0.0)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--verify-only", action="store_true")
+    ap.add_argument("--branches", choices=["dual", "joint"], default="dual",
+                    help="dual (default): a visual and a speech branch per window; joint: one branch per window "
+                         "(experiments/20260928_infer README §11)")
+    ap.add_argument("--isolation", choices=["copy", "sequential"], default="copy",
+                    help="copy (default): each branch on a deep copy of the prefix cache; sequential: branches in "
+                         "window order on one cache that keeps their tokens, so later branches see earlier ones")
     args = ap.parse_args()
     torch.manual_seed(SEED)
     out_dir = ROOT / "runs" / args.exp_id / args.run_name
@@ -131,7 +147,8 @@ def main():
                         handlers=[logging.FileHandler(out_dir / "run.log"), logging.StreamHandler(sys.stdout)])
     logging.info("host %s", socket.gethostname())
     (out_dir / "run.pid").write_text(str(os.getpid()))
-    args.method_name = f"til_measure_w{args.window_seconds:g}_off{args.window_offset:g}"
+    args.method_name = f"til_measure_w{args.window_seconds:g}_off{args.window_offset:g}" + (
+        "" if args.branches == "dual" and args.isolation == "copy" else f"_{args.branches}_{args.isolation}")
     cfg = dict(vars(args))
     cfg.update({"code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"), "host": socket.gethostname(), "seed": SEED,
                 "fill_uncovered": FILL_UNCOVERED, "video_question": VIDEO_QUESTION,

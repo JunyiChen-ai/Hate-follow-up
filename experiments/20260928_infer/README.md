@@ -251,3 +251,36 @@ Pooled differences are all within ±.0003. The picture is the one of §9 on the 
 Across the three corpora, the joint segmentation is +.008 / −.0075 / +.006 and never outside its interval; the
 condition-dependent evidence is within ±.003 everywhere; the three-level chain loses on HateMM and DeHate. The
 conclusion of §9.4 stands.
+
+## 11. Two M1 ablations on DeHate: joint branch, and branches that see each other (declared 2026-09-29 before running)
+
+User request (2026-09-29): the two reading-module ablations discussed for the main corpora, run on DeHate. Both were
+measured on HateMM / HateClipSeg in the SPVL era only (`experiments/20260910_spvl/README.md` §9; `research-wiki/DIRECTIONS.md`
+A2 "分支互相可见"): a joint branch instead of dual costs HCS within .028 (HateMM +.002); branches that can see each
+other cost .034 / .009. Neither has a DeHate number, and neither was re-measured under the fixed ASR loader or the
+current time level.
+
+**Reads (GPU, uoa-lab2, `experiments/20260922_til/til_measure.py` with two new flags; everything else as
+`runs/20260927_dehate_external/reads_gridA`: grid A, 20 frames, fixed ASR loader, stance turn, evidence wording).**
+- `reads_joint`: `--branches joint`. One branch per window that shows the window's transcript and asks whether the
+  window is one of the segments where the violating content occurs (the SPVL `joint` + `evidence` wording). The model
+  still sees the whole prefix (all frames, full transcript, its own verdict). Read key `z_joint`; the time level then
+  has one chain.
+- `reads_seq`: `--branches dual --isolation sequential`. The same two branches per window as now, but run in order
+  (window 1 visual, window 1 speech, window 2 visual, ...) on one cache that keeps every branch's tokens, so branch i
+  sees the question text and assistant header of every earlier branch (no answers are generated, as in the SPVL
+  causal-mask arm). The isolated reads deep-copy the prefix cache per branch instead.
+- Cost: the isolated DeHate reads took 1.3 s / video (1341 videos, 28 min); the joint arm has half the branches, the
+  sequential arm the same number without the cache copies. About 1 h of GPU in all.
+
+**Time level (CPU, same machine):** `r6_bma` flags on each read set, arms `m1_joint`, `m1_seq`; reference `final_m2`
+(the isolated dual reads). Analysis `analyze_dvd.py --datasets DeHate`, paired bootstrap over videos, in
+`runs/20260928_infer/dehate/analysis_m1/table.txt`. Also reported: the window-level agreement between the read sets
+(Spearman of `z` per video) from the predictions, label-free.
+
+Nothing is decided on DeHate (external). The question is only whether the two main-corpus findings (a single joint
+answer loses what the picture carries; branches that see each other drift) show up on a third corpus.
+
+### 11.1 Results
+
+(filled after the run)
