@@ -281,6 +281,36 @@ current time level.
 Nothing is decided on DeHate (external). The question is only whether the two main-corpus findings (a single joint
 answer loses what the picture carries; branches that see each other drift) show up on a third corpus.
 
-### 11.1 Results
+### 11.1 Results (2026-09-29, uoa-lab2 = sc474399; copied back to `runs/20260928_infer/dehate/`)
 
-(filled after the run)
+Reads: `reads_joint` 1341 videos, 0 errors, 0.8 s / video (17 min); `reads_seq` 1341 videos, 0 errors, 1.2 s / video
+(27 min). The whole-video verdict is identical to the isolated reads in both (verdict Spearman 1.000: same prefix,
+same in-place first branch), so every difference below comes from the window reads.
+
+Time level `r6_bma` on each read set (`analysis_m1/table.txt`; pooled ROC / pooled PR / within; paired bootstrap over
+videos, 4000 draws, arm minus `final_m2`):
+
+| arm | DeHate | vs `final_m2` (95 % interval) |
+|---|---|---|
+| `final_m2` (isolated dual, current) | .7011 / .1582 / .6431 | — |
+| `m1_joint` (one joint branch per window) | .7031 / .1565 / .6700 | +.002 [−.010, +.013] / −.002 [−.018, +.010] / **+.027 [−.001, +.056]** |
+| `m1_seq` (dual, branches see earlier branches) | .6859 / .1554 / .6123 | **−.015 [−.025, −.006]** / −.003 [−.013, +.009] / **−.031 [−.060, −.001]** |
+
+Read agreement with the isolated dual reads (label-free, `analysis_m1/reads_agreement.txt`; per-video Spearman of the
+window score `z`): joint median .80 (q25 .57, q75 .92), 12.2 % of windows change sign; sequential median .73 (q25 .50,
+q75 .87), 20.7 % change sign. EM evidence slope: joint chain 3.08; isolated visual / speech 3.65 / 2.85.
+
+**Correction to the §11 preamble.** The main-corpus number quoted there for branches that see each other (.034 / .009)
+compared the SPVL causal-mask arm with the SPVL-r2 base; the causal-mask arm was measured on round-1 SPVL (joint
+branch, rules question, no stance turn) and against its own base it is HateMM −.014, HateClipSeg +.011
+(`experiments/20260910_spvl/README.md` §9, row "causal mask" vs row "SPVL"). The two corpora point in opposite
+directions there. DeHate is the first measurement of visibility under the current reads (dual + evidence + stance).
+
+**Reading.**
+- Joint branch vs dual, within, three corpora: HateMM +.002, HateClipSeg −.028, DeHate +.027 (interval lower bound
+  −.001). The dual branch is not a robust gain: only HateClipSeg supports it, and it was already not a claimable
+  component under rule 14g (HateMM < .01). The joint branch also halves the branch count. Whether to keep dual is a
+  user decision; nothing is changed here.
+- Branches that see each other: DeHate −.015 pooled ROC and −.031 within, both intervals excluding 0, with the
+  largest read drift of the two arms (21 % of windows change sign, and the share of non-hateful videos with
+  P(V) > .5 rises .565 → .591). Visibility helped on no corpus and hurts on DeHate. Isolation stays.
