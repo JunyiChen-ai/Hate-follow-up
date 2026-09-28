@@ -52,6 +52,10 @@ r6_bma = r3_m2（用户 2026-09-27 定的默认方法）去掉时序层里以秒
 - 读取网格不是限制：每个 8 秒窗若都给出真实仇恨比例，within 可到 .954 / .986（现方法 .751 / .637），短仇恨子集也一样。差距来自每窗读得准不准。
 - 多个 MLLM 一起读能加信息（HateMM within +.03，HCS PR +.02），但读取成本 6–10 倍，而且规则 14(e) 不允许方法里有 ensemble，要走须用户改规则。
 - Codex（gpt-6-astra）咨询，记录在 `docs/reviews/20260928_codex_mechanism_review.md`。它的第一个提议是按字幕是否连贯决定时间耦合，数据检查不支持：字幕连贯几乎不能预测相邻两窗标签是否相同，在读数之外只加 +.002 / +.008 AUC，区间含 0（`experiments/20260928_headroom/README.md` "Codex consultation" 节）。第二个提议是从当前方法蒸馏一个稠密小模型，未测。
+- Codex 第二轮（`docs/reviews/20260928_codex_mechanism_review_round2.md`）：
+  - 撤回蒸馏提议，只留一个小试验：每个窗分支的后几层只看本窗内容，不再看整片裁定和别的窗。
+  - 缓存检查不支持这个试验的前提：把少上下文的读数混进全上下文读数，窗级 within 最多 +.003；去掉整片裁定 HCS −.020（`experiments/20260928_headroom/README.md` "Codex consultation, round 2" 节）。
+  - 它的结论：现有约束下没有高把握的路。最值得放开的约束是允许少量片段级标注去训练读取模型（区分"提到群体"和"攻击群体"），但这就不再是 label-free。
 
 | # | concern | 做法 | 状态 |
 |---|---|---|---|

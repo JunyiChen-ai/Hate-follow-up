@@ -177,6 +177,49 @@ the mechanism more interesting. The full record is in `docs/reviews/20260928_cod
    - Self-training (SDL, NGA) failed.
    - The method would no longer be training-free.
 
+## Codex consultation, round 2 (2026-09-28)
+
+The user asked to send the checks above back to Codex for another round. The record is in
+`docs/reviews/20260928_codex_mechanism_review_round2.md`.
+
+**Codex's view:**
+- It accepts that coupling by speech continuity is dead. It withdraws the dense student, because nothing in it
+  corrects the teacher's confusion between mentioning a group and attacking it.
+- It made one proposal only, a small pilot of **layer-dependent access to context in M1**:
+  - the early layers of each window branch see the full prefix, as now;
+  - the last layers see only the policy and the window's own question, transcript and frames.
+  - It needs no extra calls.
+  - Its premise: late-layer access to the verdict and to other windows' evidence swamps the window's own evidence.
+- Bottom line: nothing has a high probability of meeting all constraints. The one constraint it would change is to
+  allow a small amount of segment-level supervision (mention against attack) to adapt the reader. That gives up
+  label-free.
+
+**Check of the premise on cached reads.** Script `context_mix_check.py`, CPU; output
+`runs/20260928_headroom/context_mix/table.txt`.
+- Reads: the Qwen3-VL-8B reads of the family study (older ASR loader).
+- Metric: window-level within, against the gold label (hate share ≥ .5).
+- Each read made with less context is tested two ways:
+  - alone;
+  - mixed into the full-context read as normal scores: full + λ × reduced, with λ = .25, .5, 1.
+- Intervals: bootstrap over videos.
+
+Full-context window-level within: HateMM .7628, HateClipSeg .6247.
+
+| less-context read | HateMM: alone vs full | HateMM: best mixture vs full | HateClipSeg: alone vs full | HateClipSeg: best mixture vs full |
+|---|---|---|---|---|
+| no verdict turn (`nostance`) | +.001 | +.002 (λ 1) | −.020 | −.005 (λ .25) |
+| no transcript context (`noctx`) | −.072 | +.003 (λ .25) | −.036 | −.002 (λ .25) |
+| no frames (`noframes`) | −.063 | +.003 (λ .25) | −.033 | −.001 (λ .25) |
+| no context at all (`winonly`) | −.079 | −.001 (λ .25) | −.037 | +.002 (λ .25) |
+
+**Reading:**
+- Reads made with less context carry no within-video information that the full-context read lacks.
+  - No mixture gains .01; larger weights lose.
+  - Removing the verdict turn does not help the window ranking: HateClipSeg −.020.
+- So the premise of the layer-split pilot is not supported.
+- Caveat: restricting only the last layers is a different computation from removing context at the input. Only a GPU
+  pilot tests it directly.
+
 ## Test-read log
 
 
@@ -186,3 +229,5 @@ method changed.
 method changed.
 2026-09-28 (Codex check): gold of HateMM and HateClipSeg test (hate share per 8 s window and 4 s cell), used only for
 `runs/20260928_headroom/continuity`. No method changed.
+2026-09-28 (Codex round 2): gold of HateMM and HateClipSeg test (hate share per 8 s window), used only for
+`runs/20260928_headroom/context_mix`. No method changed.
