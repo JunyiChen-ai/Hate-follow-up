@@ -6,6 +6,10 @@ own answer appended as a stance turn -> for every window of the grid, an isolate
 speech branch (prefix KV cache deep-copied per branch), each read as Yes/No log-odds. Nothing else: no
 hypothesis, no chain, no revision. Grid A: --window-offset 0 (0-8, 8-16, ...); grid B: --window-offset 4
 (4-12, 12-20, ...). Labels are never read here.
+
+Ablation flags (experiments/20260928_infer README §11 and §12): --branches joint, --isolation sequential, --frames 0 (no
+frames in the prefix, so no visual branch), --no-transcript-context, --stance none (no verdict turn before the window
+branches), --windows asr (ASR segments as windows; gaps stay unscored).
 """
 from __future__ import annotations
 
@@ -63,11 +67,17 @@ def yesno_question(i, n, t1, t2, text, kind):
 
 def score_video(judge, row, segments, args, verify=False):
     vid, ds, dur = row["video_id"], row["dataset"], float(row["duration"])
-    wins = grid_windows(dur, args.window_seconds, args.window_offset)
-    frames = frame_paths(ds, vid, args.frames, "k20")
-    if not frames:
+    if getattr(args, "windows", "fixed") == "fixed":
+        wins = grid_windows(dur, args.window_seconds, args.window_offset)
+        wtexts = [window_text(segments, a, b) for a, b in wins]
+    else:  # asr: one window per ASR segment; a video without transcript has no windows (curve stays FILL_UNCOVERED)
+        wins = [(s, e) for s, e, _ in segments]
+        wtexts = [t for _, _, t in segments]
+    frames = frame_paths(ds, vid, args.frames, "k20") if args.frames > 0 else []
+    if args.frames > 0 and not frames:
         return None, {"error": "no frames cached"}
-    msgs, image_files = judge.prefix_messages(frames, segments, with_context=True, with_frames=True)
+    with_context = not getattr(args, "no_transcript_context", False)
+    msgs, image_files = judge.prefix_messages(frames, segments, with_context=with_context, with_frames=args.frames > 0)
     prefix_text, enc = judge.encode_prefix(msgs, image_files)
     prefix_ids = enc["input_ids"][0].tolist()
     info = {"prefix_tokens": len(prefix_ids), "n_windows": len(wins), "img_tokens": judge.img_tokens[:1], "n_frames": len(frames)}
@@ -75,13 +85,17 @@ def score_video(judge, row, segments, args, verify=False):
     b0, b0_text = judge.branch_ids(msgs, VIDEO_QUESTION)
     if verify:
         judge.seam_check_tokens(msgs, image_files, prefix_ids, VIDEO_QUESTION, b0)
-    z_video = judge.cached_margin(cache, b0, in_place=True)
-    stance = "Yes" if z_video > 0 else "No"
-    a0, a0_text = judge.answer_ids(msgs, VIDEO_QUESTION, stance)
-    judge.extend_cache(cache, a0)
-    history = [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]}, judge.turn("assistant", stance)]
-    head = prefix_text + b0_text + a0_text
-    wtexts = [window_text(segments, a, b) for a, b in wins]
+    if getattr(args, "stance", "verdict") == "none":
+        # ablation: no stance turn. The verdict is read on a copy; the window branches follow the prefix directly.
+        z_video = judge.cached_margin(cache, b0, in_place=False)
+        stance, history, head = None, [], prefix_text
+    else:
+        z_video = judge.cached_margin(cache, b0, in_place=True)
+        stance = "Yes" if z_video > 0 else "No"
+        a0, a0_text = judge.answer_ids(msgs, VIDEO_QUESTION, stance)
+        judge.extend_cache(cache, a0)
+        history = [{"role": "user", "content": [{"type": "text", "text": VIDEO_QUESTION}]}, judge.turn("assistant", stance)]
+        head = prefix_text + b0_text + a0_text
     per = [dict() for _ in wins]
     n_branch = 0
     kinds = {"dual": ("visual", "speech"), "joint": ("joint",)}[getattr(args, "branches", "dual")]
@@ -91,10 +105,13 @@ def score_video(judge, row, segments, args, verify=False):
     # tokens, so a branch sees the question text and assistant header of all earlier branches.
     order = ([(i, k) for i in range(len(wins)) for k in kinds] if sequential else
              [(i, k) for k in kinds for i in range(len(wins))])
+    # SPVL-r2 semantics: no speech branch without speech; no visual branch without frames (--frames 0)
+    order = [(i, k) for i, k in order if not (k == "speech" and not (wtexts[i] and wtexts[i].strip()))
+             and not (k == "visual" and args.frames == 0)]
+    if not order and wins:  # no frames and no speech anywhere: one joint branch per window (as spvl.py)
+        order = [(i, "joint") for i in range(len(wins))]
     for i, kind in order:
         (a, b), t = wins[i], wtexts[i]
-        if kind == "speech" and not (t and t.strip()):
-            continue  # SPVL-r2 semantics: no speech branch without speech
         q = yesno_question(i, len(wins), a, b, t, kind)
         bids, _ = judge.branch_ids(msgs, q, history, head_text=head)
         per[i][kind] = judge.cached_margin(cache, bids, in_place=sequential)
@@ -109,8 +126,15 @@ def score_video(judge, row, segments, args, verify=False):
             raise SystemExit(f"VERIFY GATE FAILED: {info['verify']}")
     L = int(math.ceil(dur * FPS))
     centers = (np.arange(L) + 0.5) / FPS
-    idx = np.clip(np.floor((centers - args.window_offset) / args.window_seconds).astype(int), 0, len(wins) - 1)
-    curve = np.asarray(z_win, dtype=float)[idx]
+    if getattr(args, "windows", "fixed") == "fixed":
+        idx = np.clip(np.floor((centers - args.window_offset) / args.window_seconds).astype(int), 0, len(wins) - 1)
+        curve = np.asarray(z_win, dtype=float)[idx]
+    else:  # ASR windows painted with their z; uncovered frames keep FILL_UNCOVERED (as spvl.py)
+        curve = np.full(L, FILL_UNCOVERED, dtype=float)
+        for (a, b), z in zip(wins, z_win):
+            i0, i1 = max(0, int(math.floor(a * FPS))), min(L, int(math.ceil(b * FPS)))
+            if i1 > i0:
+                curve[i0:i1] = np.maximum(curve[i0:i1], z)
     pred = {"schema_version": 1, "method": args.method_name, "dataset": ds, "video_id": vid, "duration": dur,
             "native_rate": FPS, "score_curve": [float(x) for x in curve], "intervals": [], "error": None,
             "calls": 2, "seed": SEED, "code_path": CODE_PATH,
@@ -139,6 +163,13 @@ def main():
     ap.add_argument("--isolation", choices=["copy", "sequential"], default="copy",
                     help="copy (default): each branch on a deep copy of the prefix cache; sequential: branches in "
                          "window order on one cache that keeps their tokens, so later branches see earlier ones")
+    ap.add_argument("--no-transcript-context", action="store_true",
+                    help="ablation (20260928_infer README §12): no transcript in the prefix")
+    ap.add_argument("--stance", choices=["verdict", "none"], default="verdict",
+                    help="verdict (default): the model's own whole-video answer precedes the window branches; "
+                         "none: ablation without that turn")
+    ap.add_argument("--windows", choices=["fixed", "asr"], default="fixed",
+                    help="fixed (default): the 8 s grid; asr: ASR segments as windows (ablation; gaps unscored)")
     args = ap.parse_args()
     torch.manual_seed(SEED)
     out_dir = ROOT / "runs" / args.exp_id / args.run_name
@@ -148,7 +179,9 @@ def main():
     logging.info("host %s", socket.gethostname())
     (out_dir / "run.pid").write_text(str(os.getpid()))
     args.method_name = f"til_measure_w{args.window_seconds:g}_off{args.window_offset:g}" + (
-        "" if args.branches == "dual" and args.isolation == "copy" else f"_{args.branches}_{args.isolation}")
+        "" if args.branches == "dual" and args.isolation == "copy" else f"_{args.branches}_{args.isolation}") + (
+        "" if args.frames == 20 else f"_f{args.frames}") + ("_noctx" if args.no_transcript_context else "") + (
+        "_nostance" if args.stance == "none" else "") + ("_asr" if args.windows == "asr" else "")
     cfg = dict(vars(args))
     cfg.update({"code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"), "host": socket.gethostname(), "seed": SEED,
                 "fill_uncovered": FILL_UNCOVERED, "video_question": VIDEO_QUESTION,

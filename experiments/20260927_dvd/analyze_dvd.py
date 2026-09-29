@@ -46,7 +46,7 @@ def pack(recs, Y, vids, ds):
     for k, v in enumerate(vids):
         r = recs[(ds, v)]; y = Y[v]; s = np.asarray(r["score_curve"], float)
         n = min(len(y), len(s)); y, s = y[:n], s[:n]
-        ys.append(y); ss.append(s); idx.append(np.full(n, k)); key.append(float(r["extra"]["p_video_logodds"]))
+        ys.append(y); ss.append(s); idx.append(np.full(n, k)); key.append(float(r["extra"].get("p_video_logodds", r["extra"]["z_video"])))  # SPVL-composed runs: verdict
         if y.min() != y.max():
             wv.append(k); wauc.append(roc_auc_score(y, s))
     return {"y": np.concatenate(ys), "s": np.concatenate(ss), "i": np.concatenate(idx), "wv": np.array(wv),

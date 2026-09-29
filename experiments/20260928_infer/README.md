@@ -314,3 +314,55 @@ directions there. DeHate is the first measurement of visibility under the curren
 - Branches that see each other: DeHate −.015 pooled ROC and −.031 within, both intervals excluding 0, with the
   largest read drift of the two arms (21 % of windows change sign, and the share of non-hateful videos with
   P(V) > .5 rises .565 → .591). Visibility helped on no corpus and hurts on DeHate. Isolation stays.
+
+## 12. Every leave-one-out ablation of `r6_bma` on DeHate (declared 2026-09-29 before running)
+
+User request (2026-09-29): the §11 run covered only two reading-module ablations; the request was the whole
+leave-one-out table that was given for the main corpora (each component removed alone, everything else as in
+`r6_bma`). Main-corpus sources: `experiments/20260926_twolevel/README.md` §20.1 (time level, video and within terms),
+§14.4 (reading components under `r3`), `experiments/20260910_spvl/README.md` §8–§9 (fixed windows, isolation).
+
+**Reads (GPU, uoa-lab2, `til_measure.py` with three new flags; everything else as `reads_gridA`).** Each arm removes
+one part of the reading module:
+
+| read set | flag | removed |
+|---|---|---|
+| `reads_noframes` | `--frames 0` | the 20 frames in the prefix; no visual branch (a video without speech gets one joint branch per window, as `spvl.py`) |
+| `reads_noctx` | `--no-transcript-context` | the full transcript in the prefix (window speech branches still show their window's text) |
+| `reads_nostance` | `--stance none` | the verdict turn: the window branches follow the prefix directly; the verdict is read on a copy |
+| `reads_asrwin` | `--windows asr` | the fixed 8 s grid: one window per ASR segment, gaps unscored, a video without transcript has no windows |
+
+The main-corpus reading ablations (§14.4) were measured on the SPVL read family of 2026-09-10 (old ASR loader);
+these DeHate arms are on the current read script with the fixed loader, so they are the same removals, not the same
+runs. Cost: about 25 min per read set (the no-frames set less), 1.5 h of GPU in all.
+
+**Time level (CPU, same machine), all on the isolated dual reads `reads_gridA` unless stated, flags as
+`experiments/20260926_twolevel/launch/run_final.sh`:**
+
+| arm | removed or replaced | main-corpus row |
+|---|---|---|
+| `abl_nocoupling` | time coupling (independent cells) | §20.1 (DeHate already known: +.020 [−.017, +.057]; re-run here so every arm sits in one table) |
+| `abl_k1` | minimum length (k = 1) | §20.1 |
+| `abl_sharedchain` | per-modality chains + OR (one shared chain) | §20.1 |
+| `abl_rawscale` | normal scores (raw reads into EM) | §20.1 |
+| `abl_rawkey` | calibrated key (raw K) | §20.1 |
+| `abl_nokey` | video term | §20.1 |
+| `abl_norank` | within term | §20.1 |
+| `abl_fixed80` | per-video mean length (BMA) replaced by the fixed 80 s of `r3_m2` | §19 (r6 vs r3) |
+| `abl_r2nl`, `abl_linstd` | EM evidence vs reads / corpus std, both under the fixed 80 s chain (`r2_noleak` vs `diag_lin_or_k4` flags) | §10.9 / §11 |
+| `abl_noframes`, `abl_noctx`, `abl_nostance` | `r6_bma` on the three read sets above | §14.4 |
+| `m1_joint`, `m1_seq` | §11 (already run) | §14.4, SPVL §9 |
+| `spvl_fixed` vs `spvl_asrwin` | fixed 8 s windows vs ASR segments, under the SPVL composition (`compose.py --intercept zv_plus_mean --residual rank`), because ASR windows are longer than two cells and cannot enter the time level (`20260926_twolevel` §12.2) | SPVL §8 |
+
+Analysis: `analyze_dvd.py` paired bootstrap over videos (4000 draws), base `final_m2` for the main table
+(`analysis_all/`), base `abl_r2nl` for the evidence pair (`analysis_linstd/`), base `spvl_fixed` for the window pair
+(`analysis_asrwin/`). For the two SPVL-composed arms the video-level diagnostics (share of videos with P(V) > .5,
+video AUC) use the raw verdict, since the composition has no calibrated key; the three main metrics are unaffected.
+Read agreement of the three new fixed-grid read sets with `reads_gridA`: `analysis_all/reads_agreement.txt`.
+
+Launch: `launch/run_dehate_all.sh` (resumable: read sets with a `DONE videos` line are skipped). Nothing is
+decided on DeHate (external); the table says which main-corpus effects show up on a third corpus.
+
+### 12.1 Results
+
+(filled after the run)
