@@ -363,6 +363,61 @@ Read agreement of the three new fixed-grid read sets with `reads_gridA`: `analys
 Launch: `launch/run_dehate_all.sh` (resumable: read sets with a `DONE videos` line are skipped). Nothing is
 decided on DeHate (external); the table says which main-corpus effects show up on a third corpus.
 
-### 12.1 Results
+### 12.1 Results (2026-09-29, uoa-lab2 = sc474399; copied back to `runs/20260928_infer/dehate/`)
 
-(filled after the run)
+Reads: four sets, 1341 videos each, 0 errors (`reads_noframes` 8 min, `reads_noctx` 22 min, `reads_nostance` 24 min,
+`reads_asrwin` 19 min). Time level and analysis: CPU, same machine, no failures. Tables: `analysis_all/table.txt`
+(base `final_m2`), `analysis_linstd/table.txt` (base `abl_r2nl`), `analysis_asrwin/table.txt` (base `spvl_fixed`),
+`analysis_all/reads_agreement.txt`.
+
+DeHate, arm minus base, within unless stated, 95 % paired-bootstrap interval; main-corpus columns are the numbers
+quoted in the request (HateMM / HateClipSeg; `20260926_twolevel` §20.1 for the time level, §14.4 for the reading
+components under `r3`, SPVL §8–§9 for windows and isolation):
+
+| removed or replaced | HateMM | HCS | DeHate | interval |
+|---|---|---|---|---|
+| video term (pooled ROC) | −.325 | −.147 | **−.150** | [−.200, −.098] |
+| within term | −.251 | −.137 | **−.143** | [−.182, −.104] |
+| transcript context | −.039 | +.001 | **−.049**; pooled ROC −.078 | [−.079, −.021]; ROC [−.124, −.030] |
+| fixed 8 s windows (ASR segments instead; SPVL composition) | −.089 | −.052 | **−.065**; pooled ROC −.018 | [−.106, −.026] |
+| branch isolation (sequential, §11) | −.014 | +.011 | **−.031**; pooled ROC −.015 | [−.060, −.001] |
+| time coupling | −.114 | −.057 | −.021 | [−.057, +.016] |
+| minimum length (k = 1) | −.030 | −.009 | −.016 | [−.041, +.010] |
+| EM evidence (reads / corpus std instead; fixed 80 s chain) | +.010 | +.024 | −.014 (EM is better by .014) | [−.040, +.012] |
+| per-modality chains + OR (shared chain) | −.007 | −.043 | −.013; pooled ROC −.0006 | [−.035, +.007]; ROC excludes 0 |
+| stance turn | −.014 | −.011 | −.010 | [−.028, +.009] |
+| normal scores (raw reads into EM) | **+.011** | **+.011** | −.010 | [−.032, +.012] |
+| frames | −.060 | −.109 | −.003; pooled ROC −.017 | [−.035, +.029]; ROC [−.061, +.021] |
+| calibrated key (pooled ROC / PR) | −.002 / −.006 | −.003 / −.005 | −.002 / −.001 | ROC [−.003, −.001] |
+| per-video mean length (fixed 80 s instead) | −.002 | −.002 | **+.011** (fixed 80 s is better) | [−.009, +.032] |
+| dual branches (joint branch instead, §11) | +.009 | −.074 | **+.027** (joint is better) | [−.001, +.056] |
+
+Absolute numbers of the new arms (pooled ROC / PR / within): `abl_nocoupling` .7010 / .1581 / .6226; `abl_k1`
+.7011 / .1575 / .6274; `abl_sharedchain` .7005 / .1577 / .6300; `abl_rawscale` .7012 / .1585 / .6334; `abl_rawkey`
+.6994 / .1568 / .6431; `abl_nokey` .5508 / .0881 / .6431; `abl_norank` .6982 / .1591 / .5000; `abl_fixed80` .7009 /
+.1578 / .6539; `abl_r2nl` .6995 / .1569 / .6468; `abl_linstd` .6996 / .1570 / .6328; `abl_noframes` .6846 / .1507 /
+.6398; `abl_noctx` .6237 / .1422 / .5938; `abl_nostance` .6999 / .1619 / .6330; `spvl_fixed` .6993 / .1570 / .6406;
+`spvl_asrwin` .6817 / .1427 / .5753.
+
+Read agreement with `reads_gridA` (per-video Spearman of window z; verdict Spearman; windows changing sign): no
+frames .72 / .81 / 12.6 %; no transcript .74 / .55 / 14.9 %; no stance .90 / 1.00 / 8.4 %. Without the transcript the
+verdict itself changes (Spearman .55) and the share of non-hateful videos judged violating falls from .565 to .309,
+with hateful ones from .833 to .474: the verdict without transcript misses most hateful videos. Without frames the
+time level reads (`z_joint`, `z_speech`): the joint chain, present only on videos without speech, gets a negative EM
+slope (−0.93) and carries nothing; the speech chain is as before (slope 2.81 vs 2.85).
+
+**Reading.**
+- On DeHate the removals whose interval excludes 0: the video term, the within term, the transcript context, the
+  fixed 8 s windows, and branch isolation. The first four hold on all three corpora (transcript context: HateMM and
+  DeHate, not HCS). Isolation holds on HateMM and DeHate, not HCS.
+- The time-level components (coupling −.021, minimum length −.016, EM evidence −.014, OR −.013, stance −.010) all
+  point the same way as on the main corpora but with intervals that include 0: DeHate within has a wider interval
+  (± .02 to .04) than the main corpora, and the effects are smaller than on HateMM.
+- Two components go the other way on DeHate: normal scores help here (−.010 when removed; +.011 / +.011 on the main
+  corpora), and the fixed 80 s mean length beats the per-video integration (+.011). Neither passes the noise floor
+  on any corpus; both stay as decided (§20.1, §19).
+- Frames carry almost nothing on DeHate (within −.003), against −.060 / −.109 on the main corpora: DeHate hate is in
+  the speech (the SPVL composition on speech-only reads is within .003 of the full reads). The joint branch is better
+  than dual here (+.027) for the same reason (§11.1).
+- Nothing is decided on DeHate. For the main-corpus claims: the components that pass rule 14g there (coupling, video
+  term, within term, frames) keep their sign on DeHate except frames, which is flat here.
