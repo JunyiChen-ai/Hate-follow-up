@@ -463,3 +463,53 @@ Reading:
   do joint reasoning; it is dominated by the speech. The dual branch is a way to get a picture read at all, and it
   pays only on a corpus where the picture carries hate on its own. The multimodal joining happens in the prefix (all
   frames, the full transcript, the verdict), which every branch sees.
+
+## 14. Could the branch weighting adapt per corpus or per video without labels? (2026-09-30; assessment, no design change)
+
+User question after §13: the corpora differ, so make the fusion adaptive. Two checks on the cached reads, both run
+on uoa-lab2, outputs in `runs/20260928_infer/branch_diag/`.
+
+**14.1 What the method already adapts, and how it goes.** The time level fits per corpus and per modality the EM
+emission (slope) and the start probability (iota) of each chain, label-free. Fitted values (`final_m2` run logs):
+
+| corpus | slope visual / speech | iota visual / speech | visual read within-video window ROC (§13, GT) |
+|---|---|---|---|
+| HateMM | 3.83 / 3.48 | .53 / .43 | .629 |
+| HateClipSeg | 3.59 / 2.68 | .41 / .29 | .553 |
+| DeHate | 3.65 / 2.85 | .60 / .38 | .517 |
+
+EM rates the visual read as the stronger and more often active evidence on all three corpora, most of all on
+DeHate, where by GT it is near chance. Without labels EM measures how bimodal a read is, not whether it is right.
+The carrier fusion of `20260926_twolevel` §10.2 item 7 (EM-fitted per-corpus shares of "hate in picture / speech /
+both") is the same idea one level up and lost on both corpora (−.016 / −.045, that README §11).
+
+**14.2 Label-free per-corpus signals (`modality_signals.py`, no GT):**
+
+| signal | HateMM | HateClipSeg | DeHate | ranks the corpora like the GT picture-only share (.10 / .19 / .07)? |
+|---|---|---|---|---|
+| share of windows where only the picture branch is positive | .084 | .144 | .053 | yes |
+| lag-1 within-video autocorrelation, visual / speech | .32 / .23 | .49 / .25 | .27 / .13 | yes (visual) |
+| Spearman across videos of verdict with mean visual / mean speech read | .72 / .87 | .54 / .75 | .73 / .77 | no: DeHate's visual read tracks the verdict as closely as its speech read |
+
+Two of three signals order the corpora the right way, on three corpora, with no held-out check. That is a
+hypothesis, not a validated selector.
+
+**14.3 Ceilings (test read: GT of the three corpora, window label = more than half the frames hateful; raw reads,
+within-video window ROC, macro over hateful videos with both labels):**
+
+| choice | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| max of the two branches (current) | .697 | .636 | .660 |
+| joint branch | .696 | .597 | .687 |
+| best per corpus | .697 (0) | .636 (0) | .687 (+.027) |
+| best per video, max or joint (oracle) | .731 (+.034) | .672 (+.036) | .725 (+.065) |
+
+- A per-corpus rule cannot gain on either main corpus (HateMM: max = joint; HateClipSeg: max is already the better
+  one). Its only possible gain is DeHate, the corpus it would be fitted on. Under rule 14g it cannot be shown to do
+  anything on the main corpora, so it is not a claimable component.
+- Per-video selection has an oracle ceiling of about +.035 on both main corpora and +.065 on DeHate. A label-free
+  per-video selector would get part of that. Candidate selectors: (a) from the existing reads (the video's own
+  picture-only share, branch autocorrelation): free; (b) the verdict's dependence on each modality, read as two extra
+  whole-video answers per video (prefix without frames, prefix without transcript): about two extra prefix passes per
+  video, so the reading stage costs roughly three times as much. Neither has been tried; (b) is the principled one
+  (it asks the model what its own verdict rests on), (a) is the cheap one. Not run: this section is an assessment.
