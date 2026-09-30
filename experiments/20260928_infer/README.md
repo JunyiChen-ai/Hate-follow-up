@@ -513,3 +513,49 @@ within-video window ROC, macro over hateful videos with both labels):**
   whole-video answers per video (prefix without frames, prefix without transcript): about two extra prefix passes per
   video, so the reading stage costs roughly three times as much. Neither has been tried; (b) is the principled one
   (it asks the model what its own verdict rests on), (a) is the cheap one. Not run: this section is an assessment.
+
+## 15. One mechanism for picture and speech that adapts per video (declared 2026-09-30 before running)
+
+**User task (2026-09-30).** Unify the picture and speech reads into one mechanism that decides, per video or per
+window and without labels, whether to trust the speech read, the picture read, or both. No hyperparameters, no
+per-corpus switch, nothing chosen by hand. No gain is required: on each of the three corpora the adaptive method must
+reach that corpus's best fixed configuration.
+
+**Decision rule.** For each corpus, the reference is the best within-video macro ROC among the fixed configurations
+under the `r6_bma` time level: dual branches with per-modality chains + OR (`final_m2`), one joint branch
+(`m1_joint`; main corpora: a new current-family joint read), speech chain only, visual chain only. Done when, on all
+three corpora, the adaptive arm's within is not below that reference by more than the noise floor (.01) and its pooled
+ROC / PR are within .005 of `final_m2`. Numbers are development-selected (rule 10).
+
+**Mechanism hypothesis (from §13 and §14).** The picture branch's false positives are not random: the branch sees
+the full transcript and the model's own verdict in the prefix, so on a video the model already judged hateful it
+says "yes" to picture windows that carry nothing (DeHate: picture-only positives at the base rate). Whether the
+picture carries hate in *this* video is something the model can say itself, from the frames alone: the whole-video
+verdict on a prefix without the transcript. Likewise the transcript-only verdict says whether the speech carries it.
+So: **each modality's chain is gated by the model's own verdict from that modality alone.** The gate is the
+probability that the modality-only verdict is a "hateful" verdict, calibrated label-free by the same one-dimensional
+two-Gaussian mixture the key uses; nothing is set by hand.
+
+- Version 1 (fusion-time gate): P(hate at t) = 1 − Π_m (1 − γ_m(video) · P_m(hate at t)), γ_visual from the
+  frames-only verdict, γ_speech from the transcript-only verdict. The EM of the time level is unchanged.
+- Version 2 (if version 1 falls short): the gate inside the EM as a per-chain video switch with that prior.
+- Fallbacks, in order, only if the verdict gate fails the rule: (b) a per-video persistence test with no extra reads
+  (chain vs independent cells Bayes factor per modality); (c) the joint read as a third branch used as an arbiter.
+
+**Reads.** DeHate has everything (`reads_gridA`, `reads_noctx` = frames-only prefix, `reads_noframes` =
+transcript-only prefix, `reads_joint`). The main corpora get the same three current-family read sets on uoa-lab2
+(`launch/run_main_reads.sh`, output `runs/20260928_infer/main/reads_{joint,noctx,noframes}`; about 30 min of GPU).
+Cost of the mechanism on a new video: one frames-only prefix pass and one transcript-only pass in addition to the
+current reads (DeHate: 1.3 s + 1.0 s + 0.4 s per video, about twice the reading time); no extra window branches.
+
+**Code.** `twolevel_r2.py`: `--chains <modality ...>` (only these modalities get chains; the key is unchanged) for
+the speech-only and visual-only references; `--gate verdicts --gate-visual <run> --gate-speech <run>` for the
+mechanism. Diagnostics (test reads, logged in §15.1): per hateful video the within ROC under OR vs speech-only, and
+whether the frames-only verdict predicts which is better.
+
+**Outputs.** `runs/20260928_infer/gate/` (arms per corpus), analysis with `analyze_dvd.py` against `final_m2`.
+Machine: uoa-lab2 (uoa-lab1 is under maintenance).
+
+### 15.1 Results
+
+(filled after the runs)
