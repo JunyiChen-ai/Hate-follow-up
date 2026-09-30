@@ -421,3 +421,45 @@ slope (−0.93) and carries nothing; the speech chain is as before (slope 2.81 v
   than dual here (+.027) for the same reason (§11.1).
 - Nothing is decided on DeHate. For the main-corpus claims: the components that pass rule 14g there (coupling, video
   term, within term, frames) keep their sign on DeHate except frames, which is flat here.
+
+## 13. Why two isolated branches rather than one joint branch: a read of the raw reads (2026-09-30; test read, rule 10)
+
+User question: hate needs picture and speech together, so why do separate branches score higher than one joint
+branch? `branch_diag.py` on the raw reads, no time level. Test read: GT `data/gt_4fps/{HateMM,HateClipSeg,DeHate}.npz`,
+window label = more than half of the window's frames hateful; reads `runs/20260910_spvl/mllm/q3vl-8b/{full,joint}`
+(main corpora, the 2026-09-10 family) and `runs/20260927_dehate_external/reads_gridA` + `runs/20260928_infer/dehate/reads_joint`
+(DeHate). Output `runs/20260928_infer/branch_diag/{main,dehate}.txt`, run on uoa-lab2. No design was changed.
+
+Within-video window ROC (macro over hateful videos with both labels) / pooled window ROC:
+
+| read | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| visual branch | .629 / .769 | .553 / .664 | .517 / .610 |
+| speech branch | .678 / .845 | .607 / .658 | .671 / .684 |
+| max of the two (current window score) | .697 / .863 | .636 / .712 | .660 / .691 |
+| joint branch | .696 / .848 | .597 / .653 | .687 / .685 |
+
+How the joint read relates to the two branches (share of windows with joint > 0, by branch sign):
+
+| windows | speech > 0 (with or without picture) | picture > 0, speech ≤ 0 | neither > 0 |
+|---|---|---|---|
+| HateMM hateful | .99 | .29 | .39 |
+| HateClipSeg hateful | .96–.98 | .18 | .16 |
+| DeHate hateful | .97 | .33 | .22 |
+| non-hateful (three corpora) | .95–.97 | .15–.27 | .09–.12 |
+
+Share of hateful windows where only the picture branch is positive: HateMM .10, HateClipSeg .19, DeHate .07.
+Within-video Spearman between the two branches: .15 / .18 / .24.
+
+Reading:
+- The joint read is the speech read. Whenever the speech branch is positive the joint read is positive (95–99 %),
+  whatever the picture branch says; when the speech branch is negative the joint read is positive in only 15–39 % of
+  windows even where the picture branch is positive. One question gives one answer, and that answer follows the text.
+- Where the picture alone carries hate often (HateClipSeg, 19 % of hateful windows) the joint read misses those
+  windows (18 % positive); asking about the picture separately and taking the max recovers them: within .636 vs .597.
+- Where the picture alone rarely carries hate (HateMM 10 %, DeHate 7 %) the separate visual read is near chance
+  within a video (DeHate .517) and the max adds its false positives: HateMM max = joint, DeHate max < joint.
+- So the dual branch is not "separate reasoning beats joint reasoning". The model's one-answer window read does not
+  do joint reasoning; it is dominated by the speech. The dual branch is a way to get a picture read at all, and it
+  pays only on a corpus where the picture carries hate on its own. The multimodal joining happens in the prefix (all
+  frames, the full transcript, the verdict), which every branch sees.
