@@ -556,6 +556,54 @@ whether the frames-only verdict predicts which is better.
 **Outputs.** `runs/20260928_infer/gate/` (arms per corpus), analysis with `analyze_dvd.py` against `final_m2`.
 Machine: uoa-lab2 (uoa-lab1 is under maintenance).
 
-### 15.1 Results
+### 15.1 Results (2026-09-30, uoa-lab2 = sc474399; copied back to `runs/20260928_infer/{main,gate}/`)
 
-(filled after the runs)
+Reads (main corpora, current family, 333 videos each, 0 errors): `main/reads_joint` 6 min, `main/reads_noctx` 9 min,
+`main/reads_noframes` 3.5 min. Time level: `gate/` arms `mn_*` (HateMM + HateClipSeg on `base_gridA`) and `dh_*`
+(DeHate on `reads_gridA`); tables `gate/analysis_{main,dehate}/table.txt` (paired bootstrap vs the OR arm),
+diagnostics `gate/analysis_{main,dehate}/gate_diag.txt`.
+
+Within-video macro ROC (pooled ROC / PR of every arm are within .003 of the OR arm except the joint branch and the
+single-chain arms on HateClipSeg, which lose up to .026 / .015):
+
+| arm | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| dual branches, per-modality chains + OR (`final_m2`, current) | .7508 | **.6373** | .6431 |
+| one joint branch (current family) | **.7607** | .5824 | **.6700** |
+| speech chain only | .7378 | .5781 | .6525 |
+| visual chain only | .6766 | .5795 | .5673 |
+| best fixed configuration per corpus | .7607 | .6373 | .6700 |
+| **gate, version 1 (both chains gated by their modality-only verdicts)** | **.7513** | **.6325** | **.6638** |
+| gate minus best fixed | −.0094 | −.0048 | −.0062 |
+| gate minus OR, 95 % interval | +.0005 [−.022, +.024] | −.0048 [−.023, +.013] | +.0207 [+.0004, +.040] |
+| visual chain gated only | .7397 | .6375 | .6601 |
+| speech chain gated only | .7599 | .6303 | .6361 |
+
+Gate values (label-free, two-Gaussian calibration of the modality-only verdict): visual gate < .5 on 63 % / 36 % /
+63 % of videos (HateMM / HateClipSeg / DeHate), speech gate < .5 on 37 % / 17 % / 41 %.
+
+**Decision rule: met on all three corpora.** The gated arm is within .01 of the best fixed configuration on each
+corpus (−.009 / −.005 / −.006) with pooled ROC / PR within .001 of `final_m2`, using one rule and no per-corpus
+choice. Development-selected.
+
+Reading:
+- The corpora do want different things: the joint branch is the best fixed choice on HateMM (+.010 over dual) and
+  DeHate (+.027), dual + OR on HateClipSeg (+.055 over joint). Neither single chain is best anywhere.
+- The two gates matter on different corpora. Gating only the visual chain gives HateClipSeg its best (.6375) and
+  most of DeHate's gain (.6601) but costs HateMM .011; gating only the speech chain gives HateMM its best (.7599)
+  but costs HateClipSeg .007 and DeHate .007. The symmetric mechanism (both gates) is the one that stays within the
+  floor everywhere, and it is the only version with no per-corpus choice. The speech gate helping HateMM says the
+  speech branch, too, has prefix-driven false positives on videos whose transcript alone is not judged hateful.
+- The mechanism is a soft weighting, not a correct per-video switch: the visual gate does not predict per video
+  whether OR or speech-only ranks better (ROC .40 / .53 / .51), and the hard choice (gate < .5) is not better than
+  the soft one. The per-video oracle between OR and speech-only (.778 / .676 / .717) stays far above; the gate takes
+  a small part of that headroom on DeHate and none on the main corpora.
+- Under rule 14g the gate is not a claimable component: removing it (the OR arm) costs HateMM −.0005 and
+  HateClipSeg +.005. Its value is the user's criterion: one label-free mechanism that reaches each corpus's best
+  fixed configuration within noise, instead of choosing the branch design per corpus.
+- Cost on a new video: one frames-only prefix pass and one transcript-only pass in addition to the current reads
+  (main corpora: 1.0 s + 1.6 s + 0.6 s per video against 1.3 s now, about 2.5 times the reading time; DeHate about
+  twice). No extra window branches.
+- Not run: version 2 (gate inside the EM) and the fallbacks (b), (c); the rule was met by version 1. Whether the
+  gated method replaces `r6_bma` is the user's decision (it changes the reading cost and adds a mechanism whose
+  own ablation is below the floor on the main corpora).
