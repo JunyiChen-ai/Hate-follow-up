@@ -684,6 +684,15 @@ def main():
                                                      "modality|reading condition")
     ap.add_argument("--conditions-mode", choices=["both", "vis", "sp", "shuf"], default="both",
                     help="which conditions to use; shuf = the labels permuted within the corpus (seed 0), a control")
+    ap.add_argument("--chains", nargs="*", default=None,
+                    help="20260928_infer README §15: only these modalities get chains (reference arms: speech-only, "
+                         "visual-only); the key still uses every window read")
+    ap.add_argument("--gate", choices=["none", "verdicts"], default="none",
+                    help="20260928_infer README §15: verdicts = each modality's chain is gated per video by the model's "
+                         "verdict from that modality alone (frames-only prefix for the visual chain, transcript-only "
+                         "prefix for the speech chain), calibrated label-free by a two-Gaussian mixture")
+    ap.add_argument("--gate-visual", default="", help="run dir of the frames-only reads (verdict without transcript)")
+    ap.add_argument("--gate-speech", default="", help="run dir of the transcript-only reads (verdict without frames)")
     ap.add_argument("--tag", required=True)
     ap.add_argument("--out-root", default=str(ROOT / "runs/20260926_twolevel"))
     ap.add_argument("--gt-dir", default=str(ROOT / "data/gt_4fps"))
@@ -733,6 +742,39 @@ def main():
         flags["k"] = max(1, int(round(a.min_windows * wl / CELL)))
         log(f"shape from the reading grid: {a.min_windows:g} windows x {wl:g} s / {CELL:g} s cells -> k = {flags['k']}")
     videos = {ds: [prep(r, a.center) for k, r in sorted(run.items()) if k[0] == ds] for ds in a.datasets}
+    if a.chains is not None:
+        keep = tuple(m for m in MODS if m in a.chains)
+        if not keep:
+            raise SystemExit(f"--chains {a.chains}: none of the modalities {MODS} present")
+        for ds in a.datasets:
+            for v in videos[ds]:
+                for w in v["wins"]:
+                    w["y"] = {m: y for m, y in w["y"].items() if m in keep}
+        import twolevel as r1
+        globals()["MODS"] = keep; r1.MODS = keep
+        log(f"chains restricted to {keep}; the key keeps every window read")
+    gate = {}
+    if a.gate == "verdicts":
+        # per-modality video gate from the model's verdict on a prefix that holds only that modality (README §15)
+        src = {"z_visual": a.gate_visual, "z_speech": a.gate_speech}
+        gz = {}
+        for m, d in src.items():
+            if m in MODS and d:
+                gz[m] = {(r["dataset"], r["video_id"]): float(r["extra"]["z_video"])
+                         for r in map(json.loads, open(Path(d) / "predictions.jsonl")) if not r.get("error")}
+        for ds in a.datasets:
+            gate[ds] = {}
+            for m, zs in gz.items():
+                vals = [zs[(ds, v["rec"]["video_id"])] for v in videos[ds] if (ds, v["rec"]["video_id"]) in zs]
+                ga, gb = key_calibration(vals)
+                g = {}
+                for v in videos[ds]:
+                    z = zs.get((ds, v["rec"]["video_id"]))
+                    g[v["rec"]["video_id"]] = 1.0 if z is None else float(expit(ga * z + gb))
+                gate[ds][m] = g
+                arr = np.array(list(g.values()))
+                log(f"[{ds}] gate {m}: verdict-only calibration logit = {ga:.4f} z {gb:+.4f}; {len(vals)}/{len(videos[ds])} "
+                    f"videos with a verdict; gate < .5 on {np.mean(arr < .5):.3f}, median {np.median(arr):.3f}")
     if a.conditions:
         cond = json.load(open(a.conditions))["conditions"]
         use = {"z_visual": a.conditions_mode in ("both", "vis", "shuf"), "z_speech": a.conditions_mode in ("both", "sp", "shuf")}
@@ -844,7 +886,8 @@ def main():
                 else:
                     t = video_terms(v, params[ds], flags, a.kappa)
                     for mods, ch, ll, g in t["per"]:
-                        miss *= 1.0 - p_hate(g, ch)
+                        gm = gate.get(ds, {}).get(mods[0], {}).get(v["rec"]["video_id"], 1.0) if len(mods) == 1 else 1.0
+                        miss *= 1.0 - gm * p_hate(g, ch)
                 p = np.clip(1.0 - miss, 1e-12, 1 - 1e-12)
                 lo = params[ds]["vmix_fn"](v) if a.vlevel == "mix" else (t["lo_icc"] if a.vtemper == "icc" else t["lo"])
                 intervals = []
@@ -876,7 +919,8 @@ def main():
                     intervals = intervals_from(np.exp(score))
                 fh.write(json.dumps({**v["rec"], "method": f"twolevel_r2__{a.tag}", "score_curve": [float(x) for x in score],
                                      "intervals": intervals, "extra": {"z_video": v["zv"], "p_video_logodds": lo,
-                                                                "cell_prob": [float(x) for x in p]}}) + "\n")
+                                                                "cell_prob": [float(x) for x in p],
+                                                                "gate": {m: g_[v["rec"]["video_id"]] for m, g_ in gate.get(ds, {}).items()}}}) + "\n")
     metrics_path = out / "metrics.json"
     subprocess.run([sys.executable, str(ROOT / "src/eval/evaluate_four_datasets.py"), "--predictions", str(pred_path),
                     "--gt-dir", a.gt_dir, "--out", str(metrics_path), "--datasets", *a.datasets],
