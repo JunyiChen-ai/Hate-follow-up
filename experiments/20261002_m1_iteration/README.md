@@ -30,14 +30,16 @@ Completed candidates:
    causal/factor experiment complete; no qualifying gain. HCS finalwithin−.0700
    and raw−.0654; paired native exact. No further controls.
 
+7. `archive/experiments/20261003_m1_contraster/README.md`: full333 paired run,
+   native exact. Final within+.0001/+.0002; all13939 branches selected layer2.
+   No qualifying gain; no additional controls or layer-pool revisions.
+
 Running candidates:
+- `experiments/20261003_m1_visual_contrast/README.md`: eighth candidate,
+  clean/corrupt visual-window contrast with native speech/global retained.
+  Proposal PASS; implementation underway. No GPU result.
 
-
-- `experiments/20261003_m1_contraster/README.md`: seventh candidate, one-forward
-  language-depth contrastive readout. Proposal PASS; CPU plumbing passed and
-  independent code review PASS. Five-video GPU checks passed; full333 paired run started on sc448960 at03:01NZ.
-
-Cumulative archives6 (five performance failures, one proposal novelty STOP).
+Cumulative archives7 (six performance failures, one proposal novelty STOP).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,

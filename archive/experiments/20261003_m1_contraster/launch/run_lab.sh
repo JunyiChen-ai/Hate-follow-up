@@ -7,4 +7,9 @@ export HF_HOME="$PWD/.cache/hf"
 phase="${1:-main}"
 args=()
 if [ "$phase" = smoke ]; then args+=(--smoke); elif [ "$phase" != main ]; then exit 2; fi
-exec /home/jehc223/miniconda3/envs/HateVLM/bin/python -u archive/experiments/20261003_m1_factorizer/measure.py --run-name "r1_$phase" "${args[@]}"
+case "$(hostname -s)" in
+  sc474399) py=/home/jehc223/miniconda3/envs/HateVLM/bin/python ;;
+  sc448960) py=/home/junyi/miniconda3/envs/HateVLM/bin/python ;;
+  *) echo 'Use a reviewed target environment' >&2; exit 2 ;;
+esac
+exec "$py" -u archive/experiments/20261003_m1_contraster/measure.py --run-name "r1_$phase" "${args[@]}"

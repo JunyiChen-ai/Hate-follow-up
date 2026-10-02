@@ -346,3 +346,8 @@ within already falls. Decision: archive rather than adjust constants; no GT
 entered scoring/fitting/routing. Development-selected. Paper/Overleaf/current
 method unchanged. Next independent candidate is prefix factorization; actual
 input erasure continues separately.
+
+Archive maintenance2026-10-03: launch scripts now resolve the repository root
+from their archived directory and use archived entry paths; scientific code and
+completed outputs are unchanged. Historical run paths above retain their original
+meaning. Re-running into an existing run directory is not a new experiment.

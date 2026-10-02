@@ -216,3 +216,8 @@ metrics and `data/gt_4fps/{HateMM,HateClipSeg}.npz` only in post-inference
 analysis. Finding: all main metrics fell and raw ordering already deteriorated.
 Decision: archive without further revision/control, unchanged current method
 and paper. Scores were computed before GT access; development-selected.
+
+Archive maintenance2026-10-03: launch scripts now resolve the repository root
+from their archived directory and use archived entry paths; scientific code and
+completed outputs are unchanged. Historical run paths above retain their original
+meaning. Re-running into an existing run directory is not a new experiment.

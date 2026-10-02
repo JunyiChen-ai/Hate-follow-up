@@ -213,3 +213,8 @@ Finding: no qualifying gain, with HCS ordering degraded before and after r6.
 Decision: archive without revision/control; current method/paper unchanged.
 All results development-selected, and no claim that other factorization
 architectures or learned block encoders are ruled out.
+
+Archive maintenance2026-10-03: launch scripts now resolve the repository root
+from their archived directory and use archived entry paths; scientific code and
+completed outputs are unchanged. Historical run paths above retain their original
+meaning. Re-running into an existing run directory is not a new experiment.

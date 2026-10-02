@@ -1,3 +1,5 @@
+> Archived: no final main metric improved by .01; every branch selected layer2 and final differences are negligible.
+
 # M1 Contraster: depth-contrastive local evidence reading
 
 Declared2026-10-03, seventh candidate. Proposal PASS; implementation and CPU
@@ -159,3 +161,48 @@ Output `runs/20261003_m1_contraster/r1_main/`; native+contrast share3+B forwards
 
 Full paired333-video run started on sc448960 at03:01NZ. Eraser completed negatively
 and was archived after the Contraster declaration and smoke; no method change.
+
+## Full result and disposition, 2026-10-03
+
+Complete333-video paired reading on sc448960 took11.55minutes; all outputs were
+returned before evaluation. Sources: canonical final
+`runs/20261003_m1_contraster/r1_main_decoded/{base,contrast}/metrics.json`, raw
+`runs/20261003_m1_contraster/r1_main/{base,contrast}/metrics.json`, diagnostics
+`runs/20261003_m1_contraster/r1_main_analysis/`.
+
+| Dataset | Native ROC / PR / within | Contrast ROC / PR / within | Raw within native → contrast |
+|---|---|---|---|
+| HateMM | .897119 / .694235 / .750782 | .896950 / .693778 / .750885 | .680011 → .684667 |
+| HateClipSeg | .716825 / .671072 / .637349 | .716983 / .671029 / .637530 | .610130 → .609857 |
+
+All333 native globals and13939 native window branches exactly match base_gridA;
+all shape, availability,4fps, finite and saved-logit reconstruction checks pass.
+Final within deltas+.000103(84videos,CI[−.001495,.002022]) and+.000181(99videos,
+[−.000900,.001359]) are negligible. No final main metric improves.01: archive
+under rule9 without evaluating extra variants/controls or choosing another layer
+pool from these test results. Saved unused layers remain for provenance only.
+
+All7207HateMM and6732HCS branches select layer2. Thus dynamic layer selection has
+no realized per-window variation in this configuration; it is not a supported
+adaptive evidence mechanism. Dominant label-token spellings change in zero
+label sets. Contrast-dominant variants have mature vocabulary probability<.001
+in4496/3215 label sets, but that includes the losing alternative and by itself
+is not a failure diagnosis. No rare-spelling switch explains these results.
+Maximum mature batched projection margin drift is.000233/.000259; native arm
+remains exact. These observations do not rule out every DoLa layer pool or
+learned readout, but do not authorize a within-family revision under rule9.
+
+Steady-state Contrast totals6.292/5.194GPUminutes; added projection time19.23/
+17.96seconds. Native shared-forward upper bounds5.971/4.895minutes include
+capture overhead. Mean forward counts36.52/60.05 unchanged. Peaks20.142/19.866
+GiB; weight loading and one-time FP32 head setup excluded from steady-state.
+
+Rule10: after inference, read complete prediction/logit diagnostics, canonical
+metrics and `data/gt_4fps/{HateMM,HateClipSeg}.npz` through report only. Finding:
+no qualifying gain, uniformly earliest-layer selection. Decision: archive;
+no paper/current-method change. Development-selected evidence.
+
+Archive maintenance2026-10-03: launch scripts now resolve the repository root
+from their archived directory and use archived entry paths; scientific code and
+completed outputs are unchanged. Historical run paths above retain their original
+meaning. Re-running into an existing run directory is not a new experiment.
