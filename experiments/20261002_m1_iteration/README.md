@@ -18,20 +18,22 @@ Completed candidates:
    MARS/RAMF already use opposite hate/non-hate assumptions on the same media.
    No implementation or GPU run.
 
+4. `archive/experiments/20261002_m1_attributor/README.md`: complete uniform FP32
+   run, native parity/numerics passed; final within drops.1296/.0695 and every
+   main metric drops. No control performance evaluated after failed primary gate.
+
 Running candidates:
 - `experiments/20261003_m1_eraser/README.md`: physical media removal and fresh
   full-prefix encoding, independent reviews and four-video GPU checks passed;
   complete paired run on sc448960, no performance read.
 
-Earlier-running candidate: `experiments/20261002_m1_attributor/README.md`; independent
-proposal/code reviews PASS. BF16 integration stopped at video26 without any
-performance read; adaptive BF16 did not fix vector accuracy. FP32 queries plus
-decoder activation recomputation pass failure-case/maximum-prefix diagnostics,
-with peak 28.48 GiB. Continuous FP32 conversion later fragmented GPU memory;
-CPU-staged allocation repairs this without changing scores. Restart all 333
-paired videos uniformly in `r1_main_fp32_mem`;
-no old BF16 attributions reused. Real cost/recomputation and precision drift
-are recorded; no performance claims before full canonical evaluation/controls.
+- `experiments/20261003_m1_factorizer/README.md`: sixth proposal, prefix
+  temporal-block encoding with ordinary global query access. Independent proposal
+  and code reviews PASS; five-video GPU smoke passed, including largest prefix.
+  Complete primary includes native/explicit-causal/factor arms to separate kernel
+  drift from the proposed computation. No performance read yet.
+
+Cumulative archives4 (three performance failures, one proposal novelty STOP).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,

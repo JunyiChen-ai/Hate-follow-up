@@ -41,8 +41,10 @@ Prior documents read for design (development analysis, no new GT read):
   restricting window queries' cache attention failed. They did not recompute
   the media-conditioned prefix or measure an original global-question response
   to physically removed input.
-- experiments/20261002_m1_attributor/README.md: signed value-path IG currently
-  being tested; it leaves contextualized keys/scaffolding and uses zero values.
+- archive/experiments/20261002_m1_attributor/README.md: signed value-path IG was
+  running at declaration and has since completed negatively; it leaves
+  contextualized keys/scaffolding and uses zero values. This outcome did not
+  change the already-running Eraser implementation or analysis plan.
   Its performance is unknown. Eraser instead removes actual media and recomputes
   every dependent state, with a substantial cost that is counted explicitly.
 - Prior frame coverage and GLR failures warn about content quantity and word

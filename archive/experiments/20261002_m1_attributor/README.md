@@ -1,6 +1,8 @@
+Archived2026-10-03: all final main metrics decreased; signed cached-value attribution did not improve temporal localization.
+
 # M1 Attributor: temporal attribution of a joint decision
 
-Date 2026-10-02. Status: proposal PASS; implementation/numeric checks underway.
+Date 2026-10-02. Status: complete FP32 paired result, archived under rule9.
 Independent review: `docs/reviews/20261002_m1_attributor_proposal.md`.
 Planned host uoa-lab2 / sc474399, subject to live availability.
 Third candidate of `experiments/20261002_m1_iteration/README.md`.
@@ -299,4 +301,48 @@ Independent targeted control review PASS:
 `docs/reviews/20261003_m1_attributor_controls_code.md`. The reviewer independently
 checked synthetic/shared-token and historical numeric-smoke cases, commands and
 the gain guard without reading GT or main-run results. Canonical evaluation is
-still pending; only run `launch/run_controls.sh` after a qualifying primary gain.
+not run: the complete primary result below did not pass the gain guard.
+
+## Complete result and disposition (2026-10-03)
+
+Host sc474399. All333 videos completed uniformly in `r1_main_fp32_mem` and
+returned locally before evaluation. Native global and every baseline window
+exactly reproduce current `base_gridA`; all numerical checks pass. Accepted
+grids: HateMM204/6/5 at32/64/128; HCS115/2/1 at32/64/256. These are numerical
+refinements, not outcome-based sampling. Peak28.48/27.96GiB; no partial prior run
+was mixed into the result.
+
+Canonical final sources:
+`runs/20261002_m1_attributor/r1_main_fp32_mem_decoded/{base,attribute}/metrics.json`.
+Raw sources: `runs/20261002_m1_attributor/r1_main_fp32_mem/{base,attribute}/metrics.json`.
+
+| corpus / arm | pooled ROC | pooled PR | within | raw within |
+|---|---:|---:|---:|---:|
+| HateMM base | .897119 | .694235 | .750782 | .680011 |
+| HateMM attribute | .874816 | .613965 | .621149 | .559529 |
+| HateClipSeg base | .716825 | .671072 | .637349 | .610130 |
+| HateClipSeg attribute | .657016 | .573880 | .567891 | .538000 |
+
+Paired within differences: HateMM−.129633,95% bootstrapCI[−.193957,−.064923],
+n84; HCS−.069458,CI[−.114669,−.021985],n99. Raw ordering also declines by
+.120483/.072130. Thus this implementation's degradation is already visible
+before r6; it is not only a decoder-fit effect. No main metric improves by.01.
+Archive; do not run endpoint/absolute/density/rotation/shift, FP32 native-window
+or cached-value deletion controls after the failed primary gate. No supported
+mechanistic benefit or replacement of the current reader follows. This does
+not rule out all attribution methods or identify a unique reason for failure.
+
+Cost (`r1_main_fp32_mem_analysis/cost.json`): estimated standalone measured
+prefix+branch time57.98/32.02 GPUmin, versus native5.03/4.09min. Mean forwards
+58.25/56.88 plus55.25/53.88 backwards;427644/228888 recomputed decoder layers.
+Full paired wall time97.25min. CPU/GPU precision transfers are included. Native
+global remains BF16; FP32 global-query margin drift max.308/.273 nats is logged
+in `numerics.json`; no unrun precision control is claimed.
+
+Test-read log: after complete scoring, canonical raw/final metrics, 4fps test
+GT through evaluation/reporting, and `r1_main_fp32_mem_analysis/{summary,
+per_video,alignment,numerics,cost}.json`. Finding: all main metrics fall and raw
+within already falls. Decision: archive rather than adjust constants; no GT
+entered scoring/fitting/routing. Development-selected. Paper/Overleaf/current
+method unchanged. Next independent candidate is prefix factorization; actual
+input erasure continues separately.

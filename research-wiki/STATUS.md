@@ -2,35 +2,21 @@
 
 截至 **2026-10-03**。旧的 2026-09-09 引言保留在本页下方各节。
 
-**2026-10-02 M1 自主迭代进行中**：用户要求修改第一个模块，并建立涨点的机制证据。
-入口 `experiments/20261002_m1_iteration/README.md`。首候选 Grounder 已完整跑完六臂和
-平移诊断，333 视频基线逐窗/global 读数精确复现。late 的 ROC / PR / within 为
-HateMM .897570 / .695834 / .750171、HCS .716291 / .670781 / .637249
-（本机 `runs/20261002_m1_grounder/r1_full_decoded/late/metrics.json`）；within 变化
-−.0006 / −.0001，无指标提高 .01；正确与错位支持几乎相同，全层局部限制则掉分。
-按规则 9 归档，详见 `archive/experiments/20261002_m1_grounder/README.md`。
-第二候选 Selector 也已完整运行并归档：最终 ROC / PR / within 为
-HateMM .897708 / .691099 / .709021、HCS .713008 / .667350 / .622332
-（本机 `runs/20261002_m1_selector/r1_main_decoded/select/metrics.json`）；
-within −.0418 / −.0150，原始窗口排序也下降，全部基线读数精确复现。
-详见 `archive/experiments/20261002_m1_selector/README.md`。本轮累计归档 2 个候选；
-第三候选 Attributor 声明在 `experiments/20261002_m1_attributor/README.md`，
-检查完整上下文下整体裁定的媒体 value 路径归因；方案及梯度代码检查通过，
-四视频数值烟测达声明条件，读取约 5.8 倍成本，完整配对第 26 个视频因积分不稳定停止，
-本机 `runs/20261002_m1_attributor/r1_main/checks.jsonl` 已保留失败诊断。
-未读性能或 GT；FP32 查询已使失败视频收敛（本机
-`runs/20261002_m1_attributor/numeric_fp32/checks.jsonl`），最大输入也通过数值与显存检查（峰值28.48GiB）；连续配对又在第25个视频的权重精度转换时因显存碎片停止；
-本机 `runs/20261002_m1_attributor/r1_main_fp32/launch.out` 已回传。
-已改为CPU暂存后重新分配FP32显存，lab2 完整重跑 `r1_main_fp32_mem` 进行中。
-第四候选 Marginalizer 因 MARS / RAMF 已使用双假设机制而被方案审查 STOP，
-未实现、未跑GPU；`archive/experiments/20261003_m1_marginalizer/README.md`。
-本轮累计归档3个候选（两个性能失败、一个新颖性未通过）。
-第五候选 Eraser 已通过方案/代码审查与四视频GPU检查：直接删除窗口媒体并
-重新编码剩余输入；`experiments/20261003_m1_eraser/README.md`。
-原global和136窗口读数精确复现，lab-server 完整配对333视频运行中：
-`runs/20261003_m1_eraser/r1_main/`；两候选均尚未读性能指标。
-后续将统一重跑，不将前 25 个 BF16 归因混入 FP32 结果。
-当前方法与论文不变；继续自主迭代，全部 development-selected。
+**2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
+并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
+累计归档4个候选：Grounder、Selector、Attributor完整性能未过门；Marginalizer因MARS/RAMF
+已有双假设机制在方案审查STOP。前三者完整原生基线读数均精确复现。
+最新Attributor完整FP32归因：ROC/PR/within为HateMM .874816/.613965/.621149、
+HCS .657016/.573880/.567891；所有主指标下降，within−.1296/−.0695，原始窗口排序也下降。
+本机来源 `runs/20261002_m1_attributor/r1_main_fp32_mem_decoded/attribute/metrics.json`；
+数值全部通过，完整配对97.25分钟。按规则9归档，未继续跑消融。
+详见 `archive/experiments/20261002_m1_attributor/README.md`。
+Eraser实际删除媒体并重新编码：完整333视频配对仍在lab-server运行，无性能结果；
+本机已有检查输出 `runs/20261003_m1_eraser/r1_smoke/`。
+第六候选Factorizer将隔离移至前缀编码阶段，保留查询时全局访问；方案/代码审查通过，
+真实小型多模态模型验证跨组KV隔离，五视频GPU检查通过，292个基线分支精确复现。
+入口 `experiments/20261003_m1_factorizer/README.md`；主实验含显式因果掩码对照，
+防止把计算内核差异当成机制收益。当前方法、论文和Overleaf不变；全部development-selected。
 
 **2026-10-02 可修正全局先验实验完成，负结果归档**：用户授权的共享随机偏差机制已实现、
 通过独立方案/代码审查、解析积分与数值精度检查，并跑完 full / independent / no-global 三臂。

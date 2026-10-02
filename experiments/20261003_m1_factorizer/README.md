@@ -133,8 +133,10 @@ the full explicit-causal plumbing control adds3+B, for actual9+3B per video.
 No backwards; one extra full prefill per new video, not one per window. Prefix
 mask is P-by-P shared across heads; peak matrix size at observed P~5800 is about
 68MB in BF16, in addition to model/cache and kernel workspace. No speed promise:
-masked SDPA may select a slower kernel. Initial full-pair estimate20-40 GPUmin
-on5090; replace using smoke before launch and report both-corpus actual cost.
+masked SDPA may select a slower kernel. Five-video GPU smoke completed on
+sc474399: first-two-per-corpus extrapolation gives8.1/12.0 minutes for the
+complete three-arm measurement. This small sample is not representative;
+budget20-40 GPUmin for both corpora and report actual cost after completion.
 All output paths under `runs/20261003_m1_factorizer/`. Development-selected;
 current method, paper and Overleaf unchanged until supported promotion.
 
@@ -148,3 +150,19 @@ To avoid attributing kernel effects to factorization, the explicit-causal arm is
 included in the complete primary experiment before any GPU performance read;
 GPU smoke records its drift rather than requiring unjustified bitwise equality.
 The original native baseline/restoration must still reproduce exactly.
+
+## GPU plumbing check and full launch, 2026-10-03
+
+Source: `runs/20261003_m1_factorizer/r1_smoke/plumbing_summary.json`, returned
+from sc474399 before full launch. Five native global margins and292 native
+branch reads exactly match current base_gridA; native restoration, branch
+availability,4fps length, finite scores and token-group alignment all pass.
+Largest5829-token prefix fits17.919GiB. Explicit-causal window drift reaches
+.724, supporting the already declared matched-mask control, not a performance
+claim. No GT or performance was inspected. The initial load-only failure is
+preserved in `r1_smoke_load_failure`; repository HF_HOME now links existing
+model weights, with no change to scoring code. Full command:
+`bash experiments/20261003_m1_factorizer/launch/run_lab2.sh main`, detached on
+sc474399, outputs `runs/20261003_m1_factorizer/r1_main/`.
+Attributor completed negatively after this proposal was fixed and is archived;
+Eraser remains running. Neither outcome changed the Factorizer declaration.
