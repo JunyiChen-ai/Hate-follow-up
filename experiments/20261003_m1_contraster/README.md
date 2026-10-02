@@ -156,3 +156,6 @@ small and not representative; budget10-20GPUmin for both corpora. Head FP32
 setup.0099sec, excluded from steady-state totals. Main command, after live GPU
 check on sc448960: `bash experiments/20261003_m1_contraster/launch/run_lab.sh main`.
 Output `runs/20261003_m1_contraster/r1_main/`; native+contrast share3+B forwards.
+
+Full paired333-video run started on sc448960 at03:01NZ. Eraser completed negatively
+and was archived after the Contraster declaration and smoke; no method change.

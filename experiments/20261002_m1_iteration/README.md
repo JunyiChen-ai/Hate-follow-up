@@ -22,10 +22,11 @@ Completed candidates:
    run, native parity/numerics passed; final within drops.1296/.0695 and every
    main metric drops. No control performance evaluated after failed primary gate.
 
+5. `archive/experiments/20261003_m1_eraser/README.md`: actual media deletion and
+   full re-encoding, native parity passed; all final metrics fell, within−.1312/
+   −.1311. Raw ordering also worse. Archived with no extra controls.
+
 Running candidates:
-- `experiments/20261003_m1_eraser/README.md`: physical media removal and fresh
-  full-prefix encoding, independent reviews and four-video GPU checks passed;
-  complete paired run on sc448960, no performance read.
 
 - `experiments/20261003_m1_factorizer/README.md`: sixth proposal, prefix
   temporal-block encoding with ordinary global query access. Independent proposal
@@ -35,9 +36,9 @@ Running candidates:
 
 - `experiments/20261003_m1_contraster/README.md`: seventh candidate, one-forward
   language-depth contrastive readout. Proposal PASS; CPU plumbing passed and
-  independent code review PASS. No performance read or GPU run yet.
+  independent code review PASS. Five-video GPU checks passed; full333 paired run started on sc448960 at03:01NZ.
 
-Cumulative archives4 (three performance failures, one proposal novelty STOP).
+Cumulative archives5 (four performance failures, one proposal novelty STOP).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,

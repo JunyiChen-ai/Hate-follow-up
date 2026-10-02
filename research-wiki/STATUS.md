@@ -4,22 +4,20 @@
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档4个候选：Grounder、Selector、Attributor完整性能未过门；Marginalizer因MARS/RAMF
-已有双假设机制在方案审查STOP。前三者完整原生基线读数均精确复现。
-最新Attributor完整FP32归因：ROC/PR/within为HateMM .874816/.613965/.621149、
-HCS .657016/.573880/.567891；所有主指标下降，within−.1296/−.0695，原始窗口排序也下降。
-本机来源 `runs/20261002_m1_attributor/r1_main_fp32_mem_decoded/attribute/metrics.json`；
-数值全部通过，完整配对97.25分钟。按规则9归档，未继续跑消融。
-详见 `archive/experiments/20261002_m1_attributor/README.md`。
-Eraser实际删除媒体并重新编码：完整333视频配对仍在lab-server运行，无性能结果；
-本机已有检查输出 `runs/20261003_m1_eraser/r1_smoke/`。
-第六候选Factorizer将隔离移至前缀编码阶段，保留查询时全局访问；方案/代码审查通过，
-真实小型多模态模型验证跨组KV隔离，五视频GPU检查通过，292个基线分支精确复现；
-完整三臂实验02:34NZ在sc474399启动，无性能结果。
-入口 `experiments/20261003_m1_factorizer/README.md`；主实验含显式因果掩码对照，
-防止把计算内核差异当成机制收益。当前方法、论文和Overleaf不变；全部development-selected。
-第七候选Contraster用同一前向的中间层分布构造局部读数；方案PASS，CPU检查通过，
-独立代码审查PASS，入口 `experiments/20261003_m1_contraster/README.md`，未跑GPU。
+累计归档5个候选：Grounder、Selector、Attributor、Eraser性能未过门；Marginalizer方案STOP。
+最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
+HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
+来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
+Factorizer完整三臂在sc474399完成并回传，正在本机评测，尚无性能；Contraster五视频GPU检查通过，
+03:01NZ在sc448960启动完整333配对，来源/机制/成本见各自实验README。
+
+**五个候选小结（规则11，不超过10行）**：
+- 尝试了查询注意力限制、选择注意力头、缓存值归因、实际删除；双假设因已有方法STOP。
+- 完整实验都复现原生基线；没有一个达到任一最终指标+.01的保留门。
+- 其中最接近原方法的主方案是Grounder late：HateMM .897570/.695834/.750171；
+  HCS .716291/.670781/.637249，来源 `runs/20261002_m1_grounder/r1_full_decoded/late/metrics.json`。
+- 梯度归因和实际删除的原始窗口排序已下降，不能把下游拟合当作唯一原因。
+- 继续编码阶段隔离与模型层间读出；当前方法、论文和Overleaf不变，全部development-selected。
 
 **2026-10-02 可修正全局先验实验完成，负结果归档**：用户授权的共享随机偏差机制已实现、
 通过独立方案/代码审查、解析积分与数值精度检查，并跑完 full / independent / no-global 三臂。

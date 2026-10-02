@@ -1,3 +1,5 @@
+> Archived: no main metric improved by .01; actual media deletion reduced raw and decoded localization on both corpora.
+
 # M1 Eraser: re-encoding after temporal media removal
 
 Date2026-10-03. Status: proposal/code PASS; four-video GPU smoke passed. Fifth candidate of the M1 iteration;
@@ -170,3 +172,47 @@ inform this estimate, so report actual time afterward. Although outer call count
 are less than twice native, repeated full prefills make this substantially more
 expensive than native short cached queries. Start full333 on sc448960; one
 complete paired experiment, not shards or smoke-subset evaluation.
+
+## Complete result and disposition, 2026-10-03
+
+Full333-video paired run completed on sc448960,97.24minutes, and all outputs
+returned locally before analysis. Sources: final
+`runs/20261003_m1_eraser/r1_main_decoded/{base,erase}/metrics.json`, raw
+`runs/20261003_m1_eraser/r1_main/{base,erase}/metrics.json`, integrity/cost/paired
+reports `runs/20261003_m1_eraser/r1_main_analysis/`.
+
+| Dataset | Native ROC / PR / within | Erase ROC / PR / within | Raw within native → erase |
+|---|---|---|---|
+| HateMM | .897119 / .694235 / .750782 | .878392 / .618500 / .619622 | .680011 → .556487 |
+| HateClipSeg | .716825 / .671072 / .637349 | .672767 / .615419 / .506248 | .610130 → .509821 |
+
+All333 original global margins and every native window branch exactly match
+base_gridA. All frame rates, lengths, bounds, missing branches and finite checks
+pass. Actual deleted-input reads are complete:6177/5499 nonempty modality
+interventions, respectively. No partial or smoke predictions enter evaluation.
+Paired within deltas are −.131160 on84HateMM mixed videos(95%CI[−.206705,−.055417])
+and −.131101 on99HCS mixed videos([−.179234,−.079919]). Raw deltas are
+−.123525/−.100309. Thus the loss already exists in local ordering, before r6;
+this does not isolate redundancy, positional disruption or decision semantics
+as the unique cause. Necessity of a window to the global response has not yielded
+a better localization signal in this implementation.
+
+Coverage limits remain:1030/1233 windows contain no sampled frame; a zero visual
+score exceeds negative speech influence in490/495 of these.118/169 windows have
+neither media. These are recorded limits, not evidence that removing the floor
+would rescue the method. The declared primary has no qualifying gain, so extra
+controls/revisions are not run. Correct-Yes within drops.144688/.123315. Wrong-No
+strata contain only3/5 mixed videos and move+.234094/−.277496, inconsistent and too
+small to establish correction of global errors.
+
+Steady-state deployment totals(prefix+reads) are47.66/41.14GPUminutes for Eraser,
+against5.99/4.89 for native. Mean outer forwards59.46/95.20 versus36.52/60.05;
+all erased prefixes are recomputed and charged. Peaks17.824/17.547GiB. Setup and
+serialization make actual paired wall time97.24minutes; no cache-reuse claim
+hides new-video deletion cost.
+
+Rule10 log: read the complete native/erase predictions, canonical raw/final
+metrics and `data/gt_4fps/{HateMM,HateClipSeg}.npz` only in post-inference
+analysis. Finding: all main metrics fell and raw ordering already deteriorated.
+Decision: archive without further revision/control, unchanged current method
+and paper. Scores were computed before GT access; development-selected.
