@@ -95,8 +95,8 @@ class Attributor:
         f1,endpoint=self.point(cache,ids,media,1.,gradient=True)
         torch.cuda.synchronize();endpoint_seconds=time.perf_counter()-tick
         expected=f1-f0;tolerance=max(.25,.05*abs(expected))
-        trials=[];solutions={};forwards=2;backwards=1;accepted=None
-        for n in (16,32,64):
+        trials=[];solutions={};forwards=2;backwards=1;accepted=None;previous=None
+        for n in (16,32,64,128,256):
             torch.cuda.synchronize();tick=time.perf_counter()
             nodes,weights=np.polynomial.legendre.leggauss(n)
             attribution=np.zeros(len(media),float)
@@ -106,18 +106,21 @@ class Attributor:
             forwards+=n;backwards+=n
             torch.cuda.synchronize();seconds=time.perf_counter()-tick
             residual=abs(float(attribution.sum())-expected)
+            relative_l1=None if previous is None else float(np.abs(attribution-previous).sum()/max(np.abs(attribution).sum(),1e-12))
+            stable=relative_l1 is not None and relative_l1<=.05
             trials.append({"nodes":n,"seconds":seconds,"sum":float(attribution.sum()),"completeness_residual":residual,
-                "tolerance":tolerance,"pass":residual<=tolerance})
+                "relative_l1_vs_previous":relative_l1,"tolerance":tolerance,"pass":residual<=tolerance and stable})
             solutions[n]=attribution
-            if accepted is None and residual<=tolerance:accepted=n
+            previous=attribution
+            if accepted is None and residual<=tolerance and stable:accepted=n
             if accepted is not None and not smoke:break
         # Keep all smoke integrations for numerical stability, but primary is the
         # first passing grid, exactly as in deployment. Never normalize residual away.
-        n=accepted or 64
+        n=accepted or 256
         return solutions[n],endpoint,{"f0":f0,"f1":f1,"expected_sum":expected,
             "trials":trials,"accepted_nodes":accepted,"numerical_pass":accepted is not None,
             "actual_forwards":forwards,"actual_backwards":backwards,
             "endpoint_seconds":endpoint_seconds,
             "deployed_seconds":endpoint_seconds+sum(t["seconds"] for t in trials if t["nodes"]<=n),
-            "deployed_forwards":2+sum(k for k in (16,32,64) if k<=n),
-            "deployed_backwards":1+sum(k for k in (16,32,64) if k<=n)},solutions
+            "deployed_forwards":2+sum(k for k in (16,32,64,128,256) if k<=n),
+            "deployed_backwards":1+sum(k for k in (16,32,64,128,256) if k<=n)},solutions

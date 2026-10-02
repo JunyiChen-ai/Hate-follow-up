@@ -62,14 +62,14 @@ def read_video(j,attributor,row,segments,smoke=False):
         "visual":regions["visual"],"speech":regions["speech"],"local":np.stack(regions["local"])}
     stability=[]
     if smoke:
-        for n in (16,32):
+        for n in (16,32,64,128):
             u,_,_=window_contributions(solutions[n],regions,texts)
-            v,_,_=window_contributions(solutions[64],regions,texts)
+            v,_,_=window_contributions(solutions[256],regions,texts)
             x=np.array([max(w.values()) for w in u]);y=np.array([max(w.values()) for w in v])
-            stability.append({"nodes":n,"reference":64,"window_max_abs_diff":float(np.max(abs(x-y))),
+            stability.append({"nodes":n,"reference":256,"window_max_abs_diff":float(np.max(abs(x-y))),
                 "window_mean_abs_diff":float(np.mean(abs(x-y))),
                 "window_spearman":float(spearmanr(x,y).statistic) if np.std(x)>0 and np.std(y)>0 else None,
-                "token_relative_l1":float(np.abs(solutions[n]-solutions[64]).sum()/max(np.abs(solutions[64]).sum(),1e-12))})
+                "token_relative_l1":float(np.abs(solutions[n]-solutions[256]).sum()/max(np.abs(solutions[256]).sum(),1e-12))})
     L=int(math.ceil(dur*FPS));index=np.clip(((np.arange(L)+.5)/FPS//8).astype(int),0,len(wins)-1)
     records={}
     for arm,values,calls,seconds in (("base",base,3+branches,base_seconds),
@@ -102,7 +102,7 @@ def main():
     config={**vars(a),"date":time.strftime("%Y-%m-%d"),"host":socket.gethostname(),"seed":0,"model":MODEL,
         "torch":torch.__version__,"transformers":transformers.__version__,"GT_in_reader":False,
         "code":"experiments/20261002_m1_attributor/{measure,attributor}.py; src/window_token_regions.py; local sources 2026-10-02",
-        "nodes":[16,32,64],"completeness_atol":.25,"completeness_rtol":.05,
+        "nodes":[16,32,64,128,256],"convergence_relative_l1":.05,"completeness_atol":.25,"completeness_rtol":.05,
         "video_question":VIDEO_QUESTION,"visual_question":yesno_question(0,1,0,8,"","visual"),
         "speech_question":yesno_question(0,1,0,8,"<text>","speech"),"frames":20,"window_seconds":8}
     (out/"config.json").write_text(json.dumps(config,indent=2)+"\n")

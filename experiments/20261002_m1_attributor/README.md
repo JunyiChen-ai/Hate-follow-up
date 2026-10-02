@@ -61,13 +61,25 @@ depend on gates and are differentiated normally. Prefix encoding is not
 differentiated. This attributes direct cached-media-value paths under a
 specified baseline; it is not a full decomposition of semantic evidence.
 
-Gauss-Legendre quadrature starts at 16 nodes. If the completeness residual
-`abs(sum A - (F(1)-F(0)))` exceeds `max(.25, .05*abs(F(1)-F(0)))`, recompute
-at 32, then 64 nodes. These are numerical integration settings, identical
-for both corpora, selected solely from model outputs. Retain every residual
-and node count. At the cap, record failure; do not silently rescale A to force
-completeness. A systematic numerical failure blocks performance conclusions
-until repaired. Smoke compares 16/32/64 attribution stability without GT.
+Gauss-Legendre grids are 16, 32, 64, 128 and 256 nodes. Accept the first grid
+whose completeness residual `abs(sum A - (F(1)-F(0)))` is at most
+`max(.25, .05*abs(F(1)-F(0)))` AND whose full signed token vector differs
+from the previous grid by relative L1 <= .05 (`L1(delta)/max(L1(A),1e-12)`).
+Thus the earliest possible acceptance is 32, requiring 16+32 gradient reads.
+These numerical settings are identical for both corpora and use no GT.
+Retain every residual and node count. At the cap, record failure; do not
+silently rescale A to force completeness or exclude a failed video. Numerical
+failure blocks performance conclusions until repaired. Smoke evaluates all grids
+and reports per-window values/rank stability against the 256-node reference.
+
+Numerical-only revision before any performance read: the first smoke
+`runs/20261002_m1_attributor/r1_smoke/` tested 16/32/64. Native endpoints and
+cache invariance were exact, peak memory 19.96 GiB. Three videos had token
+L1 < .017 and window Spearman >= .9995 versus 64; `non_hate_video_4` needed
+64 for completeness but had 16/64 rank .90 and 32/64 rank .70. Therefore
+completeness alone was insufficient and the vector-convergence guard plus
+128/256 refinements were added. Original smoke outputs are retained unchanged.
+No localization metric or GT was read in making this numerical revision.
 
 Map signed contributions into visual/speech windows using exact token spans.
 When one token belongs to multiple windows, split its contribution equally
@@ -119,9 +131,9 @@ Reuse frames/ASR/model and one prefix encoding per video; no new preprocessing.
 Deployment replaces the original 3+B forwards (B observed modality branches)
 with 1 prefix + 2 endpoint forwards (one also backward, stored as endpoint
 control) + K global-query forwards/backwards, where
-K is 16 normally, total 48 if retried at 32, or 112 if retried at 64. No per-window
+K is at least 48 (16+32), then 112, 240 or 496 on further refinement. No per-window
 model calls. Parameter gradients and prefix backprop are disabled, but query
-backprop has real GPU/memory cost. Estimated normal reader 15–35 GPU minutes
+backprop has real GPU/memory cost. Initial estimate before numerical smoke was 15–35 GPU minutes
 for 333 videos on 5090; paired baseline adds approximately 10 minutes. Actual
 smoke time/memory and per-corpus standalone estimates must be reported before
 full launch; if convergence makes cost excessive, numerical feasibility is
