@@ -18,7 +18,12 @@ Completed candidates:
    MARS/RAMF already use opposite hate/non-hate assumptions on the same media.
    No implementation or GPU run.
 
-Current candidate: `experiments/20261002_m1_attributor/README.md`; independent
+Running candidates:
+- `experiments/20261003_m1_eraser/README.md`: physical media removal and fresh
+  full-prefix encoding, independent reviews and four-video GPU checks passed;
+  complete paired run on sc448960, no performance read.
+
+Earlier-running candidate: `experiments/20261002_m1_attributor/README.md`; independent
 proposal/code reviews PASS. BF16 integration stopped at video26 without any
 performance read; adaptive BF16 did not fix vector accuracy. FP32 queries plus
 decoder activation recomputation pass failure-case/maximum-prefix diagnostics,

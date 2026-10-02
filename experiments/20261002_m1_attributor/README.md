@@ -287,3 +287,12 @@ allocator segments. Values, precision, gradients, grids and scoring unchanged.
 Transfers remain included in measured deployment time. Start all333 anew in
 `r1_main_fp32_mem`; analysis now targets only that complete run. Preserve both
 partial runs as diagnostics; do not merge them into the final experiment.
+
+Prepared (not performance-evaluated) CPU falsification arms in `controls.py`:
+endpoint gradient, absolute contribution, within-modality half-token rotation,
+media density, and a common per-video shift preserving native raw max order.
+Generation requires a qualifying complete primary result. A four-video saved
+smoke check verified attribution-to-window reproduction, unchanged global and
+modality availability, finite output, and shift centering/rank invariance;
+`runs/20261002_m1_attributor/controls_selfcheck/checks.json`. No labels read.
+Independent targeted control review and canonical evaluation are still pending.

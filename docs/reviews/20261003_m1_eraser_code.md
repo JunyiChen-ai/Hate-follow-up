@@ -41,3 +41,13 @@ These are synthetic score values, not benchmark performance. The fixture verifie
 ## Claim boundary
 
 The code implements actual input occlusion rather than a hypothetical exclusion instruction. Removing input also changes token positions, formatting and the surviving transcript context. Original coarse timestamps remain attached to retained words. A response difference alone does not prove a cross-modal interaction or identify causal ground-truth evidence. Any eventual gain remains development-selected and needs the predeclared quantity, time-alignment, original-query and score-shift controls, including the missing-frame floor diagnostic when relevant.
+
+## GPU smoke supplement — PASS for the declared full paired run
+
+After the initial code/CPU decision, the author returned `runs/20261003_m1_eraser/r1_smoke/` from `lab-server` (`sc448960`). Its config records Qwen3-VL-8B-Instruct, torch 2.11.0+cu128 and transformers 5.15.1. I read the config, `checks.jsonl`, `plumbing_summary.json` and the native arm's raw predictions; I independently compared the four original global margins and all 136 original local margins to the corresponding records in `runs/20260926_glr/base_gridA/predictions.jsonl`. Every comparison is exact. All four full-input restoration checks are exact. No GT or localization metric was read.
+
+The four videos contain 113 nonempty interventions, each executing the reviewed fresh-prefix path. Recorded actual-forward counts are 59, 21, 125 and 177, each exactly matching `3 + B + 2E + 2` with smoke restoration. Peak allocated memory is 17.1762 GiB. Erasure reads take 47.7140 seconds in total, original global/native reads 6.7983 seconds, and restoration diagnostics 1.6841 seconds (56.1965 seconds total measured phases).
+
+`plumbing_summary.json` estimates erasure-only time from the two smoke videos per corpus: 6,177 HateMM erasures at 0.3461 seconds each, approximately 35.63 minutes; 5,499 HateClipSeg erasures at 0.4417 seconds each, approximately 40.48 minutes. The 76.11-minute sum is an extrapolation, excludes the native paired baseline and is not a measured full-run cost. Full-run corpus timing and peak memory must replace this estimate in any final report.
+
+The remaining smoke conditions are satisfied. Code-review decision: **PASS to run the declared complete 333-video paired experiment**. Full coverage/native parity still must pass `prepare` before evaluation; this supplement does not establish a performance gain or mechanism claim.
