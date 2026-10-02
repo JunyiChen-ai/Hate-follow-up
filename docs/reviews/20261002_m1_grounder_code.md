@@ -109,3 +109,54 @@ context. The README correctly limits the mechanism to direct attention access.
 No implementation change is required for that declared mechanism. The full
 six-arm results and the predeclared controls must determine whether it improves
 localization and whether any mechanism explanation is supported.
+
+## Analysis-path supplement, same review
+
+Reviewed the subsequently added
+`experiments/20261002_m1_grounder/analyze.py` while full GPU measurement was still
+running, without reading its performance results. **PASS.**
+
+- `prepare` requires all 333 manifest videos, exact paired keys, identical global
+  logits/window grids, four-fps lengths, and finite raw curves. The final reviewed
+  `report` also requires every decoded arm to retain exactly the raw keys, global
+  logits, rate, and lengths, with finite curves. The latter assertions were added
+  following this review. Four synthetic corruptions—missing decoded video,
+  altered global logit, shortened curve, and NaN—are each rejected.
+- The diagnostic shift is one label-free constant per video, added to every
+  available modality read and to the raw max curve, with the original global
+  logit retained. Independent checks on all four smoke videos confirm that full
+  curves and every individual modality preserve all ranks and ties. This control
+  is correctly identified as a reconstruction using two experimental caches,
+  not a deployed method or an ensemble candidate.
+- Raw metrics use `src.eval.evaluate_four_datasets`. Decoder calls exactly match
+  the current r6 configuration: `--noleak --transform nscore --key calib
+  --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2`.
+  The existing r6 CLI produces final metrics through the same evaluator. Fit
+  parameters are refitted without labels for each arm; the output explicitly
+  states this distinction from freezing parameters.
+- Paired intervals bootstrap per-video differences, with fixed seed 0 and
+  10,000 resamples. Window diagnostics first average each stratum within each
+  video and bootstrap those video means. They do not treat correlated windows
+  as independent samples. Correct-Yes/wrong-No comparisons are restricted to
+  mixed-label videos, where a video does contain positive frames. GT loads and
+  window-group thresholds occur only in post-inference evaluation/reporting.
+- No-drop and main improvement gates match the declared `.005` pooled, `.01`
+  within, and `.01` within improvement on both corpora. Component gates require
+  a common main metric to improve by `.01` on both corpora. The shifted-prefix
+  and shift-only checks are at least as strict as the README requirements. The
+  raw-ordering gate checks only the sign of paired mean improvement; its size
+  and confidence interval must still be reported, and this boolean alone is not
+  evidence of a statistically reliable raw-reader improvement.
+- The initial analysis omitted the promised with/without sampled-frame window
+  breakdown. The implementation agent added both strata for each window group,
+  based on `kept_visual_tokens > 0`; confirmed in the final reviewed code and a
+  structural execution test. No scoring logic was changed.
+
+Structural test evidence is under
+`runs/20261002_m1_grounder/independent_review/analysis_fixture/REVIEW_ONLY.json`.
+The fixture uses the four smoke inputs, **synthetic alternating GT and dummy
+metrics**, intercepts all subprocess calls, and never reads real GT. Its generated
+tables are test artifacts and must never be cited as experimental results. The
+prepare/report path, 14 assembled canonical CLI calls, deterministic bootstrap,
+rank preservation, frame strata, and failure assertions all passed. No new GPU
+call or additional performance-based decision was made in this review.

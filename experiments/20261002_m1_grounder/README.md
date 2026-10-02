@@ -89,6 +89,13 @@ across machines. Apply unchanged r6_bma through its CLI and the canonical evalua
   within-video max/modality ordering. If it explains the gain, do not attribute
   improvement to better temporal evidence ranking. It uses both experimental
   caches and is a diagnostic reconstruction, not a deployment method.
+- Window-rank diagnostic declared while GPU reading is in progress, before any
+  performance inspection: per-video percentile-rank change for positive windows
+  (GT fraction >=.5), pure negative windows whose midpoint is >8s from a positive
+  GT frame, and nearer pure negatives. Bootstrap per-video group means, not
+  individual windows. The hypothesis predicts decreasing far-negative rank and
+  retained/increased positive rank; ambiguous partial windows are omitted from
+  these diagnostics. These thresholds never enter the method or primary metrics.
 
 ## Cost and execution
 
@@ -127,3 +134,17 @@ Run `bash experiments/20261002_m1_grounder/launch/run_lab2.sh full` detached wit
 logs under `runs/20261002_m1_grounder/r1_full/`; rsync that run back after completion,
 then `launch/run_analysis.sh` locally for raw evaluator outputs, unchanged r6
 inference, shift-only control and paired/bootstrap report. GT enters analysis only.
+For this run, `launch/run_all_analysis.sh` performs the same stages, with the
+seven independent CPU decoding arms in parallel on lab1 (16 CPUs, 48GB available
+before launch; one BLAS thread per arm). It waits for every successful exit before
+reporting. `cost_alignment.json` records full-corpus parity against the existing
+current Reader and observed standalone-time estimates, including each arm's share
+of prefix computation. This changes execution scheduling, not any numerical fit.
+
+Input-only coverage check while the GPU run is pending (no GT/performance read):
+`runs/20261002_m1_grounder/input_coverage.json` uses the current shared input
+loader. HateMM has 3,768 windows (1,030 without a sampled frame; 118 without a
+frame or speech); HCS has 3,591 (1,233 and 169 respectively). Thus frame-coverage
+strata are material. The hard-mask arms retain contextualized prefix/query states
+even for these windows; they must not be described as having removed all external
+information. No missing-input fallback or constants were changed after this check.

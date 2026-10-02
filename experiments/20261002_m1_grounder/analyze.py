@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 import numpy as np
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, rankdata
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
@@ -52,6 +52,32 @@ def prepare(readroot):
             assert r["native_rate"]==4 and len(r["score_curve"])==len(ref["score_curve"])
             assert np.isfinite(r["score_curve"]).all()
             assert [(w["start"],w["end"]) for w in r["extra"]["windows"]]==[(w["start"],w["end"]) for w in ref["extra"]["windows"]]
+    historical=read(ROOT/"runs/20260926_glr/base_gridA/predictions.jsonl")
+    parity=[]
+    for key,r in base.items():
+        old=historical[key]
+        assert [(w["start"],w["end"]) for w in r["extra"]["windows"]]==[(w["start"],w["end"]) for w in old["extra"]["windows"]]
+        diffs=[]
+        for w,v in zip(r["extra"]["windows"],old["extra"]["windows"]):
+            assert ("z_speech" in w)==("z_speech" in v)
+            diffs.extend(abs(w[k]-v[k]) for k in ("z_visual","z_speech") if k in w)
+        parity.append({"dataset":key[0],"video_id":key[1],
+                       "global_abs_diff":abs(r["extra"]["z_video"]-old["extra"]["z_video"]),
+                       "window_max_abs_diff":max(diffs,default=0.)})
+    costs={}
+    for ds in DATASETS:
+        costs[ds]={}
+        for arm,data in rows.items():
+            records=[r for k,r in data.items() if k[0]==ds]
+            prefix=sum(r["extra"]["prefix_seconds"] for r in records)
+            branch=sum(r["extra"]["branch_seconds"] for r in records)
+            calls=[r["calls"] for r in records]
+            costs[ds][arm]={"videos":len(records),"prefix_seconds":prefix,
+                           "branch_seconds":branch,"estimated_standalone_gpu_seconds":prefix+branch,
+                           "mean_calls":float(np.mean(calls)),"min_calls":min(calls),"max_calls":max(calls)}
+    (readroot/"cost_alignment.json").write_text(json.dumps({"current_reader_source":"runs/20260926_glr/base_gridA/predictions.jsonl",
+        "parity":parity,"costs":costs,
+        "timing_scope":"GPU-synchronized wall time on sc474399; prefix shared across paired arms, charged once per standalone arm; excludes model loading and original frame/ASR preparation; arm order fixed"},indent=2)+"\n")
     out=readroot/"shift_only";out.mkdir(exist_ok=True)
     with (out/"predictions.jsonl").open("w") as f:
         for key,r in base.items():
@@ -67,8 +93,8 @@ def prepare(readroot):
     print("PREPARED",len(base),"paired videos",flush=True)
 
 
-def evaluate(readroot,decoded):
-    for arm in ARMS:
+def evaluate(readroot,decoded,arms=ARMS):
+    for arm in arms:
         p=readroot/arm
         subprocess.run([sys.executable,"-m","src.eval.evaluate_four_datasets","--predictions",str(p/"predictions.jsonl"),
                         "--gt-dir","data/gt_4fps","--datasets",*DATASETS,"--out",str(p/"metrics.json")],cwd=ROOT,check=True,stdout=subprocess.DEVNULL)
@@ -81,13 +107,22 @@ def report(readroot,decoded,out):
     out.mkdir(exist_ok=True)
     raw={a:read(readroot/a/"predictions.jsonl") for a in ARMS}
     pred={a:read(decoded/a/"predictions.jsonl") for a in ARMS}
+    for arm in ARMS:
+        assert pred[arm].keys()==raw["base"].keys()==raw[arm].keys(),(arm,"decoded coverage mismatch")
+        for key,r in pred[arm].items():
+            ref=raw["base"][key]
+            assert r["extra"]["z_video"]==ref["extra"]["z_video"]
+            assert len(r["score_curve"])==len(ref["score_curve"]) and r["native_rate"]==4
+            assert np.isfinite(r["score_curve"]).all(),(arm,key)
     metrics={a:{r["dataset"]:r for r in json.load((decoded/a/"metrics.json").open())["per_dataset"]} for a in ARMS}
     rawmetrics={a:{r["dataset"]:r for r in json.load((readroot/a/"metrics.json").open())["per_dataset"]} for a in ARMS}
-    results={};allrows=[]
+    results={};allrows=[];window_diagnostics={}
     for ds in DATASETS:
         gt=np.load(ROOT/f"data/gt_4fps/{ds}.npz",allow_pickle=True)
         ys={str(vid):np.asarray(gt["y4"][i]) for i,vid in enumerate(gt["video_ids"]) if str(gt["split"][i])=="test"}
-        rows=[]
+        labels=("positive","far_negative","near_negative")
+        labels=labels+tuple(g+suffix for g in labels for suffix in ("_with_frame","_no_frame"))
+        rows=[];rank_groups={a:{g:[] for g in labels} for a in ARMS if a!="base"}
         for vid,y in ys.items():
             key=ds,vid
             if key not in pred["base"]:continue
@@ -98,6 +133,26 @@ def report(readroot,decoded,out):
             r["delta"]=r["late"]-r["base"] if r["base"] is not None else None
             xx,yy=raw["base"][key]["score_curve"],raw["late"][key]["score_curve"]
             r["raw_rank_spearman"]=float(spearmanr(xx,yy).statistic) if np.ptp(xx)>0 and np.ptp(yy)>0 else None
+            if y.any():
+                wins=raw["base"][key]["extra"]["windows"]
+                times=(np.arange(len(y))+.5)/4
+                positive_times=times[y>0]
+                groups=[]
+                for w in wins:
+                    in_window=(times>=w["start"])&(times<w["end"])
+                    fraction=float(y[in_window].mean()) if in_window.any() else None
+                    distance=float(np.min(np.abs(positive_times-(w["start"]+w["end"])/2)))
+                    groups.append("positive" if fraction is not None and fraction>=.5 else
+                                  ("far_negative" if distance>8 else "near_negative") if fraction==0 else None)
+                ranks={a:(rankdata([w["z"] for w in raw[a][key]["extra"]["windows"]])-.5)/len(wins) for a in ARMS}
+                assert np.array_equal(ranks["base"],ranks["shift_only"]),"shift control changed raw ranks"
+                for arm in rank_groups:
+                    delta=ranks[arm]-ranks["base"]
+                    for group in rank_groups[arm]:
+                        suffix=next((s for s in ("_with_frame","_no_frame") if group.endswith(s)),"")
+                        basegroup=group[:-len(suffix)] if suffix else group
+                        mask=np.array([g==basegroup and (not suffix or (w["kept_visual_tokens"]>0)==(suffix=="_with_frame")) for g,w in zip(groups,wins)])
+                        if mask.any():rank_groups[arm][group].append(float(delta[mask].mean()))
             rows.append(r)
         mixed=[r for r in rows if r["delta"] is not None];allrows+=rows
         comp={}
@@ -113,15 +168,22 @@ def report(readroot,decoded,out):
                      "raw":{a:{m:rawmetrics[a][ds][m] for m in METRICS} for a in ARMS},"comparisons":comp,
                      "largest_gains":sorted(mixed,key=lambda r:r["delta"],reverse=True)[:5],
                      "largest_losses":sorted(mixed,key=lambda r:r["delta"])[:5]}
+        window_diagnostics[ds]={arm:{group:boot(values) for group,values in groups.items()} for arm,groups in rank_groups.items()}
     gates={"no_drop":all(results[d]["comparisons"]["base"]["delta"][m]>=(-.01 if m.startswith("within") else -.005) for d in DATASETS for m in METRICS),
            "within_gain_both":all(results[d]["comparisons"]["base"]["delta"][METRICS[-1]]>=.01 for d in DATASETS),
            "component_gates":{a:any(all(results[d]["comparisons"][a]["delta"][m]>=.01 for d in DATASETS) for m in METRICS)
                               for a in ("shifted","all_local","verdict_only","early")}}
     gates["performance_pass"]=gates["no_drop"] and gates["within_gain_both"]
-    gates["staged_mechanism_supported"]=gates["performance_pass"] and all(gates["component_gates"].values())
+    gates["raw_ordering_improves_both"]=all(results[d]["comparisons"]["base"]["raw_within_paired"]["mean"]>0 for d in DATASETS)
+    gates["beyond_shift_control_both"]=all(results[d]["comparisons"]["shift_only"]["delta"][METRICS[-1]]>=.01 for d in DATASETS)
+    gates["staged_mechanism_supported"]=gates["performance_pass"] and all(gates["component_gates"].values()) and gates["raw_ordering_improves_both"] and gates["beyond_shift_control_both"]
     result={"datasets":results,"gates":gates,"scope":"development-selected; frozen r6 decoder algorithm; parameters refit label-free per read arm",
             "metric_sources":{a:str((decoded/a/"metrics.json").relative_to(ROOT)) for a in ARMS}}
     (out/"summary.json").write_text(json.dumps(result,indent=2)+"\n")
+    (out/"window_rank_diagnostics.json").write_text(json.dumps({"datasets":window_diagnostics,
+        "definition":"per-video mean change in window percentile rank vs base; bootstrap unit is video",
+        "groups":"positive: >=.5 GT fraction; negative: exactly zero, far if window midpoint >8s from any positive GT frame; partial windows omitted; with/no_frame by kept_visual_tokens>0",
+        "interpretation":"exploratory labels used only after inference; no claim of semantic-category annotation"},indent=2)+"\n")
     with (out/"per_video.csv").open("w") as f:
         writer=csv.DictWriter(f,fieldnames=list(allrows[0]));writer.writeheader();writer.writerows(allrows)
     lines=["dataset\tarm\tROC\tPR\twithin\traw_within\n"]
@@ -132,11 +194,14 @@ def report(readroot,decoded,out):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument("--read-run",default="r1_full")
-    ap.add_argument("--stage",choices=["all","prepare","evaluate","report"],default="all");a=ap.parse_args()
+    ap.add_argument("--stage",choices=["all","prepare","evaluate","report"],default="all")
+    ap.add_argument("--evaluate-arm",choices=ARMS,help="run one independent CPU arm; reporting still requires every arm")
+    a=ap.parse_args()
+    if a.evaluate_arm and a.stage!="evaluate":ap.error("--evaluate-arm requires --stage evaluate")
     root=ROOT/"runs/20261002_m1_grounder";readroot=root/a.read_run;decoded=root/(a.read_run+"_decoded");out=root/(a.read_run+"_analysis")
     print("host",socket.gethostname(),flush=True)
     if a.stage in ("all","prepare"):prepare(readroot)
-    if a.stage in ("all","evaluate"):evaluate(readroot,decoded)
+    if a.stage in ("all","evaluate"):evaluate(readroot,decoded,(a.evaluate_arm,) if a.evaluate_arm else ARMS)
     if a.stage in ("all","report"):report(readroot,decoded,out)
 
 
