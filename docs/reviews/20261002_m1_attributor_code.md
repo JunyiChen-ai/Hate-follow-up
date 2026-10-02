@@ -348,3 +348,37 @@ All videos must use this unified numerical implementation, and any failed
 integration still stops the full run without subset evaluation. The earlier
 FP32-counterpart claim limit and required precision control for interpreting
 a positive result remain unchanged.
+
+### CPU-staged precision conversion, 2026-10-03
+
+The full FP32 attempt stopped before video 25's attribution, inside
+`lm.layers.to(float32)`. The returned traceback reports 26.35 GiB allocated,
+4.06 GiB reserved but unallocated, and failure to allocate another 192 MiB.
+This is a conversion-time memory failure, not a localization result. The
+preceding 24 pairs remain unevaluated and will not be reused in the new run.
+
+**Targeted repair review: PASS.** The updated context first moves decoder
+layers/norm to CPU, releases unused CUDA storage, then transfers those same
+frozen BF16 parameter values into FP32 CUDA tensors. This changes allocation
+and transfer order; BF16 values promote to FP32 exactly. The existing BF16
+restoration remains intact. The launcher sets
+`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` before starting Python.
+This is an allocator setting, not a scoring or precision-rule change.
+
+Reran the existing `check_query_precision.py` and `check_checkpoint.py` against
+the revised implementation. Parameter/buffer dtype/value roundtrip, prefix
+cache, original BF16 margin, and FP32 endpoint/native equality remain exact.
+For both BF16/FP32 and alpha 0/.37/1, ordinary/read-only/checkpointed margins
+and gate gradients still differ by exactly zero. Context-exit restoration and
+recomputation counts pass. These CPU checks establish the computation/state
+invariants; they do not guarantee that CUDA fragmentation cannot recur.
+
+Additional decoder CPU/GPU transfers and their host-memory requirement are
+real costs. Their elapsed time falls inside the existing outer attribution
+timer and therefore `precision_and_wrapper_seconds`; they are not excluded
+from the deployed estimate. The final launcher, analysis input, and output
+paths now consistently target a fresh complete `r1_main_fp32_mem` run. All 333
+records will be rerun with this memory path, so its timing and predictions are
+not mixed with either earlier partial run. There is no remaining code-review
+block to starting that run under the existing numerical/complete-coverage
+requirements.

@@ -21,7 +21,12 @@ within −.0418 / −.0150，原始窗口排序也下降，全部基线读数精
 未读性能或 GT；FP32 查询已使失败视频收敛（本机
 `runs/20261002_m1_attributor/numeric_fp32/checks.jsonl`），最大输入也通过数值与显存检查（峰值28.48GiB）；连续配对又在第25个视频的权重精度转换时因显存碎片停止；
 本机 `runs/20261002_m1_attributor/r1_main_fp32/launch.out` 已回传。
-正在改为CPU暂存后重新分配FP32显存，准备完整重跑 `r1_main_fp32_mem`。
+已改为CPU暂存后重新分配FP32显存，lab2 完整重跑 `r1_main_fp32_mem` 进行中。
+第四候选 Marginalizer 因 MARS / RAMF 已使用双假设机制而被方案审查 STOP，
+未实现、未跑GPU；`archive/experiments/20261003_m1_marginalizer/README.md`。
+本轮累计归档3个候选（两个性能失败、一个新颖性未通过）。
+第五候选 Eraser 正在方案审查：直接删除窗口媒体并重新编码剩余输入，
+`experiments/20261003_m1_eraser/README.md`；尚未实现。
 后续将统一重跑，不将前 25 个 BF16 归因混入 FP32 结果。
 当前方法与论文不变；继续自主迭代，全部 development-selected。
 

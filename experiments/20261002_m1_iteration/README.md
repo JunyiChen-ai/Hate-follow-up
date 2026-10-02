@@ -14,6 +14,10 @@ Completed candidates:
    changed routing but reduced final within by .0418 / .0150; no qualifying gain.
    Full baseline reproduction exact; controls beyond smoke not run per funnel.
 
+3. `archive/experiments/20261003_m1_marginalizer/README.md`: proposal STOP;
+   MARS/RAMF already use opposite hate/non-hate assumptions on the same media.
+   No implementation or GPU run.
+
 Current candidate: `experiments/20261002_m1_attributor/README.md`; independent
 proposal/code reviews PASS. BF16 integration stopped at video26 without any
 performance read; adaptive BF16 did not fix vector accuracy. FP32 queries plus
