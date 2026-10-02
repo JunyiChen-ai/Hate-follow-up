@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
@@ -27,10 +26,12 @@ def midrank(values: np.ndarray) -> np.ndarray:
 
 
 def exact_transport(reference: np.ndarray, coordinate: np.ndarray, key: tuple[str, str]) -> np.ndarray:
-    """Return an exact permutation; ties use nominal evidence then hash, never time."""
-    digest = hashlib.sha256(("shared-shapley/" + "/".join(key)).encode()).digest()
-    seed = int.from_bytes(digest[:8], "little")
-    random_tie = np.random.default_rng(seed).random(len(reference))
+    """Return an exact permutation; ties use nominal evidence then fixed-seed noise.
+
+    2026-10-03 maintenance: content-derived seeds are prohibited. The unused key
+    is retained for legacy callers; historical results were not rerun.
+    """
+    random_tie = np.random.default_rng(0).random(len(reference))
     order = np.lexsort((random_tie, reference, coordinate))
     output = np.empty_like(reference)
     output[order] = np.sort(reference)
@@ -100,7 +101,7 @@ def main() -> None:
                     "coalitions": 8,
                     "roles": ["nominal", *included],
                     "role_weights": [1 / len(coordinates)] * len(coordinates),
-                    "tie_rule": "average_midrank_then_nominal_then_hash",
+                    "tie_rule": "average_midrank_then_nominal_then_seed0",
                     "transport": "exact_order_statistic_permutation",
                     "empirical_marginal_preserved_exactly": True,
                     "video_propensity_preserved": True,
@@ -183,7 +184,7 @@ def main() -> None:
                     "role_authority": {name: {"weight": values[0], "orbit_rank": values[1]}
                                        for name, values in authority.items()},
                     "authority_rule": "positive excess over exact circular-null median rank",
-                    "tie_rule": "average_midrank_then_nominal_then_hash",
+                    "tie_rule": "average_midrank_then_nominal_then_seed0",
                     "transport": "exact_order_statistic_permutation",
                     "empirical_marginal_preserved_exactly": True,
                     "video_propensity_preserved": True,

@@ -34,13 +34,17 @@ Completed candidates:
    native exact. Final within+.0001/+.0002; all13939 branches selected layer2.
    No qualifying gain; no additional controls or layer-pool revisions.
 
+9. `archive/experiments/20261003_m1_allocator/README.md`: proposal STOP; published
+   SHAP use in target video detection task; no implementation/GPU run.
+
 Running candidates:
 - `experiments/20261003_m1_visual_contrast/README.md`: eighth candidate,
   clean/corrupt visual-window contrast with native speech/global retained.
   Proposal/code PASS; five-video GPU plumbing passes (292 exact native branches).
-  Full333 paired measurement next; no performance yet.
+  Full333 completed: within+.01961/+.01066, HMM PR−.01410; retained under rule9,
+  not promoted. Four predeclared cached mechanism controls pending.
 
-Cumulative archives7 (six performance failures, one proposal novelty STOP).
+Cumulative archives8 (six performance failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
@@ -55,3 +59,8 @@ Acceptance: same metrics/gates on both main corpora; baseline-matched reading an
 unchanged downstream inference; claimed mechanism must pass component ablation
 and an intervention capable of falsifying its explanation. Each new reading cost
 and all failures are recorded. Current paper remains unchanged during search.
+
+Maintenance2026-10-03: independent Allocator proposal review encountered a
+content-derived tie-breaking seed in the archived August
+`project_shared_shapley_rank_transport.py`. Replaced it with fixed seed0 under
+CLAUDE prohibition; script not executed, historical results not reinterpreted.

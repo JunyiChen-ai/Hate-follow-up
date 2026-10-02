@@ -4,7 +4,7 @@
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档7个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster性能未过门；Marginalizer方案STOP。
+累计归档8个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster性能未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -12,7 +12,11 @@ Factorizer完整三臂也未过门：HateMM .894802/.675287/.749240，HCS .70488
 HCS within−.0700，普通掩码对照接近基线，来源 `runs/20261003_m1_factorizer/r1_main_decoded/factor/metrics.json`。
 Contraster完整结果也无有效提升：within+.0001/+.0002，13939分支全选layer2；
 来源 `runs/20261003_m1_contraster/r1_main_decoded/contrast/metrics.json`，已归档。
-第八候选视觉对比读取方案与独立代码审查PASS，五视频GPU核验通过，开始完整333视频对照，入口 `experiments/20261003_m1_visual_contrast/README.md`。
+第八候选视觉对比完整333完成：HateMM .892394/.680132/.770392，HCS .724669/.672273/.648014；
+within+.01961/+.01066，但HMM PR−.01410，保留继续、尚未晋级。
+来源 `runs/20261003_m1_visual_contrast/r1_main_decoded/contrast/metrics.json`；
+四项预声明缓存机制对照准备中，入口 `experiments/20261003_m1_visual_contrast/README.md`。
+第九候选Allocator因目标视频任务已有SHAP使用在方案审查STOP，未实施/未跑GPU。
 
 **五个候选小结（规则11，不超过10行）**：
 - 尝试了查询注意力限制、选择注意力头、缓存值归因、实际删除；双假设因已有方法STOP。

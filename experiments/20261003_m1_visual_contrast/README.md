@@ -140,3 +140,69 @@ First2-per-corpus estimate for full215/118:5.29/6.64min,11.93min total; this is
 only a small-sample estimate, stress case not substituted for a corpus average.
 Proceed to fixed r1_main full333 paired run, then canonical raw/r6 evaluation.
 No GT or candidate performance read in smoke. No method/constants changed.
+
+## R1 complete; retained under rule9, not promoted
+
+Host sc474399, full333 paired read912.9s (15.22min); returned locally before
+evaluation. All333 global and13,939 native branch margins exactly reproduce
+base_gridA. Canonical final source
+`runs/20261003_m1_visual_contrast/r1_main_decoded/{base,contrast}/metrics.json`;
+raw source `r1_main/{base,contrast}/metrics.json`; report `r1_main_analysis/`.
+
+| Corpus | Arm | ROC | PR | within | raw within |
+|---|---|---:|---:|---:|---:|
+| HateMM | native | .897119 | .694235 | .750782 | .680011 |
+| HateMM | contrast | .892394 | .680132 | .770392 | .663754 |
+| HateClipSeg | native | .716825 | .671072 | .637349 | .610130 |
+| HateClipSeg | contrast | .724669 | .672273 | .648014 | .621923 |
+
+Within gain+.019610 (n84, paired95%CI[-.000306,.044377]) /+.010665
+(n99,[-.004593,.028197]). Both meet point-estimate gain threshold, but HateMM
+PR−.014103 violates the no-loss gate. Raw within−.016257/+.011793; not evidence
+of universally better raw window ordering. Two largest HateMM final gains
+(.64 and .60 on hate_video_279/329) both have unchanged raw within and account
+for most aggregate gain. Need determine what new signal and decoder interaction
+produce this. Do not claim robust error correction: wrong-No strata have n3/5.
+
+Cost (standalone): native303.49/246.33s, contrast507.19/404.41s; mean forwards
+36.52/60.05 vs57.05/93.48. Combined peak17.824/17.547GiB. No new preprocessing.
+All evidence development-selected. Default/paper unchanged. Rule9 authorizes
+up to3 declared revisions, but primary mechanistic controls run first.
+
+### Cached mechanism controls: execution definition before their results
+
+The earlier declaration authorized these controls only after a qualifying gain.
+They now run on the saved clean a_i/noisy b_i/speech c_i with no new MLLM calls.
+All retain native global z_v, original windows/availability, and independently
+fit unchanged r6. The exact common-shift and RNG details are fixed here before
+execution, not selected from performance:
+
+1. `scale`: visual2a_i, original speech. With corpus normal-score transform this
+   positive visual rescaling should preserve the r6 temporal input exactly;
+   any within drift beyond roundoff is an implementation concern.
+2. `video_shift`: visual2a_i-mean_j(b_j), original speech. Removes window matching
+   from the noisy read while preserving each video's clean visual ordering.
+3. `shuffle`: visual2a_i-b_perm(i), original speech. Reset default_rng(0) per
+   video, permute all visual windows; record changed indices and changed values.
+   This breaks matching, not video-level noisy mean or marginal distribution.
+4. `common_shift`: let d_v=mean_i(max(2a_i-b_i,c_i))-mean_i(max(a_i,c_i)), with
+   absent speech omitted. Add d_v to BOTH native branches. Native raw-max order
+   stays unchanged and its video mean equals the contrast mean; downstream
+   global key is consequently matched, but no new local ordering is introduced.
+
+Report each arm's three canonical raw/final metrics, paired within differences
+versus native and contrast, individual visual/speech raw ordering, largest
+gain/loss examples and original-verdict strata. A shuffled/constant control
+matching the candidate would defeat the window-grounding explanation. No
+mechanism claim until this is tested. This is a control phase, not a new
+performance-selected method revision.
+
+R1 case inspection before controls: `r1_main/{base,contrast}/predictions.jsonl`,
+`r1_main/checks.jsonl`, `r1_main_decoded/{base,contrast}/predictions.jsonl` and
+current repaired ASR were read for hate_video_279/329. The former has2 windows
+and transcript "Outro Music"; original global−11.704 remains unchanged. The
+latter has ONLY1 read window (7.105s), so both raw curves are constant and within
+is.5; r6 splits into2 temporal cells whose ordering flips, producing+.60 final
+within. This is a decoder interaction, not new within-window timing evidence.
+The former's rawmax ordering also stays unchanged. Report such cases separately
+when assessing a grounding claim; do not exclude them from main metrics.
