@@ -43,7 +43,11 @@ Running candidates:
   Proposal/code PASS; five-video GPU plumbing passes (292 exact native branches).
   Full333 completed: within+.01961/+.01066, HMM PR−.01410; retained under rule9,
   not promoted. Four cached controls complete: matching supported only on HCS.
-  R2 local-image corruption declared/implemented, narrow code check pending.
+  R2 local-image corruption passes independent code and five-video GPU checks;
+  complete333 running on sc474399, estimated35min.
+- `experiments/20261003_m1_integrator/README.md`: tenth candidate, future-aware
+  visual prefix memory from FutureMask; proposal/code reviews PASS, CPU actual
+  model witnesses passed; preparing GPU smoke. Independent of VCD, not combined.
 
 Cumulative archives8 (six performance failures, two proposal novelty STOPs).
 
