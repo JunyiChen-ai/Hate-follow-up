@@ -37,20 +37,22 @@ Completed candidates:
 9. `archive/experiments/20261003_m1_allocator/README.md`: proposal STOP; published
    SHAP use in target video detection task; no implementation/GPU run.
 
-Running candidates:
-- `experiments/20261003_m1_visual_contrast/README.md`: eighth candidate,
+8. `archive/experiments/20261003_m1_visual_contrast/README.md`: eighth candidate,
   clean/corrupt visual-window contrast with native speech/global retained.
   Proposal/code PASS; five-video GPU plumbing passes (292 exact native branches).
   Full333 completed: within+.01961/+.01066, HMM PR−.01410; retained under rule9,
   not promoted. Four cached controls complete: matching supported only on HCS.
-  R2 local-image corruption passes independent code and five-video GPU checks;
-  complete333 running on sc474399, estimated35min.
+  R2 local-image corruption final within+.00296/−.00669, visual raw ordering
+  degrades;44.34min actual. Archived after this unsuccessful revision; no donor
+  control or further schedule/contrast tuning. R1 best numbers remain recorded.
+
+Running candidates:
 - `experiments/20261003_m1_integrator/README.md`: tenth candidate, future-aware
   visual prefix memory from FutureMask; proposal/code reviews PASS, CPU actual
   model witnesses and five-video GPU smoke passed; full333 three-arm run is
   running on sc448960. Independent of VCD, not combined.
 
-Cumulative archives8 (six performance failures, two proposal novelty STOPs).
+Cumulative archives9 (seven performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
@@ -81,7 +83,8 @@ Unselected possibilities inspected while full jobs run, not additional candidate
 - PAI, [arXiv2407.21771](https://arxiv.org/abs/2407.21771), is another known
   input-attention/contrastive-decoding source. Only abstract/source discovery
   was inspected at this point; no claim of target-task novelty or implementation.
-  Current work remains declared visual-contrast R2 and Integrator R1.
+  At that time the running work was visual-contrast R2 and Integrator R1;
+  visual contrast has since been archived. These possibilities remain unselected.
 
 Shared post-scoring report helper added while both main runs were still in progress:
 `scripts/analysis/m1_branch_diagnostics.py`, independent narrow review PASS

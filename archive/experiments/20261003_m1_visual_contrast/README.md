@@ -1,10 +1,13 @@
+> Archived: R1 numerical gain failed promotion/two-corpus matching; R2 local corruption lost that gain and worsened visual ordering at much higher cost.
+
 # M1 visual contrastive reading
 
-Declared2026-10-03, eighth candidate. R1 full333 and four cached controls complete:
-qualifying numerical gain, but failed promotion and the two-corpus matching mechanism.
-R2 local-image intervention implemented; independent supplemental review and
-five-video GPU plumbing PASS; proceeding to full evaluation. Development host sc474397;
-R1 ran on sc474399, R2 target chosen after live inspection. All development-selected.
+Declared2026-10-03, eighth candidate. R1/R2 complete, archived after one revision.
+R1 had a qualifying numerical gain but failed promotion and the two-corpus matching
+mechanism; R2 had no qualifying gain. No further revision or expensive donor control.
+Development host sc474397; both complete reader runs on sc474399. All
+development-selected. Historical commands below used the pre-archive path;
+current launch/analysis entry paths are under archive/experiments/.
 
 ## Mechanism and source
 
@@ -334,3 +337,41 @@ locality test is substantially more expensive. No constants changed. Full333
 command `bash experiments/20261003_m1_visual_contrast/launch/run_lab.sh main window r2`
 on the same currently idle lab2 after sync/preflight. Home STRAY entries and
 lab2 untracked results/ are pre-existing unrelated work; no task output there.
+
+## R2 full result and final disposition
+
+Complete333 finished on sc474399, all outputs returned before evaluation/status.
+Sources: `runs/20261003_m1_visual_contrast/r2_main_decoded/<arm>/metrics.json`,
+raw `r2_main/<arm>/metrics.json`, `r2_main_analysis/{summary,cost,alignment,branch_diagnostics}.json`.
+All333 native global margins and13939 branches exactly reproduce the old cache;
+5096 own-window interventions and2263 no-frame identities match the declaration.
+No reader/evaluator/decoder repair or constants changed after smoke.
+
+| Arm | HateMM ROC / PR / within | HCS ROC / PR / within |
+|---|---|---|
+| native | .897119 / .694235 / .750782 | .716825 / .671072 / .637349 |
+| R2 local contrast | .895698 / .689917 / .753746 | .719246 / .671060 / .630659 |
+
+Final within changes+.002964 on84 videos (CI[-.01121,.01942]) and−.006690 on99
+([- .01468,.00174]). No final main metric reaches+.01; performance gate fails.
+Raw-max within.674859/.599503, deltas−.005153/−.010627. The visual-only available
+frame diagnostic drops.070207/.015546 to.543702/.530905; HMM CI[-.10930,−.03560],
+HCS[-.03487,.00230]. Speech remains exact (eligible82/97), as required. The sole
+HMM single-window eligible video contributes0 this round, unlike R1's+.007143.
+Thus the local-intervention change does not support improved visual localization.
+
+Native total standalone551.37s; R2 total2658.71s,4.82x native. Per corpus
+R2 is1440.01s/1218.70s (24.00/20.31min), versus304.55s/246.83s native.
+Mean outer calls87.46/139.98 versus36.52/60.05 native. Peak17.824/17.547GiB.
+Full paired/shared wall2660.5s=44.34min, above the two-video estimate. Local
+scope needs many fresh full-prefix encodings; this cost buys no qualifying gain.
+
+Post-scoring read log: read complete raw/decoded canonical metrics, all checks,
+paired per-video results and test GT via the reviewed branch diagnostic. R1/R2
+scope comparison informs the decision to stop this family. R1 remains recorded
+as its best final-within result; its HMM PR loss and failed matching control are
+not repaired by the first revision. Do not spend the remaining optional revisions
+on noise/contrast coefficient scans, nor run the predeclared expensive donor
+control whose qualifying-gain condition failed. Archive this family and continue
+the independent Integrator experiment. No evidence of a successful M1 mechanism;
+current r6, paper and Overleaf remain unchanged.

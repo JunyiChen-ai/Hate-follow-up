@@ -4,7 +4,7 @@
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档8个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster性能未过门；Marginalizer、Allocator方案STOP。
+累计归档9个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -13,10 +13,13 @@ HCS within−.0700，普通掩码对照接近基线，来源 `runs/20261003_m1_f
 Contraster完整结果也无有效提升：within+.0001/+.0002，13939分支全选layer2；
 来源 `runs/20261003_m1_contraster/r1_main_decoded/contrast/metrics.json`，已归档。
 第八候选视觉对比完整333完成：HateMM .892394/.680132/.770392，HCS .724669/.672273/.648014；
-within+.01961/+.01066，但HMM PR−.01410，保留继续、尚未晋级。
+within+.01961/+.01066，但HMM PR−.01410，未晋级。
 来源 `runs/20261003_m1_visual_contrast/r1_main_decoded/contrast/metrics.json`；
 四项缓存对照完成：HCS支持窗口匹配，HMM打乱不降，尚不能作双语料定位机制。
-R2只扰动所问窗口的帧，独立检查和五视频GPU检查PASS，完整333在sc474399运行；入口 `experiments/20261003_m1_visual_contrast/README.md`。
+R2局部扰动完整333完成：HateMM .895698/.689917/.753746，HCS .719246/.671060/.630659；
+无任一主指标+.01，visual原始排序两语料下降，耗时44.34min，约原读取4.82倍。
+来源 `runs/20261003_m1_visual_contrast/r2_main_decoded/contrast/metrics.json`，此族已归档；
+入口 `archive/experiments/20261003_m1_visual_contrast/README.md`，保留R1最佳数字及失败对照。
 第九候选Allocator因目标视频任务已有SHAP使用在方案审查STOP，未实施/未跑GPU。
 第十候选Integrator方案/代码审查及GPU检查PASS，完整333三臂评测在sc448960运行：编码时开放视觉token到后续输入的注意力，独立于视觉对比。
 

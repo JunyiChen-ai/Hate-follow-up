@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")/../../.."
+cd "$(dirname "$0")/../../../.."
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 round="${1:-r1}"
 out="runs/20261003_m1_visual_contrast/${round}_main_analysis"
@@ -9,7 +9,7 @@ exec > "$out/run.log" 2>&1
 echo "host $(hostname)"
 echo $$ > "$out/run.pid"
 py=/home/jehc223/miniconda3/envs/HateVideo/bin/python
-runner=experiments/20261003_m1_visual_contrast/analyze.py
+runner=archive/experiments/20261003_m1_visual_contrast/analyze.py
 "$py" -u "$runner" --run-name "${round}_main" --stage prepare
 pids=()
 for arm in base contrast; do

@@ -58,7 +58,7 @@ def prepare():
                 r,d=construct(b,check[k],arm);f.write(json.dumps(r)+'\n')
                 if arm=='shuffle':diagnostics.append(d)
         config={'host':socket.gethostname(),'arm':arm,'source':'runs/20261003_m1_visual_contrast/r1_main',
-                'code':'experiments/20261003_m1_visual_contrast/controls.py,2026-10-03',
+                'code':'archive/experiments/20261003_m1_visual_contrast/controls.py,2026-10-03',
                 'GT_in_construction':False,'new_model_calls':0,'seed':'default_rng0 reset per video',
                 'definition':'README R1 cached mechanism controls'}
         (target/'config.json').write_text(json.dumps(config,indent=2)+'\n')

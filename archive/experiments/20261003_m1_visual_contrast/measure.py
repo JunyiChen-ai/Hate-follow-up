@@ -135,7 +135,7 @@ def main():
     import transformers
     config={**vars(a),'date':time.strftime('%Y-%m-%d'),'host':socket.gethostname(),'seed':0,'model':MODEL,
         'torch':torch.__version__,'transformers':transformers.__version__,'GT_in_reader':False,
-        'code':'experiments/20261003_m1_visual_contrast/{measure,visual_contrast}.py + src/{mllm_judge,video_inputs}.py, sources2026-10-03',
+        'code':'archive/experiments/20261003_m1_visual_contrast/{measure,visual_contrast}.py + src/{mllm_judge,video_inputs}.py, sources2026-10-03',
         'frames':20,'window_seconds':8,'fps':FPS,'noise_step':500,'noise_seed':'CPU0 reset per video',
         'noise_schedule':'1000 sigmoid steps beta1e-5 to.005 over linspace(-6,6)',
         'contrast':'2*clean_visual_class_margin-corrupt_visual_class_margin; speech unchanged; no APC',
