@@ -74,7 +74,8 @@ def read_video(j,access,row,segments,arms,verify=False):
         records[arm]={"schema_version":1,"method":"m1_grounder_"+arm,"dataset":ds,"video_id":vid,
             "duration":dur,"native_rate":FPS,"score_curve":z[index].tolist(),"intervals":[],"error":None,
             "seed":0,"code_path":"experiments/20261002_m1_grounder/measure.py",
-            "calls":2,"extra":{"z_video":zv,"stance":stance,"n_branches":branches,
+            "calls":3+branches,"extra":{"z_video":zv,"stance":stance,"n_branches":branches,
+                "calls_breakdown":{"prefix":1,"global_query":1,"answer_extension":1,"local_branches":branches},
                 "prefix_tokens":P,"cached_tokens":ncache,"text_layers":len(access.layers),"late_start_layer":access.cut,
                 "prefix_seconds":prefix_seconds,"branch_seconds":timing[arm],
                 "windows":[{"i":i,"start":a,"end":b,"z":float(z[i]),**per[arm][i],**stats[i]}
@@ -106,7 +107,7 @@ def main():
             "code":"experiments/20261002_m1_grounder/{measure,grounder}.py; local sources 2026-10-02",
             "text_layers":len(access.layers),"late_start_layer":access.cut,"mask_plumbing":"explicit bf16 causal in every query layer",
             "video_question":VIDEO_QUESTION,"visual_question":yesno_question(0,1,0,8,"","visual"),
-            "speech_question":yesno_question(0,1,0,8,"<text>","speech"),"calls_note":"same prefix and global read shared among experimental arms, not extra deployment calls"}
+            "speech_question":yesno_question(0,1,0,8,"<text>","speech"),"calls_note":"calls counts actual forwards per deployed arm (3+n_branches); paired experiment shares the first three forwards across arms; verification calls additional"}
     (out/"config.json").write_text(json.dumps(config,indent=2)+"\n")
     handles={};done={}
     for arm in a.arms:

@@ -83,6 +83,12 @@ across machines. Apply unchanged r6_bma through its CLI and the canonical evalua
   selected gain cases. These are exploratory diagnostics, not semantic labels.
 - Global-query output must remain identical; with fixed Decoder any changes must
   originate in M1. Separate raw-reader changes from downstream distribution effects.
+- CPU-only distribution control, declared before metrics: take base raw reads and
+  add one common constant per video equal to mean(max late branches) minus
+  mean(max base branches), then apply the same r6 fitting. This preserves raw
+  within-video max/modality ordering. If it explains the gain, do not attribute
+  improvement to better temporal evidence ranking. It uses both experimental
+  caches and is a diagnostic reconstruction, not a deployment method.
 
 ## Cost and execution
 
@@ -102,4 +108,22 @@ independent instance, actual literature search). Attention steering and cross-la
 evidence scheduling have prior work; potential novelty is application/mechanism
 validation in this task, not inventing attention steering. No layer cognitive
 specialization is assumed or claimed. Reviewer-requested `early` control added.
-Code review: pending (rule6). No performance inspected or new GT loaded yet.
+Code review: PASS, `docs/reviews/20261002_m1_grounder_code.md` (rule6). Calls metadata
+was corrected to actual 3+n_branches forwards per deployed arm; no scoring bug found.
+GPU smoke on sc474399: four videos, all six arms; token mapping valid, all crop/copy
+and explicit-base/ordinary-SDPA differences exactly zero. Late branch time / base
+was .991 on these four videos; this is a plumbing estimate, not full-corpus timing.
+Smoke returned to `runs/20261002_m1_grounder/r1_smoke/`. Independent CPU real-layer
+checks verify depth selection, causality, branch order/cache invariance and all
+333 videos' proportional ASR-word slicing. No performance metrics inspected yet.
+
+Environment: existing lab2 `HateVLM`, Python 3.12, torch 2.11.0+cu128,
+transformers 5.15.1 (same library versions as current Reader); 5090 seeded GPU
+matrix witness finite and correct shape. No environment rebuilt. Local analysis
+uses HateVideo. Selected remote checkout was fast-forwarded and matches local
+code; unrelated legacy `results/` inputs and other home projects are untouched.
+
+Run `bash experiments/20261002_m1_grounder/launch/run_lab2.sh full` detached with
+logs under `runs/20261002_m1_grounder/r1_full/`; rsync that run back after completion,
+then `launch/run_analysis.sh` locally for raw evaluator outputs, unchanged r6
+inference, shift-only control and paired/bootstrap report. GT enters analysis only.
