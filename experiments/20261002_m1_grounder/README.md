@@ -1,0 +1,105 @@
+# Grounder: early context, late evidence access
+
+Declared 2026-10-02, before implementation/outcome inspection. Development host
+uoa-lab1/sc474397; intended compute host uoa-lab2, subject to live availability.
+Parent autonomous task: `experiments/20261002_m1_iteration/README.md`.
+
+## Hypothesis and difference from earlier attempts
+
+Current M1 asks each window question while allowing every language-model layer
+to attend to the entire video and its own global verdict. A timestamp in the
+question does not enforce which evidence the final decision uses. Earlier error
+analysis found many false alarms far from the annotated segment and strong topic
+responses. Candidate: retain contextual interpretation in early layers, then
+restrict direct evidence access in late layers to the target window.
+
+This is the unrun suggestion in `docs/reviews/20260928_codex_mechanism_review_round2.md`,
+now tested directly under the user's M1 iteration instruction. Earlier tests of
+input-context removal/score mixing do not execute this layer-dependent computation.
+It differs from CVA's hypothetical exclusion question and from subtracting completed
+logits. No prompt, backbone, frames, transcript, output head or Decoder changes.
+
+Important limit: cached media representations and query residuals remain
+contextualized. We restrict **direct attention access**, not all information flow;
+no claim of complete causal isolation, decontamination, or semantic grounding by
+construction. Whether this helps is an empirical question.
+
+## Fixed mechanism
+
+- Qwen3-VL-8B-Instruct, frozen; current shared Judge and repaired ASR loader.
+- Same 20 frames, timestamped transcript, global Yes/No turn, 8-second windows,
+  isolated visual/speech questions, and missing-speech handling as current M1.
+- Prefix encoding and video verdict unchanged. In each window branch, the first
+  three quarters of text layers see the whole prefix. In the final ceil(L/4)
+  layers, allow policy/system/non-evidence scaffolding, that window's prefix
+  frames/transcript tokens, and the branch's own causal query tokens; block
+  direct access to other media and the global question/answer turn.
+- Map frame tokens by their existing timestamps and transcript words by the
+  same proportional overlap rule as `window_text`. Do not add a nearest frame
+  to empty windows. Empty visual evidence is recorded, not filled with new data.
+- Both local modalities remain available to both branches at the mask level;
+  keep current questions to isolate this computation change.
+- One fixed layer split, seed 0, same constants and procedure on both corpora.
+  No layer sweep. Changing depth later requires a declared revision, all results.
+
+## Controls declared before running
+
+All arms use the same explicit causal attention-mask plumbing and frozen prompts:
+
+1. `base`: all prefix evidence accessible at every layer (plumbing baseline).
+2. `late`: candidate above.
+3. `verdict_only`: in the final quarter block only the global Q/A turn, retaining
+   all media. Tests whether any gain merely comes from reduced verdict access.
+4. `all_local`: the local restriction at every query layer. Prefix encoding still
+   contextualized; tests the need for early full-prefix access in the branch.
+5. `shifted`: same late restriction and token count as `late`, but rotate the
+   kept media positions halfway through each modality's prefix token positions.
+   Preserve scaffolding and the question (including its copied local speech).
+   This is a budget-matched wrong-prefix-evidence control, not total replacement
+   of the window's information. Log overlap with the true mask.
+6. `early`: same local mask and same ceil(L/4) restricted layers as `late`, but
+   apply it in the first quarter of query layers. Added before running on the
+   independent reviewer's recommendation: distinguishes layer placement from
+   simply restricting fewer layers. A stage-placement claim needs a >=.01
+   improvement over this control on both corpora too.
+
+First verify token mapping, cache crop/copy parity, causal mask, hooked vs ordinary
+base, same global read in every arm, and per-video/window coverage. Two videos per
+corpus may be used only for plumbing/speed checks; no outcome-based subset screening.
+Then run complete HateMM and HateClipSeg for all six arms; one corpus is never sliced
+across machines. Apply unchanged r6_bma through its CLI and the canonical evaluator.
+
+## What would support the explanation
+
+- Relative to current matched base: both corpora no decline beyond .005 pooled /
+  .01 within, and within improvement >=.01 on both (target M1 localization).
+- `late` must outperform `shifted` on both; raw local discrimination should also
+  improve, not only a corpus-fit shift. Quantify within-video rank changes.
+- To claim staged context/evidence access, `late` versus `all_local` and
+  `verdict_only` must each show a >=.01 main-metric gain on both datasets (rule14g).
+  Otherwise narrow the claim/delete the unsupported part; do not invent a story.
+- Paired video bootstrap, correct/wrong original verdict groups, sparse-positive
+  videos and windows with/without sampled frames; report regressions as well as
+  selected gain cases. These are exploratory diagnostics, not semantic labels.
+- Global-query output must remain identical; with fixed Decoder any changes must
+  originate in M1. Separate raw-reader changes from downstream distribution effects.
+
+## Cost and execution
+
+Existing frames, ASR and weights reusable. Intervention requires fresh reads; old
+logit caches cannot simulate it. New-video model calls equal base (one prefix,
+one global query, its answer extension, one branch per observed modality/window).
+Hooking a mask adds no model forward. Estimate ~1–3 seconds/video on a 5090 from
+previous same-reader runs, 6–17 GPU minutes per complete 333-video arm, six arms
+~0.6–1.7 GPU hours before prefix-sharing savings. Experimental arms share each
+video's unchanged prefix/global computation; deployment cost still charges it to
+each method. Measure actual overhead in the plumbing run; report if >25%.
+GPU witness and existing environment checked before launch. Repository no-hash,
+Git-only sync, detached jobs and output-return rules override skill defaults.
+
+Proposal review: PASS, `docs/reviews/20261002_m1_grounder_proposal.md` (rule4,
+independent instance, actual literature search). Attention steering and cross-layer
+evidence scheduling have prior work; potential novelty is application/mechanism
+validation in this task, not inventing attention steering. No layer cognitive
+specialization is assumed or claimed. Reviewer-requested `early` control added.
+Code review: pending (rule6). No performance inspected or new GT loaded yet.

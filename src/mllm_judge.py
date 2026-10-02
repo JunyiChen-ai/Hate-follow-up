@@ -51,6 +51,23 @@ VIDEO_QUESTION = ('Does this video contain content that violates any of the abov
                   'Answer "Yes" or "No".')
 
 
+def yesno_question(i, n, t1, t2, text, kind):
+    """SPVL-r2 evidence wording (identical to experiments/20260911_hvl/hvl.py yesno_question with has_hyp=False)."""
+    body = text.strip() if text and text.strip() else "(no speech)"
+    head = f"Consider only window {i + 1} of {n}, from {t1:.1f}s to {t2:.1f}s of this video."
+    if kind == "visual":
+        ctx = (f"{head} Look only at the frames whose timestamps fall inside this window and judge the visual "
+               f"content alone (imagery, gestures, symbols, on-screen text), ignoring the speech.\n\n")
+        q = "Is THIS window one of the segments where visual content that violates the above rules occurs?"
+    elif kind == "joint":   # SPVL joint branch, evidence wording (experiments/20260910_spvl/spvl.py window_question)
+        ctx = f"{head} Transcript in this window: {body}\n\n"
+        q = "Is THIS window one of the segments where the content that violates the above rules occurs?"
+    else:
+        ctx = f"{head} Judge only what is spoken in this window: {body}\n\n"
+        q = "Is THIS window one of the segments where speech that violates the above rules occurs?"
+    return ctx + q + '\n\nAnswer "Yes" or "No".'
+
+
 class Judge:
     def __init__(self, model_id=MODEL):
         from transformers import AutoModelForImageTextToText, AutoProcessor
