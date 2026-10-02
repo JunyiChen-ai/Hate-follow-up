@@ -203,3 +203,24 @@ BF16 margin. Test the same failure video with declared 16/32/64/128/256 grids;
 no GPU performance experiment resumes until numerical reliability is established.
 Extra ungated reference read and precision-transfer time are diagnostic overhead
 and must be reported separately if this becomes the deployed numeric pathway.
+
+If FP32 query arithmetic becomes necessary and the candidate improves metrics,
+add an FP32-window control: original window questions, native BF16 encoded
+prefix/global-answer cache and z_video, but the same FP32 language query math.
+This distinguishes attribution gains from arithmetic precision alone. No claim
+of attribution-driven improvement may be based solely on outperforming a lower
+precision window reader. This control is declared before any outcome inspection.
+
+
+FP32 failure-case diagnostic succeeded on lab2:
+`runs/20261002_m1_attributor/numeric_fp32/checks.jsonl`.
+Acceptance at 64 (112 accumulated quadrature pairs); residual .08038, adjacent
+vector relative L1 .04018; 256-node residual .00948. All 16/32/64/128 versus
+256 window Spearman values are 1. Native FP32/g=1 difference is zero; the
+FP32-minus-BF16 endpoint drift is −.01274. Restored BF16 global margin is exact,
+prefix cache immutable, peak allocated memory 30.07 GiB. Full all-grid smoke
+49.7 seconds; accepted integration 10.91 seconds before transfers/reference.
+No performance inspected. Next memory check chooses `HateMM/hate_video_114`
+solely because it has the largest existing prefix (5829 tokens) among all333
+in `runs/20261002_m1_grounder/r1_full/base/predictions.jsonl`; no GT used.
+Command: `launch/run_numeric_fp32.sh hate_video_114 numeric_fp32_max`.

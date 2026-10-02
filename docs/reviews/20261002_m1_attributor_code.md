@@ -170,3 +170,55 @@ uncertainty remains part of that interpretation.
 No part of these checks licenses claims about raw-video causality, semantic
 cross-modal interaction, or correctness of an attribution merely because it
 explains the model. Those remain the declared empirical tests and claim limits.
+
+## FP32 query numerical-repair supplement, 2026-10-03
+
+The original full BF16 run stopped, as declared, at manifest video 26,
+`non_hate_video_82`; the preceding 25 pairs were not evaluated. The implementation
+agent's BF16 adaptive-integration diagnostic also failed its vector-accuracy
+target despite passing scalar completeness. This supplement reviews only the
+subsequent FP32 cached-query repair, not a new general method or outcome review.
+
+**Static and independent CPU decision: PASS.** Deployment-version FP32 smoke
+results are pending at this entry. No true GT or performance metrics were read.
+
+- `query_precision` extracts the original BF16 question embeddings and selected
+  LM-head rows, then promotes those exact values to fp32. It promotes the
+  language layers and final norm while retaining the native BF16 prefix cache.
+  Query K/V are concatenated with BF16 prefix K/V into promoted branch tensors;
+  the original cached tensors remain detached and unmodified.
+- The unused vision module, embedding table, and full output head are offloaded
+  during query integration. Calls supply explicit query embeddings and use the
+  selected fp32 output rows, so the query path does not need those offloaded
+  modules. Rotary positions continue to use the encoded prefix's cache/position
+  state. No parameter is trained or numerically updated.
+- On leaving the context, language layers/norm return to BF16, temporary
+  embeddings/readout are released, and offloaded modules return to the Judge's
+  device. Independent CPU tests verified exact parameter/buffer dtype and value
+  roundtrip, exact native BF16 output restoration, and restoration after an
+  intentional exception inside the context. CPU cannot certify GPU transfer
+  behavior; the deployment smoke must supply that final confirmation.
+- The unit-gate endpoint correctly compares against the ungated **FP32** cached
+  query. The original BF16 margin remains separately recorded, along with
+  precision-induced drift. In the CPU test, FP32 unit-gate and ungated outputs
+  match exactly, gradients are finite/nonzero, and BF16 prefix K/V are unchanged.
+  Evidence: `runs/20261002_m1_attributor/independent_review/` files
+  `check_query_precision.py` and `check_query_precision.json`.
+
+This change explains a higher-precision cached-query function built from the
+same BF16 parameter values; it does **not** preserve the exact BF16 function
+being integrated. It must not be described as an exact explanation of the
+unchanged BF16 global margin. If adopted, all main records must use one unified
+precision path; the 25 earlier BF16-attribution records cannot be mixed into
+an FP32-attribution result. The newly declared original-window FP32 control is
+appropriate if a gain later needs to be separated from arithmetic precision.
+
+One additional ungated reference forward was initially absent from the
+integration counters. The implementation agent now records
+`diagnostic_reference_forwards=1` and its time separately, plus the extra
+smoke-only BF16 restoration forward. The main attribution wall timer includes
+precision conversion/offload/restore and the reference read; the inner
+`numeric.deployed_seconds` omits them. Any deployment-cost statement using
+FP32 must charge precision transfers and other retained work, not use the
+inner integration timer alone. This supplement leaves the declared numerical
+acceptance test unchanged and does not infer reliability from precision alone.

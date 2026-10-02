@@ -94,6 +94,7 @@ def read_video(j,attributor,row,segments,smoke=False):
         "global_native":zv,"native_attribution_precision":native_precision,"query_precision":"fp32" if getattr(attributor,"fp32",False) else "bf16",
         "endpoint_abs_diff":abs(native_precision-numeric["f1"]),"precision_margin_drift":native_precision-zv,
         "restored_native_margin":restored_margin,"diagnostic_reference_forwards":1,"diagnostic_reference_seconds":reference_seconds,
+        "diagnostic_restoration_forwards":int(restored_margin is not None),
         "cache_immutable":True if smoke else None,
         "prefix_seconds":prefix_seconds,"base_seconds":base_seconds,"attribute_seconds":attr_seconds,
         "peak_allocated_GiB":peak,"endpoint_windows":endpoint_windows,"density_windows":density}
