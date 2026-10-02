@@ -51,9 +51,10 @@ Running candidates:
   exact. HMM within improves but pooled losses prevent promotion; both visual
   raw orderings fall. HMM gains are concentrated in two unchanged-raw-order cases.
   Numbers and sources remain in the candidate README and STATUS, not a third table.
-  R2 declared: future text keys only, preserving all
-  other settings; independent code/GPU smoke PASS, full333 now running on
-  sc448960. Independent of VCD, not combined.
+  R2 future text keys only full333 complete, HMM within gain but pooled fails;
+  HCS visual ordering improves without combined improvement. R3 declares
+  new visual with native speech; cached complete-branch test pending code review.
+  Independent of VCD, not combined.
 - `experiments/20261003_m1_amplifier/README.md`: candidate11, PAI attention
   amplification plus language-only token-logit reference, independently declared
   before Integrator evaluation. Proposal/code review and GPU smoke PASS,
@@ -93,14 +94,7 @@ Unselected possibilities inspected while full jobs run, not additional candidate
   At that time the running work was visual-contrast R2 and Integrator R1;
   visual contrast has since been archived. PAI has now been fully source-read
   and separately declared as candidate11; SoftThinking remains unselected.
-
-Shared post-scoring report helper added while both main runs were still in progress:
-`scripts/analysis/m1_branch_diagnostics.py`, independent narrow review PASS
-(`docs/reviews/20261003_m1_branch_diagnostics_code.md`). It calls the canonical
-within metric on each branch's available frames, reports different speech counts,
-and separates single-read-window final gains from multiwindow gains. Uses original
-window boundaries and canonical shared GT/prediction extent; no evaluator change.
-Only completed VCD R1 raw/decoded records and its test GT were read to validate it;
-all branch n/means agree with its existing control report within1e-12. No new method
-or constant was selected from this check. Run this diagnostic after each complete
-new evaluation, with all declared arms; keep it separate from primary metrics.
+- VAR was inspected during Integrator R2 / Amplifier R1 collection and is now
+  separately declared as candidate12: `experiments/20261003_m1_recycler/README.md`.
+  Independent proposal review PASS; paper/code differences and Qwen3 channel
+  adaptation declared before implementation, no full-run performance read.

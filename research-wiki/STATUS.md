@@ -24,8 +24,11 @@ R2局部扰动完整333完成：HateMM .895698/.689917/.753746，HCS .719246/.67
 第十候选Integrator R1完整333三臂完成：HateMM .891985/.681604/.766819，HCS .709646/.670246/.636054；
 HMM within+.01604但PR-.01263，HCS ROC-.00718，未晋级。来源 `runs/20261003_m1_integrator/r1_main_decoded/future/metrics.json`。
 原始visual排序两语料下降；HMM两个raw排序未变的case贡献.01476，不能解释为新定位证据。
-R2仅开放未来text keys，独立代码/GPU检查PASS，完整333在sc448960运行。
-第十一候选Amplifier方案/代码/GPU检查PASS，完整333在sc474399启动，独立于前者。
+R2仅开放未来text keys，完整333完成：HateMM .892960/.686597/.774351，HCS .708410/.664196/.640054；
+HMM within+.02357，但pooled仍退化；HCS visual原始排序+.018未传递到双分支结果。
+来源 `runs/20261003_m1_integrator/r2_main_decoded/future/metrics.json`；R3声明只用新视觉+原语音，缓存分支实验待独立代码检查。
+第十一候选Amplifier方案/代码/GPU检查PASS，完整333在sc474399运行，独立于前者。
+第十二候选Recycler方案审查PASS，依据VAR论文重分配attention sink的注意力；Qwen3适配已明示，代码检查中。
 
 **五个候选小结（规则11，不超过10行）**：
 - 尝试了查询注意力限制、选择注意力头、缓存值归因、实际删除；双假设因已有方法STOP。

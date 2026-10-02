@@ -222,3 +222,53 @@ and292branches exact; restoration, forced answer/global, v2t mapping, actual
 calls and finite4fps pass. Maximum prefix5829, peak17.9192GiB, smoke wall57.8s.
 No GT/performance read. Full333 R2 started on sc4489602026-10-03 at05:54NZ
 after fresh machine preflight, outputs `runs/20261003_m1_integrator/r2_main/`.
+
+## R2 complete: visual-only gains warrant a branch-specific revision
+
+Complete333 returned from sc448960; native333 globals/13939branches exact.
+Canonical `runs/20261003_m1_integrator/r2_main_decoded/<arm>/metrics.json`:
+
+| Corpus | arm | ROC | PR | within | raw within |
+|---|---|---:|---:|---:|---:|
+| HateMM | base | .897119 | .694235 | .750782 | .680011 |
+| HateMM | causal | .896821 | .694265 | .749962 | .683615 |
+| HateMM | future | .892960 | .686597 | .774351 | .684553 |
+| HateClipSeg | base | .716825 | .671072 | .637349 | .610130 |
+| HateClipSeg | causal | .716990 | .671300 | .639037 | .610385 |
+| HateClipSeg | future | .708410 | .664196 | .640054 | .604598 |
+
+Within+.023569 (84,95%CI[.000564,.049579]) / +.002705 (99,[-.012687,.018964]);
+HMM PR-.007638, HCS ROC-.008415/PR-.006877 fail promotion. Visual-only raw
+ordering+.005225/+.017995 (both intervals include0); speech+.003225/+.000915
+(82/97 eligible). Max-branch raw+.004541/-.005532. Large HMM279/329 final gains
+still sum1.24/84=.014762 with no raw ordering change; no new timing in329.
+These reports, complete raw/decoded predictions and test GT arrays were read
+post-scoring, not used in scoring/fit. No new media/ASR inspection. Sources:
+`r2_main_analysis/{summary,branch_diagnostics,cost}.json`.
+Standalone future449.22/346.48s vs native356.98/292.43s, paired32.58min,
+peak17.9195GiB. These are measured on sc448960.
+
+## R3 declaration: visual integration with original speech branch
+
+Before any R3 result, declare one branch-specific revision. R2 changes the shared
+prefix seen by BOTH branches, although the mechanism targets visual tokens.
+Visual raw ordering improves on HCS but combined raw ordering falls; the modified
+speech branch offers little ordering gain. This motivates testing whether native
+speech avoids collateral changes. This is a hypothesis, not an established cause.
+Use exactly R2 future-text visual reads and original native speech reads, with
+native numeric global and native answer. Same Qwen model, no independent-model
+ensemble, no score blending/calibration, no new constants. Both corpora use the
+same rule. Matched control uses R2 explicit-causal visual plus native speech.
+Base unchanged. Windows combine by the existing max rule; unchanged r6 follows.
+
+First run this complete333 branch ablation from exact saved R2 reads, no GPU.
+It is explicitly a revised main candidate, not a silently selected control. Calls
+for a future deployment: native prefix/global/answer3 + modified prefix/global/
+forced answer3 + V visual + S speech =6+B (one more than R2). Existing saved
+outputs allow exact scoring but do not measure this deployment's runtime.
+Measured base+future collection time is only an upper bound, since it includes
+unused branches; do not present it as R3 runtime. If the revised main qualifies,
+implement/verify standalone branch scheduling and measure cost before promotion.
+Same performance gates and mechanistic controls apply; test metrics remain
+post-scoring development-selected evidence. No constant scan or branch choice
+based on video labels; the branch rule is fixed before this run.
