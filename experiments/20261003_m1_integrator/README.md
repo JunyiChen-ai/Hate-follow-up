@@ -354,3 +354,14 @@ Five-video GPU smoke target sc474399 (uoa-lab2), pending fresh sync/preflight:
 return results then `python experiments/20261003_m1_integrator/analyze_aligned.py
 --smoke --stage prepare`. If pass, `.../run_aligned.sh main`; full analysis
 `bash .../launch/run_analysis_aligned.sh`. Existing HateVLM/inputs/weights reused.
+
+R4 five-video smoke completed on sc474399; returned locally before validation.
+`runs/20261003_m1_integrator/r4_smoke/plumbing_summary.json`:5 native globals and
+292 native branch scores exact; all original speech preserved; added matched
+edges active; peak17.9184GiB, whole smoke40.0s. First2/corpus extrapolation:
+HateMM standalone future262.14s/native181.94s, HateClipSeg293.78s/239.96s;
+paired collection434.22s/556.18s (16.51min total, estimate only). Long-prefix
+HMM114 excluded from extrapolation but passed at5829tokens. No GT read.
+Full333 launch on sc474399 authorized after reviewed-source sync and fresh
+`runs/20261002_m1_iteration/preflight/machines_integrator_r4_main.txt` check;
+other-project home STRAY entries remain outside this task, target source clean.

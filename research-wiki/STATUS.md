@@ -29,7 +29,7 @@ HMM within+.02357，但pooled仍退化；HCS visual原始排序+.018未传递到
 来源 `runs/20261003_m1_integrator/r2_main_decoded/future/metrics.json`。
 R3只用新视觉+原语音，完整缓存分支实验完成：HateMM .895125/.693457/.774319，HCS .708136/.664223/.642109；
 来源 `runs/20261003_m1_integrator/r3_main_decoded/future/metrics.json`。HMM pooled恢复但HCS仍未过门。
-R4最后修订声明：只新增同窗ASR访问，保留原语音，独立实现检查中。
+R4最后修订：只新增同窗ASR访问，保留原语音；独立代码与5视频检查PASS，完整333在sc474399运行。
 第十一候选Amplifier完整333完成：HateMM .893032/.685114/.756861，HCS .712161/.669913/.628277；
 无任一主指标+.01，HMM PR下降，归档为第10项。来源 `runs/20261003_m1_amplifier/r1_main_decoded/pai/metrics.json`。
 第十二候选Recycler方案审查PASS，依据VAR论文重分配attention sink的注意力；Qwen3适配已明示，独立代码与真实5视频smoke PASS，完整333在sc448960运行。

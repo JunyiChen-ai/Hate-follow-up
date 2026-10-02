@@ -1,8 +1,8 @@
 # M1 Reinforcer: query-specific visual residual steering
 
 Candidate13, declared2026-10-03 while Recycler R1 runs and Integrator R4 is in
-code review. No Recycler/R4 performance has been inspected. Proposal only;
-no implementation or GPU experiment. Independent candidate, not combined with
+code review. No Recycler/R4 performance had been inspected at declaration.
+Proposal review PASS; implementation and independent code checks precede GPU. Independent candidate, not combined with
 Integrator/Recycler. Same frozen Qwen3-VL-8B, original r6 and canonical4fps.
 All eventual results/development decisions are development-selected.
 
@@ -114,8 +114,8 @@ metric gains>=.01, archive without tuning; otherwise rule9 permits revision.
 
 ## State
 
-Awaiting independent proposal review. No code, GPU run, labels or performance
-read for this proposal. Constants fixed from the cited paper before our run, with no local scan; the
+Independent proposal review PASS: `docs/reviews/20261003_m1_reinforcer_proposal.md`.
+Implementation underway; no GPU run, labels or performance read for this proposal. Constants fixed from the cited paper before our run, with no local scan; the
 source authors tuned their settings on100MSCOCO validation images. Nearby
 FBHM/LSV uses supervised steering for static hateful memes (arXiv2605.31349v2),
 so no claim of first activation steering for multimodal hate is intended.
