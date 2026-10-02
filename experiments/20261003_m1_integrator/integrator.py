@@ -37,8 +37,14 @@ class PrefixIntegrator:
 
     @contextmanager
     def encoding(self,visual,native=False):
-        assert self.active is None
         allowed=allowed_edges(visual,self.judge.device,native,self.future_keys)
+        with self.encoding_edges(allowed):yield
+
+    @contextmanager
+    def encoding_edges(self,allowed):
+        assert self.active is None
+        allowed=torch.as_tensor(allowed,dtype=torch.bool,device=self.judge.device)
+        assert allowed.ndim==2 and allowed.shape[0]==allowed.shape[1]
         mask=torch.zeros(allowed.shape,dtype=self.judge.dtype,device=self.judge.device)
         mask.masked_fill_(~allowed,torch.finfo(mask.dtype).min)
         self.active=mask[None,None];self.visited=[]

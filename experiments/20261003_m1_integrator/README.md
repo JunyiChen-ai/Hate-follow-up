@@ -280,3 +280,77 @@ and fixed missing R2 config/mapping validation, shared8s/ceil4T extent validatio
 and cached-vs-manifest duration validation before running. Real GT/performance was
 not used by the reviewer. Detached CPU experiment started on sc474397; outputs
 `runs/20261003_m1_integrator/r3_main/` and `r3_main_decoded/`.
+
+## R3 cached complete result and last revision declaration
+
+Host sc474397, complete333 cache composition from R2, canonical metrics
+`runs/20261003_m1_integrator/r3_main_decoded/<arm>/metrics.json`:
+
+| Corpus | arm | ROC | PR | within |
+|---|---|---:|---:|---:|
+| HateMM | base | .897119 | .694235 | .750782 |
+| HateMM | causal | .897018 | .693774 | .749530 |
+| HateMM | future | .895125 | .693457 | .774319 |
+| HateClipSeg | base | .716825 | .671072 | .637349 |
+| HateClipSeg | causal | .716839 | .671123 | .639144 |
+| HateClipSeg | future | .708136 | .664223 | .642109 |
+
+Within+.023537 (84,CI[.001000,.048991]) / +.004760
+(99,[-.009569,.019990]); HMM pooled now within noise, HCS ROC-.008689/PR-.006849
+still fails. Raw-max-.000254/-.002422; visual unchanged from R2, speech exactly
+native. Single-window HMM329 still contributes+.007143 with no new timing.
+Source `r3_main_analysis/branch_diagnostics.json`. Read those full raw/decoded
+predictions, canonical metrics and test GT only after scoring. No new media/ASR
+case inspection. Cache ablation requires no GPU, new-video timing not measured.
+
+R4 is the third and LAST modification of this family (R1 initial, then R2/R3/R4).
+Declare before any R4 reads/performance: keep R3 original speech; restrict the
+additional visual-to-future-ASR edges to words assigned to the frame's own8s
+read window. Future non-ASR text (policy/scaffold/frame timestamps) remains as R3;
+future image keys remain disallowed. Native causal edges are all retained.
+For an image query token in window w, add a future key iff it is nonvisual AND
+(non-ASR OR ASR assigned to w). Use existing shared `src/window_token_regions.py`:
+exact expanded-token offsets, original frame timestamps, proportional word
+allocation within ASR segment timestamps, the SAME word allocation used by window
+queries. Timestamp prefixes of a segment are shared among its nonempty local
+word allocations. This is approximate word timing, not new ASR alignment.
+All image tokens must map to one declared window; fail rather than guess if not.
+Unassigned ASR/empty-speech placeholder gets no added edge. Non-ASR future text
+is still global. Deeper text/visual states can relay other windows indirectly;
+this is not an information-isolation guarantee or online-causal method.
+
+Hypothesis: all-transcript access can inject unrelated-window speech into a frame
+representation; matching the added speech access may improve local evidence.
+R3 visual gains do not prove this explanation. Test main against native and
+explicit-causal plumbing with the same preserved native speech. If qualified,
+compare all-ASR R3 and a separately declared temporal-mismatch intervention;
+only such controls can support a temporal-fusion claim. Do not claim the current
+later native queries cannot already combine modalities.
+
+No new constants: native20frames,8s/4fps, all36prefix layers, same inputs/prompts/
+answer/global, no fitting/routing by labels, unchanged r6. New-video calls6+B;
+paired native + causal-visual + aligned-visual uses9+B+2V (native speech shared),
+smoke restoration adds3+B. Expect <=R2 paired33min, deployment around14min;
+replace by5-video real-input smoke measurements. Existing frames/ASR reused, no
+preprocessing. Independently review exact ASR/frame mask mapping, real prefix
+activation, native-speech preservation, version/config/call counts and canonical
+full333 pipeline before running. No extra family revision after this round.
+
+R4 independent code review PASS:
+`docs/reviews/20261003_m1_integrator_r4_code.md`. Exact expanded-token tests include
+cross-window ASR, shared timestamps, subword tokens spanning word boundaries,
+empty/unassigned speech, final frame at T and rejection of missing/duplicate frame
+assignment. A token overlapping two word spans can belong to both windows; this
+is a token-level boundary, not strict word isolation. Actual36-layer multimodal
+Qwen FP32/BF16 verifies modified prefix activation, original speech/global/answer/
+inputs/cache recovery and unchanged R1/R2 default encoding. Native restore exact.
+Full333 synthetic config/coverage/manifest-duration/nonfinite rejection and
+canonical r6 reporting pass. Own masked-edge/actual-KV selfcheck also passes.
+Artifacts `runs/20261003_m1_integrator/independent_review/r4/check_aligned.json`
+and `selfcheck/aligned_visibility.json`. No GT/performance read in checks.
+
+Five-video GPU smoke target sc474399 (uoa-lab2), pending fresh sync/preflight:
+`bash experiments/20261003_m1_integrator/launch/run_aligned.sh smoke`;
+return results then `python experiments/20261003_m1_integrator/analyze_aligned.py
+--smoke --stage prepare`. If pass, `.../run_aligned.sh main`; full analysis
+`bash .../launch/run_analysis_aligned.sh`. Existing HateVLM/inputs/weights reused.

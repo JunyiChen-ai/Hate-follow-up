@@ -53,11 +53,12 @@ Running candidates:
   Numbers and sources remain in the candidate README and STATUS, not a third table.
   R2 future text keys only full333 complete, HMM within gain but pooled fails;
   HCS visual ordering improves without combined improvement. R3 declares
-  new visual with native speech; cached complete-branch test running after independent code PASS.
+  new visual with native speech; cached complete-branch test complete: HMM pooled restored, HCS fails.
+  R4 last modification declares same-window future ASR with native speech.
   Independent of VCD, not combined.
 - `experiments/20261003_m1_recycler/README.md`: candidate12, paper-defined VAR
   with explicit Qwen3 sink-channel adaptation; independent proposal/code PASS,
-  real-input GPU smoke PASS, full333 next on sc448960.
+  real-input GPU smoke PASS, full333 running on sc448960.
 
 11. `archive/experiments/20261003_m1_amplifier/README.md`: candidate11, tenth
   archive. Complete333 PAI transfer had no qualifying main gain; HMM PR drops.
@@ -102,3 +103,10 @@ Unselected possibilities inspected while full jobs run, not additional candidate
   separately declared as candidate12: `experiments/20261003_m1_recycler/README.md`.
   Independent proposal review PASS; paper/code differences and Qwen3 channel
   adaptation declared before implementation, no full-run performance read.
+
+Candidate13 proposal: `experiments/20261003_m1_reinforcer/README.md`, VISTA
+paper-defined residual steering + preceding-layer logits, Qwen local-query scope.
+Author-code discrepancies are declared explicitly. Independent proposal review
+in progress; no implementation/performance screening. VTI/PTI were only inspected
+as adjacent steering sources, not declared as candidates or run; no external data
+has been added. Pairwise Ranking Prompting was located but not yet method-read.

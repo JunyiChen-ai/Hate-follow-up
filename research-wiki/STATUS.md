@@ -26,10 +26,13 @@ HMM within+.01604但PR-.01263，HCS ROC-.00718，未晋级。来源 `runs/202610
 原始visual排序两语料下降；HMM两个raw排序未变的case贡献.01476，不能解释为新定位证据。
 R2仅开放未来text keys，完整333完成：HateMM .892960/.686597/.774351，HCS .708410/.664196/.640054；
 HMM within+.02357，但pooled仍退化；HCS visual原始排序+.018未传递到双分支结果。
-来源 `runs/20261003_m1_integrator/r2_main_decoded/future/metrics.json`；R3声明只用新视觉+原语音，独立代码检查PASS，完整缓存分支实验运行中。
+来源 `runs/20261003_m1_integrator/r2_main_decoded/future/metrics.json`。
+R3只用新视觉+原语音，完整缓存分支实验完成：HateMM .895125/.693457/.774319，HCS .708136/.664223/.642109；
+来源 `runs/20261003_m1_integrator/r3_main_decoded/future/metrics.json`。HMM pooled恢复但HCS仍未过门。
+R4最后修订声明：只新增同窗ASR访问，保留原语音，独立实现检查中。
 第十一候选Amplifier完整333完成：HateMM .893032/.685114/.756861，HCS .712161/.669913/.628277；
 无任一主指标+.01，HMM PR下降，归档为第10项。来源 `runs/20261003_m1_amplifier/r1_main_decoded/pai/metrics.json`。
-第十二候选Recycler方案审查PASS，依据VAR论文重分配attention sink的注意力；Qwen3适配已明示，独立代码与真实5视频smoke PASS，完整333待启动。
+第十二候选Recycler方案审查PASS，依据VAR论文重分配attention sink的注意力；Qwen3适配已明示，独立代码与真实5视频smoke PASS，完整333在sc448960运行。
 
 **累计十个归档小结（规则11，不超过10行）**：
 - 后五项覆盖内部层间对比、像素扰动对比、图像注意力增强、前缀隔离；SHAP迁移因已有目标任务方法STOP。
