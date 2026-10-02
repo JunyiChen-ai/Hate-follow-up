@@ -41,7 +41,8 @@ within+.003601/-.000927，无主指标+.01，归档为第11项，视觉原始排
 无主指标+.01，HMM PR−.032826，归档为第13项；来源 `runs/20261003_m1_reinforcer/r1_main_decoded/full/metrics.json`。
 第十四候选Projector完整333完成：HateMM .896986/.694111/.750851，HCS .717685/.671516/.637883；
 within仅+.000069/+.000534，归档为第14项；来源 `runs/20261003_m1_projector/r1_main_decoded/project/metrics.json`。
-第十五候选Highlighter（VGA局部视觉value引导）方案/代码及5视频实机检查PASS，完整333准备在sc448960运行；尚无性能结果。
+第十五候选Highlighter（VGA局部视觉value引导）方案/代码及5视频实机检查PASS，完整333已在sc448960运行；尚无性能结果。
+第十六候选Stabilizer（PAS时间RoPE相位分组）独立方案审查PASS，已实施并通过数值/实际小模型检查，独立代码审查中；无性能结果。
 
 **累计十个归档小结（规则11，不超过10行）**：
 - 后五项覆盖内部层间对比、像素扰动对比、图像注意力增强、前缀隔离；SHAP迁移因已有目标任务方法STOP。

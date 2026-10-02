@@ -123,8 +123,8 @@ and image-logit boosts. PRP was not selected after finding the prior PWC failure
 Candidate15 proposal: `experiments/20261003_m1_highlighter/README.md`, VGA visual-
 semantic value guidance restricted to local frame support, preserving native
 context. Paper and official Qwen2.5 code read; source discrepancies and Qwen3
-adaptations declared. Independent proposal review PASS; implementation underway, no
-performance screening yet. FV-Action inspected but not selected because existing
+adaptations declared. Independent proposal/code review and real5video checks PASS;
+full333 running on sc448960, no performance screening yet. FV-Action inspected but not selected because existing
 M1 already uses binary window reads. VideoTree/VAP only discovered, no new data.
 
 
@@ -163,3 +163,21 @@ speech-within cases do not isolate word-timing failure. Source ASR clips were
 read as text only; audio not listened to, no semantic or transcription-accuracy
 claim. This weakens treating coarse timestamps as the established next mechanism;
 no timing candidate selected or implemented.
+
+Candidate16 proposal: `experiments/20261003_m1_stabilizer/README.md`, PAS-derived
+head-dependent native temporal RoPE phase during image prefix encoding. Paper/code
+read; multi-image Qwen3 pairing/axis adaptations and source theorem limitations
+explicit. Independent proposal review requested; no implementation, new GT reads
+or full performance available at declaration. Each arm uses its own coherent
+global assessment and ordinary isolated window queries.
+
+Adjacent unselected sources inspected during Highlighter collection: VideoTree
+arXiv2405.19209v1 sections3.1–3.3 (visual clustering, relevance-guided hierarchical
+keyframe captioning); Temporal Tree of Thought arXiv2608.27871 sections3.1–3.2
+and appendix algorithms (contiguous feature-based hierarchy, iterative retrieval/
+expansion with answer confidence); official MTLA repository README
+https://github.com/TalRemez/MTLA (localized attention confidence and rollout voting).
+No proposal, implementation, new frame extraction, external data or score screening
+was made from these reads. Their full source recipes do not automatically satisfy
+our no-ensemble/no-postprocessing and new-video-cost constraints; any adaptation
+needs a separately declared complete mechanism and independent review.
