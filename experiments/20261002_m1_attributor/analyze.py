@@ -111,6 +111,9 @@ def report(root,decoded,out):
         rr=[r for k,r in checks.items() if k[0]==ds]
         numeric_report[ds]={"videos":len(rr),"accepted_node_counts":{str(n):sum(r["numeric"]["accepted_nodes"]==n for r in rr) for n in (16,32,64,128,256)},
             "max_endpoint_abs_diff":max(r["endpoint_abs_diff"] for r in rr),
+            "max_precision_margin_drift":max(abs(r["precision_margin_drift"]) for r in rr),
+            "mean_precision_margin_drift":float(np.mean([r["precision_margin_drift"] for r in rr])),
+            "actual_recomputed_layers":sum(r["numeric"].get("actual_recomputed_layers",0) for r in rr),
             "mean_absolute_unassigned":float(np.mean([abs(r["mapping"]["unassigned_sum"]) for r in rr])),
             "peak_GiB":max(r["peak_allocated_GiB"] for r in rr)}
         cost[ds]={}

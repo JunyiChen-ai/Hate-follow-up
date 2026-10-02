@@ -15,10 +15,12 @@ Completed candidates:
    Full baseline reproduction exact; controls beyond smoke not run per funnel.
 
 Current candidate: `experiments/20261002_m1_attributor/README.md`; independent
-proposal/code reviews PASS, numerical smoke complete. Full paired reading is
-running on lab2; no performance results yet. Retain joint context and attribute
-the global decision to temporal media-value paths. Refined smoke cost 5.80x;
-no performance claims until every video passes the declared numerical checks.
+proposal/code reviews PASS. BF16 integration stopped at video26 without any
+performance read; adaptive BF16 did not fix vector accuracy. FP32 queries plus
+decoder activation recomputation pass failure-case/maximum-prefix diagnostics,
+with peak 28.48 GiB. Restart all 333 paired videos uniformly in `r1_main_fp32`;
+no old BF16 attributions reused. Real cost/recomputation and precision drift
+are recorded; no performance claims before full canonical evaluation/controls.
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,

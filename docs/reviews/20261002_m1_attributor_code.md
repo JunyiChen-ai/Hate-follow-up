@@ -254,3 +254,47 @@ memory check remains necessary. An OOM or numeric failure must stop the run;
 the earlier 25 BF16 results remain separate and unevaluated. Smoke memory
 includes additional prefix snapshots used for verification, which should be
 distinguished from deployed memory when interpreting any capacity failure.
+
+### Read-only cache and query checkpointing repair, 2026-10-03
+
+The longest-prefix FP32 attempt exceeded available GPU memory. This entry
+reviews only the subsequent memory repair in `attributor.py` / `measure.py`.
+**Static and independent CPU checks: PASS; longest-prefix GPU feasibility still
+requires the new smoke.** No method-performance or GT result was read.
+
+`ReadOnlyDynamicCache.update` returns newly concatenated prefix-plus-query K/V
+without storing the query or changing prefix length. Repeated execution of one
+decoder layer therefore reads exactly the same detached prefix. For this known
+suffix query, causal masks and positions are computed from the original prefix
+length before the decoder traversal, so this functional cache preserves the
+intended query computation. It is not a cache for continuing text generation.
+
+Each decoder's wrapped forward invokes non-reentrant checkpointing only while
+the attribution gate is active, checkpointing is requested, and gradients are
+enabled. Native prefix/global/window reads are unaffected. The gate context
+now correctly covers `autograd.grad`, so recomputation sees the same gate.
+The recomputation context separates replayed attention calls from the ordinary
+forward layer-order check. Frozen evaluation has no stochastic attention
+dropout, making `preserve_rng_state=False` appropriate. Closing the engine
+restores the original layer forwards and attention-registry function.
+
+Independent executable checks:
+`runs/20261002_m1_attributor/independent_review/check_checkpoint.py` and
+`check_checkpoint.json`. On four actual Qwen3 text layers, for both BF16 and
+FP32 query arithmetic and gate values 0, .37, and 1:
+
+- Ordinary dynamic cache, functional read-only cache, and read-only cache with
+  checkpointing give **exactly identical margins and gate gradients**; maximum
+  observed gradient difference is zero.
+- Prefix K/V and every model parameter remain exactly unchanged. Normal
+  forward visitation remains one ordered pass. Every gradient point recomputes
+  exactly four decoder attention calls; native and no-gradient endpoint reads
+  cause zero recomputations. Context flags and BF16 query restoration remain
+  correct after execution.
+
+The verification snapshots now reside on CPU, avoiding their previous extra
+GPU allocation. The implementation records observed layer recomputations and
+the deployment count implied by accepted backward passes. Checkpointing does
+add decoder work and runtime; unchanged top-level model-forward count must not
+be used to describe its cost as unchanged. The mathematical gate/readout and
+declared quadrature acceptance rule are unchanged by this memory repair.

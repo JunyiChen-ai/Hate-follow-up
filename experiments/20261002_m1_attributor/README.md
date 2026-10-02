@@ -259,3 +259,19 @@ After maximum-prefix memory/equivalence passes, run `launch/run_lab2.sh main_fp3
 and return all outputs. `launch/run_analysis.sh` evaluates only the new complete
 `r1_main_fp32`, writing `r1_main_fp32_decoded` and `r1_main_fp32_analysis`.
 A numerical failure still stops the complete experiment; no subset result.
+
+
+Maximum-prefix checkpointed FP32 smoke passed:
+`runs/20261002_m1_attributor/numeric_fp32_max_checkpoint/checks.jsonl`.
+Peak 28.48 GiB; acceptance at 32; residual .007024, adjacent token L1 .001198;
+accepted versus 256 token L1 .001110, window Spearman .997411 and max window
+difference .04044. At 256 residual .0000251. Native FP32/g=1 and restored BF16
+checks exact; immutable prefix verified. Actual 497 backwards recomputed
+17,892 language layers (=497*36). Accepted deployment is 52 outer forwards
+including prefix/native global, 49 backwards with 1,764 layer recomputations.
+Measured standalone prefix + attribution is 15.51 seconds for this longest
+input, versus 7.01 seconds native. Full all-grid smoke took 147.7 seconds;
+this is not deployment latency. Independent small-Qwen tests show ordinary,
+read-only cache and checkpointed gate gradients/margins match exactly in
+BF16/FP32 at alpha 0/.37/1. Full-pair estimate remains roughly 45–90 minutes,
+subject to the observed refinement distribution. Proceed with complete FP32 pair.
