@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-ROOT=Path(__file__).resolve().parents[2]
+ROOT=next(p for p in Path(__file__).resolve().parents if (p/"CLAUDE.md").is_file())
 sys.path.insert(0,str(ROOT))
 from src.mllm_judge import Judge, MODEL, VIDEO_QUESTION, yesno_question
 from src.video_inputs import FPS, frame_paths, load_asr, load_manifest, fixed_windows, window_text

@@ -3,11 +3,16 @@
 截至 **2026-10-02**。旧的 2026-09-09 引言保留在本页下方各节。
 
 **2026-10-02 M1 自主迭代进行中**：用户要求修改第一个模块，并建立涨点的机制证据。
-入口 `experiments/20261002_m1_iteration/README.md`。首候选 Grounder：早期 query 层保留
-全局语境、最后四分之一层直接 attention 限本窗证据；固定 r6 Decoder。独立方案审查 PASS，
-六臂（含同层数 early、错位媒体、仅去裁定等控制）已通过独立代码审查和 GPU 冒烟检查；
-基线/缓存误差均为 0，lab2 5090 正在完成 333 视频全量读取，随后固定 r6 流程配对评测。
-当前方法与论文不变；development-selected。
+入口 `experiments/20261002_m1_iteration/README.md`。首候选 Grounder 已完整跑完六臂和
+平移诊断，333 视频基线逐窗/global 读数精确复现。late 的 ROC / PR / within 为
+HateMM .897570 / .695834 / .750171、HCS .716291 / .670781 / .637249
+（本机 `runs/20261002_m1_grounder/r1_full_decoded/late/metrics.json`）；within 变化
+−.0006 / −.0001，无指标提高 .01；正确与错位支持几乎相同，全层局部限制则掉分。
+按规则 9 归档，详见 `archive/experiments/20261002_m1_grounder/README.md`。
+第二候选 Selector 已通过独立方案审查：按当前 query 的局部证据 affinity 在线选头，
+只限制所选头的异窗媒体访问，其余头和全局问答保留；入口
+`experiments/20261002_m1_selector/README.md`，尚无新性能结果。
+当前方法与论文不变；继续自主迭代，全部 development-selected。
 
 **2026-10-02 可修正全局先验实验完成，负结果归档**：用户授权的共享随机偏差机制已实现、
 通过独立方案/代码审查、解析积分与数值精度检查，并跑完 full / independent / no-global 三臂。

@@ -7,7 +7,14 @@ paper polishing substitutes for empirical improvement. No new dataset or ensembl
 All development decisions are development-selected. Test GT is used only after
 scoring for evaluation/error analysis, never fitting/routing/threshold selection.
 
-Current candidate: `experiments/20261002_m1_grounder/README.md`.
+Current candidate: `experiments/20261002_m1_selector/README.md` (proposal review PASS).
+Completed candidate 1: `archive/experiments/20261002_m1_grounder/README.md`.
+Grounder's late restriction did not improve any main metric by .01; correct and
+wrong local support were nearly indistinguishable, whereas all-layer restriction
+hurt both corpora. Archived under rule 9. Selector tests online head selection
+throughout the language stack, retaining other heads/global Q/A for context.
+
+Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
 generated hypotheses and latent common-offset decompositions failed. A previously
 suggested layer-dependent attention intervention has not actually been run.

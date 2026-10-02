@@ -1,3 +1,5 @@
+Archived 2026-10-02: no main metric improved by .01; no evidence for the proposed late-access mechanism.
+
 # Grounder: early context, late evidence access
 
 Declared 2026-10-02, before implementation/outcome inspection. Development host
@@ -148,3 +150,60 @@ frame or speech); HCS has 3,591 (1,233 and 169 respectively). Thus frame-coverag
 strata are material. The hard-mask arms retain contextualized prefix/query states
 even for these windows; they must not be described as having removed all external
 information. No missing-input fallback or constants were changed after this check.
+
+## Full result and decision (2026-10-02)
+
+All six arms completed on sc474399, 333 paired videos, 2,596 seconds elapsed
+after model loading. Returned locally before analysis. Every global and window
+logit in the base arm exactly reproduces `runs/20260926_glr/base_gridA` (maximum
+absolute difference zero). All downstream arms completed on sc474397, using the
+same r6 algorithm with separately refitted label-free parameters. Development-selected.
+
+Official sources: `runs/20261002_m1_grounder/r1_full_decoded/<arm>/metrics.json`;
+raw sources: `runs/20261002_m1_grounder/r1_full/<arm>/metrics.json`.
+Order below is pooled ROC / pooled PR / within ROC; within N=84 / 99.
+
+| Arm | HateMM | HateClipSeg |
+|---|---|---|
+| base | .897119 / .694235 / .750782 | .716825 / .671072 / .637349 |
+| late | .897570 / .695834 / .750171 | .716291 / .670781 / .637249 |
+| verdict_only | .897551 / .695239 / .749620 | .716391 / .671259 / .637407 |
+| all_local | .895879 / .693183 / .705164 | .701506 / .655243 / .588674 |
+| shifted | .897616 / .696013 / .749408 | .716177 / .670634 / .637110 |
+| early | .895925 / .691426 / .749139 | .717713 / .673074 / .630512 |
+| shift_only (diagnostic) | .897598 / .695979 / .754803 | .716379 / .670834 / .638305 |
+
+No candidate/control improves a final main metric by .01. Archive under rule 9;
+do not promote the design or write it as a contribution. Current method/paper unchanged.
+
+Mechanism evidence (`r1_full_analysis/summary.json`, `read_diagnostics.json`, and
+`window_rank_diagnostics.json`):
+
+- Late versus base within differences: -.000611 [95% paired-video CI -.004019,
+  +.002558] / -.000100 [-.003042,+.002662]. Raw within: +.004628 / -.000044;
+  both intervals include zero. No consistent improvement before or after decoding.
+- Late versus shifted final within: only +.000763 / +.000139. The average overlap
+  of their local-media support is .0080 / .0055, yet mean absolute branch-logit
+  differences are only .0593 / .0518. Correct support in the last quarter does
+  not have the predicted substantial effect. This does not identify whether
+  earlier query states or contextualized prefix K/V is responsible.
+- Restricting all query layers loses .0456 / .0487 within relative to base;
+  HCS pooled metrics also drop. Removing broad context everywhere is not a fix.
+- The far-negative rank does not consistently decrease; on HateMM it slightly
+  increases (+.00347 percentile-rank units). Frame strata do not rescue the claim.
+- Shift-only reconstruction is slightly better than late on both corpora, still
+  within noise versus base. There is no supported localization gain to explain.
+
+Cost (`r1_full/cost_alignment.json`): estimated standalone synchronized wall time
+base 305.2 / 246.7 seconds, late 304.8 / 246.4, excluding model loading and original
+frame/ASR preparation. Mean forwards per video 36.52 / 60.05, exactly the baseline
+call count; no added calls. Experimental prefix sharing is not counted as a
+deployment saving.
+
+Test-read log: inspected all raw/decoded official metrics, paired bootstrap,
+window ranks, per-video gain/loss rankings, and descriptive branch changes after
+all GPU reads completed; analysis reads `data/gt_4fps/{HateMM,HateClipSeg}.npz`.
+No semantic case class is inferred from these numeric rankings. These findings
+motivate the next separate candidate, Selector: preserve context heads while
+selectively modifying heads whose current query retrieves local evidence.
+This is a new mechanism, not a sweep over Grounder's layer split.

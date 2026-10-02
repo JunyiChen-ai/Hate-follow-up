@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")/../../.."
+cd "$(dirname "$0")/../../../.."
 out=runs/20261002_m1_grounder/r1_full_analysis
 mkdir -p "$out"
 exec > "$out/run.log" 2>&1
 echo "host $(hostname)"
 echo $$ > "$out/run.pid"
-runner=experiments/20261002_m1_grounder/launch/run_analysis.sh
+runner=archive/experiments/20261002_m1_grounder/launch/run_analysis.sh
 bash "$runner" --stage prepare
 pids=()
 for arm in base late verdict_only all_local shifted early shift_only; do

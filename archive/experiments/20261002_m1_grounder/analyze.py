@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import spearmanr, rankdata
 
-ROOT=Path(__file__).resolve().parents[2]
+ROOT=next(p for p in Path(__file__).resolve().parents if (p/"CLAUDE.md").is_file())
 sys.path.insert(0,str(ROOT))
 from src.eval.evaluate import within_video_macro
 
@@ -116,8 +116,20 @@ def report(readroot,decoded,out):
             assert np.isfinite(r["score_curve"]).all(),(arm,key)
     metrics={a:{r["dataset"]:r for r in json.load((decoded/a/"metrics.json").open())["per_dataset"]} for a in ARMS}
     rawmetrics={a:{r["dataset"]:r for r in json.load((readroot/a/"metrics.json").open())["per_dataset"]} for a in ARMS}
-    results={};allrows=[];window_diagnostics={}
+    results={};allrows=[];window_diagnostics={};read_diagnostics={}
     for ds in DATASETS:
+        changes={a:[] for a in ARMS if a!="base"};late_shift=[];overlap=[]
+        for key,ref in raw["base"].items():
+            if key[0]!=ds:continue
+            for i,w in enumerate(ref["extra"]["windows"]):
+                if w["kept_media_tokens"]:overlap.append(w["shift_overlap"]/w["kept_media_tokens"])
+                for mod in ("z_visual","z_speech"):
+                    if mod not in w:continue
+                    for a in changes:changes[a].append(raw[a][key]["extra"]["windows"][i][mod]-w[mod])
+                    late_shift.append(raw["late"][key]["extra"]["windows"][i][mod]-raw["shifted"][key]["extra"]["windows"][i][mod])
+        read_diagnostics[ds]={"branch_changes_vs_base":{a:{"mean":float(np.mean(v)),"mean_absolute":float(np.mean(np.abs(v)))} for a,v in changes.items()},
+            "late_vs_shifted_mean_absolute":float(np.mean(np.abs(late_shift))),
+            "shifted_mean_local_support_overlap":float(np.mean(overlap))}
         gt=np.load(ROOT/f"data/gt_4fps/{ds}.npz",allow_pickle=True)
         ys={str(vid):np.asarray(gt["y4"][i]) for i,vid in enumerate(gt["video_ids"]) if str(gt["split"][i])=="test"}
         labels=("positive","far_negative","near_negative")
@@ -180,6 +192,8 @@ def report(readroot,decoded,out):
     result={"datasets":results,"gates":gates,"scope":"development-selected; frozen r6 decoder algorithm; parameters refit label-free per read arm",
             "metric_sources":{a:str((decoded/a/"metrics.json").relative_to(ROOT)) for a in ARMS}}
     (out/"summary.json").write_text(json.dumps(result,indent=2)+"\n")
+    (out/"read_diagnostics.json").write_text(json.dumps({"datasets":read_diagnostics,
+        "scope":"descriptive, post-run; branch changes are correlated, not independent statistical samples; no performance claim from magnitudes alone"},indent=2)+"\n")
     (out/"window_rank_diagnostics.json").write_text(json.dumps({"datasets":window_diagnostics,
         "definition":"per-video mean change in window percentile rank vs base; bootstrap unit is video",
         "groups":"positive: >=.5 GT fraction; negative: exactly zero, far if window midpoint >8s from any positive GT frame; partial windows omitted; with/no_frame by kept_visual_tokens>0",
