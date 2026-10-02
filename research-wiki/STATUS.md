@@ -1,6 +1,20 @@
 # 当前研究状态
 
-截至 **2026-09-30**。旧的 2026-09-09 引言保留在本页下方各节。
+截至 **2026-10-02**。旧的 2026-09-09 引言保留在本页下方各节。
+
+**2026-10-02 可修正全局先验实验完成，负结果归档**：用户授权的共享随机偏差机制已实现、
+通过独立方案/代码审查、解析积分与数值精度检查，并跑完 full / independent / no-global 三臂。
+匹配旧 Reader 上，full 的 ROC / PR / within 为 HateMM **.5693 / .3603 / .7134**，
+HCS **.5139 / .4895 / .6324**（`runs/20261002_revisable_prior/r1_full_px/metrics.json`）；
+相对 Append+r6 没有任一指标提高 .01，within −.0506 / −.0047，按规则 9 归档。
+共享偏差本身保留了强视频判别信息，分离后反而破坏视频排序；允许修正不等于可靠纠错。
+完整对照、错误案例、成本与去向见 `archive/experiments/20261002_revisable_prior/README.md`。
+新增 MLLM/GPU 开销为零；当前 r6、论文和 Overleaf 不变。development-selected，旧缓存试验。
+
+**2026-10-02 全局裁定的案例分析完成**：见 `experiments/20261002_verdict_analysis/README.md`。
+对匹配 Reader 缓存重跑当前 r6、分析改善/退化案例并做保持原始窗口排序的平移对照后，
+不支持把加入模型自己的 Yes/No 描述为稳定的定位收益；部分变化来自分数水平与下游拟合的交互。
+主语料仍是旧 Reader 家族，最新 Reader 的该消融缺口保留。development-selected；方法与论文未改。
 
 ## 当前方法：r6_bma（2026-09-27，K2 第 6 轮通过后替换 r3_m2；development-selected）
 
