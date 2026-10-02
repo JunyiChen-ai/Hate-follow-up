@@ -26,19 +26,18 @@ Completed candidates:
    full re-encoding, native parity passed; all final metrics fell, within−.1312/
    −.1311. Raw ordering also worse. Archived with no extra controls.
 
+6. `archive/experiments/20261003_m1_factorizer/README.md`: full native/explicit-
+   causal/factor experiment complete; no qualifying gain. HCS finalwithin−.0700
+   and raw−.0654; paired native exact. No further controls.
+
 Running candidates:
 
-- `experiments/20261003_m1_factorizer/README.md`: sixth proposal, prefix
-  temporal-block encoding with ordinary global query access. Independent proposal
-  and code reviews PASS; five-video GPU smoke passed, including largest prefix.
-  Complete primary includes native/explicit-causal/factor arms to separate kernel
-  drift from the proposed computation. No performance read yet.
 
 - `experiments/20261003_m1_contraster/README.md`: seventh candidate, one-forward
   language-depth contrastive readout. Proposal PASS; CPU plumbing passed and
   independent code review PASS. Five-video GPU checks passed; full333 paired run started on sc448960 at03:01NZ.
 
-Cumulative archives5 (four performance failures, one proposal novelty STOP).
+Cumulative archives6 (five performance failures, one proposal novelty STOP).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,

@@ -1,3 +1,5 @@
+> Archived: no qualifying main gain; HCS raw/final within drops despite native and explicit-causal controls.
+
 # M1 Factorizer: separate temporal evidence during prefix encoding
 
 Declared2026-10-03; sixth proposed candidate of the M1 autonomous iteration.
@@ -166,3 +168,48 @@ model weights, with no change to scoring code. Full command:
 sc474399, outputs `runs/20261003_m1_factorizer/r1_main/`.
 Attributor completed negatively after this proposal was fixed and is archived;
 Eraser remains running. Neither outcome changed the Factorizer declaration.
+
+## Full result and disposition, 2026-10-03
+
+Complete333-video, three-arm run on sc474399 finished in27.58minutes; all output
+returned before analysis. Sources: final
+`runs/20261003_m1_factorizer/r1_main_decoded/{base,causal,factor}/metrics.json`,
+raw `runs/20261003_m1_factorizer/r1_main/{base,causal,factor}/metrics.json`;
+paired/integrity/cost reports `runs/20261003_m1_factorizer/r1_main_analysis/`.
+
+| Dataset / arm | ROC / PR / within | Raw within |
+|---|---|---|
+| HateMM base | .897119 / .694235 / .750782 | .680011 |
+| HateMM causal | .896821 / .694265 / .749962 | .683615 |
+| HateMM factor | .894802 / .675287 / .749240 | .652256 |
+| HateClipSeg base | .716825 / .671072 / .637349 | .610130 |
+| HateClipSeg causal | .716990 / .671300 / .639037 | .610385 |
+| HateClipSeg factor | .704883 / .671429 / .567329 | .544734 |
+
+Native333 global margins and all native window reads exactly match current
+base_gridA. Token groups, native global/answer preservation, rates, lengths,
+bounds, missing branches and finite scores all pass. Paired final within
+factor−base is −.001543 on84HateMM videos(CI[−.040093,.039531]) and −.070020
+on99HCS videos([−.103553,−.034152]); factor−explicit-causal is −.000723/−.071708.
+Raw deltas are −.027756/−.065396. No final main metric gains.01; archive under
+rule9 and do not run further mechanism controls.
+
+Explicit-causal margins exhibit nonzero per-query drift(up to2.6897/2.0498), but
+aggregate metrics stay close to native. The HCS loss persists against this
+matched-mask reference, so ordinary explicit-mask numeric plumbing alone does
+not explain it. This does not identify exactly which semantic context the
+factorization removed. The small-model independence invariant is computationally
+true but does not yield better localization here; it is not a useful mechanism
+claim by itself. Factorized global diagnostic margins are not used downstream.
+
+Standalone Factorizer totals6.461/4.932GPUminutes versus native5.070/4.112;
+mean forwards38.52/62.05 versus36.52/60.05. Explicit-causal cost is comparable
+to Factorizer. Peak17.919/17.608GiB, inclusive of the three-arm process. Full
+measurement27.58minutes includes the extra control arm and output overhead.
+
+Rule10: complete predictions, raw/final canonical metrics and
+`data/gt_4fps/{HateMM,HateClipSeg}.npz` read only after all scoring ended.
+Finding: no qualifying gain, with HCS ordering degraded before and after r6.
+Decision: archive without revision/control; current method/paper unchanged.
+All results development-selected, and no claim that other factorization
+architectures or learned block encoders are ruled out.

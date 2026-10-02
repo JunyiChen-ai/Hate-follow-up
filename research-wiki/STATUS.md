@@ -4,11 +4,13 @@
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档5个候选：Grounder、Selector、Attributor、Eraser性能未过门；Marginalizer方案STOP。
+累计归档6个候选：Grounder、Selector、Attributor、Eraser、Factorizer性能未过门；Marginalizer方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
-Factorizer完整三臂在sc474399完成并回传，正在本机评测，尚无性能；Contraster五视频GPU检查通过，
+Factorizer完整三臂也未过门：HateMM .894802/.675287/.749240，HCS .704883/.671429/.567329；
+HCS within−.0700，普通掩码对照接近基线，来源 `runs/20261003_m1_factorizer/r1_main_decoded/factor/metrics.json`。
+Contraster五视频GPU检查通过，
 03:01NZ在sc448960启动完整333配对，来源/机制/成本见各自实验README。
 
 **五个候选小结（规则11，不超过10行）**：
