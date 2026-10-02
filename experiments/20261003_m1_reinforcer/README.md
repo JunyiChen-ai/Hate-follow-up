@@ -157,3 +157,17 @@ HateMM and543.29s HateClipSeg (14.71min total; deployment=paired collection),
 versus capture-inclusive base208.49/286.19s. HMM1145829-token check passed,
 excluded from extrapolation. No GT/performance inspected in smoke. Full333 next,
 unchanged declared constants; fresh preflight `machines_reinforcer_main.txt`.
+
+Full333 initially stopped after103 complete paired records on a strict diagnostic
+assertion, before any GT/performance was read. The no-image query at position104
+had94query/700cache tokens; BF16 single-row finalNorm re-evaluation differed from
+native full-query normalization (maxhidden.03125, answerlogit.0028019).
+Logs preserved `runs/20261003_m1_reinforcer/failure_103{,_numeric}.log`.
+Fix only the diagnostic: read-only hooks check exact actual last-block→finalNorm
+input and actual finalNorm output→Judge return. Independent single-row re-evaluation
+is recorded, not required bitwise-equal across kernel shapes. Scores still use
+original native final output; SLA unchanged. Independent narrow fix check PASS,
+all9 synthetic token/input/RoPE arrays exact before/after; source
+`independent_review/norm_capture_scores_unchanged.json`. Original5 smoke + failed
+manifestposition104 will run afresh via `launch/check_normalization.sh`, no GT.
+Only after six-video8B probe passes may the original103 paired records be resumed.
