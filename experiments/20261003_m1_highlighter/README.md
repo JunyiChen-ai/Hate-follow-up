@@ -122,3 +122,10 @@ Native timing includes a read-only visual hidden capture but excludes vocabulary
 projection; report this measurement limitation. Deployment retains an FP32 LM
 head copy (approximately2.3GiB on Qwen3-8B) to avoid copying it for every chunk;
 peak memory and projection time must be measured in real smoke.
+
+Independent code review PASS (report `docs/reviews/20261003_m1_highlighter_code.md`):
+actual36layer Qwen with32heads/8KV, DeepStack and20images, FP32/BF16; empty middle
+window, final timestamp, last-row-only oracle, zero/native restoration and forward
+counts all pass. Synthetic complete333 canonical analysis passes and rejects
+misaligned G. Artifact `runs/20261003_m1_highlighter/independent_review/check_highlighter.json`.
+Real smoke on an idle5090 is next, with no GT/performance read.

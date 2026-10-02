@@ -126,3 +126,40 @@ context. Paper and official Qwen2.5 code read; source discrepancies and Qwen3
 adaptations declared. Independent proposal review PASS; implementation underway, no
 performance screening yet. FV-Action inspected but not selected because existing
 M1 already uses binary window reads. VideoTree/VAP only discovered, no new data.
+
+
+Unselected input-timing direction inspected2026-10-03 after Projector completion:
+read `data/asr_whisper_large_v3/PROVENANCE.md`, `src/window_token_regions.py`,
+`src/video_inputs.py` and unlabeled loaded ASR segment durations on the333manifest.
+HMM has2283nonempty segments,414>8s/217>30s, median2.04s/max478.92s;
+HCS1555segments,313>8s/216>30s, median2.44s/max289.98s. These are cache boundary
+spans, not evidence that speech lasts throughout the span or that timestamps are
+correct. Existing window text uses proportional word assignment. This motivates
+checking acoustic timing uncertainty, but no method has been declared or selected,
+no word alignment extracted, and no GT read for this timing inspection. Ordinary
+forced alignment alone would be an input change, not a rule4 novel mechanism.
+Primary source inspected: *Whisper Has an Internal Word Aligner*, arXiv2509.09987v1,
+methodsII-A–C; it proposes character teacher forcing and unsupervised head filtering.
+Word-confusion-network SLU arXiv2401.02921 and uncertainty-DTW arXiv2211.00005 only
+source-discovered; no claim of applicability, source reproduction or target novelty.
+
+Follow-up timing diagnostic (post-scoring, not method selection): reused canonical
+per-video speech within from `runs/20261003_m1_projector/r1_main_analysis/branch_diagnostics.json`
+(which reads original test GT), joined to loaded ASR spans and manifest durations.
+Artifact `runs/20261002_m1_iteration/timing_diagnostic/summary.json`. On82/97eligible
+speech videos, rank correlation of fraction(nonempty spans>8s) with speech within
+is−.009/−.324. Maximum span itself is+.199/−.130, video duration+.211/−.039.
+These exploratory correlations are neither alignment-error measurements nor causal
+proof, and do not support a common two-corpus failure explanation by themselves.
+Lowest speech cases were listed automatically, but audio has not been listened to
+and their transcript accuracy/semantics have not been assessed. No new constants,
+scoring code, frame inputs or experimental candidate changed from this diagnostic.
+
+Inspected two listed cases using original ASR JSON, base_gridA window scores and
+original GT arrays: HMM hate_video_349 and HCS bit_8I3rasu4mSiz. Both have positive
+GT over nearly the entire video, with a short negative tail; their raw speech
+ordering gives the tail a higher score than many positives. Thus the lowest
+speech-within cases do not isolate word-timing failure. Source ASR clips were
+read as text only; audio not listened to, no semantic or transcription-accuracy
+claim. This weakens treating coarse timestamps as the established next mechanism;
+no timing candidate selected or implemented.
