@@ -47,8 +47,8 @@ Running candidates:
   complete333 running on sc474399, estimated35min.
 - `experiments/20261003_m1_integrator/README.md`: tenth candidate, future-aware
   visual prefix memory from FutureMask; proposal/code reviews PASS, CPU actual
-  model witnesses and five-video GPU smoke passed; preparing full333 three-arm
-  run on sc448960. Independent of VCD, not combined.
+  model witnesses and five-video GPU smoke passed; full333 three-arm run is
+  running on sc448960. Independent of VCD, not combined.
 
 Cumulative archives8 (six performance failures, two proposal novelty STOPs).
 
@@ -70,3 +70,26 @@ Maintenance2026-10-03: independent Allocator proposal review encountered a
 content-derived tie-breaking seed in the archived August
 `project_shared_shapley_rank_transport.py`. Replaced it with fixed seed0 under
 CLAUDE prohibition; script not executed, historical results not reinterpreted.
+
+Unselected possibilities inspected while full jobs run, not additional candidates:
+- Soft expected-answer embeddings (SoftThinking source previously noted) would
+  differ mainly near uncertain native verdicts. Read only native z_video from
+  `runs/20260926_glr/base_gridA/predictions.jsonl`, no GT: smaller Yes/No probability
+  exceeds.05 in18/215 HMM and14/118 HCS, and its median is about2e-6 in both.
+  This is an input-distribution observation, not a performance screening result;
+  no temperature, routing threshold, method or experiment was selected.
+- PAI, [arXiv2407.21771](https://arxiv.org/abs/2407.21771), is another known
+  input-attention/contrastive-decoding source. Only abstract/source discovery
+  was inspected at this point; no claim of target-task novelty or implementation.
+  Current work remains declared visual-contrast R2 and Integrator R1.
+
+Shared post-scoring report helper added while both main runs were still in progress:
+`scripts/analysis/m1_branch_diagnostics.py`, independent narrow review PASS
+(`docs/reviews/20261003_m1_branch_diagnostics_code.md`). It calls the canonical
+within metric on each branch's available frames, reports different speech counts,
+and separates single-read-window final gains from multiwindow gains. Uses original
+window boundaries and canonical shared GT/prediction extent; no evaluator change.
+Only completed VCD R1 raw/decoded records and its test GT were read to validate it;
+all branch n/means agree with its existing control report within1e-12. No new method
+or constant was selected from this check. Run this diagnostic after each complete
+new evaluation, with all declared arms; keep it separate from primary metrics.

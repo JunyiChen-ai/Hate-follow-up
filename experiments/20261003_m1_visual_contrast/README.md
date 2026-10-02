@@ -236,6 +236,12 @@ R1 remains a qualifying numerical gain for rule9, but fails promotion and the
 two-corpus matching mechanism. Continue with a different intervention scope,
 not a claim that R1 already explains the desired gain.
 
+Reproducible diagnostic plot: `plot_controls.py` reads canonical metric files for
+points and the paired-video report for95% CIs, asserting their mean agreement.
+Outputs `r1_controls_analysis/diagnostics.{png,pdf,csv}`. Raw within, final within
+and final PR are separated; the gray tolerance bands are not CIs. This is a
+development diagnostic, not a positive mechanism figure or a new evaluation.
+
 ## R2 declared: corrupt only the queried window's frames
 
 First of at most3 method revisions, declared2026-10-03 after reading R1 and its
