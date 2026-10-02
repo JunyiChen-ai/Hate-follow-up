@@ -25,7 +25,7 @@ R2局部扰动完整333完成：HateMM .895698/.689917/.753746，HCS .719246/.67
 HMM within+.01604但PR-.01263，HCS ROC-.00718，未晋级。来源 `runs/20261003_m1_integrator/r1_main_decoded/future/metrics.json`。
 原始visual排序两语料下降；HMM两个raw排序未变的case贡献.01476，不能解释为新定位证据。
 R2仅开放未来text keys，独立代码/GPU检查PASS，完整333在sc448960运行。
-第十一候选Amplifier方案PASS、代码审查中，独立于前者。
+第十一候选Amplifier方案/代码/GPU检查PASS，完整333在sc474399启动，独立于前者。
 
 **五个候选小结（规则11，不超过10行）**：
 - 尝试了查询注意力限制、选择注意力头、缓存值归因、实际删除；双假设因已有方法STOP。

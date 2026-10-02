@@ -144,3 +144,18 @@ Launch `bash experiments/20261003_m1_amplifier/launch/run_lab.sh smoke`, then
 `main` after plumbing PASS. Canonical evaluation
 `bash experiments/20261003_m1_amplifier/launch/run_analysis.sh`; shared branch
 diagnostic uses `scripts/analysis/m1_branch_diagnostics.py --arms base eager pai`.
+
+## GPU smoke PASS, proceeding to full333
+
+Host sc474399, smoke artifacts returned locally:
+`runs/20261003_m1_amplifier/r1_smoke/plumbing_summary.json`. Five native globals
+and292branches exactly match base_gridA; restoration, original speech/global/
+answer, identical local queries, no-image reference, actual counts,34-layer visits,
+token-first contrast reconstruction and finite4fps pass. Peak17.8242GiB;
+matched eager visual drift at most.28363. Mean visual attention per input changes
+from.0213–.0322 to.3569–.3815; this is activation by construction, not accuracy.
+Smoke43.5s includes native restoration, no GT/performance read, constants unchanged.
+First2/corpus extrapolation: native182.0/237.7s, PAI251.5/368.6s,
+paired365.4/613.1s for HMM/HCS (standalone10.33min, paired16.31min).
+These small-input estimates exclude the stress video; full actual time will replace
+them. Full333 paired run follows on the same live-idle host after fresh preflight.

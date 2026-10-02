@@ -56,8 +56,8 @@ Running candidates:
   sc448960. Independent of VCD, not combined.
 - `experiments/20261003_m1_amplifier/README.md`: candidate11, PAI attention
   amplification plus language-only token-logit reference, independently declared
-  before Integrator evaluation. Proposal PASS, implemented; local CPU witness
-  passes and independent code review underway. No GPU run yet.
+  before Integrator evaluation. Proposal/code review and GPU smoke PASS,
+  complete333 paired run launching on sc474399; independent of Integrator.
 
 Cumulative archives9 (seven performance/mechanism failures, two proposal novelty STOPs).
 
