@@ -1,3 +1,5 @@
+**归档原因：完整333无任一最终主指标提升.01；HateMM PR明显下降，原始联合排序两语料下降。**
+
 # M1 Reinforcer: query-specific visual residual steering
 
 Candidate13, declared2026-10-03 while Recycler R1 runs and Integrator R4 is in
@@ -178,3 +180,39 @@ HateMM `hate_video_215`; actual normalization boundaries and historical native
 reads pass exactly despite repeatable single-row diagnostic drift. Five original
 smoke cases still pass. No GT read. Resume the complete paired collection from103;
 this is a diagnostic-only correction, no prediction formula or stored score change.
+
+
+## R1 complete and archived, 2026-10-03
+
+Run host sc448960. Full333 returned locally before evaluation;333global and13939
+native branch values exactly match base_gridA. Canonical final source
+`runs/20261003_m1_reinforcer/r1_main_decoded/{base,full}/metrics.json`, raw source
+`r1_main/{base,full}/metrics.json`; reports `r1_main_analysis/`. Development-selected.
+
+| Corpus | Arm | ROC | PR | within |
+|---|---|---:|---:|---:|
+| HateMM | native | .897119 | .694235 | .750782 |
+| HateMM | full | .891214 | .661409 | .750129 |
+| HateClipSeg | native | .716825 | .671072 | .637349 |
+| HateClipSeg | full | .722658 | .670072 | .636515 |
+
+Final within deltas−.000653/−.000834 (n84/99; paired95% CI
+[−.016251,.014118]/[−.014649,.012634]); HMM PR−.032826. No final main gain>=.01,
+so rule9 archive with no SLA/VSV component selection or parameter tuning.
+Post-scoring reads: raw/decoded predictions, canonical metrics, checks and the
+original two `data/gt_4fps` arrays, for reporting only. Visual raw ordering changes
+−.033063/+.004810; native speech exactly unchanged; raw max ordering changes
+−.034783/−.017511. Thus an image-dependent internal update is verified, but a useful
+localization mechanism is not. No new media/ASR semantics inspected for this run.
+
+Actual completed-video standalone sums (`r1_main_analysis/cost.json`):
+full640.66/548.81s, total19.82min; capture-inclusive native358.24/293.70s, ratio1.825x.
+Native capture includes intermediate projections, so this is not overhead relative
+to a bare uninstrumented native run. Full mean forwards74.57/123.92 versus native
+36.52/60.05; exact full6+B+2V, native3+B. Peak18.106GiB. Initial run stopped after103
+records, then the scoring-invariant finalNorm diagnostic repair resumed230records;
+reported908.4s resume wall is NOT whole333 time. Initial completed portion approx285s
+plus resumed908.4s is about19.9min paired collection, excluding failed probes and
+repair validation. All retained records use the identical scoring computation;
+there was no fresh single uninterrupted final-code333 run, and no promotion claim.
+Current method, paper and Overleaf unchanged. This is cumulative archive13.

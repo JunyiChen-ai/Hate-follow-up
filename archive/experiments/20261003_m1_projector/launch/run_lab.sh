@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")/../../.."
+cd "$(dirname "$0")/../../../.."
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HOME="$PWD/.cache/hf"
 phase="${1:-main}"
@@ -11,4 +11,4 @@ case "$(hostname -s)" in
   sc448960) py=/home/junyi/miniconda3/envs/HateVLM/bin/python ;;
   *) echo 'Use a reviewed target environment' >&2; exit 2 ;;
 esac
-exec "$py" -u experiments/20261003_m1_projector/measure.py "${args[@]}"
+exec "$py" -u archive/experiments/20261003_m1_projector/measure.py "${args[@]}"

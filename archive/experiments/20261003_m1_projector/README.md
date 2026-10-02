@@ -1,3 +1,5 @@
+**归档原因：完整333无任一最终主指标提升.01；相对原生及matched eager均在噪声内。**
+
 # M1 Projector: orthogonal attention-output guidance
 
 Candidate14, declared2026-10-03 while Integrator R4 runs and Reinforcer R1 is in
@@ -147,3 +149,38 @@ paired321.99/542.26s (14.40min). Excludes long5829-token HMM114 from extrapolati
 Eager native max-margin drift across smoke.3603; Projector changes reads but
 this alone is not an effectiveness result. No GT read. Full333 runs next with
 same constants, commands `launch/run_lab.sh main` and `launch/run_analysis.sh`.
+
+
+## R1 full result and disposition, 2026-10-03
+
+Run host sc474399, complete333 wall1171.5s=19.53min; all returned to local before
+canonical evaluation.333global and13939native branch values exactly reproduce
+base_gridA, global/forced answer/speech unchanged. Sources:
+`runs/20261003_m1_projector/r1_main_decoded/{base,eager,project}/metrics.json`,
+raw `r1_main/{base,eager,project}/metrics.json`, reports `r1_main_analysis/`.
+Development-selected, same fixed r6 independently refit per arm.
+
+| Corpus | Arm | ROC | PR | within |
+|---|---|---:|---:|---:|
+| HateMM | native | .897119 | .694235 | .750782 |
+| HateMM | eager | .897095 | .694092 | .750475 |
+| HateMM | Projector | .896986 | .694111 | .750851 |
+| HateClipSeg | native | .716825 | .671072 | .637349 |
+| HateClipSeg | eager | .716742 | .671051 | .637282 |
+| HateClipSeg | Projector | .717685 | .671516 | .637883 |
+
+Within deltas+.000069/+.000534 (n84/99; paired95% CI
+[−.001856,.002265]/[−.001632,.002905]), versus eager+.000377/+.000602. No final
+main gain>=.01. Rule9 archive, no coefficient tuning, projection removal or
+random-direction controls after failed main gate. No mechanism claim.
+Post-scoring reads: raw/decoded predictions, canonical metrics, checks and original
+`data/gt_4fps` arrays for reporting. Visual raw order changes−.001673/−.001509;
+speech exactly unchanged; raw max−.000660/−.000168. The vector update changes reads
+but does not provide useful localization. No semantic media-case claims made.
+
+Cost (`r1_main_analysis/cost.json`): native301.77/244.48s; Projector351.51/290.89s,
+total10.71min and1.176x native. Matched eager351.53/291.04s: almost all measured
+overhead is additional last-row attention, not orthogonal arithmetic. Peak17.824GiB.
+New-video3+B outer calls, means36.52/60.05; paired3+B+2V, two internal last-row
+reductions per affected layer. Existing20frame/ASR caches reused. Archive14;
+current method, paper and Overleaf unchanged.

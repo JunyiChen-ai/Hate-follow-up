@@ -65,7 +65,7 @@ Running candidates:
   Native reads exact, matched eager near baseline, no component controls after
   failed main gate.
 
-Cumulative archives12 (ten performance/mechanism failures, two proposal novelty STOPs).
+Cumulative archives14 (twelve performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
@@ -104,15 +104,25 @@ Unselected possibilities inspected while full jobs run, not additional candidate
   Independent proposal review PASS; paper/code differences and Qwen3 channel
   adaptation declared before implementation, no full-run performance read.
 
-Candidate13 proposal: `experiments/20261003_m1_reinforcer/README.md`, VISTA
+Candidate13 proposal: `archive/experiments/20261003_m1_reinforcer/README.md`, VISTA
 paper-defined residual steering + preceding-layer logits, Qwen local-query scope.
 Author-code discrepancies are declared explicitly. Independent proposal review
-PASS; implementation and own actual-model checks complete, independent code review underway. VTI/PTI were only inspected
+PASS; implementation, independent code review and real-input checks PASS;
+full333 completed after a scoring-invariant diagnostic repair; no qualifying
+main gain, archived as13. No additional component variants selected. VTI/PTI were only inspected
 as adjacent steering sources, not declared as candidates or run; no external data
 has been added. Pairwise Ranking Prompting was located but not yet method-read.
 
-Candidate14 proposal: `experiments/20261003_m1_projector/README.md`, paper-defined
+Candidate14 proposal: `archive/experiments/20261003_m1_projector/README.md`, paper-defined
 ACG transfer, orthogonal attention-output correction with same-pass masked
 reference. Explicit per-head Qwen3 adaptation and matched last-row eager control;
-proposal review underway. This is distinct from residual steering, sink transfer
+proposal/code/real-input review PASS; full333 complete, no qualifying main gain;
+archived as14. No further controls/tuning. This is distinct from residual steering, sink transfer
 and image-logit boosts. PRP was not selected after finding the prior PWC failure.
+
+Candidate15 proposal: `experiments/20261003_m1_highlighter/README.md`, VGA visual-
+semantic value guidance restricted to local frame support, preserving native
+context. Paper and official Qwen2.5 code read; source discrepancies and Qwen3
+adaptations declared. Independent proposal review PASS; implementation underway, no
+performance screening yet. FV-Action inspected but not selected because existing
+M1 already uses binary window reads. VideoTree/VAP only discovered, no new data.

@@ -4,7 +4,7 @@
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档12个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档14个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -37,8 +37,11 @@ within+.019208/-.001457，HCS pooled仍退化，初版+3修订已用完，此族
 第十二候选Recycler完整333完成：HateMM .896713/.692858/.754383，HCS .718114/.671503/.636422；
 within+.003601/-.000927，无主指标+.01，归档为第11项，视觉原始排序也未提升。
 来源 `runs/20261003_m1_recycler/r1_main_decoded/recycle/metrics.json`；机制激活不等于有效定位。
-第十三候选Reinforcer完成103paired后因诊断重算finalNorm浮点不一致停下；评分不变的校验修复及六视频实机复核PASS，sc448960续跑。
-第十四候选Projector（ACG注意力输出正交修正）方案/代码及5视频实机检查PASS，完整333在sc474399运行。
+第十三候选Reinforcer完整333完成：HateMM .891214/.661409/.750129，HCS .722658/.670072/.636515；
+无主指标+.01，HMM PR−.032826，归档为第13项；来源 `runs/20261003_m1_reinforcer/r1_main_decoded/full/metrics.json`。
+第十四候选Projector完整333完成：HateMM .896986/.694111/.750851，HCS .717685/.671516/.637883；
+within仅+.000069/+.000534，归档为第14项；来源 `runs/20261003_m1_projector/r1_main_decoded/project/metrics.json`。
+第十五候选Highlighter（VGA局部视觉value引导）独立方案审查PASS，实现及自身小模型检查完成，独立代码审查进行中；还无性能结果。
 
 **累计十个归档小结（规则11，不超过10行）**：
 - 后五项覆盖内部层间对比、像素扰动对比、图像注意力增强、前缀隔离；SHAP迁移因已有目标任务方法STOP。
