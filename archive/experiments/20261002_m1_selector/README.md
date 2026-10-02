@@ -1,6 +1,8 @@
+> Archived: no final main metric improved by .01; selective restriction harmed within-video ordering on both corpora.
+
 # M1 Selector: window-selective attention heads
 
-Date: 2026-10-02. Status: proposal review PASS; implementation next.
+Date: 2026-10-02. Status: full paired experiment completed; archived under rule 9.
 Independent review: `docs/reviews/20261002_m1_selector_proposal.md`.
 Close general antecedents include Gaze Heads and IGAR; this is a target-task
 transfer and online label-free routing test, not the invention of attention steering.
@@ -134,3 +136,45 @@ It first checks full paired/current-reader alignment, evaluates both raw arms an
 the unchanged r6 runs, then reports video-paired bootstrap, head selection and
 cost. Initial report always leaves mechanism_supported=false until the declared
 controls have actually run and passed. Analysis GT never enters GPU reading or fit.
+
+## Full results and decision (2026-10-02)
+
+Host sc474399 / uoa-lab2, all 333 videos, paired reader wall time 1054.2 seconds.
+Outputs immediately returned to local `runs/20261002_m1_selector/r1_main/`.
+Analysis completed locally at `runs/20261002_m1_selector/r1_main_analysis/`.
+All original global and window margins are reproduced exactly for every video.
+
+Official final sources: `runs/20261002_m1_selector/r1_main_decoded/{base,select}/metrics.json`.
+Order: pooled ROC / pooled PR / within macro ROC, development-selected.
+
+| Corpus | Base | Selector |
+|---|---|---|
+| HateMM | .897119 / .694235 / .750782 | .897708 / .691099 / .709021 |
+| HateClipSeg | .716825 / .671072 / .637349 | .713008 / .667350 / .622332 |
+
+Paired within differences: HateMM −.041761 (84 mixed videos, 95% bootstrap
+[−.075893, −.010154]); HCS −.015018 (99, [−.043671, +.014567]).
+Raw within also falls: .680011 → .653309 and .610130 → .580374;
+its paired intervals exclude zero on both corpora. Head selection was active:
+layerwise selected-head fractions range .133–.580 / .133–.604, all-head
+selection .038 / .036 and no-head selection .127 / .121. This is not a no-op.
+Attention affinity did not identify a restriction that improved localization.
+These observations do not establish that attention heads lack useful information.
+
+Standalone prefix-plus-branch wall estimates: base 319.10 / 258.96 seconds,
+select 336.15 / 274.32 seconds (HateMM / HCS); mean deployed forwards
+36.52 / 60.05 per video, exactly the same for both arms. Additional per-window
+model calls: zero. Timing excludes trajectory serialization and paired verification.
+Sources: analysis `cost.json`, `head_selection.json`, `alignment.json` and `summary.json`.
+
+No main metric gains .01, so archive immediately under rule 9. The full
+all-head/permuted-head/shifted-support and shift-only controls were not run;
+only the four-video plumbing smoke exercised the three GPU control arms.
+There is no positive mechanism claim. Current method and paper remain unchanged.
+
+Test-read log: inspected raw and decoded official metrics, analysis summary,
+paired per-video outcomes, routing frequencies and costs after predictions were
+fixed. Analysis used `data/gt_4fps/{HateMM,HateClipSeg}.npz`; GT never entered
+reader/routing/unsupervised r6 fitting. Together with Grounder, the failure
+motivates testing evidence attribution while retaining joint context, rather
+than another head/depth threshold for removing context.

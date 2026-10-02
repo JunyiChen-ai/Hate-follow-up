@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")/../../.."
+cd "$(dirname "$0")/../../../.."
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 out=runs/20261002_m1_selector/r1_main_analysis
 mkdir -p "$out"
 exec > "$out/run.log" 2>&1
 echo "host $(hostname)"
 echo $$ > "$out/run.pid"
-runner=experiments/20261002_m1_selector/analyze.py
+runner=archive/experiments/20261002_m1_selector/analyze.py
 py=/home/jehc223/miniconda3/envs/HateVideo/bin/python
 "$py" -u "$runner" --stage prepare
 pids=()

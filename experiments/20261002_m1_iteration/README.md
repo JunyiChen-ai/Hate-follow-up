@@ -7,12 +7,16 @@ paper polishing substitutes for empirical improvement. No new dataset or ensembl
 All development decisions are development-selected. Test GT is used only after
 scoring for evaluation/error analysis, never fitting/routing/threshold selection.
 
-Current candidate: `experiments/20261002_m1_selector/README.md` (proposal review PASS).
-Completed candidate 1: `archive/experiments/20261002_m1_grounder/README.md`.
-Grounder's late restriction did not improve any main metric by .01; correct and
-wrong local support were nearly indistinguishable, whereas all-layer restriction
-hurt both corpora. Archived under rule 9. Selector tests online head selection
-throughout the language stack, retaining other heads/global Q/A for context.
+Completed candidates:
+1. `archive/experiments/20261002_m1_grounder/README.md`: late restriction had no
+   qualifying gain; correct/wrong support almost indistinguishable.
+2. `archive/experiments/20261002_m1_selector/README.md`: selective-head restriction
+   changed routing but reduced final within by .0418 / .0150; no qualifying gain.
+   Full baseline reproduction exact; controls beyond smoke not run per funnel.
+
+Current candidate: `experiments/20261002_m1_attributor/README.md`, proposal review
+pending. Retain joint context and attribute the global decision to temporal
+media-value paths; no performance results yet.
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,

@@ -9,9 +9,13 @@ HateMM .897570 / .695834 / .750171、HCS .716291 / .670781 / .637249
 （本机 `runs/20261002_m1_grounder/r1_full_decoded/late/metrics.json`）；within 变化
 −.0006 / −.0001，无指标提高 .01；正确与错位支持几乎相同，全层局部限制则掉分。
 按规则 9 归档，详见 `archive/experiments/20261002_m1_grounder/README.md`。
-第二候选 Selector 已通过独立方案审查：按当前 query 的局部证据 affinity 在线选头，
-只限制所选头的异窗媒体访问，其余头和全局问答保留；入口
-`experiments/20261002_m1_selector/README.md`，尚无新性能结果。
+第二候选 Selector 也已完整运行并归档：最终 ROC / PR / within 为
+HateMM .897708 / .691099 / .709021、HCS .713008 / .667350 / .622332
+（本机 `runs/20261002_m1_selector/r1_main_decoded/select/metrics.json`）；
+within −.0418 / −.0150，原始窗口排序也下降，全部基线读数精确复现。
+详见 `archive/experiments/20261002_m1_selector/README.md`。本轮累计归档 2 个候选；
+第三候选 Attributor 声明在 `experiments/20261002_m1_attributor/README.md`，
+检查完整上下文下整体裁定的媒体 value 路径归因，独立方案审查中，尚无性能结果。
 当前方法与论文不变；继续自主迭代，全部 development-selected。
 
 **2026-10-02 可修正全局先验实验完成，负结果归档**：用户授权的共享随机偏差机制已实现、

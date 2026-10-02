@@ -207,3 +207,7 @@ No semantic case class is inferred from these numeric rankings. These findings
 motivate the next separate candidate, Selector: preserve context heads while
 selectively modifying heads whose current query retrieves local evidence.
 This is a new mechanism, not a sweep over Grounder's layer split.
+
+After archival, launch scripts and prototype code are under
+`archive/experiments/20261002_m1_grounder/`; they retain the original `runs/`
+locations. Token-region mapping is now shared unchanged in `src/window_token_regions.py`.
