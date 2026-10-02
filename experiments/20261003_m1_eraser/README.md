@@ -1,6 +1,6 @@
 # M1 Eraser: re-encoding after temporal media removal
 
-Date2026-10-03. Status: proposal only. Fifth candidate of the M1 iteration;
+Date2026-10-03. Status: proposal PASS, implementation under code review. Fifth candidate of the M1 iteration;
 Attributor is still running and has no inspected performance. Marginalizer was
 STOPped at proposal, not implemented. Planned host lab-server/sc448960 subject
 to live availability. Independent proposal review required before implementation.
@@ -15,7 +15,9 @@ the original full video are not reused after removal. This prevents erased
 content remaining in other tokens' cached states. The question always remains
 exactly VIDEO_QUESTION; no instruction to imagine ignoring an interval.
 
-For window i and modality m, z_i^m = F(full video)-F(video minus media i,m).
+F is the fixed global Yes-minus-No log-sum-exp margin, exactly the current
+VIDEO_QUESTION scoring function. For window i and modality m,
+z_i^m = F(full video)-F(video minus media i,m).
 Visual removal drops all sampled timestamped frames in that window, retaining
 speech. Speech removal drops the window's words from the transcript, retaining
 frames. Both therefore test one modality's necessity given the other modality
@@ -128,3 +130,23 @@ This is consistent with the already-declared limitation that non-media states
 retain input information. It does not establish that attribution localization
 fails, or distinguish retained semantic evidence from a generic prior. No
 scoring design, constants or subset changed from this diagnostic.
+
+
+## Implementation checks before GPU performance
+
+Proposal PASS: `docs/reviews/20261003_m1_eraser_proposal.md`, with explicit
+full-text access limits. Code uses `Judge` for every fresh raw-media prefix;
+no original KV cache is retained for an intervention. Complete CPU membership
+check:333 videos,7359 windows,11676 nonempty modality removals. Removed words
+match `window_text` exactly; indices do not overlap and cover the whole-duration
+word subset, and all in-duration frames are assigned once.712 ASR words are
+outside the manifest video duration and remain in the unchanged global context,
+as in the baseline; they are not silently reassigned to a window. This is an
+input/protocol limitation, no GT read or input fix. Source:
+`runs/20261003_m1_eraser/selfcheck/transform.json`.
+
+Implementation/launch: `measure.py`, `erasure.py`,
+`launch/run_lab_server.sh smoke|main`; after full results return locally,
+`launch/run_analysis.sh`. Primary outputs `runs/20261003_m1_eraser/r1_main/`,
+canonical raw/r6 outputs `r1_main/{base,erase}/metrics.json` and
+`r1_main_decoded/{base,erase}/metrics.json`. No model changes or metrics yet.
