@@ -56,16 +56,16 @@ Running candidates:
   new visual with native speech; cached complete-branch test complete: HMM pooled restored, HCS fails.
   R4 last modification declares same-window future ASR with native speech.
   Independent of VCD, not combined.
-- `experiments/20261003_m1_recycler/README.md`: candidate12, paper-defined VAR
+- `archive/experiments/20261003_m1_recycler/README.md`: candidate12, paper-defined VAR
   with explicit Qwen3 sink-channel adaptation; independent proposal/code PASS,
-  real-input GPU smoke PASS, full333 running on sc448960.
+  real-input GPU smoke PASS, full333 complete; no qualifying gain, eleventh archive.
 
 11. `archive/experiments/20261003_m1_amplifier/README.md`: candidate11, tenth
   archive. Complete333 PAI transfer had no qualifying main gain; HMM PR drops.
   Native reads exact, matched eager near baseline, no component controls after
   failed main gate.
 
-Cumulative archives10 (eight performance/mechanism failures, two proposal novelty STOPs).
+Cumulative archives11 (nine performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
@@ -100,13 +100,19 @@ Unselected possibilities inspected while full jobs run, not additional candidate
   visual contrast has since been archived. PAI has now been fully source-read
   and separately declared as candidate11; SoftThinking remains unselected.
 - VAR was inspected during Integrator R2 / Amplifier R1 collection and is now
-  separately declared as candidate12: `experiments/20261003_m1_recycler/README.md`.
+  separately declared as candidate12: `archive/experiments/20261003_m1_recycler/README.md`.
   Independent proposal review PASS; paper/code differences and Qwen3 channel
   adaptation declared before implementation, no full-run performance read.
 
 Candidate13 proposal: `experiments/20261003_m1_reinforcer/README.md`, VISTA
 paper-defined residual steering + preceding-layer logits, Qwen local-query scope.
 Author-code discrepancies are declared explicitly. Independent proposal review
-in progress; no implementation/performance screening. VTI/PTI were only inspected
+PASS; implementation and own actual-model checks complete, independent code review underway. VTI/PTI were only inspected
 as adjacent steering sources, not declared as candidates or run; no external data
 has been added. Pairwise Ranking Prompting was located but not yet method-read.
+
+Candidate14 proposal: `experiments/20261003_m1_projector/README.md`, paper-defined
+ACG transfer, orthogonal attention-output correction with same-pass masked
+reference. Explicit per-head Qwen3 adaptation and matched last-row eager control;
+proposal review underway. This is distinct from residual steering, sink transfer
+and image-logit boosts. PRP was not selected after finding the prior PWC failure.

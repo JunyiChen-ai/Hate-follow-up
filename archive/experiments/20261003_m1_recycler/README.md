@@ -1,3 +1,5 @@
+Archived 2026-10-03: no main metric gain >=.01 on either corpus; attention changes did not improve localization.
+
 # M1 Recycler: content-dependent recycling of attention from sink tokens
 
 Candidate12, declared2026-10-03 while Integrator R2 and Amplifier R1 run;
@@ -167,3 +169,36 @@ First2/corpus extrapolation, excluding stress: capture-including baseline210.35/
 paired17.38min; estimates only, full measured times will replace them. No new
 labels/performance read, no constants changed. Full333 begins after sync and
 fresh preflight on the same sc448960 host.
+
+## R1 full result and disposition (2026-10-03)
+
+Run host sc448960, complete333 returned to local before analysis. Canonical sources
+`runs/20261003_m1_recycler/r1_main_decoded/{base,eager,recycle}/metrics.json`;
+raw sources `r1_main/{base,eager,recycle}/metrics.json`, analysis reports in
+`r1_main_analysis/`. Native333 global and13939 branch scores exactly reproduce
+historical input; global/forced answer/speech preserved. All development-selected.
+
+| Corpus | Arm | ROC | PR | within |
+|---|---|---:|---:|---:|
+| HateMM | native | .897119 | .694235 | .750782 |
+| HateMM | eager control | .897106 | .694143 | .749548 |
+| HateMM | Recycler | .896713 | .692858 | .754383 |
+| HateClipSeg | native | .716825 | .671072 | .637349 |
+| HateClipSeg | eager control | .716809 | .671049 | .638082 |
+| HateClipSeg | Recycler | .718114 | .671503 | .636422 |
+
+Final within delta+.003601/-.000927 (n84/99; paired95% CI
+[-.001394,.009830]/[-.006990,.004734]); versus eager+.004835/-.001660.
+No final main metric improves>=.01. Rule9 archive, no coefficient tuning,
+random-sink/head-selection control or semantic redundancy claim after failure.
+Post-scoring analysis read the three-arm raw/decoded predictions, canonical
+metrics and `data/gt_4fps/{HateMM,HateClipSeg}.npz`. Visual raw within deltas
+-.002468/-.002836, speech exactly unchanged, raw max-.000731/-.002126. Attention
+intervention activation is established by checks but not useful localization.
+No media/ASR case semantics were inspected or claimed; no label enters scoring.
+
+Cost (`r1_main_analysis/cost.json`): native-with-capture357.89/292.55s;
+eager427.44/353.41s; Recycler427.55/353.26s =13.01min total,1.200x the
+capture-inclusive baseline (not a pure untouched-native overhead estimate).
+Paired GPU wall23.93min; peak17.8251GiB. New-video3+B calls, mean36.52/60.05;
+paired collection3+B+2V. Existing media/ASR reused. No current-method/paper change.

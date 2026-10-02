@@ -365,3 +365,30 @@ HMM114 excluded from extrapolation but passed at5829tokens. No GT read.
 Full333 launch on sc474399 authorized after reviewed-source sync and fresh
 `runs/20261002_m1_iteration/preflight/machines_integrator_r4_main.txt` check;
 other-project home STRAY entries remain outside this task, target source clean.
+
+Post-R4-declaration R3 case inspection (2026-10-03; did NOT change R4): read
+`r3_main_analysis/branch_diagnostics.json`, complete raw base/future predictions,
+`data/gt_4fps/HateClipSeg.npz`, `data/asr_whisper_large_v3/HateClipSeg/timestamped_chunks.jsonl`,
+and two cached frames. Selected largest final-loss cases and largest final-gain
+cases by already-completed R3 diagnostic; manually inspected one of each.
+- `bit_UehGCkvOhHyD`: visual within .83549→.60204, final .84445→.68616 while
+  speech stays .93077. Many positive windows have no local ASR text; e.g.48–64s
+  visual reads shift from near zero to more negative. The49.54s cached frame
+  shows an outdoor interaction with a person on the ground; ASR elsewhere is an
+  accusatory confrontation. This single image cannot establish all window events
+  or protected-target hate. More transcript-conditioned representations can
+  reduce visual positives; missing local speech also leaves no speech rescue.
+- `bit_aNcWRaFIfk5l`: final .39961→.73457 while raw-max remains .59549. ASR contains
+  a racist song, high speech scores dominate; the138.33s cached frame shows a
+  person against a dark background. Visual reads are mostly negative. Improved
+  visual ordering .01959→.39569 is still below random and does not change raw-max
+  ranking. This large final gain cannot be presented as newly localized raw
+  evidence. No identity/protected attribute is inferred from the pictured person.
+
+These are descriptive cases, not general causal conclusions or prompt changes.
+The ASR cache allocates chunk words proportionally to time and can leave empty
+windows; this is not proof audio is silent there. Actual audio was not listened
+to and complete videos were not viewed. Files:
+`data/frames_k20/HateClipSeg/bit_UehGCkvOhHyD/f05_t49.54.jpg`,
+`data/frames_k20/HateClipSeg/bit_aNcWRaFIfk5l/f10_t138.33.jpg`.
+No labels enter R4 inference. No method or constant was selected from these cases.
