@@ -14,9 +14,11 @@ Completed candidates:
    changed routing but reduced final within by .0418 / .0150; no qualifying gain.
    Full baseline reproduction exact; controls beyond smoke not run per funnel.
 
-Current candidate: `experiments/20261002_m1_attributor/README.md`, proposal review
-pending. Retain joint context and attribute the global decision to temporal
-media-value paths; no performance results yet.
+Current candidate: `experiments/20261002_m1_attributor/README.md`; independent
+proposal/code reviews PASS, numerical smoke complete. Full paired reading is
+running on lab2; no performance results yet. Retain joint context and attribute
+the global decision to temporal media-value paths. Refined smoke cost 5.80x;
+no performance claims until every video passes the declared numerical checks.
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,

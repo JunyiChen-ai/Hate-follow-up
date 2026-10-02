@@ -95,6 +95,27 @@ class Attributor:
         f1,endpoint=self.point(cache,ids,media,1.,gradient=True)
         torch.cuda.synchronize();endpoint_seconds=time.perf_counter()-tick
         expected=f1-f0;tolerance=max(.25,.05*abs(expected))
+        if getattr(self,"adaptive",False):
+            from scipy.integrate import quad_vec
+            calls=[]
+            def integrand(alpha):
+                z,g=self.point(cache,ids,media,float(alpha),gradient=True)
+                calls.append({"alpha":float(alpha),"margin":z,"gradient_sum":float(g.sum()),
+                    "gradient_l1":float(np.abs(g).sum())})
+                return g
+            tick=time.perf_counter()
+            attr,err,info=quad_vec(integrand,0.,1.,epsabs=.05,epsrel=.025,norm=lambda v:float(np.abs(v).sum()),
+                limit=32,quadrature="gk21",full_output=True)
+            torch.cuda.synchronize();seconds=time.perf_counter()-tick
+            residual=abs(float(attr.sum())-expected);passed=bool(info.success and residual<=tolerance)
+            diagnostics={"f0":f0,"f1":f1,"expected_sum":expected,"adaptive":True,"quadrature_error_l1":float(err),
+                "quad_success":bool(info.success),"quad_status":int(info.status),"quad_message":info.message,
+                "completeness_residual":residual,"tolerance":tolerance,"calls":calls,
+                "intervals":info.intervals.tolist(),"interval_errors":info.errors.tolist(),
+                "trials":[],"accepted_nodes":len(calls) if passed else None,"numerical_pass":passed,
+                "actual_forwards":2+len(calls),"actual_backwards":1+len(calls),"endpoint_seconds":endpoint_seconds,
+                "deployed_seconds":endpoint_seconds+seconds,"deployed_forwards":2+len(calls),"deployed_backwards":1+len(calls)}
+            return attr,endpoint,diagnostics,{256:attr}
         trials=[];solutions={};forwards=2;backwards=1;accepted=None;previous=None
         for n in (16,32,64,128,256):
             torch.cuda.synchronize();tick=time.perf_counter()

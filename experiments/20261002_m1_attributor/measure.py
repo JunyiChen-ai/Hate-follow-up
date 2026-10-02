@@ -61,7 +61,7 @@ def read_video(j,attributor,row,segments,smoke=False):
     payload={"attribution":attribution,"endpoint":endpoint,"media":media,
         "visual":regions["visual"],"speech":regions["speech"],"local":np.stack(regions["local"])}
     stability=[]
-    if smoke:
+    if smoke and not numeric.get("adaptive",False):
         for n in (16,32,64,128):
             u,_,_=window_contributions(solutions[n],regions,texts)
             v,_,_=window_contributions(solutions[256],regions,texts)
@@ -90,14 +90,20 @@ def read_video(j,attributor,row,segments,smoke=False):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument("--run-name",required=True);ap.add_argument("--smoke",action="store_true");a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument("--run-name",required=True);ap.add_argument("--smoke",action="store_true")
+    ap.add_argument("--numeric-video",help="diagnostic smoke only; no performance evaluation")
+    ap.add_argument("--adaptive",action="store_true",help="numerical feasibility diagnostic")
+    a=ap.parse_args()
+    if a.numeric_video and not a.smoke:ap.error("numeric-video requires smoke")
     torch.manual_seed(0);out=ROOT/"runs/20261002_m1_attributor"/a.run_name;out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format="%(asctime)s %(message)s",handlers=[logging.FileHandler(out/"run.log"),logging.StreamHandler(sys.stdout)])
     logging.info("host %s",socket.gethostname());(out/"run.pid").write_text(str(os.getpid()))
     rows=load_manifest(ROOT/"data/omsl_v6_inputs/manifests/all_test.jsonl",["HateMM","HateClipSeg"])
-    if a.smoke:rows=[r for ds in ("HateMM","HateClipSeg") for r in [v for v in rows if v["dataset"]==ds][:2]]
+    if a.numeric_video:
+        rows=[r for r in rows if r["video_id"]==a.numeric_video];assert len(rows)==1
+    elif a.smoke:rows=[r for ds in ("HateMM","HateClipSeg") for r in [v for v in rows if v["dataset"]==ds][:2]]
     asr={ds:load_asr(ds) for ds in ("HateMM","HateClipSeg")}
-    j=Judge(MODEL);engine=Attributor(j)
+    j=Judge(MODEL);engine=Attributor(j);engine.adaptive=a.adaptive
     import transformers
     config={**vars(a),"date":time.strftime("%Y-%m-%d"),"host":socket.gethostname(),"seed":0,"model":MODEL,
         "torch":torch.__version__,"transformers":transformers.__version__,"GT_in_reader":False,

@@ -170,3 +170,19 @@ Full-pair estimate revised to roughly 45–75 GPU minutes, highly sensitive to
 how many videos need refinement. All calls/retries are included in the cost.
 No GT or localization metric was read. Full scoring stops if any video fails
 the fixed cap instead of silently excluding it or evaluating unreliable scores.
+
+## Numerical stop and repair investigation (before performance, 2026-10-03)
+
+The attempted `r1_main` run stopped at manifest video 26, `HateMM/non_hate_video_82`,
+after saving diagnostics and 25 complete pairs. At 256 the completeness residual
+.2853 met tolerance .3091, but relative token L1 was .1888; no reliable acceptance.
+All outputs returned locally; no metrics or GT were read. This is not a method
+performance result and this subset will not be evaluated.
+
+Investigate adaptive integration on this numerical failure only (not a GT-chosen
+case): SciPy quad_vec, Gauss-Kronrod 21, L1 vector norm, epsabs .05, epsrel .025,
+limit 32 intervals, one worker. Record sampled alpha, margin, gradient sum/L1,
+local interval errors, estimated total error and endpoint completeness. This is
+an integration feasibility diagnostic, not an alternate selected performance arm.
+No normalization of contributions to force completeness. The full method will
+be redeclared numerically only after these checks, then independently confirmed.

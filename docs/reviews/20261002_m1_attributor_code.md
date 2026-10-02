@@ -6,11 +6,11 @@ attribution engine, analysis, and launch scripts. No method code was changed,
 no GPU job was started, and no true GT or localization performance was read by
 the reviewer.
 
-**Code decision: PASS.** No unresolved gradient, cache-isolation, temporal
-mapping, label-leakage, or evaluator bug found. **Numerical readiness remains
-separate:** the initial GPU smoke exposed local integration instability, and
-the revised 16/32/64/128/256-node smoke must establish that its accepted output
-is sufficiently stable before the full performance experiment is interpreted.
+**Code decision: PASS; the full paired run may proceed under the declared
+numerical failure guard.** No unresolved gradient, cache-isolation, temporal
+mapping, label-leakage, or evaluator bug found. The revised GPU smoke passes
+its declared completeness/vector-stability checks. Its capped-grid precision
+and substantial measured cost are explicit limits, detailed below.
 
 ## Gradient and cache checks
 
@@ -106,11 +106,41 @@ checked the final code and corresponding README/config updates:
   `numeric.deployed_seconds`, not its full `attribute_seconds`. Full-run timing
   and deployed counts then refer to the same executed grid sequence.
 
-The refined GPU smoke is pending at this report entry. No code-level defect
-requires a method change, but its numerical result should determine readiness
-for a full run; this review does not certify convergence from the new guard
-alone. Absolute completeness tolerance can dominate when `F(1)-F(0)` is small,
-so report the actual residual and baseline margin, not an exact decomposition.
+The refined deployment smoke was subsequently returned and independently
+parsed from `runs/20261002_m1_attributor/r1_smoke_refined/checks.jsonl` and the
+paired prediction records. Three videos accept 32 nodes. Their accepted
+attributions versus 256 nodes have relative token L1 below `.0092` and window
+Spearman `1.0`, `1.0`, and `.999656`.
+
+`non_hate_video_4` requires 256 nodes. Its completeness residual is `.301781`
+against tolerance `.418020`, and its 128-to-256 relative token L1 is `.027012`.
+The 128-versus-256 window correlation remains `.9`; max/mean window-readout
+differences are `.472710` / `.181760`. There is no above-256 reference to prove
+that this capped result is fully converged. It meets the explicitly declared
+acceptance rule, not a guarantee of invariant local ranking. Report this limit
+if the method is interpreted. Absolute completeness tolerance can also dominate
+when `F(1)-F(0)` is small, so report the actual residual and baseline margin,
+not an exact decomposition.
+
+All refined-smoke endpoints still equal native logits exactly; all prefix
+caches remain exact, and paired globals, emitted 4-fps curves, and cumulative
+forward/backward counts are correct. Acceptance is the first grid meeting
+both guards for every smoke video. Machine-readable review evidence:
+`runs/20261002_m1_attributor/independent_review/refined_smoke_integrity.json`.
+
+Summed estimated deployed attribution-query time is **31.9398 seconds** for the
+four videos, plus **1.7165 seconds** shared prefix time; native baseline-query
+time is **4.0864 seconds**. Charging prefix once per method gives a **5.8000x**
+standalone estimate. This is substantial measured smoke overhead, not an extra
+free computation because the backbone is frozen. It is not a corpus-wide
+runtime estimate. No inference/GT outcome was used to accept this cost or to
+choose the numerical settings.
+
+Proceeding to the full run is consistent with the declared protocol: stop and
+retain a failure if any video fails the cap; do not omit it, evaluate a selected
+subset, or present partial results as the method's final performance. If later
+attribution-level claims rely on a capped case's close local ranking, numerical
+uncertainty remains part of that interpretation.
 
 ## Analysis and launch path
 
