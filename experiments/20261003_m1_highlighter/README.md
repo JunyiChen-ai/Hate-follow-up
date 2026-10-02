@@ -129,3 +129,19 @@ window, final timestamp, last-row-only oracle, zero/native restoration and forwa
 counts all pass. Synthetic complete333 canonical analysis passes and rejects
 misaligned G. Artifact `runs/20261003_m1_highlighter/independent_review/check_highlighter.json`.
 Real smoke on an idle5090 is next, with no GT/performance read.
+
+
+## Real5video smoke PASS; full333 next
+
+Host sc448960, returned locally before prepare:
+`runs/20261003_m1_highlighter/r1_smoke/plumbing_summary.json`. All5global scores
+and292native branches exactly reproduce base_gridA; native restored after guide,
+original speech/global/answer/input semantics, finite aligned4fps output and
+actual calls pass. Largest prefix5829, peak20.142GiB, wall35.9s including smoke
+native recheck. Guidance changes visual margins up to1.014 on these inputs; this
+is plumbing evidence, not performance or correctness.
+First2per corpus excluding stress extrapolate native207.09/285.86s versus guided
+230.05/301.50s (total8.86min); paired287.76/428.70s (11.94min). Estimates only,
+replace with full costs. Native includes read-only prefix capture. No GT or
+performance read and no constants changed. Launch after fresh sync/preflight:
+`bash experiments/20261003_m1_highlighter/launch/run_lab.sh main` onsc448960.
