@@ -44,11 +44,64 @@ class Attributor:
         self.attentions=[x.self_attn for x in judge.model.model.language_model.layers]
         self.original=ALL_ATTENTION_FUNCTIONS["sdpa"]
         self.active=None
+        self.query_embeds=None
+        self.readout=None
         ALL_ATTENTION_FUNCTIONS.register("sdpa",self.forward)
 
     def close(self):
         assert self.active is None
         ALL_ATTENTION_FUNCTIONS.register("sdpa",self.original)
+
+    @contextmanager
+    def query_precision(self,ids,fp32=False):
+        """Numerical diagnostic: same frozen BF16 weights, promoted for query math.
+
+        Prefix encoding/cache remain native. Temporarily offload unused vision,
+        embedding and full LM-head weights so FP32 language blocks fit a 5090.
+        """
+        if not fp32:
+            yield
+            return
+        j=self.judge;lm=j.model.model.language_model
+        embedding=j.model.get_input_embeddings();head=j.model.get_output_embeddings()
+        modules=list(dict.fromkeys((j.model.model.visual,embedding,head)))
+        with torch.no_grad():
+            self.query_embeds=embedding(torch.tensor([ids],device=j.device)).detach().float()
+            token_ids=torch.tensor(j.yes_ids+j.no_ids,device=j.device)
+            self.readout=head.weight[token_ids].detach().float()
+            for module in modules:module.to("cpu")
+            torch.cuda.empty_cache()
+            lm.layers.to(dtype=torch.float32);lm.norm.to(dtype=torch.float32)
+        try:yield
+        finally:
+            with torch.no_grad():
+                lm.layers.to(dtype=torch.bfloat16);lm.norm.to(dtype=torch.bfloat16)
+                self.query_embeds=None;self.readout=None
+                torch.cuda.empty_cache()
+                for module in modules:module.to(j.device)
+
+    def query_kwargs(self,ids):
+        if self.query_embeds is not None:
+            assert self.query_embeds.shape[1]==len(ids)
+            return {"inputs_embeds":self.query_embeds}
+        return {"input_ids":torch.tensor([ids],device=self.judge.device)}
+
+    def tensor_margin(self,h):
+        j=self.judge
+        if self.readout is not None:
+            logits=h.float()@self.readout.T
+            if j.softcap:logits=torch.tanh(logits/j.softcap)*j.softcap
+        else:
+            token_ids=torch.tensor(j.yes_ids+j.no_ids,device=j.device)
+            logits=j._logits_fp32(h,token_ids)
+        logits=logits[0];ny=len(j.yes_ids)
+        return torch.logsumexp(logits[:ny],0)-torch.logsumexp(logits[ny:],0)
+
+    def native_margin(self,cache,ids):
+        assert self.active is None
+        with torch.no_grad():
+            out=self.judge.model.model(**self.query_kwargs(ids),past_key_values=cache_branch(cache),use_cache=True)
+            return float(self.tensor_margin(out.last_hidden_state[0,-1:]))
 
     def forward(self,module,query,key,value,attention_mask,dropout=0.,scaling=None,**kwargs):
         if self.active is not None and module in self.attentions:
@@ -77,11 +130,9 @@ class Attributor:
             leaf=torch.full((P,),float(alpha),device=j.device,dtype=torch.float32,requires_grad=gradient)
             gate=torch.where(torch.as_tensor(media,device=j.device),leaf,torch.ones_like(leaf))
             with self.gates(gate,len(ids)):
-                out=j.model.model(input_ids=torch.tensor([ids],device=j.device),past_key_values=c,use_cache=True)
+                out=j.model.model(**self.query_kwargs(ids),past_key_values=c,use_cache=True)
                 h=out.last_hidden_state[0,-1:]
-                token_ids=torch.tensor(j.yes_ids+j.no_ids,device=j.device)
-                logits=j._logits_fp32(h,token_ids)[0];ny=len(j.yes_ids)
-                margin=torch.logsumexp(logits[:ny],0)-torch.logsumexp(logits[ny:],0)
+                margin=self.tensor_margin(h)
             grad=torch.autograd.grad(margin,leaf)[0] if gradient else None
         z=float(margin.detach())
         vector=grad.detach().float().cpu().numpy().astype(float) if gradient else None

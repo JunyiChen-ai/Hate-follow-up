@@ -47,10 +47,19 @@ def read_video(j,attributor,row,segments,smoke=False):
     before=[(l.keys.clone(),l.values.clone()) for l in cache.layers] if smoke else None
     media=regions["visual"]|regions["speech"]
     torch.cuda.synchronize();tick=time.perf_counter()
-    attribution,endpoint,numeric,solutions=attributor.integrate(cache,b0,media,smoke=smoke)
+    with attributor.query_precision(b0,fp32=getattr(attributor,"fp32",False)):
+        torch.cuda.synchronize();ref_tick=time.perf_counter()
+        native_precision=attributor.native_margin(cache,b0)
+        torch.cuda.synchronize();reference_seconds=time.perf_counter()-ref_tick
+        attribution,endpoint,numeric,solutions=attributor.integrate(cache,b0,media,smoke=smoke)
     torch.cuda.synchronize();attr_seconds=time.perf_counter()-tick
     peak=torch.cuda.max_memory_allocated()/2**30
-    assert abs(numeric["f1"]-zv)<.01,(ds,vid,"endpoint/native",numeric["f1"],zv)
+    assert abs(numeric["f1"]-native_precision)<.01,(ds,vid,"endpoint/native",numeric["f1"],native_precision)
+    if not getattr(attributor,"fp32",False):assert native_precision==zv
+    restored_margin=None
+    if smoke and getattr(attributor,"fp32",False):
+        restored_margin=j.cached_margin(cache,b0)
+        assert restored_margin==zv,("precision restoration changed native result",restored_margin,zv)
     assert np.max(np.abs(attribution[~media]),initial=0.)==0.
     if before:
         assert all(torch.equal(k,l.keys) and torch.equal(v,l.values) for (k,v),l in zip(before,cache.layers))
@@ -82,7 +91,10 @@ def read_video(j,attributor,row,segments,smoke=False):
                 "branch_seconds":seconds,"backward_calls":0 if arm=="base" else numeric["deployed_backwards"],
                 "windows":[{"i":i,"start":a,"end":b,"z":float(z[i]),**values[i]} for i,(a,b) in enumerate(wins)]}}
     diagnostic={"dataset":ds,"video_id":vid,"numeric":numeric,"mapping":mapping,"stability":stability,
-        "global_native":zv,"endpoint_abs_diff":abs(zv-numeric["f1"]),"cache_immutable":True if smoke else None,
+        "global_native":zv,"native_attribution_precision":native_precision,"query_precision":"fp32" if getattr(attributor,"fp32",False) else "bf16",
+        "endpoint_abs_diff":abs(native_precision-numeric["f1"]),"precision_margin_drift":native_precision-zv,
+        "restored_native_margin":restored_margin,"diagnostic_reference_forwards":1,"diagnostic_reference_seconds":reference_seconds,
+        "cache_immutable":True if smoke else None,
         "prefix_seconds":prefix_seconds,"base_seconds":base_seconds,"attribute_seconds":attr_seconds,
         "peak_allocated_GiB":peak,"endpoint_windows":endpoint_windows,"density_windows":density}
     del cache
@@ -93,6 +105,7 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument("--run-name",required=True);ap.add_argument("--smoke",action="store_true")
     ap.add_argument("--numeric-video",help="diagnostic smoke only; no performance evaluation")
     ap.add_argument("--adaptive",action="store_true",help="numerical feasibility diagnostic")
+    ap.add_argument("--fp32-query",action="store_true",help="promote language query computation, keep native prefix")
     a=ap.parse_args()
     if a.numeric_video and not a.smoke:ap.error("numeric-video requires smoke")
     torch.manual_seed(0);out=ROOT/"runs/20261002_m1_attributor"/a.run_name;out.mkdir(parents=True,exist_ok=True)
@@ -103,7 +116,7 @@ def main():
         rows=[r for r in rows if r["video_id"]==a.numeric_video];assert len(rows)==1
     elif a.smoke:rows=[r for ds in ("HateMM","HateClipSeg") for r in [v for v in rows if v["dataset"]==ds][:2]]
     asr={ds:load_asr(ds) for ds in ("HateMM","HateClipSeg")}
-    j=Judge(MODEL);engine=Attributor(j);engine.adaptive=a.adaptive
+    j=Judge(MODEL);engine=Attributor(j);engine.adaptive=a.adaptive;engine.fp32=a.fp32_query
     import transformers
     config={**vars(a),"date":time.strftime("%Y-%m-%d"),"host":socket.gethostname(),"seed":0,"model":MODEL,
         "torch":torch.__version__,"transformers":transformers.__version__,"GT_in_reader":False,

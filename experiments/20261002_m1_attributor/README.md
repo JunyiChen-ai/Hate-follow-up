@@ -186,3 +186,20 @@ local interval errors, estimated total error and endpoint completeness. This is
 an integration feasibility diagnostic, not an alternate selected performance arm.
 No normalization of contributions to force completeness. The full method will
 be redeclared numerically only after these checks, then independently confirmed.
+
+
+Adaptive BF16 diagnostic also failed its accuracy target: 2457 gradient reads,
+115.62 seconds, estimated L1 integration error 2.872; scalar completeness residual
+.1094 passes but does not rescue vector uncertainty. Local output
+`runs/20261002_m1_attributor/numeric_adaptive/checks.jsonl`. No performance read.
+
+Next diagnostic promotes only language query computations to FP32, retaining
+exactly the original frozen BF16 parameter values (cast, no updates) and native
+BF16 prefix/cache. Temporarily offload unused vision/embedding/LM-head weights,
+then restore BF16 for the next native prefix/baseline. Compare gated g=1 to an
+ungated FP32 query reference and separately record its drift from native BF16.
+This explains a higher-precision cached-query counterpart, not an exactly equal
+BF16 margin. Test the same failure video with declared 16/32/64/128/256 grids;
+no GPU performance experiment resumes until numerical reliability is established.
+Extra ungated reference read and precision-transfer time are diagnostic overhead
+and must be reported separately if this becomes the deployed numeric pathway.
