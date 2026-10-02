@@ -111,3 +111,29 @@ Independent proposal review PASS:
 `docs/reviews/20261003_m1_projector_proposal.md`. Primary target-task searches
 found no verified prior ACG use; this is a scoped search conclusion, not proof
 of absolute novelty. No four-category STOP. Implementation begins after PASS.
+
+Own selfcheck implemented and passed (before GPU): exact per-head formula,
+zero/gamma0 cases, masked GQA last-row computation, noncontiguous image positions,
+actual36-layer smallmultimodal Qwen with DeepStack FP32/BF16, and native KV/mRoPE
+restoration. Source `selfcheck.py`, artifact
+`runs/20261003_m1_projector/selfcheck/numerics.json`. BF16 eager differs from
+native (maximum answer-logit drift.01171 in this synthetic model), confirming
+that the matched eager arm is necessary. Geometric projection residuals are
+small numerical values, not evidence of semantic debiasing. Independent review
+is separate and pending. No real GT or candidate performance inspected.
+
+Independent code review PASS, no production fix:
+`docs/reviews/20261003_m1_projector_code.md`; artifacts
+`runs/20261003_m1_projector/independent_review/check_projector.json`. Actual small
+multimodal Qwen36 layers/DeepStack FP32/BF16,20 synthetic images/100 noncontiguous
+expanded image keys, exact head/GQA oracle, last-row-only intervention, original
+other rows and causal edges, registry/KV/mRoPE/global/answer/speech/weights/native
+recovery, actual B4/V3 deployment7/paired13/smoke20 calls all pass. Synthetic333
+prepare/report and matched-eager gate checks pass, no real GT/performance read.
+
+GPU smoke target sc474399 after Integrator R4 completion; source git sync and
+fresh preflight `runs/20261002_m1_iteration/preflight/machines_projector_smoke.txt`
+required. Existing reviewed HateVLM/model/media reused. Run
+`bash experiments/20261003_m1_projector/launch/run_lab.sh smoke`, return files,
+then `python experiments/20261003_m1_projector/analyze.py --smoke --stage prepare`.
+Other-project home STRAY entries excluded from task; source must be clean.
