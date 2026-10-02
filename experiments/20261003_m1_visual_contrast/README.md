@@ -1,7 +1,7 @@
 # M1 visual contrastive reading
 
 Declared2026-10-03, eighth candidate. Proposal and independent code review PASS; implementation complete,
-no GPU measurement or performance yet. Contraster completed without qualifying gain after this
+five-video GPU plumbing passed; no performance yet. Contraster completed without qualifying gain after this
 declaration. Development host sc474397; GPU target chosen after live inspection.
 
 ## Mechanism and source
@@ -124,3 +124,19 @@ reading to verify all native globals/branches. Main6+B+V forwards; smoke adds
 independent processor/model/report checks in
 `runs/20261003_m1_visual_contrast/independent_review/check_visual_contrast.json`.
 No GPU measurement yet.
+
+
+## GPU plumbing, before performance
+
+2026-10-03, host sc474399 (uoa-lab2), torch2.11.0+cu128/transformers5.15.1.
+Five declared videos completed in32.8s including native restoration. Returned
+artifacts: `runs/20261003_m1_visual_contrast/r1_smoke/plumbing_summary.json`.
+All5 native globals and292 branch margins exactly match base_gridA; all native
+restoration reads exact, speech unchanged, pixel identity/determinism/input
+immutability, contrast algebra, forward counts and4fps pass. Maximum5829-token
+prefix uses17.8235GiB combined peak. Contrast standalone measured1.79/1.16s on
+first2 HateMM,3.02/3.74s on first2 HCS; longest stress video10.46s.
+First2-per-corpus estimate for full215/118:5.29/6.64min,11.93min total; this is
+only a small-sample estimate, stress case not substituted for a corpus average.
+Proceed to fixed r1_main full333 paired run, then canonical raw/r6 evaluation.
+No GT or candidate performance read in smoke. No method/constants changed.

@@ -12,7 +12,7 @@ Factorizer完整三臂也未过门：HateMM .894802/.675287/.749240，HCS .70488
 HCS within−.0700，普通掩码对照接近基线，来源 `runs/20261003_m1_factorizer/r1_main_decoded/factor/metrics.json`。
 Contraster完整结果也无有效提升：within+.0001/+.0002，13939分支全选layer2；
 来源 `runs/20261003_m1_contraster/r1_main_decoded/contrast/metrics.json`，已归档。
-第八候选视觉对比读取方案与独立代码审查PASS，待五视频GPU核验，入口 `experiments/20261003_m1_visual_contrast/README.md`。
+第八候选视觉对比读取方案与独立代码审查PASS，五视频GPU核验通过，开始完整333视频对照，入口 `experiments/20261003_m1_visual_contrast/README.md`。
 
 **五个候选小结（规则11，不超过10行）**：
 - 尝试了查询注意力限制、选择注意力头、缓存值归因、实际删除；双假设因已有方法STOP。

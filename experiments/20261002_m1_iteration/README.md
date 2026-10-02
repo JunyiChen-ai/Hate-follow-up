@@ -37,7 +37,8 @@ Completed candidates:
 Running candidates:
 - `experiments/20261003_m1_visual_contrast/README.md`: eighth candidate,
   clean/corrupt visual-window contrast with native speech/global retained.
-  Proposal PASS; implementation underway. No GPU result.
+  Proposal/code PASS; five-video GPU plumbing passes (292 exact native branches).
+  Full333 paired measurement next; no performance yet.
 
 Cumulative archives7 (six performance failures, one proposal novelty STOP).
 
