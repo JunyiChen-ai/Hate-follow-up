@@ -135,3 +135,24 @@ synthetic report. Independent36-layer FP32/BF16 and reader orchestration tests
 are in `runs/20261003_m1_contraster/independent_review/check_contraster.json`.
 Steady-state per-video timings exclude model loading and the one-time FP32-head
 setup; report these distinctions rather than presenting them as cold-start cost.
+
+## GPU plumbing and launch, 2026-10-03
+
+Five-video smoke completed on sc448960. Returned source:
+`runs/20261003_m1_contraster/r1_smoke/plumbing_summary.json`. All292 native
+window reads and five global margins exactly match base_gridA; ordinary repeated
+query parity,4fps alignment, finite scores and saved-logit reconstruction pass.
+Peak20.142GiB; log-probability/difference equivalence error7.63e-6; mature batched
+projection margin drift from native small-row projection at most.0002022.
+Before full performance, add the following numeric control if a qualifying gain
+appears: reconstruct mature-only margins from saved batched logits. This keeps
+the exact projection plumbing of Contraster and tests whether tiny GEMM drift
+can explain a result. No new model calls are needed and no control performance
+has been inspected. The paired native arm remains exact and is the primary gate.
+
+First-two-per-corpus timing extrapolates3.61/5.09 minutes for Contraster; added
+projection time on those samples is.084/.298sec respectively. The sample is
+small and not representative; budget10-20GPUmin for both corpora. Head FP32
+setup.0099sec, excluded from steady-state totals. Main command, after live GPU
+check on sc448960: `bash experiments/20261003_m1_contraster/launch/run_lab.sh main`.
+Output `runs/20261003_m1_contraster/r1_main/`; native+contrast share3+B forwards.
