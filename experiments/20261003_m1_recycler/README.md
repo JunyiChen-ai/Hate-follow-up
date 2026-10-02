@@ -148,3 +148,22 @@ Only if plumbing/cost pass: `.../run_lab.sh main`; local analysis
 Host HateVLM torch2.11+cu128/transformers5.15.1; existing inputs/weights reused.
 No labels/performance read for these checks. Real sink activation is to be measured,
 not assumed from controlled small-model tests.
+
+## Five-video GPU smoke PASS
+
+sc448960, results returned locally:
+`runs/20261003_m1_recycler/r1_smoke/plumbing_summary.json`. Five native globals
+and292native branches exactly match historical baseline; original global/answer,
+speech, inputs, query lifecycle/call counts and finite4fps pass. Largest prefix5829,
+peak17.8247GiB, wall49.5s including restoration. Actual selected head-row fraction
+averages.0103–.0267 across the five videos; transferred attention mass averages
+.00167–.00458. Sink predicate is active on real Qwen3 inputs. Dense-eager visual
+max drift reaches.5048; recycle changes reach2.268. These are activation/numerical
+checks, not semantic or performance support. Conditional gating means not every
+eligible layer transfers mass; all eligible layers are nevertheless executed.
+
+First2/corpus extrapolation, excluding stress: capture-including baseline210.35/
+287.29s, recycle236.11/347.78s, paired378.81/663.94s. Total standalone9.73min,
+paired17.38min; estimates only, full measured times will replace them. No new
+labels/performance read, no constants changed. Full333 begins after sync and
+fresh preflight on the same sc448960 host.

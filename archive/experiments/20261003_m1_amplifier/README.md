@@ -1,3 +1,5 @@
+Archived2026-10-03: complete main has no qualifying gain and HMM PR drops; no mechanism claim.
+
 # M1 Amplifier: visual attention intervention with a language-only reference
 
 Candidate11, declared2026-10-03 before implementation or performance inspection.
@@ -159,3 +161,34 @@ First2/corpus extrapolation: native182.0/237.7s, PAI251.5/368.6s,
 paired365.4/613.1s for HMM/HCS (standalone10.33min, paired16.31min).
 These small-input estimates exclude the stress video; full actual time will replace
 them. Full333 paired run follows on the same live-idle host after fresh preflight.
+
+## Full333 result: archive, no qualifying main gain
+
+Host sc474399; all results returned locally before reporting. All333 native
+whole-video reads and13939 native branches exactly match base_gridA. Canonical
+metrics `runs/20261003_m1_amplifier/r1_main_decoded/<arm>/metrics.json`:
+
+| Corpus | arm | ROC | PR | within | raw within |
+|---|---|---:|---:|---:|---:|
+| HateMM | base | .897119 | .694235 | .750782 | .680011 |
+| HateMM | eager | .897129 | .694243 | .750915 | .679839 |
+| HateMM | pai | .893032 | .685114 | .756861 | .682000 |
+| HateClipSeg | base | .716825 | .671072 | .637349 | .610130 |
+| HateClipSeg | eager | .716872 | .671087 | .637452 | .609303 |
+| HateClipSeg | pai | .712161 | .669913 | .628277 | .607175 |
+
+Within+.006079 (84,95%CI[-.010663,.028046]) / -.009072
+(99,[-.023444,.004604]); HMM PR-.009120. No final main metric gains>=.01;
+matched eager changes remain small. Raw visual ordering-.015198/+.004561,
+max-combined+.001988/-.002955; native speech exactly unchanged, eligible82/97.
+Sources `r1_main_analysis/{alignment,summary,branch_diagnostics,cost}.json`.
+Post-scoring analysis read complete raw/decoded predictions and test GT arrays;
+no media/ASR semantic inspection, no constants changed. More image attention by
+construction is not evidence that it attended to useful evidence.
+
+Measured standalone native302.45/244.80s, eager340.57/280.11s, pai451.78/375.65s
+(HMM/HCS); pai total13.79min,1.512x native; paired wall22.23min,
+peak17.8238GiB. PAI new-video calls6+B+V vs native3+B; no preprocessing added.
+Archive per rule9, no component controls or coefficient/layer search after the
+failed main gate. This is tenth cumulative archive; source implementation remains
+for reproducibility and all negative results are retained. Development-selected.

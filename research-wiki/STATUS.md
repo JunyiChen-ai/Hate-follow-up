@@ -4,7 +4,7 @@
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档9个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档10个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -26,9 +26,17 @@ HMM within+.01604但PR-.01263，HCS ROC-.00718，未晋级。来源 `runs/202610
 原始visual排序两语料下降；HMM两个raw排序未变的case贡献.01476，不能解释为新定位证据。
 R2仅开放未来text keys，完整333完成：HateMM .892960/.686597/.774351，HCS .708410/.664196/.640054；
 HMM within+.02357，但pooled仍退化；HCS visual原始排序+.018未传递到双分支结果。
-来源 `runs/20261003_m1_integrator/r2_main_decoded/future/metrics.json`；R3声明只用新视觉+原语音，缓存分支实验待独立代码检查。
-第十一候选Amplifier方案/代码/GPU检查PASS，完整333在sc474399运行，独立于前者。
-第十二候选Recycler方案审查PASS，依据VAR论文重分配attention sink的注意力；Qwen3适配已明示，代码检查中。
+来源 `runs/20261003_m1_integrator/r2_main_decoded/future/metrics.json`；R3声明只用新视觉+原语音，独立代码检查PASS，完整缓存分支实验运行中。
+第十一候选Amplifier完整333完成：HateMM .893032/.685114/.756861，HCS .712161/.669913/.628277；
+无任一主指标+.01，HMM PR下降，归档为第10项。来源 `runs/20261003_m1_amplifier/r1_main_decoded/pai/metrics.json`。
+第十二候选Recycler方案审查PASS，依据VAR论文重分配attention sink的注意力；Qwen3适配已明示，独立代码与真实5视频smoke PASS，完整333待启动。
+
+**累计十个归档小结（规则11，不超过10行）**：
+- 后五项覆盖内部层间对比、像素扰动对比、图像注意力增强、前缀隔离；SHAP迁移因已有目标任务方法STOP。
+- 双语料within同时有幅度的最佳已归档版本仍是视觉对比R1：+.01961/+.01066，但HateMM PR−.01410，未过门。
+- 来源 `runs/20261003_m1_visual_contrast/r1_main_decoded/contrast/metrics.json`；它的HMM匹配对照未支持定位解释。
+- Integrator R2保留作分支修订；它的HCS视觉排序收益尚未传到双分支输出。
+- 接下来验证保留原语音的分支修订与VAR注意力重分配；当前方法仍未替换，全部development-selected。
 
 **五个候选小结（规则11，不超过10行）**：
 - 尝试了查询注意力限制、选择注意力头、缓存值归因、实际删除；双假设因已有方法STOP。

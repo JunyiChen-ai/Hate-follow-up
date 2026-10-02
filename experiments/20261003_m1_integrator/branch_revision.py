@@ -66,6 +66,7 @@ def main():
     raw={a:read(up/a/'predictions.jsonl') for a in ('base','causal','future')}
     manifest=read(ROOT/'data/omsl_v6_inputs/manifests/all_test.jsonl')
     keys={k for k in manifest if k[0] in DATASETS};assert len(keys)==333 and all(v.keys()==keys for v in raw.values())
+    for k,b in raw['base'].items():assert float(b['duration'])==float(manifest[k]['duration']),k
     config={'date':time.strftime('%Y-%m-%d'),'host':socket.gethostname(),'code':str(Path(__file__).relative_to(ROOT)),
         'source':str(up.relative_to(ROOT)),'GT_in_composition':False,'rule':'R2 visual + original native speech; native global/answer',
         'runtime':'cached only; new-video schedule must be measured before promotion','frames':20,'window_seconds':8,'fps':4}

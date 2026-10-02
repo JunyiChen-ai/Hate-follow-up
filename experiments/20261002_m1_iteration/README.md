@@ -53,14 +53,18 @@ Running candidates:
   Numbers and sources remain in the candidate README and STATUS, not a third table.
   R2 future text keys only full333 complete, HMM within gain but pooled fails;
   HCS visual ordering improves without combined improvement. R3 declares
-  new visual with native speech; cached complete-branch test pending code review.
+  new visual with native speech; cached complete-branch test running after independent code PASS.
   Independent of VCD, not combined.
-- `experiments/20261003_m1_amplifier/README.md`: candidate11, PAI attention
-  amplification plus language-only token-logit reference, independently declared
-  before Integrator evaluation. Proposal/code review and GPU smoke PASS,
-  complete333 paired run launching on sc474399; independent of Integrator.
+- `experiments/20261003_m1_recycler/README.md`: candidate12, paper-defined VAR
+  with explicit Qwen3 sink-channel adaptation; independent proposal/code PASS,
+  real-input GPU smoke PASS, full333 next on sc448960.
 
-Cumulative archives9 (seven performance/mechanism failures, two proposal novelty STOPs).
+11. `archive/experiments/20261003_m1_amplifier/README.md`: candidate11, tenth
+  archive. Complete333 PAI transfer had no qualifying main gain; HMM PR drops.
+  Native reads exact, matched eager near baseline, no component controls after
+  failed main gate.
+
+Cumulative archives10 (eight performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,

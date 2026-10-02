@@ -272,3 +272,11 @@ implement/verify standalone branch scheduling and measure cost before promotion.
 Same performance gates and mechanistic controls apply; test metrics remain
 post-scoring development-selected evidence. No constant scan or branch choice
 based on video labels; the branch rule is fixed before this run.
+
+R3 independent code review PASS: `docs/reviews/20261003_m1_integrator_r3_code.md`.
+Synthetic complete333 checks confirm exact branch substitution, missing-speech
+handling, baseline reconstruction and canonical evaluator/r6 calls. Review found
+and fixed missing R2 config/mapping validation, shared8s/ceil4T extent validation,
+and cached-vs-manifest duration validation before running. Real GT/performance was
+not used by the reviewer. Detached CPU experiment started on sc474397; outputs
+`runs/20261003_m1_integrator/r3_main/` and `r3_main_decoded/`.
