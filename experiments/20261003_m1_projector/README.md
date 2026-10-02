@@ -137,3 +137,13 @@ required. Existing reviewed HateVLM/model/media reused. Run
 `bash experiments/20261003_m1_projector/launch/run_lab.sh smoke`, return files,
 then `python experiments/20261003_m1_projector/analyze.py --smoke --stage prepare`.
 Other-project home STRAY entries excluded from task; source must be clean.
+
+Five-video8B smoke PASS on sc474399, returned before local validation:
+`runs/20261003_m1_projector/r1_smoke/plumbing_summary.json`.5native globals and
+292branch scores exactly reproduce historical baseline; original speech/answer/
+inputs/cache recovery pass. Peak17.8235GiB, smoke39.8s. First2/corpus estimate
+standaloneProjector202.22s/285.63s (8.13min total), native180.89/238.48s;
+paired321.99/542.26s (14.40min). Excludes long5829-token HMM114 from extrapolation.
+Eager native max-margin drift across smoke.3603; Projector changes reads but
+this alone is not an effectiveness result. No GT read. Full333 runs next with
+same constants, commands `launch/run_lab.sh main` and `launch/run_analysis.sh`.

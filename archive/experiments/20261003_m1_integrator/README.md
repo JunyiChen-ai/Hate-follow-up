@@ -1,3 +1,5 @@
+Archived 2026-10-03: initial + 3 modifications exhausted; HCS pooled degradation persists and dual-corpus localization mechanism unsupported.
+
 # M1 Integrator: future-aware visual prefix memory
 
 Declared2026-10-03, candidate10, before implementation or performance. Independent
@@ -392,3 +394,40 @@ to and complete videos were not viewed. Files:
 `data/frames_k20/HateClipSeg/bit_UehGCkvOhHyD/f05_t49.54.jpg`,
 `data/frames_k20/HateClipSeg/bit_aNcWRaFIfk5l/f10_t138.33.jpg`.
 No labels enter R4 inference. No method or constant was selected from these cases.
+
+## R4 final family result and archive (2026-10-03)
+
+Host sc474399, complete333 returned before canonical evaluation. Sources:
+`runs/20261003_m1_integrator/r4_main_decoded/{base,causal,future}/metrics.json`;
+raw `r4_main/{base,causal,future}/metrics.json`, diagnostics/cost/summary in
+`r4_main_analysis/`. Native333 globals and13939branches exactly reproduced;
+original answer/speech preserved. All development-selected.
+
+| Corpus | Arm | ROC | PR | within |
+|---|---|---:|---:|---:|
+| HateMM | native | .897119 | .694235 | .750782 |
+| HateMM | causal control | .897018 | .693774 | .749530 |
+| HateMM | same-window ASR | .896931 | .696579 | .769990 |
+| HateClipSeg | native | .716825 | .671072 | .637349 |
+| HateClipSeg | causal control | .716839 | .671123 | .639144 |
+| HateClipSeg | same-window ASR | .708595 | .664496 | .635892 |
+
+Final within+.019208/-.001457 (n84/99, paired95% CI[-.002583,.045744]/
+[-.015649,.012762]); HCS ROC-.008230/PR-.006576 fails. Both pooled HMM within
+noise. This is initial+3 permitted modifications; archive the family, do not
+continue R5 or select a corpus-specific variant. R2 bestHMM within.774351 and
+R3bestHCS within.642109 are separate variants, never a combined result. No
+projection/random-ASR control after failed main gate; no temporal-fusion claim.
+
+Post-scoring GT/error analysis reads complete three-arm raw/decoded predictions,
+canonical metrics and `data/gt_4fps/{HateMM,HateClipSeg}.npz`. Visual raw within
+-.007214/+.008732, speech unchanged, rawmax-.004256/+.003374, no consistent new
+local ordering. HMM279 and329 retain unchangedraw yet together contribute
+1.24/84=.014762 to finalwithin;329 has only one input window. Hence most HMM gain
+still cannot support newly localized evidence. No additional media/ASR inspected
+in R4; earlier R3 cases are explicitly recorded above. No labels enter scoring.
+
+Measured full deployment395.67s HMM/300.47s HCS (11.60min total), native304.22/
+246.67s:1.264x. Paired wall21.18min, peak17.9187GiB. Native3+B vs deployment6+B
+outer calls, paired9+B+2V; mean standalone39.52/63.05calls. All preprocessing
+reused. Current r6/reader/paper unchanged; continue independent candidates.

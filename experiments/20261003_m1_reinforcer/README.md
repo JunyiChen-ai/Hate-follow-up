@@ -171,3 +171,10 @@ all9 synthetic token/input/RoPE arrays exact before/after; source
 `independent_review/norm_capture_scores_unchanged.json`. Original5 smoke + failed
 manifestposition104 will run afresh via `launch/check_normalization.sh`, no GT.
 Only after six-video8B probe passes may the original103 paired records be resumed.
+
+Six-video8B probe PASS on sc448960, returned locally:
+`runs/20261003_m1_reinforcer/normalization_probe/checks.json`. Failed case is
+HateMM `hate_video_215`; actual normalization boundaries and historical native
+reads pass exactly despite repeatable single-row diagnostic drift. Five original
+smoke cases still pass. No GT read. Resume the complete paired collection from103;
+this is a diagnostic-only correction, no prediction formula or stored score change.

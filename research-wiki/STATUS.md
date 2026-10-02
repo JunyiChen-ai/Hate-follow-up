@@ -4,7 +4,7 @@
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档11个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档12个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -29,14 +29,16 @@ HMM within+.02357，但pooled仍退化；HCS visual原始排序+.018未传递到
 来源 `runs/20261003_m1_integrator/r2_main_decoded/future/metrics.json`。
 R3只用新视觉+原语音，完整缓存分支实验完成：HateMM .895125/.693457/.774319，HCS .708136/.664223/.642109；
 来源 `runs/20261003_m1_integrator/r3_main_decoded/future/metrics.json`。HMM pooled恢复但HCS仍未过门。
-R4最后修订：只新增同窗ASR访问，保留原语音；独立代码与5视频检查PASS，完整333在sc474399运行。
+R4最后修订完整333：HateMM .896931/.696579/.769990，HCS .708595/.664496/.635892；
+within+.019208/-.001457，HCS pooled仍退化，初版+3修订已用完，此族归档为第12项。
+来源 `runs/20261003_m1_integrator/r4_main_decoded/future/metrics.json`，入口 `archive/experiments/20261003_m1_integrator/README.md`。
 第十一候选Amplifier完整333完成：HateMM .893032/.685114/.756861，HCS .712161/.669913/.628277；
 无任一主指标+.01，HMM PR下降，归档为第10项。来源 `runs/20261003_m1_amplifier/r1_main_decoded/pai/metrics.json`。
 第十二候选Recycler完整333完成：HateMM .896713/.692858/.754383，HCS .718114/.671503/.636422；
 within+.003601/-.000927，无主指标+.01，归档为第11项，视觉原始排序也未提升。
 来源 `runs/20261003_m1_recycler/r1_main_decoded/recycle/metrics.json`；机制激活不等于有效定位。
-第十三候选Reinforcer（VISTA视觉残差增强）方案/代码及5视频实机检查PASS，完整333在sc448960运行。
-第十四候选Projector（ACG注意力输出正交修正）方案PASS，实现中。
+第十三候选Reinforcer完成103paired后因诊断重算finalNorm浮点不一致停下；评分不变的校验修复及六视频实机复核PASS，sc448960续跑。
+第十四候选Projector（ACG注意力输出正交修正）方案/代码及5视频实机检查PASS，完整333在sc474399运行。
 
 **累计十个归档小结（规则11，不超过10行）**：
 - 后五项覆盖内部层间对比、像素扰动对比、图像注意力增强、前缀隔离；SHAP迁移因已有目标任务方法STOP。

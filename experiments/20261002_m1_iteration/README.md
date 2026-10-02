@@ -46,7 +46,7 @@ Completed candidates:
   control or further schedule/contrast tuning. R1 best numbers remain recorded.
 
 Running candidates:
-- `experiments/20261003_m1_integrator/README.md`: tenth candidate, future-aware
+- `archive/experiments/20261003_m1_integrator/README.md`: tenth candidate, future-aware
   visual prefix memory from FutureMask; R1 full333 complete on sc448960, native
   exact. HMM within improves but pooled losses prevent promotion; both visual
   raw orderings fall. HMM gains are concentrated in two unchanged-raw-order cases.
@@ -54,7 +54,7 @@ Running candidates:
   R2 future text keys only full333 complete, HMM within gain but pooled fails;
   HCS visual ordering improves without combined improvement. R3 declares
   new visual with native speech; cached complete-branch test complete: HMM pooled restored, HCS fails.
-  R4 last modification declares same-window future ASR with native speech.
+  R4 last modification complete: same-window future ASR with native speech still fails HCS pooled. Family archived as twelfth; max3 modifications exhausted.
   Independent of VCD, not combined.
 - `archive/experiments/20261003_m1_recycler/README.md`: candidate12, paper-defined VAR
   with explicit Qwen3 sink-channel adaptation; independent proposal/code PASS,
@@ -65,7 +65,7 @@ Running candidates:
   Native reads exact, matched eager near baseline, no component controls after
   failed main gate.
 
-Cumulative archives11 (nine performance/mechanism failures, two proposal novelty STOPs).
+Cumulative archives12 (ten performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
