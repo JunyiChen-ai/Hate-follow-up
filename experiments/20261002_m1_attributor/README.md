@@ -143,3 +143,30 @@ stored attribution except the deletion test, which adds two forwards/video.
 All code/launchers local then scoped git sync; complete corpus on one machine;
 return results before STATUS outcome updates. Log host, paths, model and date,
 never file hashes or run-provenance commit IDs.
+
+## Refined numerical smoke, before performance (2026-10-02)
+
+Host sc474399; `runs/20261002_m1_attributor/r1_smoke_refined/`, four manifest
+videos, all outputs local. Baseline global scores and all 136 window margins
+match current reader exactly; g=1/native and prefix-cache comparisons are exact.
+Frozen-model gradient plumbing also passed independent small-Qwen CPU tests:
+FP32 gate finite-difference error 7.36e-6; 32-node completeness 3.42e-7;
+BF16 gradients finite, non-media gradients zero, model parameter grads absent.
+Independent record: `docs/reviews/20261002_m1_attributor_code.md`.
+
+Three videos accept at 32 (48 total quadrature calls); `non_hate_video_4`
+accepts at 256 (496 calls): residual .3018 against tolerance .4180 and
+successive-vector relative L1 .0270. For the first three, accepted versus
+256-node window Spearman is 1 / 1 / .999656 and token relative L1 < .0092.
+For the difficult video, 64/256 and 128/256 rank correlations are .90;
+it passes the declared value-convergence test but small rank swaps remain.
+No claim of exact BF16 calculus or raw-input causal attribution is made.
+
+Measured deployed-path (prefix included) cost is 5.80 times native on these
+four videos, with 19.96 GiB maximum allocated memory. Actual smoke runs all
+496 nodes even on early-accept videos and took 104.7 seconds total; use
+`numeric.deployed_seconds`, not smoke wall time, to estimate deployment.
+Full-pair estimate revised to roughly 45–75 GPU minutes, highly sensitive to
+how many videos need refinement. All calls/retries are included in the cost.
+No GT or localization metric was read. Full scoring stops if any video fails
+the fixed cap instead of silently excluding it or evaluating unreliable scores.
