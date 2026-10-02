@@ -40,22 +40,24 @@ Completed candidates:
 8. `archive/experiments/20261003_m1_visual_contrast/README.md`: eighth candidate,
   clean/corrupt visual-window contrast with native speech/global retained.
   Proposal/code PASS; five-video GPU plumbing passes (292 exact native branches).
-  Full333 completed: within+.01961/+.01066, HMM PR−.01410; retained under rule9,
-  not promoted. Four cached controls complete: matching supported only on HCS.
-  R2 local-image corruption final within+.00296/−.00669, visual raw ordering
-  degrades;44.34min actual. Archived after this unsuccessful revision; no donor
+  Full333 R1 missed promotion because of HMM PR; cached matching controls
+  supported localization only on HCS. R2 local-image corruption had no qualifying
+  main gain and degraded visual raw ordering. Archived after that revision; no donor
   control or further schedule/contrast tuning. R1 best numbers remain recorded.
 
 Running candidates:
 - `experiments/20261003_m1_integrator/README.md`: tenth candidate, future-aware
   visual prefix memory from FutureMask; R1 full333 complete on sc448960, native
-  exact. HMM within+.01604 but PR-.01263; HCS within-.00130 and ROC-.00718.
-  Both visual raw orderings fall; HMM two cases with unchanged raw within account
-  for.01476 of the.01604 gain. R2 declared: future text keys only, preserving all
-  other settings; implementation review underway. Independent of VCD, not combined.
+  exact. HMM within improves but pooled losses prevent promotion; both visual
+  raw orderings fall. HMM gains are concentrated in two unchanged-raw-order cases.
+  Numbers and sources remain in the candidate README and STATUS, not a third table.
+  R2 declared: future text keys only, preserving all
+  other settings; independent code/GPU smoke PASS, full333 now running on
+  sc448960. Independent of VCD, not combined.
 - `experiments/20261003_m1_amplifier/README.md`: candidate11, PAI attention
   amplification plus language-only token-logit reference, independently declared
-  before Integrator evaluation. Proposal review underway, no implementation yet.
+  before Integrator evaluation. Proposal PASS, implemented; local CPU witness
+  passes and independent code review underway. No GPU run yet.
 
 Cumulative archives9 (seven performance/mechanism failures, two proposal novelty STOPs).
 

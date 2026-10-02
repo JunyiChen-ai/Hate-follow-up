@@ -215,3 +215,10 @@ The CPU selfcheck variable-shadowing failure was fixed before any GPU job.
 Artifacts `runs/20261003_m1_integrator/selfcheck/future_text_visibility.json`
 and `independent_review/r2/`. Launch `bash .../launch/run_lab.sh smoke r2`,
 then `main r2`; analysis `bash .../launch/run_analysis.sh r2`.
+
+R2 GPU smoke PASS on sc448960: returned
+`runs/20261003_m1_integrator/r2_smoke/plumbing_summary.json`. Five native globals
+and292branches exact; restoration, forced answer/global, v2t mapping, actual
+calls and finite4fps pass. Maximum prefix5829, peak17.9192GiB, smoke wall57.8s.
+No GT/performance read. Full333 R2 started on sc4489602026-10-03 at05:54NZ
+after fresh machine preflight, outputs `runs/20261003_m1_integrator/r2_main/`.

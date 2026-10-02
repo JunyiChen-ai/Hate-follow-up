@@ -111,3 +111,36 @@ First2manifest videos/corpus plus HMMhate_video_114 for plumbing only, no GT.
 Then one complete run per corpus, canonical raw/r6 metrics, shared branch report.
 Host selected by live preflight; run.log records host. No GPU job before independent
 proposal and code review. Current method and paper remain unchanged.
+
+## Implementation checks
+
+Implemented2026-10-03. `amplifier.py` wraps the installed SDPA attention interface
+only during visual suffix reads. Other rows use the original SDPA output; the
+last row uses explicit GQA attention with common arithmetic for alpha0/.5.
+This avoids copying model-specific Q/K norms, RoPE or cache-update code. The
+reused prefix/global-QA cache is cropped after every question, and the native
+speech/global output is copied exactly. Language-only reference uses a fresh
+cache after the visual cache is released. No cross-experiment imports.
+
+`selfcheck.py` passes actual small Qwen text-model FP32/BF16, independent
+GQA row algebra, last-row-only change, cache preservation, native restoration,
+unchanged weights and token-normalizer cancellation. Output
+`runs/20261003_m1_amplifier/selfcheck/checks.json`; not a corpus performance test.
+Read-only inspection of lab2 transformers5.15.1 confirms the same attention
+interface accepts the wrapper, while the local witness uses4.57.6. GPU execution
+is still needed to verify that deployment path and exact historical baseline.
+
+Independent rule6 review PASS: `docs/reviews/20261003_m1_amplifier_code.md`.
+Actual multimodal36-layer Qwen FP32/BF16 checks all34intervened layers, GQA,
+mRoPE/DeepStack, query/cache isolation, native restoration, the complete reader,
+native speech/global/answer, image-free reference and actual forwards. Synthetic
+prepare/report and canonical r6 commands pass; report now rejects nonfinite
+decoded scores or changed global values before loading GT. Artifacts:
+`runs/20261003_m1_amplifier/independent_review/check_amplifier.{py,json}`.
+No real GT or corpus performance was inspected. GPU smoke target sc474399
+(lab2) if fresh preflight confirms availability, conda HateVLM as in launch.
+
+Launch `bash experiments/20261003_m1_amplifier/launch/run_lab.sh smoke`, then
+`main` after plumbing PASS. Canonical evaluation
+`bash experiments/20261003_m1_amplifier/launch/run_analysis.sh`; shared branch
+diagnostic uses `scripts/analysis/m1_branch_diagnostics.py --arms base eager pai`.
