@@ -53,7 +53,11 @@ class ResidualReinforcer:
         previous=self.judge._logits_fp32(self.lm.norm(states[self.sla_indices]),labels).mean(0)
         # Last post-block output must be normalized exactly once in the native model.
         reconstructed=self.judge._logits_fp32(self.lm.norm(states[-1:]),labels)[0]
-        assert torch.equal(final,reconstructed),'captured final residual differs from model final normalization'
+        assert torch.equal(final,reconstructed), (
+            'captured final residual differs from model final normalization; '
+            f'logit_max={float((final-reconstructed).abs().max())}; '
+            f'hidden_max={float((h-self.lm.norm(states[-1:])[0]).abs().max())}; '
+            f'query_tokens={len(ids)} cache_tokens={n} dtype={h.dtype}')
         mixed=.7*final+.3*previous
         return {'native_margin':margin(final,len(self.judge.yes_ids)),
             'full_margin':margin(mixed,len(self.judge.yes_ids)),
