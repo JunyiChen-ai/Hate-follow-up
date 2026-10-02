@@ -275,3 +275,15 @@ this is not deployment latency. Independent small-Qwen tests show ordinary,
 read-only cache and checkpointed gate gradients/margins match exactly in
 BF16/FP32 at alpha 0/.37/1. Full-pair estimate remains roughly 45–90 minutes,
 subject to the observed refinement distribution. Proceed with complete FP32 pair.
+
+
+2026-10-03 continuous-run memory repair, before any performance evaluation:
+`r1_main_fp32` stopped before video25 attribution, while promoting decoder
+weights: allocated26.35GiB plus4.06GiB reserved/unallocated;192MiB allocation
+failed. First24 numerical checks passed. All outputs returned locally; no GT
+or partial metrics read. Fix the storage transition by moving native decoder
+blocks/norm to CPU before allocating FP32 CUDA weights, and enable expandable
+allocator segments. Values, precision, gradients, grids and scoring unchanged.
+Transfers remain included in measured deployment time. Start all333 anew in
+`r1_main_fp32_mem`; analysis now targets only that complete run. Preserve both
+partial runs as diagnostics; do not merge them into the final experiment.

@@ -19,7 +19,9 @@ within −.0418 / −.0150，原始窗口排序也下降，全部基线读数精
 四视频数值烟测达声明条件，读取约 5.8 倍成本，完整配对第 26 个视频因积分不稳定停止，
 本机 `runs/20261002_m1_attributor/r1_main/checks.jsonl` 已保留失败诊断。
 未读性能或 GT；FP32 查询已使失败视频收敛（本机
-`runs/20261002_m1_attributor/numeric_fp32/checks.jsonl`），最大输入也通过数值与显存检查（峰值28.48GiB）；准备统一FP32完整配对。
+`runs/20261002_m1_attributor/numeric_fp32/checks.jsonl`），最大输入也通过数值与显存检查（峰值28.48GiB）；连续配对又在第25个视频的权重精度转换时因显存碎片停止；
+本机 `runs/20261002_m1_attributor/r1_main_fp32/launch.out` 已回传。
+正在改为CPU暂存后重新分配FP32显存，准备完整重跑 `r1_main_fp32_mem`。
 后续将统一重跑，不将前 25 个 BF16 归因混入 FP32 结果。
 当前方法与论文不变；继续自主迭代，全部 development-selected。
 

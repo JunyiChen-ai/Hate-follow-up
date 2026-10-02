@@ -136,7 +136,7 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument("--stage",choices=("prepare","evaluate","report"),required=True)
     ap.add_argument("--arm",choices=("base","attribute"));a=ap.parse_args()
     if a.stage=="evaluate" and a.arm is None:ap.error("evaluate requires --arm")
-    parent=ROOT/"runs/20261002_m1_attributor";root=parent/"r1_main_fp32";decoded=parent/"r1_main_fp32_decoded";out=parent/"r1_main_fp32_analysis"
+    parent=ROOT/"runs/20261002_m1_attributor";root=parent/"r1_main_fp32_mem";decoded=parent/"r1_main_fp32_mem_decoded";out=parent/"r1_main_fp32_mem_analysis"
     out.mkdir(parents=True,exist_ok=True);print("host",socket.gethostname(),flush=True)
     if a.stage=="prepare":prepare(root,out)
     elif a.stage=="evaluate":evaluate(root,decoded,a.arm)

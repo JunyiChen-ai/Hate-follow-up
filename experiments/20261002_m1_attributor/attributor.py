@@ -103,8 +103,13 @@ class Attributor:
             token_ids=torch.tensor(j.yes_ids+j.no_ids,device=j.device)
             self.readout=head.weight[token_ids].detach().float()
             for module in modules:module.to("cpu")
+            # Free the old GPU storage before allocating larger FP32 blocks.
+            # Repeated in-place dtype conversions otherwise fragment the 32 GiB
+            # allocator even when each individual video's peak fits.
+            lm.layers.to("cpu");lm.norm.to("cpu")
             torch.cuda.empty_cache()
-            lm.layers.to(dtype=torch.float32);lm.norm.to(dtype=torch.float32)
+            lm.layers.to(device=j.device,dtype=torch.float32)
+            lm.norm.to(device=j.device,dtype=torch.float32)
         try:yield
         finally:
             with torch.no_grad():

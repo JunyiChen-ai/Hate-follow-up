@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
-out=runs/20261002_m1_attributor/r1_main_fp32_analysis
+out=runs/20261002_m1_attributor/r1_main_fp32_mem_analysis
 mkdir -p "$out"
 exec > "$out/run.log" 2>&1
 echo "host $(hostname)"

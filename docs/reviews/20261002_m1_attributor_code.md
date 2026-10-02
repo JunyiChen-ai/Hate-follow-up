@@ -298,3 +298,53 @@ the deployment count implied by accepted backward passes. Checkpointing does
 add decoder work and runtime; unchanged top-level model-forward count must not
 be used to describe its cost as unchanged. The mathematical gate/readout and
 declared quadrature acceptance rule are unchanged by this memory repair.
+
+### Final longest-prefix GPU and deployment-cost confirmation, 2026-10-03
+
+**PASS: the unified full FP32/checkpointed run may start after preflight.**
+Independently checked the returned longest-prefix record at
+`runs/20261002_m1_attributor/numeric_fp32_max_checkpoint/checks.jsonl`, its
+attribute predictions, the final timing/count code, and the new analysis/run
+paths. No GT or performance metrics were read. Review evidence is saved to
+`runs/20261002_m1_attributor/independent_review/max_checkpoint_integrity.json`.
+
+For `hate_video_114`, prefix length 5829 tokens:
+
+- Peak allocated GPU memory is **28.4831 GiB**. The declared first acceptance
+  is 32 nodes: completeness residual `.0070241`, adjacent relative token L1
+  `.0011983`. Against 256 nodes, accepted attribution has relative token L1
+  `.0011103`, window Spearman `.9974109`, and max window difference `.0404400`.
+  The 256-node completeness residual is `.00002508`.
+- Unit-gate/ungated FP32 output equality, original BF16 output restoration,
+  and original prefix-cache immutability all pass exactly. Thus the memory
+  repair now has deployed GPU evidence as well as the earlier CPU three-path
+  margin/gradient equivalence checks.
+- The all-grid smoke performs 497 backwards and records **17,892** decoder
+  attention recomputations, exactly `497 * 36`. Its accepted deployment uses
+  49 backwards and **1,764** recomputed decoder layers.
+
+The final cost correction is necessary and correct: attribution runs in FP32,
+but downstream `z_video` deliberately remains the original BF16 value. Its
+native BF16 global query must therefore remain a deployed forward and cannot
+be replaced by the FP32 endpoint. Final outer-forward count is
+`1 prefix + 1 native BF16 global + 2 FP32 endpoints + K quadrature queries`.
+At 32-node acceptance, cumulative `K=16+32=48`, so the emitted **52** forwards
+are correct. This supersedes the earlier BF16-only 51-forward accounting.
+
+Measured accepted query time is **14.6300 seconds**, consisting of inner
+accepted integration plus **.83708 seconds** of precision/wrapper overhead and
+**.06095 seconds** for the retained native global read. The separately timed
+ungated FP32 verification reference is excluded. Adding **.88399 seconds** of
+prefix computation gives **15.5140 seconds** estimated standalone processing
+for this longest input. The full all-grid smoke time is not a deployment
+latency. Forward counts also do not substitute for the separately recorded
+checkpoint recomputation cost.
+
+The final launch uses `--fp32-query --checkpoint-query` and a new
+`r1_main_fp32` directory. Analysis reads only that run and writes separate
+`r1_main_fp32_decoded` / `r1_main_fp32_analysis` outputs. It cannot accidentally
+combine the earlier 25 BF16-attribution records through the configured path.
+All videos must use this unified numerical implementation, and any failed
+integration still stops the full run without subset evaluation. The earlier
+FP32-counterpart claim limit and required precision control for interpreting
+a positive result remain unchanged.

@@ -18,7 +18,9 @@ Current candidate: `experiments/20261002_m1_attributor/README.md`; independent
 proposal/code reviews PASS. BF16 integration stopped at video26 without any
 performance read; adaptive BF16 did not fix vector accuracy. FP32 queries plus
 decoder activation recomputation pass failure-case/maximum-prefix diagnostics,
-with peak 28.48 GiB. Restart all 333 paired videos uniformly in `r1_main_fp32`;
+with peak 28.48 GiB. Continuous FP32 conversion later fragmented GPU memory;
+CPU-staged allocation repairs this without changing scores. Restart all 333
+paired videos uniformly in `r1_main_fp32_mem`;
 no old BF16 attributions reused. Real cost/recomputation and precision drift
 are recorded; no performance claims before full canonical evaluation/controls.
 

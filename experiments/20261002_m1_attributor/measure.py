@@ -133,7 +133,8 @@ def main():
     import transformers
     config={**vars(a),"date":time.strftime("%Y-%m-%d"),"host":socket.gethostname(),"seed":0,"model":MODEL,
         "torch":torch.__version__,"transformers":transformers.__version__,"GT_in_reader":False,
-        "code":"experiments/20261002_m1_attributor/{measure,attributor}.py; src/window_token_regions.py; local sources 2026-10-03, numerical repairs",
+        "code":"experiments/20261002_m1_attributor/{measure,attributor}.py; src/window_token_regions.py; local sources 2026-10-03, CPU-staged FP32 conversion",
+        "cuda_allocator":os.environ.get("PYTORCH_CUDA_ALLOC_CONF"),
         "nodes":[16,32,64,128,256],"convergence_relative_l1":.05,"completeness_atol":.25,"completeness_rtol":.05,
         "video_question":VIDEO_QUESTION,"visual_question":yesno_question(0,1,0,8,"","visual"),
         "speech_question":yesno_question(0,1,0,8,"<text>","speech"),"frames":20,"window_seconds":8}
