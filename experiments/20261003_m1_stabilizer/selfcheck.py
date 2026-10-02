@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Native rotary and actual multimodal prefix checks without labels."""
 import copy
+import inspect
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -47,6 +48,8 @@ def main():
         ids=torch.tensor([[10]+[v for i in range(20) for v in [11+i,125,127,126]]+[60]])
         enc={'input_ids':ids,'attention_mask':torch.ones_like(ids),'pixel_values':torch.randn(80,24).to(dtype),
             'image_grid_thw':torch.tensor([[1,2,2]]*20)}
+        if 'mm_token_type_ids' in inspect.signature(model.forward).parameters:
+            enc['mm_token_type_ids']=(ids==127).long()
         with torch.no_grad():
             model.rope_deltas=None;base=j.prefix_cache(enc);rope=model.rope_deltas.clone()
             model.rope_deltas=None;stable,diag=eng.prefix_cache(enc)
