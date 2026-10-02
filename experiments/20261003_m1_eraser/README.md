@@ -1,6 +1,6 @@
 # M1 Eraser: re-encoding after temporal media removal
 
-Date2026-10-03. Status: proposal PASS, implementation under code review. Fifth candidate of the M1 iteration;
+Date2026-10-03. Status: proposal/code PASS; four-video GPU smoke passed. Fifth candidate of the M1 iteration;
 Attributor is still running and has no inspected performance. Marginalizer was
 STOPped at proposal, not implemented. Planned host lab-server/sc448960 subject
 to live availability. Independent proposal review required before implementation.
@@ -150,3 +150,21 @@ Implementation/launch: `measure.py`, `erasure.py`,
 `launch/run_analysis.sh`. Primary outputs `runs/20261003_m1_eraser/r1_main/`,
 canonical raw/r6 outputs `r1_main/{base,erase}/metrics.json` and
 `r1_main_decoded/{base,erase}/metrics.json`. No model changes or metrics yet.
+
+
+GPU smoke on sc448960 completed in56.2s; original global margins and all136
+baseline window reads exactly match current cache, with all4 restored-original
+fresh-prefill checks exact. Peak17.176GiB. No GT or localization metrics read.
+Local source `runs/20261003_m1_eraser/r1_smoke/plumbing_summary.json`; underlying
+per-intervention records in `checks.jsonl`. Independent code review additionally
+required full decoded coverage/rate/finite/global assertions before report GT
+reads; these are implemented.
+
+Measured mean per-erasure time .3461s HateMM/.4417s HCS, with6177/5499 nonempty
+removals in the full manifests. This extrapolates to35.6+40.5 GPUminutes for
+removals, plus about10minutes for paired baseline/original globals. Plan roughly
+85-110 minutes full pair, allowing longer-input variation. Only2 videos/corpus
+inform this estimate, so report actual time afterward. Although outer call counts
+are less than twice native, repeated full prefills make this substantially more
+expensive than native short cached queries. Start full333 on sc448960; one
+complete paired experiment, not shards or smoke-subset evaluation.

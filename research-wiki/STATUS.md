@@ -25,8 +25,9 @@ within −.0418 / −.0150，原始窗口排序也下降，全部基线读数精
 第四候选 Marginalizer 因 MARS / RAMF 已使用双假设机制而被方案审查 STOP，
 未实现、未跑GPU；`archive/experiments/20261003_m1_marginalizer/README.md`。
 本轮累计归档3个候选（两个性能失败、一个新颖性未通过）。
-第五候选 Eraser 正在方案审查：直接删除窗口媒体并重新编码剩余输入，
-`experiments/20261003_m1_eraser/README.md`；尚未实现。
+第五候选 Eraser 已通过方案/代码审查与四视频GPU检查：直接删除窗口媒体并
+重新编码剩余输入；`experiments/20261003_m1_eraser/README.md`。
+原global和136窗口读数精确复现，准备在 lab-server 完整配对333视频。
 后续将统一重跑，不将前 25 个 BF16 归因混入 FP32 结果。
 当前方法与论文不变；继续自主迭代，全部 development-selected。
 
