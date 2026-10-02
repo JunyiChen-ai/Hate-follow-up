@@ -46,7 +46,15 @@ def prepare(root,out):
         assert len(b['extra']['windows'])==len(e['extra']['windows'])==len(h['extra']['windows'])
         cc=checks[k]
         assert cc['visual_branches']==len(cc['windows'])==len(b['extra']['windows'])
-        assert cc['actual_forwards']==6+cc['native_branches']+cc['visual_branches']
+        if cc.get('noise_scope','full')=='full':expected_forwards=6+cc['native_branches']+cc['visual_branches']
+        else:
+            nonempty=sum(w['n_frames']>0 for w in cc['windows'])
+            expected_forwards=3+cc['native_branches']+4*nonempty
+            assert len(cc['pixel_interventions'])==len(cc['corrupted_globals_diagnostic_only'])==nonempty
+            assert sorted(v['window'] for v in cc['pixel_interventions'])==[i for i,w in enumerate(cc['windows']) if w['n_frames']]
+            for w in cc['windows']:
+                if not w['n_frames']:assert w['clean_visual']==w['corrupted_visual']==w['contrast_visual']
+        assert cc['actual_forwards']==expected_forwards
         assert cc['original_inputs_unchanged'] and cc['noise']['same_temporal_noise']
         count=0
         for wb,we,wh,d in zip(b['extra']['windows'],e['extra']['windows'],h['extra']['windows'],cc['windows']):
@@ -116,7 +124,9 @@ def report(root,decoded,out):
             'no_frame_windows':sum(w['n_frames']==0 for w in ww),'visual_dominant_windows':dominance,
             'mean_abs_visual_correction':float(np.mean([abs(w['clean_visual']-w['corrupted_visual']) for w in ww])),
             'mean_within_video_std_corrupted_read':float(np.mean([np.std([w['corrupted_visual'] for w in r['windows']]) for r in cc])),
-            'mean_abs_global_diagnostic_change':float(np.mean([abs(r['native_global']-r['corrupted_global_diagnostic_only']) for r in cc]))}
+            'mean_abs_global_diagnostic_change':float(np.mean([abs(r['native_global']-z) for r in cc
+                for z in r.get('corrupted_globals_diagnostic_only',[r.get('corrupted_global_diagnostic_only')])])),
+            'global_diagnostic_scope':'mean across corrupted prefix evaluations, not a downstream key'}
         cost[ds]={a:{'standalone_seconds':sum(r['extra']['prefix_seconds']+r['extra']['branch_seconds'] for k,r in raw[a].items() if k[0]==ds),
             'mean_forwards':float(np.mean([r['calls'] for k,r in raw[a].items() if k[0]==ds]))} for a in ARMS}
         cost[ds]['peak_GiB']=max(r['peak_GiB'] for r in cc)
@@ -130,9 +140,10 @@ def report(root,decoded,out):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS)
+    ap.add_argument('--run-name',default='r1_main');a=ap.parse_args()
     if a.stage=='evaluate' and not a.arm:ap.error('evaluate requires arm')
-    parent=ROOT/'runs/20261003_m1_visual_contrast';root=parent/'r1_main';decoded=parent/'r1_main_decoded';out=parent/'r1_main_analysis'
+    parent=ROOT/'runs/20261003_m1_visual_contrast';root=parent/a.run_name;decoded=parent/(a.run_name+'_decoded');out=parent/(a.run_name+'_analysis')
     out.mkdir(parents=True,exist_ok=True);print('host',socket.gethostname(),flush=True)
     if a.stage=='prepare':prepare(root,out)
     elif a.stage=='evaluate':evaluate(root,decoded,a.arm)

@@ -25,3 +25,18 @@ def corrupt_pixels(pixels,patch_size,temporal_patch_size,abar=None):
 
 def class_contrast(clean,corrupted,coefficient=1.):
     return (1+coefficient)*clean-coefficient*corrupted
+
+
+def mix_window_pixels(clean,corrupted,grid,frame_indices):
+    """Replace complete patch blocks of selected images; retain all other pixels."""
+    assert clean.device.type==corrupted.device.type=='cpu' and clean.shape==corrupted.shape
+    assert grid.ndim==2 and grid.shape[1]==3
+    sizes=grid.long().prod(1).tolist();assert sum(sizes)==len(clean)
+    selected=list(frame_indices)
+    assert len(set(selected))==len(selected) and all(0<=i<len(sizes) for i in selected)
+    boundaries=[0]
+    for n in sizes:boundaries.append(boundaries[-1]+n)
+    mixed=clean.float().clone();ranges=[]
+    for i in selected:
+        a,b=boundaries[i:i+2];mixed[a:b]=corrupted[a:b];ranges.append([a,b])
+    return mixed,{'frames':selected,'patch_ranges':ranges,'pixel_rows':sum(b-a for a,b in ranges)}

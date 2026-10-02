@@ -1,8 +1,10 @@
 # M1 visual contrastive reading
 
-Declared2026-10-03, eighth candidate. Proposal and independent code review PASS; implementation complete,
-five-video GPU plumbing passed; no performance yet. Contraster completed without qualifying gain after this
-declaration. Development host sc474397; GPU target chosen after live inspection.
+Declared2026-10-03, eighth candidate. R1 full333 and four cached controls complete:
+qualifying numerical gain, but failed promotion and the two-corpus matching mechanism.
+R2 local-image intervention implemented; independent supplemental review PASS,
+awaiting five-video GPU plumbing before full evaluation. Development host sc474397;
+R1 ran on sc474399, R2 target chosen after live inspection. All development-selected.
 
 ## Mechanism and source
 
@@ -188,7 +190,8 @@ execution, not selected from performance:
 4. `common_shift`: let d_v=mean_i(max(2a_i-b_i,c_i))-mean_i(max(a_i,c_i)), with
    absent speech omitted. Add d_v to BOTH native branches. Native raw-max order
    stays unchanged and its video mean equals the contrast mean; downstream
-   global key is consequently matched, but no new local ordering is introduced.
+   global key is consequently matched, but no new raw local ordering is introduced.
+   This preserves raw order only; corpus ranks and decoded order may change.
 
 Report each arm's three canonical raw/final metrics, paired within differences
 versus native and contrast, individual visual/speech raw ordering, largest
@@ -206,3 +209,94 @@ is.5; r6 splits into2 temporal cells whose ordering flips, producing+.60 final
 within. This is a decoder interaction, not new within-window timing evidence.
 The former's rawmax ordering also stays unchanged. Report such cases separately
 when assessing a grounding claim; do not exclude them from main metrics.
+
+## R1 controls complete: window matching supported only on HCS
+
+Source: `runs/20261003_m1_visual_contrast/r1_controls_decoded/<arm>/metrics.json`;
+report `r1_controls_analysis/summary.json`, independent narrow code check
+`docs/reviews/20261003_m1_visual_contrast_controls_code.md`. No new model calls.
+
+| Arm | HateMM ROC / PR / within | HCS ROC / PR / within |
+|---|---|---|
+| scale | .891877 / .665746 / .750782 | .724666 / .671939 / .637349 |
+| video_shift | .891789 / .679195 / .766977 | .724236 / .672193 / .633678 |
+| shuffle | .892122 / .681719 / .775343 | .723775 / .670087 / .633819 |
+| common_shift | .892389 / .681119 / .757442 | .724195 / .671737 / .642750 |
+
+As expected, scale leaves decoded within exactly native. Contrast minus shuffle
+within is−.004951 on HMM (CI[-.01602,.00551]) and+.014195 on HCS
+([.00090,.03048]). Contrast minus video_shift is+.003415/+.014336. Thus the
+matched-window subtraction is supported only on HCS. A stronger claim that it
+improves local image grounding on both corpora fails this control. Individual
+visual raw within falls .613908→.592935 on HMM and rises .546450→.563090 on HCS.
+Common shifts also change r6 ordering without changing raw ordering; decoder
+interaction is material. Do not report the shuffled arm as a selected method.
+
+R1 remains a qualifying numerical gain for rule9, but fails promotion and the
+two-corpus matching mechanism. Continue with a different intervention scope,
+not a claim that R1 already explains the desired gain.
+
+## R2 declared: corrupt only the queried window's frames
+
+First of at most3 method revisions, declared2026-10-03 after reading R1 and its
+four control reports above. No R2 outputs/performance exist at declaration.
+Motivation: R1 changes all frames, and thus all image-conditioned text states,
+even when the question concerns one window. Its HMM improvement survives
+destroying the window correspondence. Make the intervention local to the actual
+sampled frames of the query instead of interpreting whole-prefix sensitivity
+as local evidence. This changes the input intervention, not prompts or labels.
+
+Constants unchanged: noise schedule/step500, coefficient1, seed0 reset per video,
+Qwen3-VL-8B BF16,20 frames, native global and selected answer, speech reads,
+8s window grid,4fps, r6. Generate the same complete noisy pixel tensor as R1
+once. For each visual window, replace ONLY processor pixel rows belonging to its
+timestamped frames; all other rows remain original. Pixel blocks come from
+image_grid_thw products and original frame order, with exact coverage checks.
+Freshly encode this complete mixed clean/noisy prefix, recompute its global QA
+but force the native answer, and ask only that window's original visual query.
+Output2a_i-b_i, native speech. A window with no sampled frame is an exact identity:
+b_i=a_i, no new call, not an invented local image. Full-window-only videos can
+still change their scalar read, but cannot support a new timing-evidence claim.
+
+No clean/noisy cache stitching: text states may change after real re-encoding.
+This estimates sensitivity to own-window images conditional on the other clean
+media, not a proof that hate is visually caused by those frames. No pooling or
+centering modification is added in R2; any such later revision must be declared.
+
+Cost: native3+B plus4K new outer forwards, K=windows with sampled frames. The4
+are fresh prefix, global question, forced answer, queried-window question.
+K totals2738 HMM /2358 HCS (means12.73/19.98). This is5096 new full-prefix
+encodings versus333 in R1; estimate35–70GPUmin full333, replace from smoke.
+This cost is necessary for the declared local intervention; do not obscure it
+as frozen/offline work. No new encoder, preprocessing or backward pass.
+Reuse pixels/noise construction only, not changed LM caches. Output
+`runs/20261003_m1_visual_contrast/r2_{smoke,main}/`.
+
+Targeted new-path code check; five-video plumbing as R1, including per-frame
+patch mapping, unchanged nonselected pixels, no-frame identity, exact native
+and restoration,4fps and count/cost. Full333 canonical raw/r6 run and original
+gates. No coefficient/schedule scan in R2. GT never enters intervention.
+
+If R2 qualifies, an exact noise-budget control permutes donor windows within
+each video's groups with equal (number of frames,total processor pixel rows).
+Reset default_rng0 per video. Each query then corrupts its donor window's frames
+with the same stored noise; singleton groups retain their own masks and are
+explicitly ineffective controls. Report changed masks and unaffected cases.
+This tests own-window versus other-window images without confounding noise
+budget. Native/no-contrast plus this control and single-window diagnostics must
+precede a temporal-grounding claim. New calls are counted for this control too.
+
+R2 independent new-path review PASS:
+`docs/reviews/20261003_m1_visual_contrast_r2_code.md`. Actual small multimodal
+Qwen FP32/BF16 tests and full333 frame/duration metadata coverage agree with the
+declared masks and call count. This is implementation evidence, not performance.
+
+Additional post-scoring R1 inspection, before R2 GPU: exported fixed top2 final
+gain cases per corpus to `r1_main_analysis/case_evidence.json` using the same R1
+predictions/checks, repaired ASR, frame paths and test GT. HMM279/329 observations
+above are unchanged. HCS bit_8I3rasu4mSiz has29 windows and96.1% positive frames;
+bit_s0Hrb2M5Yth8 has35 windows and69.9% positive frames. Transcript and temporal
+scores alone do not establish the visual semantics; images were not inspected.
+No inference rule or constants changed following this export. The separate
+`one_window_diagnostic.json` keeps the single-window contribution visible without
+excluding it from canonical evaluation.

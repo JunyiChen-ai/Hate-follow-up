@@ -42,7 +42,8 @@ Running candidates:
   clean/corrupt visual-window contrast with native speech/global retained.
   Proposal/code PASS; five-video GPU plumbing passes (292 exact native branches).
   Full333 completed: within+.01961/+.01066, HMM PR−.01410; retained under rule9,
-  not promoted. Four predeclared cached mechanism controls pending.
+  not promoted. Four cached controls complete: matching supported only on HCS.
+  R2 local-image corruption declared/implemented, narrow code check pending.
 
 Cumulative archives8 (six performance failures, two proposal novelty STOPs).
 

@@ -5,6 +5,8 @@ export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 export HF_HOME="$PWD/.cache/hf"
 phase="${1:-main}"
+scope="${2:-full}"
+round="${3:-r1}"
 args=()
 if [ "$phase" = smoke ]; then args+=(--smoke); elif [ "$phase" != main ]; then exit 2; fi
 case "$(hostname -s)" in
@@ -12,4 +14,4 @@ case "$(hostname -s)" in
   sc448960) py=/home/junyi/miniconda3/envs/HateVLM/bin/python ;;
   *) echo 'Use a reviewed target environment' >&2; exit 2 ;;
 esac
-exec "$py" -u experiments/20261003_m1_visual_contrast/measure.py --run-name "r1_$phase" "${args[@]}"
+exec "$py" -u experiments/20261003_m1_visual_contrast/measure.py --run-name "${round}_$phase" --noise-scope "$scope" "${args[@]}"
