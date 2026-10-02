@@ -119,3 +119,31 @@ Implementation underway; no GPU run, labels or performance read for this proposa
 source authors tuned their settings on100MSCOCO validation images. Nearby
 FBHM/LSV uses supervised steering for static hateful memes (arXiv2605.31349v2),
 so no claim of first activation steering for multimodal hate is intended.
+
+Own numerical checks completed before GPU: `selfcheck.py` runs actual36-layer
+small multimodal Qwen including two DeepStack injections, FP32 and BF16 on CPU.
+Native read is exact, direction is nonzero, steering changes final answer logits,
+original KV/mRoPE recover exactly, norm-preservation/zero-norm algebra passes,
+and12-column token-first margin matches full-vocabulary construction within
+1.2e-7. This small hidden64 witness does not replace the forthcoming real8B
+smoke. Artifacts `runs/20261003_m1_reinforcer/selfcheck/numerics.json`.
+Independent review is separate and pending; no GT or real performance read.
+
+Independent code review PASS (no production fix):
+`docs/reviews/20261003_m1_reinforcer_code.md`; artifacts
+`runs/20261003_m1_reinforcer/independent_review/check_reinforcer.json`.
+Actual36-layer multimodal smallQwen FP32/BF16, all-row norm oracle, unsteered
+sources, SLA and native preservation, dualKV/RoPE/crop and actual outer-call
+counts pass. Complete-reader test changes ONLY the width assertion4096→64 in
+an independent test copy; production still asserts real8B width. Synthetic333
+prepare/report and invalid config/coverage/alignment/global/nonfinite rejection
+pass; canonical evaluator and unchanged r6 commands verified. No real GT read.
+
+GPU target sc448960 (lab-server): existing reviewed HateVLM, media and weights.
+Fresh preflight `runs/20261002_m1_iteration/preflight/machines_reinforcer_code.txt`;
+source sync must complete before launch. Other-project home STRAY entries are
+outside task scope; project target clean. Five-video smoke first via
+`bash experiments/20261003_m1_reinforcer/launch/run_lab.sh smoke`, then local
+`python experiments/20261003_m1_reinforcer/analyze.py --smoke --stage prepare`.
+Only after validation, `.../run_lab.sh main` complete333 and
+`bash .../launch/run_analysis.sh`. Results returned before STATUS update.

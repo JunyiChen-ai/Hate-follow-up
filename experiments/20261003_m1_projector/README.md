@@ -100,3 +100,9 @@ not mechanism evidence. Report raw visual/speech/max ordering, final3metrics,
 unchanged-order/single-window contributions, gain/loss cases, uncertainty and
 new-video cost. Actual local evidence use needs content-sensitive controls;
 do not infer localization semantics from output-vector orthogonality alone.
+
+Proposal source clarification before implementation: the source guidance scales
+were selected by scans on CHAIR; ours borrows Qwen-VL1.4 without a local scan,
+not a claim of parameter-free source design. The source newer-model section
+covers LLaVA-NeXT7B/13B, not Qwen3. Epsilon and BF16 make orthogonality approximate,
+and per-head orthogonality need not survive o_proj or imply semantic isolation.
