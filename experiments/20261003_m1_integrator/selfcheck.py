@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """CPU witness that later input reaches visual memory via the new edges."""
 import json
+import argparse
 from pathlib import Path
 from types import SimpleNamespace
 import torch
@@ -12,14 +13,22 @@ ROOT=next(p for p in Path(__file__).resolve().parents if (p/'CLAUDE.md').is_file
 
 
 def main():
+    ap=argparse.ArgumentParser();ap.add_argument('--future-keys',choices=('all','text'),default='all');a=ap.parse_args()
     torch.set_num_threads(1);torch.manual_seed(0)
     cfg=Qwen3VLTextConfig(vocab_size=128,hidden_size=64,intermediate_size=128,
         num_hidden_layers=4,num_attention_heads=4,num_key_value_heads=2,head_dim=16,
         max_position_embeddings=512,rope_scaling={'rope_type':'default','mrope_section':[2,3,3]})
     cfg._attn_implementation='sdpa'
     visual=torch.tensor([0,1,1,0,0,1,1,0,0,0,0,0],dtype=torch.bool)
-    edges=allowed_edges(visual);causal=allowed_edges(visual,native=True)
-    assert torch.equal(edges[~visual],causal[~visual]) and edges[visual].all()
+    edges=allowed_edges(visual,future_keys=a.future_keys);causal=allowed_edges(visual,native=True)
+    assert torch.equal(edges[~visual],causal[~visual])
+    expected=causal.clone()
+    for i in range(len(visual)):
+        for j in range(len(visual)):
+            if visual[i] and (a.future_keys=='all' or not visual[j]):expected[i,j]=True
+    assert torch.equal(edges,expected)
+    if a.future_keys=='text':assert torch.equal(edges[:,visual],causal[:,visual])
+    else:assert edges[visual].all()
     assert (edges | causal).equal(edges) and torch.diag(edges).all()
     checks=[]
     for dtype in (torch.float32,torch.bfloat16):
@@ -27,7 +36,7 @@ def main():
         for p in lm.parameters():p.requires_grad_(False)
         judge=SimpleNamespace(family='qwen3_vl',device=torch.device('cpu'),dtype=dtype,
             model=SimpleNamespace(model=SimpleNamespace(language_model=lm)))
-        engine=PrefixIntegrator(judge);ids=torch.arange(12)[None]
+        engine=PrefixIntegrator(judge,a.future_keys);ids=torch.arange(12)[None]
         original={k:v.clone() for k,v in lm.state_dict().items()}
         with torch.no_grad():
             native=lm(input_ids=ids,use_cache=True)
@@ -48,9 +57,9 @@ def main():
                 for a,b in zip(future.past_key_values.layers[1:],changed_future.past_key_values.layers[1:]))
             assert cache_delta>0 and engine.active is None
             visited=list(engine.visited)
-            a=lm(input_ids=torch.tensor([[40,41]]),past_key_values=future.past_key_values,use_cache=True)
-            b=lm(input_ids=torch.tensor([[40,41]]),past_key_values=changed_future.past_key_values,use_cache=True)
-            assert engine.visited==visited and not torch.equal(a.last_hidden_state,b.last_hidden_state)
+            suffix_original=lm(input_ids=torch.tensor([[40,41]]),past_key_values=future.past_key_values,use_cache=True)
+            suffix_changed=lm(input_ids=torch.tensor([[40,41]]),past_key_values=changed_future.past_key_values,use_cache=True)
+            assert engine.visited==visited and not torch.equal(suffix_original.last_hidden_state,suffix_changed.last_hidden_state)
             restored=lm(input_ids=ids,use_cache=True)
             assert torch.equal(native.last_hidden_state,restored.last_hidden_state)
         assert all(torch.equal(v,original[k]) for k,v in lm.state_dict().items())
@@ -59,8 +68,9 @@ def main():
             'future_visual_sensitive_to_later_text':True,'later_layer_cached_value_change':cache_delta,
             'suffix_unhooked_and_sensitive':True,'native_restored_exact':True,'weights_unchanged':True})
     out=ROOT/'runs/20261003_m1_integrator/selfcheck';out.mkdir(parents=True,exist_ok=True)
-    result={'no_GT':True,'visual_only_new_direct_edges':True,'checks':checks}
-    (out/'future_visibility.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))
+    result={'no_GT':True,'future_keys':a.future_keys,'exact_edges':True,'visual_only_new_direct_edges':True,'checks':checks}
+    name='future_visibility' if a.future_keys=='all' else 'future_text_visibility'
+    (out/(name+'.json')).write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))
 
 
 if __name__=='__main__':main()

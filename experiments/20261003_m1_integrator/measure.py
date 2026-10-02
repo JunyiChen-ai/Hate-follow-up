@@ -53,7 +53,8 @@ def read_video(j,engine,row,segments,smoke=False):
     assert len(visual)==P and int(visual.sum())==sum(j.img_tokens)
     assert torch.all(enc['attention_mask']==1) and len(j.img_tokens)==len(frames)
     mapping={'visual_tokens':int(visual.sum()),'prefix_tokens':P,
-        'added_edges':int(sum(P-1-i for i in np.flatnonzero(visual))), 'language_layers':len(engine.layers)}
+        'added_edges':int(sum(P-1-i if engine.future_keys=='all' else (~visual[i+1:]).sum()
+            for i in np.flatnonzero(visual))), 'language_layers':len(engine.layers), 'future_keys':engine.future_keys}
     original={k:v.clone() for k,v in enc.items() if torch.is_tensor(v)}
     torch.cuda.synchronize();mapping_seconds=time.perf_counter()-tick
     tick=time.perf_counter()
@@ -103,7 +104,9 @@ def read_video(j,engine,row,segments,smoke=False):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--run-name',required=True);ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--run-name',required=True);ap.add_argument('--smoke',action='store_true')
+    ap.add_argument('--future-keys',choices=('all','text'),default='all');a=ap.parse_args()
+    assert a.run_name==('r1' if a.future_keys=='all' else 'r2')+('_smoke' if a.smoke else '_main')
     torch.manual_seed(0);out=ROOT/'runs/20261003_m1_integrator'/a.run_name;out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
@@ -113,7 +116,7 @@ def main():
         selected+=[r for r in rows if r['dataset']=='HateMM' and r['video_id']=='hate_video_114']
         assert len({(r['dataset'],r['video_id']) for r in selected})==5
         rows=selected
-    asr={ds:load_asr(ds) for ds in ('HateMM','HateClipSeg')};j=Judge(MODEL);engine=PrefixIntegrator(j)
+    asr={ds:load_asr(ds) for ds in ('HateMM','HateClipSeg')};j=Judge(MODEL);engine=PrefixIntegrator(j,a.future_keys)
     j.forward_calls=0
     def count_forward(*_):j.forward_calls+=1
     counter=j.model.model.register_forward_pre_hook(count_forward)
@@ -122,9 +125,12 @@ def main():
         'torch':torch.__version__,'transformers':transformers.__version__,'GT_in_reader':False,
         'code':'experiments/20261003_m1_integrator/{measure,integrator}.py + src/{video_inputs,mllm_judge}.py, sources2026-10-03',
         'video_question':VIDEO_QUESTION,'frames':20,'window_seconds':8,'fps':FPS,
-        'prefix_mask':'j<=i OR query i is an image token; all language layers',
+        'prefix_mask':'j<=i OR (visual(i) AND '+('true' if a.future_keys=='all' else 'NOT visual(j)')+'); all language layers',
         'queries':'ordinary full causal access',
         'global_key':'native original','forced_answer':'native original'}
+    if (out/'config.json').exists():
+        previous=json.load((out/'config.json').open())
+        assert previous.get('future_keys','all')==a.future_keys and previous['smoke']==a.smoke
     (out/'config.json').write_text(json.dumps(config,indent=2)+'\n');handles={};done={}
     for arm in ('base','causal','future'):
         d=out/arm;d.mkdir(exist_ok=True);(d/'config.json').write_text(json.dumps({**config,'arm':arm},indent=2)+'\n')

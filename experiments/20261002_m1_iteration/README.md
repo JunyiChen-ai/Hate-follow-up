@@ -48,9 +48,14 @@ Completed candidates:
 
 Running candidates:
 - `experiments/20261003_m1_integrator/README.md`: tenth candidate, future-aware
-  visual prefix memory from FutureMask; proposal/code reviews PASS, CPU actual
-  model witnesses and five-video GPU smoke passed; full333 three-arm run is
-  running on sc448960. Independent of VCD, not combined.
+  visual prefix memory from FutureMask; R1 full333 complete on sc448960, native
+  exact. HMM within+.01604 but PR-.01263; HCS within-.00130 and ROC-.00718.
+  Both visual raw orderings fall; HMM two cases with unchanged raw within account
+  for.01476 of the.01604 gain. R2 declared: future text keys only, preserving all
+  other settings; implementation review underway. Independent of VCD, not combined.
+- `experiments/20261003_m1_amplifier/README.md`: candidate11, PAI attention
+  amplification plus language-only token-logit reference, independently declared
+  before Integrator evaluation. Proposal review underway, no implementation yet.
 
 Cumulative archives9 (seven performance/mechanism failures, two proposal novelty STOPs).
 
@@ -84,7 +89,8 @@ Unselected possibilities inspected while full jobs run, not additional candidate
   input-attention/contrastive-decoding source. Only abstract/source discovery
   was inspected at this point; no claim of target-task novelty or implementation.
   At that time the running work was visual-contrast R2 and Integrator R1;
-  visual contrast has since been archived. These possibilities remain unselected.
+  visual contrast has since been archived. PAI has now been fully source-read
+  and separately declared as candidate11; SoftThinking remains unselected.
 
 Shared post-scoring report helper added while both main runs were still in progress:
 `scripts/analysis/m1_branch_diagnostics.py`, independent narrow review PASS

@@ -61,7 +61,10 @@ def prepare(root,out):
             cc=checks[k];P=cc['prefix_tokens']
             assert len(t['visual'])==len(t['input_ids'])==P
             assert int(t['visual'].sum())==cc['mapping']['visual_tokens']
-            assert cc['mapping']['added_edges']==int(sum(P-1-i for i in np.flatnonzero(t['visual'])))
+            mode=json.load((root/'config.json').open()).get('future_keys','all')
+            assert cc['mapping'].get('future_keys','all')==mode
+            assert cc['mapping']['added_edges']==int(sum(P-1-i if mode=='all' else (~t['visual'][i+1:]).sum()
+                for i in np.flatnonzero(t['visual'])))
             assert cc['mapping']['language_layers']==36 and cc['original_inputs_unchanged']
             assert cc['actual_forwards']==9+3*cc['native_branches']
             assert b['calls']==3+cc['native_branches'] and f['calls']==5+cc['native_branches']
@@ -131,9 +134,10 @@ def report(root,decoded,out):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS)
+    ap.add_argument('--run-name',choices=('r1_main','r2_main'),default='r1_main');a=ap.parse_args()
     if a.stage=='evaluate' and not a.arm:ap.error('evaluate requires arm')
-    parent=ROOT/'runs/20261003_m1_integrator';root=parent/'r1_main';decoded=parent/'r1_main_decoded';out=parent/'r1_main_analysis'
+    parent=ROOT/'runs/20261003_m1_integrator';root=parent/a.run_name;decoded=parent/(a.run_name+'_decoded');out=parent/(a.run_name+'_analysis')
     out.mkdir(parents=True,exist_ok=True);print('host',socket.gethostname(),flush=True)
     if a.stage=='prepare':prepare(root,out)
     elif a.stage=='evaluate':evaluate(root,decoded,a.arm)

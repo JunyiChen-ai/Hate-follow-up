@@ -151,3 +151,67 @@ arms560.8/859.9s for HMM/HCS; standalone total10.55min, paired23.68min. Small
 sample estimates exclude the stress video (future8.72s, paired23.91s); actual
 full cost will replace them. No GT or performance was read in smoke, no constants
 changed. Full333 three-arm run follows on the same idle host after sync/preflight.
+
+## R1 complete: retained for one revision, not promoted
+
+Host sc448960, complete333 paired readings returned locally. All333 native
+globals and13939 native branches exactly match base_gridA. Canonical results:
+`runs/20261003_m1_integrator/r1_main_decoded/<arm>/metrics.json`.
+
+| Corpus | arm | ROC | PR | within | raw within |
+|---|---|---:|---:|---:|---:|
+| HateMM | base | .897119 | .694235 | .750782 | .680011 |
+| HateMM | causal | .896821 | .694265 | .749962 | .683615 |
+| HateMM | future | .891985 | .681604 | .766819 | .678186 |
+| HateClipSeg | base | .716825 | .671072 | .637349 | .610130 |
+| HateClipSeg | causal | .716990 | .671300 | .639037 | .610385 |
+| HateClipSeg | future | .709646 | .670246 | .636054 | .599374 |
+
+Within delta+.016037 (84videos, paired95%CI[-.007256,.043421]) / -.001295
+(99,[-.017212,.016490]). HMM PR-.012630 and HCS ROC-.007179 fail promotion.
+Raw within falls.001825/.010756. Visual-only ordering falls.018899/.005350;
+speech-only+.003721/.003458, speech eligible82/97. Actual standalone future
+448.89/346.57s, native357.50/293.00s (total1.223x); paired wall32.58min,
+peak17.9195GiB. Sources `r1_main_analysis/{summary,cost,branch_diagnostics}.json`.
+
+Post-scoring error analysis read complete raw/decoded predictions, test GT arrays,
+and those reports. HMM largest gains are hate_video_279 (+.64) and329 (+.60),
+both unchanged raw within;329 has only one read window, so its+.007143
+contribution to the corpus mean cannot represent new M1 timing evidence.
+These two cases contribute.014762 of the.016037 mean gain. No semantic claim
+about their harmful content follows. No new transcript/frame inspection here.
+Original explicit-causal control differs little in aggregate, so the large
+future effect is not explained solely by the attention-mask backend change.
+
+## R2 declaration: future text keys only
+
+Rule9 permits a revision after HMM within exceeds+.01. Before any R2 performance
+is inspected, change ONE design choice: future visual query rows can directly
+access future NONVISUAL keys only, not future image keys:
+allow(i,j) = j<=i OR (visual(i) AND NOT visual(j)). This is the source v2t
+edge type already listed in the initial control plan; R2 explicitly promotes it
+to a revised main hypothesis instead of silently selecting a control result.
+R1 did not isolate future visual and text edges, and its visual ordering fell.
+Hypothesis: retain future textual interpretation while reducing direct access to
+other future images. This is tentative, not a causal conclusion from R1 metrics.
+Text includes ASR/policy/timestamps/scaffold, and text states themselves can
+carry other images; it does NOT isolate speech or remove all cross-frame flow.
+
+All36layers/heads, original inputs, native global/forced answer, both original
+window branches, ordinary suffix attention, r6, constants and gates unchanged.
+No partial-depth scan, weighted blend or label-conditioned routing. Three paired
+arms base/causal/future, with future meaning v2t for R2. Save mask mode in config
+and every check; retain R1 files. Counts and expected costs equal R1 (~33min
+paired, ~13.3min standalone full333). Five-video plumbing first, then full333.
+No v2v control GPU run unless a qualifying main warrants mechanism controls.
+CPU/independent code review checks exact removed/retained edges, actual prefix
+activation, native restoration, token mapping and canonical report selection.
+
+R2 implementation and independent review PASS:
+`docs/reviews/20261003_m1_integrator_r2_code.md`. Actual small multimodal Qwen
+FP32/BF16 witness confirms exact v2t edges and changed visual KV from later text,
+unchanged native restoration/weights, R1 default regression and R2 report paths.
+The CPU selfcheck variable-shadowing failure was fixed before any GPU job.
+Artifacts `runs/20261003_m1_integrator/selfcheck/future_text_visibility.json`
+and `independent_review/r2/`. Launch `bash .../launch/run_lab.sh smoke r2`,
+then `main r2`; analysis `bash .../launch/run_analysis.sh r2`.
