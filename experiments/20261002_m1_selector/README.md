@@ -111,3 +111,26 @@ avoidable full-matrix selection work; do not hide the residual cost.
 One complete corpus always runs on one machine. All results return locally before
 STATUS updates. Use the canonical evaluator and current r6 CLI; do not copy metric
 logic. No paper changes until an improved, explained mechanism is supported.
+
+## Implementation and plumbing checks
+
+Independent code review: `docs/reviews/20261002_m1_selector_code.md`.
+Shared token mapping was promoted without a functional change from the archived
+Grounder implementation to `src/window_token_regions.py`; AST comparison of both
+functions matched exactly. Existing lab2 HateVLM environment reused unchanged.
+
+GPU smoke (`runs/20261002_m1_selector/r1_smoke`, sc474399): all five arms on four
+videos. Every crop/copy comparison and every window's wrapper-base versus ordinary
+SDPA margin is exactly equal. Select branch time is 1.151 times ordinary SDPA;
+including prefix computation, estimated standalone time is 1.101 times ordinary.
+These four videos are plumbing/cost checks, not an outcome-selected pilot. No
+GT or performance metric was inspected. Independent CPU checks also validate
+GQA grouping, log-mean-affinity equivalence, exact trajectory replay/rotation,
+branch-order/cache invariance and edge-causal masking under fixed routing.
+
+Run `launch/run_lab2.sh main` detached for the two full arms; immediately rsync
+`runs/20261002_m1_selector/r1_main/` back, then run `launch/run_analysis.sh` locally.
+It first checks full paired/current-reader alignment, evaluates both raw arms and
+the unchanged r6 runs, then reports video-paired bootstrap, head selection and
+cost. Initial report always leaves mechanism_supported=false until the declared
+controls have actually run and passed. Analysis GT never enters GPU reading or fit.
