@@ -295,4 +295,8 @@ Generation requires a qualifying complete primary result. A four-video saved
 smoke check verified attribution-to-window reproduction, unchanged global and
 modality availability, finite output, and shift centering/rank invariance;
 `runs/20261002_m1_attributor/controls_selfcheck/checks.json`. No labels read.
-Independent targeted control review and canonical evaluation are still pending.
+Independent targeted control review PASS:
+`docs/reviews/20261003_m1_attributor_controls_code.md`. The reviewer independently
+checked synthetic/shared-token and historical numeric-smoke cases, commands and
+the gain guard without reading GT or main-run results. Canonical evaluation is
+still pending; only run `launch/run_controls.sh` after a qualifying primary gain.
