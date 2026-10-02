@@ -134,3 +134,20 @@ HateVLM torch2.11/transformers5.15.1, not the old HateVideo CUDA build. Commands
 `bash experiments/20261003_m1_integrator/launch/run_lab.sh smoke` then, if passed,
 `.../run_lab.sh main`. Outputs `runs/20261003_m1_integrator/r1_{smoke,main}/`.
 Pre-existing unrelated home STRAY entries are not task outputs and are left alone.
+
+## GPU smoke passed; proceeding to full333
+
+Host sc448960, artifacts returned to local
+`runs/20261003_m1_integrator/r1_smoke/plumbing_summary.json`. All5 original
+globals and292 native branches exactly match base_gridA; forced-answer/global
+preservation, native restoration, unchanged inputs, expanded visual masks,
+actual forward counts and finite4fps curves pass. Largest5829-token prefix
+fits17.9192GiB. Explicit-causal branch drift reaches.72398, reinforcing the
+matched dense-mask control. Future-read changes are nonzero on all5 inputs;
+this confirms activation, not correctness. Smoke wall57.8s includes restoration.
+
+First2/corpus extrapolation: native209.6/286.5s, future292.1/341.0s, paired three
+arms560.8/859.9s for HMM/HCS; standalone total10.55min, paired23.68min. Small
+sample estimates exclude the stress video (future8.72s, paired23.91s); actual
+full cost will replace them. No GT or performance was read in smoke, no constants
+changed. Full333 three-arm run follows on the same idle host after sync/preflight.

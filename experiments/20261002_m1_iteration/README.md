@@ -47,7 +47,8 @@ Running candidates:
   complete333 running on sc474399, estimated35min.
 - `experiments/20261003_m1_integrator/README.md`: tenth candidate, future-aware
   visual prefix memory from FutureMask; proposal/code reviews PASS, CPU actual
-  model witnesses passed; preparing GPU smoke. Independent of VCD, not combined.
+  model witnesses and five-video GPU smoke passed; preparing full333 three-arm
+  run on sc448960. Independent of VCD, not combined.
 
 Cumulative archives8 (six performance failures, two proposal novelty STOPs).
 
