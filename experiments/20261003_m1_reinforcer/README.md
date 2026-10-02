@@ -147,3 +147,13 @@ outside task scope; project target clean. Five-video smoke first via
 `python experiments/20261003_m1_reinforcer/analyze.py --smoke --stage prepare`.
 Only after validation, `.../run_lab.sh main` complete333 and
 `bash .../launch/run_analysis.sh`. Results returned before STATUS update.
+
+Five-video8B GPU smoke PASS on sc448960; returned and locally validated before
+full launch. Source `runs/20261003_m1_reinforcer/r1_smoke/plumbing_summary.json`:
+all5global/292branch native scores exact, forced answer/speech/native inputs
+restored, nonzero directions change window scores. Peak18.0980GiB, smoke41.9s
+including extra native restoration. First2/corpus estimated full cost339.50s
+HateMM and543.29s HateClipSeg (14.71min total; deployment=paired collection),
+versus capture-inclusive base208.49/286.19s. HMM1145829-token check passed,
+excluded from extrapolation. No GT/performance inspected in smoke. Full333 next,
+unchanged declared constants; fresh preflight `machines_reinforcer_main.txt`.

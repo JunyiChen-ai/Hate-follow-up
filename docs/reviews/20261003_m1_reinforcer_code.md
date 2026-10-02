@@ -1,0 +1,36 @@
+# M1 Reinforcer — independent code review
+
+Date: 2026-10-03. Reviewer: `/root/m1_grounder_code_review`, independent of the implementer. Scope: rule 6, limited to observation-affecting errors in `experiments/20261003_m1_reinforcer/{README.md,reinforcer.py,measure.py,analyze.py,launch/}` and their shared reader/evaluation interfaces. The proposal review was already PASS. No production source was edited, GPU work started, corpus GT or real candidate performance read, or hash calculated.
+
+## Decision: PASS
+
+No required implementation correction was found. The declared mechanism reaches the visual scores, preserves native global/answer/speech, and uses the canonical evaluator and unchanged r6. This permits the declared GPU smoke; it does not establish 8B runtime parity, memory fit, performance or a localization mechanism.
+
+Independent executable evidence:
+
+- `runs/20261003_m1_reinforcer/independent_review/check_reinforcer.py`
+- `runs/20261003_m1_reinforcer/independent_review/check_reinforcer.json`
+- `runs/20261003_m1_reinforcer/independent_review/check_reinforcer.out`
+- `runs/20261003_m1_reinforcer/independent_review/read_video_width64.py`
+
+Command: `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES='' /home/jehc223/miniconda3/envs/HateVideo/bin/python runs/20261003_m1_reinforcer/independent_review/check_reinforcer.py`.
+
+The actual CPU fixture uses torch 2.7.1, transformers 4.57.6, Qwen3VLModel with 36 language blocks, hidden size 64, four query heads/two KV heads, mRoPE, a three-block vision encoder and DeepStack outputs [0, 1]. Two real processed image tensors produce different patch counts. Both FP32 and BF16 were executed. Shared prefix-message construction and answer-head projection are used, while question tokenization and corpus inputs are synthetic. For the complete reader test only, an independent function copy changes its literal direction-width assertion from `(36,4096)` to `(36,64)`; the remaining reader computation is unchanged. The production function retains its 8B assertion. This is explicitly a small-model computational check, not an 8B execution.
+
+## Computation, caches and native parity
+
+- Separate hooks placed before and after the production hooks observe the actual post-block tensors. In all 36 blocks, every suffix row matches `u = h + .17*d; h_new = u*norm(h)/norm(u)` followed by the declared dtype cast. Earlier query rows as well as the final row change. The zero-norm fallback and zero input norm behavior pass. Observed relative norm roundoff was at most `1.061e-7` in FP32 and `6.128e-4` after BF16 casting; norm preservation should not be described as exact after that cast.
+- Original and no-image reads have no active directions. The replay direction is exactly their captured last-row residual difference in FP32 for each query and each layer. Separate tracing verifies these sources are unsteered and the corresponding question tokens agree. The two prefixes use separate KV caches; no-image messages keep the shared policy and ASR, omit images/timestamps, and force the original native answer. The reference global score remains diagnostic.
+- Captured states are post-block residuals. Multimodal prefilling executes actual vision/mRoPE/DeepStack with steering inactive. Active suffix calls contain no new images or DeepStack injections, so capturing the block output does not accidentally omit a suffix-time visual injection. Production native capture leaves every observed block tensor unchanged.
+- SLA uses zero-based blocks 30–34, applies the same final RMSNorm to each state in its original dtype, projects the answer-token columns, then averages token logits. Independently projecting those five rows differs from the batched projection by at most `4.471e-8` in FP32 and zero in the BF16 fixture. Final native logits equal the projection of the last residual with final RMSNorm applied once. Mixing `.7*final + .3*previous` precedes label-set logsumexp. A numerical counterexample distinguishes this from mixing class margins (`.084666` versus `2.603881`), and full-vocabulary normalization cancellation differs by only `2.384e-7`.
+- All engine reads crop their suffix K/V exactly. Reusing the original cache versus reading an independent copy produces identical values. The full reader trace observes distinct native/no-image mRoPE offsets, the original native cache reused for the replay, and exact restoration of its offset. Native/global/answer/speech, model/head weights, input tensors and fresh native reconstruction remain exact in both dtypes. The synthetic full visual margins change by up to `.722004`/`.656794`, demonstrating active plumbing only.
+
+## Alignment, evaluation and cost
+
+The complete reader fixture has three 8-second windows, one available speech query and two missing-speech windows: `V=3, B=4`. The actual model-level forward hook counts 23 smoke calls, matching `6+B+2V + 3+B`; native deployment is 7 calls and full deployment/paired collection is 16. All 96 values on the 4-fps grid equal their corresponding window maxima. Every speech value/availability flag and the global score/forced answer agree across arms.
+
+A separate 333-video synthetic manifest (215/118) exercises `prepare` and `report` without opening corpus files. Token-logit reconstruction, exact native baseline/window checks, expected config, complete paired coverage, window duration/bounds, missing speech and original global pass. Wrong lambda, a missing arm video, incorrect duration/window bounds/speech, and decoded NaN or changed global are rejected. Config/coverage and decoded finite/global rejection occur before GT loading; token/window alignment checks use only synthetic saved logits. The report calls canonical `within_video_macro` and bootstraps paired video differences, with synthetic counts 215/118. These counts are fixture coverage, not the real datasets' eligible within-video counts.
+
+Intercepted commands call `src.eval.evaluate_four_datasets` for raw scores and `experiments/20260926_twolevel/twolevel_r2.py` with the unchanged `--noleak --transform nscore --key calib --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2`. Arm inputs/outputs are distinct and reside under Reinforcer's `r1_main`/`r1_main_decoded` paths. No evaluator formula is copied. Launch scripts pass shell syntax checks; analysis runs prepare first, waits for both evaluator exit codes, and reports only after both succeed. The primary gates match the README and do not choose a cached component variant as the main arm.
+
+The declared cost `6+B+2V` charges native positive reads, both prefix/global/answer contexts, reference queries and steered queries. Smoke verification costs are separate. Timing includes captures, extra intermediate projections and direction transfers; native/base timing also includes capture and intermediate projections, as its config explicitly records. It is therefore an upper bound on the corresponding plain native baseline time, and a full/base timing ratio is relative to this instrumented baseline. Dual-cache peak memory and actual 8B GPU time must come from the pending smoke. Source-paper efficiency or toy-model score changes supply no substitute for those measurements or for the declared mechanism controls.

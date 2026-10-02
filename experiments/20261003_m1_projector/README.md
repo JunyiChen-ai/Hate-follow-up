@@ -106,3 +106,8 @@ were selected by scans on CHAIR; ours borrows Qwen-VL1.4 without a local scan,
 not a claim of parameter-free source design. The source newer-model section
 covers LLaVA-NeXT7B/13B, not Qwen3. Epsilon and BF16 make orthogonality approximate,
 and per-head orthogonality need not survive o_proj or imply semantic isolation.
+
+Independent proposal review PASS:
+`docs/reviews/20261003_m1_projector_proposal.md`. Primary target-task searches
+found no verified prior ACG use; this is a scoped search conclusion, not proof
+of absolute novelty. No four-category STOP. Implementation begins after PASS.
