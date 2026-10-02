@@ -238,3 +238,24 @@ margin/gradient equality and native-prefix invariance independently. Count the
 recomputed decoder layers and report their time; this is a memory optimization,
 not a new scoring mechanism or a reason to claim fewer computations.
 Repeat longest-prefix numeric smoke as `numeric_fp32_max_checkpoint`.
+
+
+### Current numerical execution contract (before full FP32 results)
+
+The mathematical shared-value-gate attribution, token mapping, scoring and
+quadrature acceptance rule are unchanged. The BF16 integration implementation
+is superseded by FP32 language queries with decoder activation recomputation;
+the model's learned parameter values and native prefix encoder remain unchanged.
+All 333 videos will restart in `r1_main_fp32`; the partial BF16 run is not reused.
+The original BF16 z_video remains the downstream global score, requiring an
+additional native global-query forward in FP32 attribution deployment.
+Forward count is therefore 1 prefix + 1 BF16 global + 2 FP32 endpoints + K
+FP32 quadrature queries; backward count 1+K, each with decoder recomputation.
+Standalone seconds include native global read and precision transfer/recomputation,
+excluding the separately counted ungated FP32 diagnostic reference. Smoke also
+counts an extra native restoration check. Actual paired wall time is reported.
+
+After maximum-prefix memory/equivalence passes, run `launch/run_lab2.sh main_fp32`
+and return all outputs. `launch/run_analysis.sh` evaluates only the new complete
+`r1_main_fp32`, writing `r1_main_fp32_decoded` and `r1_main_fp32_analysis`.
+A numerical failure still stops the complete experiment; no subset result.

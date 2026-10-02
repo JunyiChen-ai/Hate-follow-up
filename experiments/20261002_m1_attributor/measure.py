@@ -31,7 +31,9 @@ def read_video(j,attributor,row,segments,smoke=False):
     torch.cuda.synchronize();prefix_seconds=time.perf_counter()-started
     torch.cuda.reset_peak_memory_stats();tick=time.perf_counter()
     base_cache=cache_branch(cache)
-    zv=j.cached_margin(base_cache,b0,in_place=True);stance="Yes" if zv>0 else "No"
+    global_tick=time.perf_counter()
+    zv=j.cached_margin(base_cache,b0,in_place=True);torch.cuda.synchronize()
+    native_global_seconds=time.perf_counter()-global_tick;stance="Yes" if zv>0 else "No"
     a0,a0text=j.answer_ids(msgs,VIDEO_QUESTION,stance);j.extend_cache(base_cache,a0)
     history=[{"role":"user","content":[{"type":"text","text":VIDEO_QUESTION}]},j.turn("assistant",stance)]
     head=prefix+b0text+a0text;B=base_cache.get_seq_length();base=[{} for _ in wins];branches=0
@@ -56,6 +58,9 @@ def read_video(j,attributor,row,segments,smoke=False):
     torch.cuda.synchronize();attr_seconds=time.perf_counter()-tick
     numeric["actual_recomputed_layers"]=attributor.recomputed_layers-initial_recomputed
     numeric["deployed_recomputed_layers"]=numeric["deployed_backwards"]*len(attributor.layers) if attributor.checkpoint_query else 0
+    actual_integration_seconds=numeric["deployed_seconds"] if numeric.get("adaptive",False) else numeric["endpoint_seconds"]+sum(t["seconds"] for t in numeric["trials"])
+    precision_overhead_seconds=attr_seconds-reference_seconds-actual_integration_seconds
+    deployed_attribute_seconds=precision_overhead_seconds+numeric["deployed_seconds"]+(native_global_seconds if attributor.fp32 else 0.)
     peak=torch.cuda.max_memory_allocated()/2**30
     assert abs(numeric["f1"]-native_precision)<.01,(ds,vid,"endpoint/native",numeric["f1"],native_precision)
     if not getattr(attributor,"fp32",False):assert native_precision==zv
@@ -85,7 +90,7 @@ def read_video(j,attributor,row,segments,smoke=False):
     L=int(math.ceil(dur*FPS));index=np.clip(((np.arange(L)+.5)/FPS//8).astype(int),0,len(wins)-1)
     records={}
     for arm,values,calls,seconds in (("base",base,3+branches,base_seconds),
-                                   ("attribute",attributed,1+numeric["deployed_forwards"],attr_seconds)):
+                                   ("attribute",attributed,1+int(attributor.fp32)+numeric["deployed_forwards"],deployed_attribute_seconds)):
         z=np.array([max(w.values()) for w in values])
         records[arm]={"schema_version":1,"method":"m1_attributor_"+arm,"dataset":ds,"video_id":vid,
             "duration":dur,"native_rate":FPS,"score_curve":z[index].tolist(),"intervals":[],"error":None,
@@ -99,6 +104,8 @@ def read_video(j,attributor,row,segments,smoke=False):
         "restored_native_margin":restored_margin,"diagnostic_reference_forwards":1,"diagnostic_reference_seconds":reference_seconds,
         "diagnostic_restoration_forwards":int(restored_margin is not None),
         "cache_immutable":True if smoke else None,
+        "native_global_seconds":native_global_seconds,"precision_and_wrapper_seconds":precision_overhead_seconds,
+        "deployed_attribute_seconds":deployed_attribute_seconds,
         "prefix_seconds":prefix_seconds,"base_seconds":base_seconds,"attribute_seconds":attr_seconds,
         "peak_allocated_GiB":peak,"endpoint_windows":endpoint_windows,"density_windows":density}
     del cache
@@ -126,7 +133,7 @@ def main():
     import transformers
     config={**vars(a),"date":time.strftime("%Y-%m-%d"),"host":socket.gethostname(),"seed":0,"model":MODEL,
         "torch":torch.__version__,"transformers":transformers.__version__,"GT_in_reader":False,
-        "code":"experiments/20261002_m1_attributor/{measure,attributor}.py; src/window_token_regions.py; local sources 2026-10-02",
+        "code":"experiments/20261002_m1_attributor/{measure,attributor}.py; src/window_token_regions.py; local sources 2026-10-03, numerical repairs",
         "nodes":[16,32,64,128,256],"convergence_relative_l1":.05,"completeness_atol":.25,"completeness_rtol":.05,
         "video_question":VIDEO_QUESTION,"visual_question":yesno_question(0,1,0,8,"","visual"),
         "speech_question":yesno_question(0,1,0,8,"<text>","speech"),"frames":20,"window_seconds":8}
