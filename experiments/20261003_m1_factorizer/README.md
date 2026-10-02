@@ -1,8 +1,8 @@
 # M1 Factorizer: separate temporal evidence during prefix encoding
 
 Declared2026-10-03; sixth proposed candidate of the M1 autonomous iteration.
-Proposal PASS; implementation/CPU checks underway, no performance read. Attributor and Eraser
-are still running. Any supported result there takes priority over this candidate.
+Proposal/code PASS; five-video GPU checks passed; full three-arm run started
+on sc474399 at02:34NZ. Attributor is archived and Eraser remains running.
 Development host uoa-lab1/sc474397; compute host selected by live availability.
 
 ## Hypothesis and precise change

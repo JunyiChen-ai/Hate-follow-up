@@ -33,6 +33,10 @@ Running candidates:
   Complete primary includes native/explicit-causal/factor arms to separate kernel
   drift from the proposed computation. No performance read yet.
 
+- `experiments/20261003_m1_contraster/README.md`: seventh candidate, one-forward
+  language-depth contrastive readout. Proposal PASS; CPU plumbing passed and
+  independent code review PASS. No performance read or GPU run yet.
+
 Cumulative archives4 (three performance failures, one proposal novelty STOP).
 
 Initial candidate rationale:
