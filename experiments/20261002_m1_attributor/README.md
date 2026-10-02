@@ -224,3 +224,17 @@ No performance inspected. Next memory check chooses `HateMM/hate_video_114`
 solely because it has the largest existing prefix (5829 tokens) among all333
 in `runs/20261002_m1_grounder/r1_full/base/predictions.jsonl`; no GT used.
 Command: `launch/run_numeric_fp32.sh hate_video_114 numeric_fp32_max`.
+
+
+Largest-prefix FP32 smoke exceeded the 32GB card during gradient attention
+(`runs/20261002_m1_attributor/numeric_fp32_max/launch.out`). It also had a
+GPU cache snapshot used only for validation. Remove that validation allocation
+by snapshotting on CPU, and use decoder activation checkpointing for FP32
+queries. Prefix cache is read-only: a functional DynamicCache update returns
+prefix+query K/V without storing query values. This makes decoder recomputation
+idempotent; query positions still derive from the unchanged prefix length.
+The same gate remains active through backward/recomputation. Verify checkpointed
+margin/gradient equality and native-prefix invariance independently. Count the
+recomputed decoder layers and report their time; this is a memory optimization,
+not a new scoring mechanism or a reason to claim fewer computations.
+Repeat longest-prefix numeric smoke as `numeric_fp32_max_checkpoint`.

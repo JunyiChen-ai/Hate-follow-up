@@ -1,10 +1,24 @@
 """Signed integrated gradients on frozen prefix media-value paths; no labels."""
 import copy
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager,nullcontext
 import numpy as np
 import torch
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
+from transformers.cache_utils import DynamicCache
+from torch.utils.checkpoint import checkpoint
+
+
+class ReadOnlyDynamicCache(DynamicCache):
+    """A known suffix query reads this prefix; it never appends for future generation.
+
+    Functional update makes decoder checkpoint recomputation idempotent. The
+    prefix length remains P throughout; every update returns prefix+query K/V.
+    """
+    def update(self,key_states,value_states,layer_idx,*args,**kwargs):
+        layer=self.layers[layer_idx]
+        return (torch.cat((layer.keys,key_states),dim=-2),
+                torch.cat((layer.values,value_states),dim=-2))
 
 
 def cache_branch(cache):
@@ -46,11 +60,30 @@ class Attributor:
         self.active=None
         self.query_embeds=None
         self.readout=None
+        self.checkpoint_query=False
+        self.recomputing=False
+        self.recomputed_layers=0
+        self.layers=judge.model.model.language_model.layers
+        self.original_layer_forwards=[layer.forward for layer in self.layers]
+        for layer,original in zip(self.layers,self.original_layer_forwards):
+            def wrapped(*args,_original=original,**kwargs):
+                if self.active is not None and self.checkpoint_query and torch.is_grad_enabled():
+                    return checkpoint(_original,*args,use_reentrant=False,preserve_rng_state=False,
+                        context_fn=lambda:(nullcontext(),self.recompute_context()),**kwargs)
+                return _original(*args,**kwargs)
+            layer.forward=wrapped
         ALL_ATTENTION_FUNCTIONS.register("sdpa",self.forward)
 
     def close(self):
         assert self.active is None
         ALL_ATTENTION_FUNCTIONS.register("sdpa",self.original)
+        for layer,original in zip(self.layers,self.original_layer_forwards):layer.forward=original
+
+    @contextmanager
+    def recompute_context(self):
+        previous=self.recomputing;self.recomputing=True
+        try:yield
+        finally:self.recomputing=previous
 
     @contextmanager
     def query_precision(self,ids,fp32=False):
@@ -107,8 +140,9 @@ class Attributor:
         if self.active is not None and module in self.attentions:
             a=self.active;P=a["prefix_len"]
             assert value.shape[-2]==P+a["query_len"] and dropout==0
-            self.visited.append(module.layer_idx)
-            # fp32 gate product, BF16 attention like the native reader. No in-place edits.
+            if not self.recomputing:self.visited.append(module.layer_idx)
+            else:self.recomputed_layers+=1
+            # fp32 gate product, then the selected query-computation dtype. No in-place edits.
             gated=(value[:,:,:P,:].float()*a["gate"][None,None,:,None]).to(value.dtype)
             value=torch.cat((gated,value[:,:,P:,:]),dim=-2)
         return self.original(module,query,key,value,attention_mask,dropout=dropout,scaling=scaling,**kwargs)
@@ -126,6 +160,7 @@ class Attributor:
         """One global read with independent cache and one gate shared across layers."""
         j=self.judge;P=cache.get_seq_length();assert len(media)==P
         c=cache_branch(cache)
+        if self.checkpoint_query:c.__class__=ReadOnlyDynamicCache
         with torch.set_grad_enabled(gradient):
             leaf=torch.full((P,),float(alpha),device=j.device,dtype=torch.float32,requires_grad=gradient)
             gate=torch.where(torch.as_tensor(media,device=j.device),leaf,torch.ones_like(leaf))
@@ -133,11 +168,12 @@ class Attributor:
                 out=j.model.model(**self.query_kwargs(ids),past_key_values=c,use_cache=True)
                 h=out.last_hidden_state[0,-1:]
                 margin=self.tensor_margin(h)
-            grad=torch.autograd.grad(margin,leaf)[0] if gradient else None
+                # Recomputations must see the same gate while backward runs.
+                grad=torch.autograd.grad(margin,leaf)[0] if gradient else None
         z=float(margin.detach())
         vector=grad.detach().float().cpu().numpy().astype(float) if gradient else None
         assert np.isfinite(z) and (vector is None or np.isfinite(vector).all())
-        assert cache.get_seq_length()==P and c.get_seq_length()==P+len(ids)
+        assert cache.get_seq_length()==P and c.get_seq_length()==(P if self.checkpoint_query else P+len(ids))
         return z,vector
 
     def integrate(self,cache,ids,media,smoke=False):

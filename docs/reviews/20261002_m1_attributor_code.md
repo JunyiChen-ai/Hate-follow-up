@@ -222,3 +222,35 @@ precision conversion/offload/restore and the reference read; the inner
 FP32 must charge precision transfers and other retained work, not use the
 inner integration timer alone. This supplement leaves the declared numerical
 acceptance test unchanged and does not infer reliability from precision alone.
+
+### Returned FP32 failure-case smoke, 2026-10-03
+
+Independently parsed
+`runs/20261002_m1_attributor/numeric_fp32/checks.jsonl`; saved the relevant
+checks in `runs/20261002_m1_attributor/independent_review/fp32_smoke_integrity.json`.
+No GT or performance result was read. **The GPU diagnostic passes the declared
+numeric and state-restoration checks for `non_hate_video_82`.**
+
+- First acceptance is 64 nodes: completeness residual `.080378` versus
+  tolerance `.311140`, and relative L1 versus 32 nodes `.040184`.
+- The 256-node residual is `.009476`, with 128-to-256 relative token L1
+  `.001766`. Accepted 64 versus 256 has token L1 `.019454`; max/mean window
+  readout changes are `.142690` / `.099144`. All four lower grids have window
+  Spearman exactly 1 against 256. This supports numerical repair on the failure
+  case; it is not a corpus-wide convergence guarantee.
+- Unit-gate and ungated FP32 margins are identical. FP32 minus BF16 margin is
+  `-.0127373`. The restored BF16 margin exactly equals its original value
+  `.6348915100`, and the original prefix cache is immutable.
+- Observed peak allocated memory is **30.0668 GiB**. Complete smoke attribution
+  wall time is **48.9413 seconds**, including every grid and precision switching;
+  this must not be presented as a first-acceptance deployment time. This run
+  predates the separate restoration-forward metadata field; its logged
+  restored-margin check establishes that one extra verification forward was
+  actually performed.
+
+The frozen-parameter/device restoration now has deployed GPU confirmation for
+this case. Before a unified FP32 full restart, the planned longest-prefix
+memory check remains necessary. An OOM or numeric failure must stop the run;
+the earlier 25 BF16 results remain separate and unevaluated. Smoke memory
+includes additional prefix snapshots used for verification, which should be
+distinguished from deployed memory when interpreting any capacity failure.
