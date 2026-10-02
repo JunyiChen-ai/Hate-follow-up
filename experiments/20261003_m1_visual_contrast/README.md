@@ -2,8 +2,8 @@
 
 Declared2026-10-03, eighth candidate. R1 full333 and four cached controls complete:
 qualifying numerical gain, but failed promotion and the two-corpus matching mechanism.
-R2 local-image intervention implemented; independent supplemental review PASS,
-awaiting five-video GPU plumbing before full evaluation. Development host sc474397;
+R2 local-image intervention implemented; independent supplemental review and
+five-video GPU plumbing PASS; proceeding to full evaluation. Development host sc474397;
 R1 ran on sc474399, R2 target chosen after live inspection. All development-selected.
 
 ## Mechanism and source
@@ -300,3 +300,31 @@ scores alone do not establish the visual semantics; images were not inspected.
 No inference rule or constants changed following this export. The separate
 `one_window_diagnostic.json` keeps the single-window contribution visible without
 excluding it from canonical evaluation.
+
+Visual follow-up read only the first/middle/last stored frames of the two HCS
+cases (f00/f10/f19; paths in case_evidence.json). bit_8I3rasu4mSiz shows groups
+of people/street scenes in the first two inspected frames and a cartoon snake
+graphic in the last; the ending visual transition is concrete, but these three
+frames alone do not establish hateful intent. bit_s0Hrb2M5Yth8 shows a staged
+classroom scene with an adult and a legs/shoes close-up; do not infer protected
+target attacks from that. These remain illustrative high-gain cases under the
+existing broad HCS protocol, not standalone evidence for hate understanding.
+No new scoring decision follows this qualitative inspection.
+
+## R2 GPU plumbing passed, full launch
+
+Host sc474399, same deployment environment as R1. Evidence returned locally:
+`runs/20261003_m1_visual_contrast/r2_smoke/plumbing_summary.json`. Five native
+globals and292 branches exactly reproduce the old cache; original global,
+speech, full native restoration, pixel identity/determinism, selected-only
+patch masks,4fps and declared call counts all pass.82 frame-free windows are
+exact identities. Largest prefix5829 tokens, peak17.8235GiB. No GT/performance
+evaluation in this check. Smoke wall62.7s includes restoration work.
+
+First2 videos/corpus imply standalone full cost821.2s HMM and1271.4s HCS,
+total34.88GPUmin (small-sample estimate, stress case excluded from extrapolation).
+Stress hate_video_114 standalone20.82s. Compare R1 actual total15.22min; this
+locality test is substantially more expensive. No constants changed. Full333
+command `bash experiments/20261003_m1_visual_contrast/launch/run_lab.sh main window r2`
+on the same currently idle lab2 after sync/preflight. Home STRAY entries and
+lab2 untracked results/ are pre-existing unrelated work; no task output there.

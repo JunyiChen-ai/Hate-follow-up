@@ -16,7 +16,7 @@ Contraster完整结果也无有效提升：within+.0001/+.0002，13939分支全�
 within+.01961/+.01066，但HMM PR−.01410，保留继续、尚未晋级。
 来源 `runs/20261003_m1_visual_contrast/r1_main_decoded/contrast/metrics.json`；
 四项缓存对照完成：HCS支持窗口匹配，HMM打乱不降，尚不能作双语料定位机制。
-R2已声明并实现只扰动所问窗口的帧，独立新路径检查PASS，准备五视频GPU检查；入口 `experiments/20261003_m1_visual_contrast/README.md`。
+R2只扰动所问窗口的帧，独立检查和五视频GPU检查PASS，准备完整333评测；入口 `experiments/20261003_m1_visual_contrast/README.md`。
 第九候选Allocator因目标视频任务已有SHAP使用在方案审查STOP，未实施/未跑GPU。
 
 **五个候选小结（规则11，不超过10行）**：
