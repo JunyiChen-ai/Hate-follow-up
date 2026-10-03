@@ -449,3 +449,14 @@ source PTS and legacy exclusions: a legal candidate requires acquisition, while
 zero legal candidates require an explicit exhaustion record. Independent tests
 cover32 control-flow fixtures, complete333 synthetic prepare and the fixed5 smoke
 set, including negative checks. No real R3 scores were read before this review.
+
+R3 actual smoke completed on sc474399 (lab2), Slurm61,2026-10-03. All five native
+globals and292 native branches exactly match the frozen reader; all98 windows
+already expanded by R1 have identical selected entries, round margins and final
+records. Post-acquisition native replays are exact. Source:
+`runs/20261003_m1_explorer/r3_smoke/plumbing_summary.json`. Full smoke48.9s,
+peak17.9454GiB. Extrapolation from the original two manifest videos per corpus
+(excluding the added stress video): HMM491.90s, HCS1018.17s, total25.17min;
+this replaces the preliminary35–45min estimate but remains a small-sample cost
+estimate. No GT or performance metric was read for this plumbing run. Proceed to
+the declared complete333 R3 collection on the same Slurm node/environment.
