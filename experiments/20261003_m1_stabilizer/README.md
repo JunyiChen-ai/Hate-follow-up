@@ -161,11 +161,21 @@ The32G host-memory request fits the node's56000MB configured memory. This change
 only execution, not scoring/constants. No system policy or GPU reset is performed.
 
 Intended host sc474399 (uoa-lab2), selected by live machine check while sc448960
-runs Highlighter. Run after independent code PASS and synced source:
-`bash experiments/20261003_m1_stabilizer/launch/run_lab.sh smoke` then `main`,
-using detached setsid/nohup with output in each run directory. Return full outputs
+runs Highlighter. Run after independent code PASS and synced source using the Slurm launcher above;
+run_lab.sh is its internal GPU entry, not an ordinary SSH launch command. Return full outputs
 to the local repository before updating STATUS, then
 `bash experiments/20261003_m1_stabilizer/launch/run_analysis.sh`.
 Smoke validation (noGT): `analyze.py --stage prepare --smoke`.
 Each full arm calls the canonical evaluator and unchanged r6; report is
 `runs/20261003_m1_stabilizer/r1_main_analysis/summary.json`.
+
+
+Real5video smoke2026-10-03 PASS on sc474399 under Slurm job51. GPU access inside
+allocation works; NVIDIA5090 initially34MiB/32607MiB, model/scoring successful.
+Returned locally before noGT prepare:333-base historical reference comparison
+matches all5globals/292native branches, zero-phase/native restoration and all
+aligned outputs pass. Artifact `runs/20261003_m1_stabilizer/r1_smoke/plumbing_summary.json`.
+Smoke wall37.2s, peak17.824GiB. First2/corpus extrapolate paired352.26/481.21s
+(total13.89min), deployed stable154.44/240.95s. This small warmup-sensitive sample
+is only a scheduling estimate; replace all costs with the full run. No GT/performance
+read and no scoring constants changed. Full333 next via the same Slurm script.

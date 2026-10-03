@@ -27,7 +27,7 @@
 ## 环境
 - 主环境 conda `HateVideo`（`environment_HateVideo.yml`）。OMSL-v6 推理只需 numpy / scipy / scikit-learn，CPU 一分钟内跑完；VLM / ASR / ImageBind 抽取需要 torch 2.7 + cu128。ImageBind 从 `third_party/lavad/libs/ImageBind` 导入，权重在 `data/assets/imagebind/`。
 - 原始视频：实验室机器在 `~/data/<数据集>/`，校区在 `/data/jehc223/<数据集>/`。仓库内 `data/` 只放派生缓存。
-- 长任务必须与 SSH 会话解耦：`setsid nohup` 后台运行，日志与 PID 写进该 run 的输出目录，随时可 `tail -f` 查进度。
+- 长任务必须与 SSH 会话解耦：GPU 任务提交 Slurm，纯 CPU 任务可 `setsid nohup`；日志与 PID 写进该 run 的输出目录。
 
 ## 长任务监控
 - 一律用 agent 运行环境自带的后台/等待机制：等待单个事件用后台 shell 加 `until ...; do sleep 60; done`（本机或经 `ssh <别名>`）；环境提供事件监控工具时用它。会话内的等待任务可能被环境回收，长时间等待改用一个 `setsid nohup` 起的独立监督脚本写日志，会话定期读日志。
@@ -40,10 +40,10 @@
 
 | 别名（`~/.ssh/config`） | 主机 | GPU | 运行方式 | 登录 | 仓库路径 |
 |---|---|---|---|---|---|
-| 本机 `uoa-lab1` | sc474397 | 1 × RTX 5090 32G | 直接跑 | 本机 | `~/Hate-follow-up` |
-| `uoa-lab2` | sc474399 | 1 × 5090 | 直接跑 | key | `~/Hate-follow-up`（运行副本） |
-| `uoa-lab3` | sc474398 | 1 × 5090 | 直接跑 | key | `~/Hate-follow-up`（首次用时 clone） |
-| `lab-server` | sc448960，账号 `junyi` | 1 × 5090，与他人共用 | 直接跑 | key | `~/Hate-follow-up`（首次用时 clone） |
+| 本机 `uoa-lab1` | sc474397 | 1 × RTX 5090 32G | **Slurm** | 本机 | `~/Hate-follow-up` |
+| `uoa-lab2` | sc474399 | 1 × 5090 | **Slurm** | key | `~/Hate-follow-up`（运行副本） |
+| `uoa-lab3` | sc474398 | 1 × 5090 | **Slurm** | key | `~/Hate-follow-up`（首次用时 clone） |
+| `lab-server` | sc448960，账号 `junyi` | 1 × 5090，与他人共用 | **Slurm** | key | `~/Hate-follow-up`（首次用时 clone） |
 | `uoa-campus1` | foscsmlprd01 | 8 × A100 80G | **Slurm** | token | `/data/jehc223/Hate-follow-up` |
 | `uoa-campus2` | foscsmlprd02 | 7 × A100 80G | **Slurm** | token | `/data/jehc223/Hate-follow-up` |
 | `uoa-campus3` | foscsmlprd03 | 7 × H200 143G | **Slurm** | token | `/data/jehc223/Hate-follow-up` |
@@ -59,6 +59,13 @@ lab2 和 lab3 常被 Retrieval-hate 的搜索占用；机器是否空闲每次�
 2. 各机代码一致性用 `scripts/check_machines.sh`：打印每台的 commit、脏文件数、未跟踪数、GPU 占用、磁盘和配额、越界文件。开跑前、汇报前各跑一次；commit 不一致或出现 STRAY 就先处理。
 3. 首次在某台机器运行前：实验室机 `git clone https://github.com/JunyiChen-ai/Hate-follow-up.git ~/Hate-follow-up`；校区 `git clone … /data/jehc223/Hate-follow-up`。conda 按 `environment_HateVideo.yml` 建 `HateVideo`（campus1 已有；campus2 需先重装 miniconda 到 `/data/jehc223/miniconda3`；campus3 需新建）。安装日志记 `runs/_setup_<机器>/`。
 
+### 实验室 GPU 启动方式（2026-10-03 更新）
+- **SSH 仍用于登录、同步代码和提交任务；GPU 推理/抽取必须在 Slurm 作业内运行**，不能在普通 SSH 或本机终端直接启动 GPU 程序，也不能用 `setsid nohup` 绕过调度。
+- 实验室集群为 `qian_pilot`。显式指定对应分区：lab1 `local-sc474397`、lab2 `local-sc474399`、lab3 `local-sc474398`、lab-server `local-sc448960`；不使用默认 `pilot` 分区。
+- 登录目标机器，在该机器的仓库中 `git pull` 后提交已入 git 的 `experiments/<id>/launch/*.sbatch`。例：`ssh uoa-lab2 'cd ~/Hate-follow-up && sbatch experiments/20261003_m1_stabilizer/launch/lab.sbatch smoke'`。提交前建立日志目录；脚本写明分区、`--gres=gpu:1`、CPU/内存和仓库内输出路径。lab1–3 配置内存为 56000 MB，不能照搬校区的 `--mem=64G`（当前实验用 4 CPU / 32G）。
+- 用 `sinfo` / `squeue` 查空闲节点与作业；在获分配的作业内运行 `nvidia-smi` 和 CUDA 检查。普通会话受 `user.slice` 的 `50-slurm-gpu-only.conf` 限制，可能报 `NVML: Unknown Error` / `/dev/nvidiactl: EPERM`，不能据此判定 GPU 故障。
+- 作业日志/PID仍写 `runs/`；监控同时检查作业退出、`Traceback` / `FAILED` 和完成标记。不修改系统设备策略、不 reset GPU；纯 CPU 长任务仍可 `setsid nohup`。校区 Slurm 规则及并发预算见下节。
+
 ### 校区 Slurm 规则
 - 只用 `sbatch`，登录节点不跑 python。sbatch 文件进 git：`experiments/<id>/launch/campus_<corpus>.sbatch`，头部固定 `--gres=gpu:1 --cpus-per-task=8 --mem=64G --output=runs/<exp_id>/slurm_%j.out`，不写 `--time`，不写 `--dependency`。提交：`cd /data/jehc223/Hate-follow-up && sbatch experiments/<id>/launch/campus_<corpus>.sbatch`。
 - sbatch 里 `source /data/jehc223/miniconda3/bin/activate HateVideo`，`cd` 到仓库根，`export HF_HOME=/data/jehc223/Hate-follow-up/.cache/hf`（机器上已有的权重用 symlink 接进 `.cache/`，不复制）。所有输出只写仓库内 `runs/` 和 `data/`。
@@ -69,7 +76,7 @@ lab2 和 lab3 常被 Retrieval-hate 的搜索占用；机器是否空闲每次�
 
 ### 派发规则
 - **一个实验（一个语料的完整一轮）整体在一台机器上跑，不切片。** 任何需要整个 train / test 分布的步骤都在一台机器上看到全部数据。并行只发生在实验之间：HateMM 和 HateClipSeg 可以在两台机器上各跑各的，两个互不依赖的实验也可以。
-- 选机：选当时最空、最快的一台。先看实验室 5090（`nvidia-smi` 占用 < 50% 且空闲显存 ≥ 16G，不排队，立刻起）；实验室没空或模型显存 > 32G 时用校区，校区里按空卡数和排队长度选最空的一台，H200（campus3）留给大模型。校区 2 个 job 的预算用完就等。
+- 选机：选当时最空、最快的一台。先用 `sinfo` / `squeue` 看实验室 5090 的空闲节点，提交对应 local 分区；获分配后在作业内确认显存充足；实验室没空或模型显存 > 32G 时用校区，校区里按空卡数和排队长度选最空的一台，H200（campus3）留给大模型。校区 2 个 job 的预算用完就等。
 - 提交前查磁盘：校区 `df /data` 剩余 < 50G 或 `quota -v` 带星号就不提交，先清。
 
 ### 校区磁盘、原始视频、特征
@@ -85,7 +92,7 @@ lab2 和 lab3 常被 Retrieval-hate 的搜索占用；机器是否空闲每次�
 
 ### 文件落位（所有机器一致）
 - **本项目文件只能在本项目仓库下**：实验室 `~/Hate-follow-up`，校区 `/data/jehc223/Hate-follow-up`。不写别的项目目录，不写 `~` 或 `/data/jehc223` 根，不用 `--out_dir ~/xxx`。
-- 启动脚本进 git：`experiments/<id>/launch/`，各机器用同一份（`git pull` 后运行）。实验室启动方式：`cd ~/Hate-follow-up && setsid nohup bash experiments/<id>/launch/run_<corpus>.sh > runs/<exp_id>/launch_<corpus>.out 2>&1 &`。
+- 启动脚本进 git：`experiments/<id>/launch/`，各机器用同一份（`git pull` 后运行）。实验室 GPU 启动方式：在目标机器仓库中 `sbatch experiments/<id>/launch/<job>.sbatch`；仅纯 CPU 任务使用 `setsid nohup`。
 - 第二份 checkout 只允许命名 `~/Hate-follow-up-<分支名>`，输出仍写主仓库 `runs/`、`data/`；分支合入后立即删除。
 
 ## 子 agent 调用
