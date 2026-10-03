@@ -1,3 +1,5 @@
+Archived2026-10-03: no final main metric improved by .01; candidate16 rejected under rule9.
+
 # M1 Stabilizer: head-dependent temporal RoPE phases during visual encoding
 
 Input clarification before any real-video run:20 is the original sampling budget;
@@ -156,7 +158,7 @@ Execution update2026-10-03: lab ordinary SSH sessions now inherit systemd
 user.slice DevicePolicy=closed from50-slurm-gpu-only.conf; nvidiactl open returns
 EPERM. Driver/module versions match. The lab cluster qian_pilot exposes per-node
 local partitions, with sc474399 currently idle. Use the legitimate Slurm allocation
-via `sbatch experiments/20261003_m1_stabilizer/launch/lab.sbatch smoke` then `main`.
+via `sbatch archive/experiments/20261003_m1_stabilizer/launch/lab.sbatch smoke` then `main`.
 The32G host-memory request fits the node's56000MB configured memory. This changes
 only execution, not scoring/constants. No system policy or GPU reset is performed.
 
@@ -164,7 +166,7 @@ Intended host sc474399 (uoa-lab2), selected by live machine check while sc448960
 runs Highlighter. Run after independent code PASS and synced source using the Slurm launcher above;
 run_lab.sh is its internal GPU entry, not an ordinary SSH launch command. Return full outputs
 to the local repository before updating STATUS, then
-`bash experiments/20261003_m1_stabilizer/launch/run_analysis.sh`.
+`bash archive/experiments/20261003_m1_stabilizer/launch/run_analysis.sh`.
 Smoke validation (noGT): `analyze.py --stage prepare --smoke`.
 Each full arm calls the canonical evaluator and unchanged r6; report is
 `runs/20261003_m1_stabilizer/r1_main_analysis/summary.json`.
@@ -179,3 +181,38 @@ Smoke wall37.2s, peak17.824GiB. First2/corpus extrapolate paired352.26/481.21s
 (total13.89min), deployed stable154.44/240.95s. This small warmup-sensitive sample
 is only a scheduling estimate; replace all costs with the full run. No GT/performance
 read and no scoring constants changed. Full333 next via the same Slurm script.
+
+
+## Full R1 result and disposition (2026-10-03)
+
+Host sc474399, Slurm job52,333videos completed and returned locally before evaluation.
+Native333globals and13939branch margins reproduce base_gridA exactly. Canonical
+raw evaluation and unchanged r6 fitting completed independently for base/stable.
+Source `runs/20261003_m1_stabilizer/r1_main_decoded/stable/metrics.json`:
+
+| Corpus | pooled ROC | pooled PR | within | within delta | eligible videos |
+|---|---:|---:|---:|---:|---:|
+| HateMM | .897011322 | .694135461 | .751389227 | +.000607183 | 84 |
+| HateClipSeg | .715720087 | .670317118 | .638518772 | +.001169659 | 99 |
+
+Neither corpus has any final metric improvement >=.01. Archive16; no phase sweep,
+jitter or component controls launched because the declared main performance gate
+failed. No robustness or localization mechanism claim. Current r6 is unchanged.
+Paired video bootstrap95%CI for final within delta: HMM[-.001921,.003255],
+HCS[-.000850,.003212],2000draws seed0. Native r6 reproduces current metrics exactly.
+Raw max within .686836/.609316 vs .680011/.610130; visual within deltas
++.004392/-.002000 and speech +.006556/+.001705 (speech eligible82/97).
+Global hard answer changed on1HMM video, none in HCS. HMM raw gains do not provide
+a dual-corpus final improvement; no parameter revision is permitted by rule9.
+
+Cost `runs/20261003_m1_stabilizer/r1_main_analysis/cost.json`: stable deployment
+305.97s HMM/248.00s HCS, native304.23/247.04s; total9.23min vs9.19min,1.005x.
+Full paired wall1108.1s, including both independent encodings/readers and output
+handling. Peak17.825/17.547GiB. Native and stable each3+B forwards, no new inputs.
+
+Development-selected evidence read: both arms' predictions and canonical metrics
+under `runs/20261003_m1_stabilizer/r1_main{,_decoded}/`, original
+`data/gt_4fps/{HateMM,HateClipSeg}.npz`, analysis summary/per_video/cost and
+branch_diagnostics.json. These labels were read only by evaluation/diagnostics,
+not by scoring, fitting or constant selection. The resulting decision is archive,
+not a revised phase or a selected subgroup. No paper/Overleaf update.

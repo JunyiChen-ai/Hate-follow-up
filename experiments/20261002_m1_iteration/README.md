@@ -65,7 +65,7 @@ Running candidates:
   Native reads exact, matched eager near baseline, no component controls after
   failed main gate.
 
-Cumulative archives15 (thirteen performance/mechanism failures, two proposal novelty STOPs).
+Cumulative archives16 (fourteen performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
@@ -164,12 +164,12 @@ read as text only; audio not listened to, no semantic or transcription-accuracy
 claim. This weakens treating coarse timestamps as the established next mechanism;
 no timing candidate selected or implemented.
 
-Candidate16 proposal: `experiments/20261003_m1_stabilizer/README.md`, PAS-derived
+Candidate16 proposal: `archive/experiments/20261003_m1_stabilizer/README.md`, PAS-derived
 head-dependent native temporal RoPE phase during image prefix encoding. Paper/code
 read; multi-image Qwen3 pairing/axis adaptations and source theorem limitations
-explicit. Independent proposal/code review PASS, implemented and CPU checked; no real-video
-performance yet. Lab execution now uses Slurm allocation. Each arm uses its own coherent
-global assessment and ordinary isolated window queries.
+explicit. Independent proposal/code review PASS; full333 Slurm run and canonical
+evaluation complete. Final within gains only+.000607/+.001170, no final metric+.01;
+archived16. Each arm used its own global and both window branches, not a fixed verdict.
 
 Adjacent unselected sources inspected during Highlighter collection: VideoTree
 arXiv2405.19209v1 sections3.1–3.3 (visual clustering, relevance-guided hierarchical
@@ -187,7 +187,8 @@ Candidate17: `experiments/20261003_m1_preserver/README.md`. MAD-RAG-derived
 preservation of reference visual question attention outputs in the normal full
 context read. Paper/official Qwen code and discrepancies inspected; two-cache/full
 suffix adaptation declared, cost and controls fixed before performance. Independent
-proposal review requested; implementation follows PASS. No data/encoder change.
+proposal/code review PASS; real5video smoke reproduces native and alpha0 exactly.
+Full333 launched on sc448960 Slurm job55 after source synchronization. No data/encoder change.
 
 2026-10-03 resumed autonomous work on user instruction, explicitly no Overleaf.
 Lab nvidia-smi failure was traced to /dev/nvidiactl EPERM from user.slice
