@@ -51,7 +51,7 @@ within仅+.003885/+.000548，无主指标+.01，归档为第15项。来源 `runs
 within仅+.000607/+.001170，无主指标+.01，归档为第16项。来源 `runs/20261003_m1_stabilizer/r1_main_decoded/stable/metrics.json`。
 第十七候选Preserver完整333完成：HateMM .895610/.689651/.752658，HCS .715189/.672282/.629401；
 无主指标+.01，原始visual/max排序两语料下降，归档为第17项。来源 `runs/20261003_m1_preserver/r1_main_decoded/preserve/metrics.json`。
-第十八候选Explorer的按需局部新帧获取方案已过独立审查并实施；36层FP32/BF16、18/20原图+2/4新图位置/缓存检查通过，独立代码审查PASS，准备既定5视频真实GPU smoke。入口 `experiments/20261003_m1_explorer/README.md`。
+第十八候选Explorer的按需局部新帧获取方案已过独立审查并实施；36层FP32/BF16、18/20原图+2/4新图位置/缓存检查通过，独立代码审查及5视频实机smoke PASS（292原生分支exact，峰值17.95GiB），准备完整333评测。入口 `experiments/20261003_m1_explorer/README.md`。
 运行环境更新：实验室四机启用了Slurm-only GPU访问策略，普通SSH会话访问nvidiactl被EPERM拒绝；使用qian_pilot的local-主机名分区。当前任务不更新Overleaf。
 
 **累计十五个归档小结（规则11，不超过10行）**：

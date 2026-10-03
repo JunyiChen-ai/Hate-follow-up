@@ -229,3 +229,16 @@ oracle, cached/fresh appended-image comparisons, exact native replay, actual
 source PTS decoding, full synthetic333 evaluator pipeline, and entropy/support/
 candidate-exhaustion branches passed. Ready for the fixed5video real8B smoke;
 this is implementation evidence, not performance or mechanism evidence.
+
+Real8B smoke PASS on sc474399, Slurm56,2026-10-03. All5global margins and292
+native branch margins exactly match historical base_gridA, every post-acquisition
+native replay exact; actual source PTS/window/source-index checks pass. Returned
+artifacts: `runs/20261003_m1_explorer/r1_smoke/plumbing_summary.json` and full
+traces/images. Collection39.5s including native replay diagnostics; maximum
+17.9454GiB. Acquisition reads per video4/5/9/33/59. First2manifest-video mean
+extrapolation (excluding the added long-prefix stress video) estimates Explorer
+369.1s HMM +733.3s HCS =18.37min, versus instrumented native188.2s+252.2s.
+This tiny-input estimate is uncertain and replaces the earlier30–70min guess;
+plan20–40min, report actual full-run timing. No GT or smoke accuracy was read.
+Constants and production code unchanged. Proceed to full333 paired collection
+using `sbatch experiments/20261003_m1_explorer/launch/lab.sbatch main` on lab2.
