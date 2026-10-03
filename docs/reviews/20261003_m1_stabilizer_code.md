@@ -1,0 +1,43 @@
+# M1 Stabilizer — independent code review
+
+Date: 2026-10-03. Reviewer: `/root/m1_grounder_code_review`, independent of the implementer. Scope: rule 6, observation-affecting correctness of `experiments/20261003_m1_stabilizer/{README.md,stabilizer.py,measure.py,analyze.py,selfcheck.py,launch/}` and the shared model/evaluation interfaces. Includes the repair accommodating an actual nonempty cache of fewer than 20 frames. Proposal review was already PASS. No production source was edited, 8B/GPU execution or benchmark evaluation started, Stabilizer GT/performance read, or hash used. This report was newly created; no frozen review was overwritten.
+
+## Decision: PASS
+
+No required production correction was found. The declared prefix phase operator reaches the model's attention computation, is disabled for later suffix reads, and each arm independently uses its own global margin, verdict and both modalities. Zero phase restores native computation exactly in the tested paths. Full paired coverage and own-arm decoded-global validation are correctly connected to the canonical evaluators. This permits deployment checks when hardware is available; it does not establish 8B parity, memory/cost or effectiveness.
+
+Independent executable evidence:
+
+- `runs/20261003_m1_stabilizer/independent_review/check_stabilizer.py`
+- `runs/20261003_m1_stabilizer/independent_review/check_stabilizer.json`
+- `runs/20261003_m1_stabilizer/independent_review/check_stabilizer.out`
+
+Command: `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES='' /home/jehc223/miniconda3/envs/HateVideo/bin/python runs/20261003_m1_stabilizer/independent_review/check_stabilizer.py`.
+
+## Actual attention geometry and intervention
+
+The actual Qwen3VLModel CPU fixture has 36 language layers, **32 query heads, eight KV heads, head_dim 128, and mRoPE sections [24, 20, 20]**. It uses a smaller residual width of 64 to bound CPU parameter memory; Q/K/V and output projections retain those requested attention dimensions. A three-layer vision encoder supplies DeepStack outputs [0, 1]. Twenty actual processed synthetic images produce 100 image-token positions in 20 noncontiguous blocks. FP32 and BF16 are both executed under torch 2.7.1 / transformers 4.57.6. This is an actual multimodal model path, not an 8B run. Target transformers 5.15.1 runtime checks remain separate; the implementer's updated selfcheck supplies `mm_token_type_ids` when required by that forward signature. Production processor encoding is not replaced by the synthetic fixture.
+
+- An independent complex-number oracle checks split-half rotation `(j, j+64)`, non-target coordinates, original-Q immutability, zero phases and empty-row identity. The operator uses native frequencies, not frequencies reconstructed from a shortened temporal dimension. The FP32 squared-pair norm error is recorded; BF16 casting is not claimed to preserve norms exactly.
+- At each of the 36 actual prefix attention layers, the test changes only the T positions by `.5` in the real model rotary function and discovers the changed coordinates from its outputs. They are exactly `{0,3,...,57,60,61,62,63}` and their second-half partners: 24 temporal pairs. Native rotary relative phases reproduce the production update within float/cast roundoff. This checks axis assignment, rotation direction and frequency use against the real rotary operation, beyond comparing two copies of an assumed mask.
+- An audit wrapper snapshots Q/K/V/mask at the native dispatch input and checks the tensors actually delivered to original SDPA. Only image rows, odd query heads and the 48 temporal coordinates can differ directly. Even heads, text rows and spatial Q coordinates are bitwise untouched. K, V and the mask are bitwise unchanged at every interception. Image support follows all actual expanded image IDs across noncontiguous blocks.
+- Prefix traversal visits all 36 layers. The first layer's cached K/V are native-exact; later-layer K/V do change, consistent with propagation through earlier intervened attention and DeepStack. This does not contradict the direct-intervention boundary and must not be described as globally unchanged prefix representations.
+- Global/window suffix dispatches have the intervention disabled and preserve their incoming Q/K/V/mask. Query suffix crop restores the corresponding arm's cache. The zero-phase prefix reproduces all native K/V and zero diagnostics exactly; a subsequent unwrapped native encoding also restores exactly. mRoPE offsets, input tensors, model/head parameters and the attention registry remain correct.
+
+## Own-arm reads and variable frame count
+
+The production `read_video` runs directly in both dtypes on 20-image and 18-image inputs. The latter uses 90 image-token positions, with no copied or synthesized extra frames. Both use three windows and one available speech query (`V=3, B=4`). Actual outer-forward hooks count 21 calls with smoke, matching `9+3B`; paired main collection is `6+2B=14` and each deployed arm is `3+B=7`. Zero-phase smoke restores global, verdict, visual and speech reads exactly for both frame counts. Each output has the expected 96-value 4-fps curve, exactly reconstructed from its window maxima.
+
+Actual-model tracing verifies that native and stable each construct a fresh prefix, compute their own global margin, choose the answer from its sign, append that answer to the branch history and independently execute every visual/available-speech query. A separate deliberately adversarial plumbing fixture forces native global `+1` and stable global `-1`; answers are `Yes/No/Yes` for native/stable/zero, the corresponding histories differ, and the speech values are independently `+5/-5`. This fixture tests routing only, not model accuracy. It catches the old-candidate failure mode of silently retaining native global, native answer or native speech.
+
+The metadata repair is appropriate: requested `k20` is a maximum and the existing cache provenance allows fewer extracted frames. Reader assertions accept `0 < len(frames) <= 20` and require processor image counts to match the actual set. Prepare obtains the same shared `frame_paths`, checks exact saved timestamps and actual frame/count lengths, and retains visual-token total checks. No data is changed.
+
+## Full coverage, evaluation and costs
+
+A complete 333-video synthetic manifest exercises prepare/report, including an 18-frame HateClipSeg record. Config and temporal-coordinate metadata, native baseline equality, paired coverage, finite geometry, frame timestamps, own-answer sign, speech availability, window extents and exact 4-fps curve reconstruction pass. Opposite synthetic globals are preserved separately in decoded arms; report correctly counts flips. Replacing stable's decoded global with native's is rejected before GT loading. Wrong rotary pairing, a missing arm record, NaN decoded scores, incorrect duration, mismatched verdict and a curve/window inconsistency are also rejected. All GT arrays and metrics used for schema tests are synthetic, and metric fixtures test passing/below-threshold gates without benchmark evaluation.
+
+Per-video within values call canonical `within_video_macro`; paired bootstrap samples videos. Synthetic counts 215/118 test coverage and the aggregation unit, not real-dataset within-video eligibility. Report fields use `stable`/`stable_raw` without copied prior-candidate names. It compares candidate against native/current and retains `mechanism_supported=False` despite a synthetic numerical pass.
+
+Intercepted subprocess commands correctly invoke `src.eval.evaluate_four_datasets` and unchanged `experiments/20260926_twolevel/twolevel_r2.py` with `--noleak --transform nscore --key calib --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2`. Decoded global validation compares each arm to that arm's raw record. Native/stable outputs and metrics are isolated under Stabilizer's run directories. Both shell launchers pass syntax checks; prepare runs before evaluation, every child exit status is checked, and report runs only after successful evaluations.
+
+Timing begins before each arm's prefix construction and includes fresh input encoding, phase indexing/cloning/casts, diagnostics and its own global/answer and dual reads. Paired cost sums both complete arms; smoke restoration is separate. Same deployed outer-forward counts do not eliminate the extra prefix rotation cost or establish identical memory use. Actual 8B hardware timings/peak allocation remain required. Nothing in these integrity checks establishes temporal robustness, real-time alignment or localization gains; those require the declared complete evaluation and conditional controls.

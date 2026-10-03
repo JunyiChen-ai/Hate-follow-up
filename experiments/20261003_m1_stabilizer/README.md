@@ -1,5 +1,12 @@
 # M1 Stabilizer: head-dependent temporal RoPE phases during visual encoding
 
+Input clarification before any real-video run:20 is the original sampling budget;
+the unchanged native cache has20frames for332videos and18 for HCS
+`bit_AxrVklzh9Cyf`, as permitted in `data/frames_k20/PROVENANCE.md`. Use all existing
+native frames, do not synthesize/re-extract missing frames; record actual counts.
+The reader/validator count assertions now use that actual list. This was found
+in Highlighter's noGT full prepare; no performance was read to make the correction.
+
 Candidate16, declared2026-10-03 while Highlighter full run is being launched,
 before its performance is read. Independent source mechanism, not combined with
 any prior intervention. Frozen Qwen3-VL-8B, original20image frame input, ASR/policy/
@@ -139,6 +146,19 @@ rotation oracles (32heads/128coordinates), actual36layer multimodal Qwen encodin
 with20noncontiguousimages, layer0KV identity, laterKV change, zero-phase/native
 restoration and suffix crop. `runs/20261003_m1_stabilizer/selfcheck/numerics.json`.
 Independent code review requested; no real-video result yet.
+
+Independent code review PASS, including the actual32/8-head,128-dimensional,
+36-layer FP32/BF16 reader, native rotary tensor oracle,18/20frames and deliberately
+opposite arm-global plumbing: `docs/reviews/20261003_m1_stabilizer_code.md`.
+No real-video run/performance yet.
+
+Execution update2026-10-03: lab ordinary SSH sessions now inherit systemd
+user.slice DevicePolicy=closed from50-slurm-gpu-only.conf; nvidiactl open returns
+EPERM. Driver/module versions match. The lab cluster qian_pilot exposes per-node
+local partitions, with sc474399 currently idle. Use the legitimate Slurm allocation
+via `sbatch experiments/20261003_m1_stabilizer/launch/lab.sbatch smoke` then `main`.
+The32G host-memory request fits the node's56000MB configured memory. This changes
+only execution, not scoring/constants. No system policy or GPU reset is performed.
 
 Intended host sc474399 (uoa-lab2), selected by live machine check while sc448960
 runs Highlighter. Run after independent code PASS and synced source:

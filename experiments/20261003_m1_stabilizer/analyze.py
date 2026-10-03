@@ -12,7 +12,7 @@ from scipy.special import logsumexp
 ROOT=next(p for p in Path(__file__).resolve().parents if (p/'CLAUDE.md').is_file())
 sys.path.insert(0,str(ROOT))
 from src.eval.evaluate import within_video_macro
-from src.video_inputs import fixed_windows
+from src.video_inputs import fixed_windows,frame_paths
 DATASETS=('HateMM','HateClipSeg');ARMS=('base','stable')
 METRICS=('frame_ROC_AUC','frame_PR_AUC','within_video_macro_ROC_AUC')
 
@@ -64,7 +64,9 @@ def prepare(root,out,smoke=False):
         with np.load(root/'tokens'/k[0]/(k[1]+'.npz')) as t:
             assert len(t['visual'])==len(t['input_ids'])==c['prefix_tokens'] and t['visual'].sum()==c['visual_tokens']
             assert np.array_equal(np.flatnonzero(t['visual']),phase['image_positions'])
-            assert len(t['frame_times'])==len(t['image_counts'])==20 and t['image_counts'].sum()==c['visual_tokens']
+            frames=frame_paths(k[0],k[1],20,'k20')
+            assert 0<len(frames)<=20 and np.array_equal(t['frame_times'],[f[0] for f in frames])
+            assert len(t['frame_times'])==len(t['image_counts'])==len(frames) and t['image_counts'].sum()==c['visual_tokens']
             for a in ARMS:
                 r=raw[a][k];z=r['extra']['z_video'];assert np.isfinite(z)
                 assert r['extra']['stance']==('Yes' if z>0 else 'No') and r['extra']['prefix_tokens']==c['prefix_tokens']

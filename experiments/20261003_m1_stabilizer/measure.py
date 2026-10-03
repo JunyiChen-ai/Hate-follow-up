@@ -54,7 +54,7 @@ def read_arm(j,engine,frames,segments,wins,texts,phase=None):
 
 def read_video(j,engine,row,segments,smoke=False):
     ds,vid,duration=row['dataset'],row['video_id'],float(row['duration'])
-    frames=frame_paths(ds,vid,20,'k20');assert len(frames)==20
+    frames=frame_paths(ds,vid,20,'k20');assert 0<len(frames)<=20
     wins=fixed_windows(duration,8);texts=[window_text(segments,a,b) for a,b in wins]
     V=len(wins);B=V+sum(bool(t.strip()) for t in texts)
     initial=j.forward_calls;torch.cuda.reset_peak_memory_stats()
@@ -62,7 +62,7 @@ def read_video(j,engine,row,segments,smoke=False):
     stable,enc2=read_arm(j,engine,frames,segments,wins,texts,'stable')
     assert all(torch.equal(enc[k],enc2[k]) for k in enc if torch.is_tensor(enc[k]))
     visual=(enc['input_ids'][0]==j.image_token_id).numpy()
-    assert visual.sum()==sum(j.img_tokens) and len(j.img_tokens)==20
+    assert visual.sum()==sum(j.img_tokens) and len(j.img_tokens)==len(frames)
     verify={};diagnostic_seconds=0.
     if smoke:
         zero,enc0=read_arm(j,engine,frames,segments,wins,texts,'zero')
