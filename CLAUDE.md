@@ -60,7 +60,7 @@ lab2 和 lab3 常被 Retrieval-hate 的搜索占用；机器是否空闲每次�
 ### 实验室 GPU 启动方式（2026-10-03 更新）
 - **SSH 仍用于登录、同步代码和提交任务；GPU 推理/抽取必须在 Slurm 作业内运行**，不能在普通 SSH 或本机终端直接启动 GPU 程序，也不能用 `setsid nohup` 绕过调度。
 - 实验室集群为 `qian_pilot`。显式指定对应分区：lab1 `local-sc474397`、lab2 `local-sc474399`、lab3 `local-sc474398`、lab-server `local-sc448960`；不使用默认 `pilot` 分区。
-- 登录目标机器，在该机器的仓库中 `git pull` 后提交已入 git 的 `experiments/<id>/launch/*.sbatch`。例：`ssh lab-server 'cd ~/Hate-follow-up && sbatch experiments/20261003_m1_preserver/launch/lab.sbatch main'`。提交前建立日志目录；脚本写明分区、`--gres=gpu:1`、CPU/内存和仓库内输出路径。lab1–3 配置内存为 56000 MB，不能照搬校区的 `--mem=64G`（当前实验用 4 CPU / 32G）。
+- 登录目标机器，在该机器的仓库中 `git pull` 后提交已入 git 的 `experiments/<id>/launch/*.sbatch`。例如先 `ssh uoa-lab2`，进入仓库后执行 `sbatch experiments/<id>/launch/lab.sbatch`（将 `<id>` 替换为实验目录，脚本须对应目标机器的分区）。提交前建立日志目录；脚本写明分区、`--gres=gpu:1`、CPU/内存和仓库内输出路径。lab1–3 配置内存为 56000 MB，不能照搬校区的 `--mem=64G`（当前实验用 4 CPU / 32G）。
 - 用 `sinfo` / `squeue` 查空闲节点与作业；在获分配的作业内运行 `nvidia-smi` 和 CUDA 检查。普通会话受 `user.slice` 的 `50-slurm-gpu-only.conf` 限制，可能报 `NVML: Unknown Error` / `/dev/nvidiactl: EPERM`，不能据此判定 GPU 故障。
 - 作业日志/PID仍写 `runs/`；监控同时检查作业退出、`Traceback` / `FAILED` 和完成标记。不修改系统设备策略、不 reset GPU；纯 CPU 长任务仍可 `setsid nohup`。校区 Slurm 规则及并发预算见下节。
 

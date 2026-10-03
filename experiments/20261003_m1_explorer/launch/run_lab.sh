@@ -11,4 +11,4 @@ case "$(hostname -s)" in
   sc448960) py=/home/junyi/miniconda3/envs/HateVLM/bin/python ;;
   *) echo 'Use a reviewed target environment' >&2; exit 2 ;;
 esac
-exec "$py" -u experiments/20261003_m1_preserver/measure.py "${args[@]}"
+exec "$py" -u experiments/20261003_m1_explorer/measure.py "${args[@]}"

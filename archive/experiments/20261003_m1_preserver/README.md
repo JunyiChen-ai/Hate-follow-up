@@ -1,3 +1,5 @@
+Archived2026-10-03: no final main metric improved by .01; raw visual ordering worsened on both corpora.
+
 # M1 Preserver: preserve visual question representations during context integration
 
 Candidate17, declared2026-10-03 before implementation or performance. Frozen
@@ -158,3 +160,42 @@ The first2videos/corpus extrapolate deployed Preserver332.1s/417.7s
 These are small-sample scheduling estimates, replacing the initial estimate;
 full-run measured costs will be reported. No constants or input rules changed
 after smoke. Full333 runs on the same sc448960 Slurm local partition.
+
+
+## Full R1 result and disposition (2026-10-03)
+
+Host sc448960, Slurm job55,333videos completed and returned locally before CPU
+analysis. Canonical base reproduces current r6; all333native globals and13939
+branches reproduce historical base_gridA exactly. Source:
+`runs/20261003_m1_preserver/r1_main_decoded/preserve/metrics.json`.
+
+| Corpus | pooled ROC | pooled PR | within | within delta | eligible videos |
+|---|---:|---:|---:|---:|---:|
+| HateMM | .895609545 | .689650711 | .752657821 | +.001875778 | 84 |
+| HateClipSeg | .715188724 | .672281752 | .629401070 | -.007948044 | 99 |
+
+No final main metric improved by.01; archive17 under rule9, no mixture-weight
+revision or component controls. All main differences fall within the declared
+noise bounds, including HMM PR-.004584, but this supplies no positive mechanism.
+Paired final within95%CI HMM[-.016519,.019880],HCS[-.030946,.016416],2000draws seed0.
+Raw visual within falls .613908 to .547162 and .546450 to .512565. Raw max within
+falls .680011 to .655015 and .610130 to .574752; paired95%CI for those raw-max
+changes [-.045666,-.010172]/[-.054857,-.017753]. Speech and global are unchanged.
+Thus preserving this reference attention output did not preserve useful visual
+localization in this adaptation; the small final HMM shift is not new evidence.
+No theorem about general visual preservation follows from the source or activation
+mix. This negative result does not by itself identify which layer/context component
+causes the loss. Analysis: `runs/20261003_m1_preserver/r1_main_analysis/` summary,
+branch_diagnostics, per_video, cost and table files.
+
+Measured deployed cost513.90s HMM/420.58s HCS, total15.57min; native329.00/269.21s,
+9.97min,1.562x. Preserver4+B+V vs native3+B calls; both prefix encodes and all
+reference visual queries included. Full paired wall1181.4s; peak17.834/17.700GiB.
+No source frame extraction cost was added; all native caches were reused.
+
+Development-selected files read: full paired reader/decoded predictions and
+canonical metrics, original `data/gt_4fps/{HateMM,HateClipSeg}.npz`, summary and
+branch diagnostics above. Labels only enter completed-score evaluation/analysis,
+not scoring, fitting or constants. Decision: archive rather than tune alpha/layers.
+Explorer was independently proposed/reviewed and its first primitives implemented
+before these results were read. Current r6/paper/Overleaf remain unchanged.

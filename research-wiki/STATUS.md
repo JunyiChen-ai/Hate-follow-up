@@ -8,7 +8,7 @@
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档16个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档17个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -49,8 +49,9 @@ within仅+.000069/+.000534，归档为第14项；来源 `runs/20261003_m1_projec
 within仅+.003885/+.000548，无主指标+.01，归档为第15项。来源 `runs/20261003_m1_highlighter/r1_main_decoded/highlight/metrics.json`。
 第十六候选Stabilizer完整333完成：HateMM .897011/.694135/.751389，HCS .715720/.670317/.638519；
 within仅+.000607/+.001170，无主指标+.01，归档为第16项。来源 `runs/20261003_m1_stabilizer/r1_main_decoded/stable/metrics.json`。
-第十七候选Preserver（无转录视觉问题表示注入完整上下文）独立方案/代码审查PASS；sc448960 Slurm作业54的5视频smoke通过，292分支和5global精确复现，alpha0/缓存恢复通过；结果已回传，完整333在sc448960 Slurm作业55运行。
-第十八候选Explorer已声明按不确定性/帧支持情况补充局部新帧的方案，独立方案审查中，未实施；入口 `experiments/20261003_m1_explorer/README.md`。
+第十七候选Preserver完整333完成：HateMM .895610/.689651/.752658，HCS .715189/.672282/.629401；
+无主指标+.01，原始visual/max排序两语料下降，归档为第17项。来源 `runs/20261003_m1_preserver/r1_main_decoded/preserve/metrics.json`。
+第十八候选Explorer的按需局部新帧获取方案已过独立审查并实施；36层FP32/BF16、18/20原图+2/4新图位置/缓存检查通过，独立代码审查中，未跑真实GPU评分。入口 `experiments/20261003_m1_explorer/README.md`。
 运行环境更新：实验室四机启用了Slurm-only GPU访问策略，普通SSH会话访问nvidiactl被EPERM拒绝；使用qian_pilot的local-主机名分区。当前任务不更新Overleaf。
 
 **累计十五个归档小结（规则11，不超过10行）**：

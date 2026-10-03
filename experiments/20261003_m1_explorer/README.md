@@ -29,6 +29,12 @@ reselection. Here the target is a fixed localization window, so we directly acqu
 new frames inside that window. We do not claim CLIP reselection or an exact source
 implementation. Binary Yes/No entropy is a declared adaptation, not source entropy.
 The explicit no-frame rule follows our structural input diagnosis, not a GT threshold.
+Source appendixB uses deep layers19–21, whereas this proposal uses all36layers;
+this is another explicit adaptation. Proposal review identified MATCH (TCSVT2026,
+author source https://jianlang.org/papers/MATCH.pdf) as a close target-task neighbor
+using CLIP-based positive/negative cue retrieval from a uniform frame pool.
+Do not claim the first evidence/frame retrieval for hateful videos; the tested
+question is whether this specific bounded feedback acquisition improves localization.
 
 ## Exact R1, fixed for both corpora before scoring
 
@@ -71,6 +77,9 @@ The explicit no-frame rule follows our structural input diagnosis, not a GT thre
    update distances and pick the next; earliest actual source-frame time breaks
    ties. The prior A is fixed within an acquisition batch and refreshed from the
    next query read. No raw pixel alteration or synthetic frames.
+   Here candidate t is the mapped actual PTS, never the requested grid center.
+   Equidistant nearest-frame ties use the earlier time; exactly coincident
+   observed times use the mean of their frame priors. These rules are deterministic.
 6. For each acquisition read, start from the exact same native verdict-conditioned
    cache, append all acquired local frames with their actual timestamps and the
    EXACT original visual question. The appended images are new observations in
@@ -98,8 +107,10 @@ extra MLLM forward. Each expanded read additionally runs the vision encoder on
 image encodes,2Vextra language forwards, no full-prefix re-encoding. Pre-RoPE
 capture costs are charged to Explorer; native timings exclude capture or state
 a matched instrumented baseline explicitly. Reuse original image/ASR/weights,
-but decode actual new video frames, charge decoding and store new cache under
-`data/m1_explorer_frames/` with PROVENANCE. Runs/output/logs stay under runs/.
+but decode actual new video frames and charge decoding. Online scoring reads raw
+video/cache only; save acquired-image witnesses and metadata in the run output.
+Any reusable derived cache is promoted separately into `data/m1_explorer_frames/`
+with PROVENANCE; scoring never writes into data/. Runs/output/logs stay under runs/.
 Initial estimate30–70GPUmin for333videos on5090, depending on acquisition rate
 and video decoding; replace with fixed5video smoke before the full run. Peak
 extra4small images/window should fit32G; verify actual longest-prefix smoke.
@@ -126,11 +137,25 @@ single-corpus gain allows at most3predeclared revisions under rule9.
 If main qualifies, execute controls on both full corpora:
 - Zero acquisitions: exact native reader restoration.
 - Uniform candidate acquisition at the SAME per-video/window round counts as the
-  main trace. This is a diagnostic with matched compute, not a deployable method.
+  main trace. This is a diagnostic with matched calls/frame counts, not a deployable method.
   It tests the attention-guided choice independently of new-pixel budget; the
   whole adaptive selection cannot be claimed merely because adding images helps.
+  Precisely: with final main count c, choose targets a+(j+.5)*(b-a)/c for
+  j=0..c-1. In this order select the nearest remaining eligible candidate by
+  actual PTS, earlier PTS breaks ties. Replay the main per-round added counts
+  using this list, no entropy re-gating. Only the final round margin is reported.
+  This matches calls/frame budgets, not measured elapsed time. For all methods,
+  use the same native image-processor settings. Verify that new frames of each
+  video share the same processed grid/token count before interpreting this
+  as a token-matched comparison; otherwise report the mismatch and do not make
+  a compute-controlled mechanism claim until the discrepancy is resolved.
+- Distance-only acquisition with A(t)=1, otherwise identical candidates, greedy
+  distance updates and main replayed round counts. This isolates the attention
+  prior within the declared selector; uniform comparison alone does not.
 - Always acquire4 uniformly spaced new local frames, same cached-context interface:
   compares the full acquisition mechanism to a simple fixed-input baseline.
+  Use the same quantile rule with c=min(4,number_of_eligible_candidates), and
+  read after first2 (or fewer), then after the remaining images if any.
 - Timestamp-mismatched local frames, matched final count: within each video,
   group windows by their actual final acquired-frame count c>0. For each group
   with k>=2, sort by window index and rotate donor image lists by ceil(k/2),
@@ -150,8 +175,34 @@ support, acquisition counts, paired video bootstrap2000seed0, gain/loss content
 cases, and per-corpus full cost. No causal claim from entropy or attention alone.
 If matched uniform/fixed4 explains the gains, the acquisition mechanism is not
 established; additional inputs alone are not a novel M1 under rule4.
+The entropy gate is initially a bounded-compute implementation choice, not a
+separate novelty claim: replayed counts do not independently validate its decisions.
 
 Prior evidence read: frame-support diagnostic; native scoring code; earlier16
 archived results including Stabilizer; primary EcoFrame and previous unselected
 VideoTree/VTimeCoT methods. Preserver smoke only, no Preserver GT/performance yet.
 No new GT was read for this proposal; any later error analysis is logged explicitly.
+
+
+Independent proposal review PASS2026-10-03:
+`docs/reviews/20261003_m1_explorer_proposal.md`. Implementation started after
+that review, before Preserver performance was read. `explorer.py` implements
+read-only all-layer Q/K capture, bounded deterministic frame selection, actual
+PyAV PTS indexing and run-local image witnesses. `measure.py` reuses the native
+context and explicitly recomputes complete multimodal positions before slicing
+the appended block; it asserts cached prefix positions are unchanged. Native
+replay after each expanded window is checked in smoke. CPU numeric and independent
+code review are required before any real GPU scoring. Timing uses a matched
+instrumented native baseline and explicitly says so; it cannot imply total
+attention extraction overhead is free. Source indexing/decode is included in
+Explorer timing even when the same raw input is reused across windows.
+
+CPU selfcheck PASS: actual36-layer Qwen,32/8heads,128head dimensions,18/20native
+images and2/4appended images, FP32/BF16. Captured all36pre-RoPE layers; cached
+prefix positions and all KV entries restore exactly. Cached-vs-fresh last-state
+max absolute difference <1e-6FP32 and <=.027344BF16 under predeclared .00002/.06
+allclose tolerances. `runs/20261003_m1_explorer/selfcheck/numerics.json`. Actual
+raw HMM1 input-only probe also decoded2845PTS entries, mapped28legal candidates
+in the first8s and retrieved the selected source frames139/4 by exact PTS;
+`runs/20261003_m1_explorer/input_selfcheck/`. No GT/scoring used for this probe.
+Independent code review requested; real5video GPU smoke not launched yet.

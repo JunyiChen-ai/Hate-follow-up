@@ -65,7 +65,7 @@ Running candidates:
   Native reads exact, matched eager near baseline, no component controls after
   failed main gate.
 
-Cumulative archives16 (fourteen performance/mechanism failures, two proposal novelty STOPs).
+Cumulative archives17 (fifteen performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
@@ -183,12 +183,13 @@ our no-ensemble/no-postprocessing and new-video-cost constraints; any adaptation
 needs a separately declared complete mechanism and independent review.
 
 
-Candidate17: `experiments/20261003_m1_preserver/README.md`. MAD-RAG-derived
+Candidate17: `archive/experiments/20261003_m1_preserver/README.md`. MAD-RAG-derived
 preservation of reference visual question attention outputs in the normal full
 context read. Paper/official Qwen code and discrepancies inspected; two-cache/full
 suffix adaptation declared, cost and controls fixed before performance. Independent
 proposal/code review PASS; real5video smoke reproduces native and alpha0 exactly.
-Full333 launched on sc448960 Slurm job55 after source synchronization. No data/encoder change.
+Full333 completed on sc448960 Slurm job55 and canonically evaluated. No final
+metric+.01; raw visual/max ordering worsened in both. Archived17; no alpha tuning.
 
 2026-10-03 resumed autonomous work on user instruction, explicitly no Overleaf.
 Lab nvidia-smi failure was traced to /dev/nvidiactl EPERM from user.slice
@@ -248,7 +249,7 @@ Candidate18 proposal: `experiments/20261003_m1_explorer/README.md`, bounded
 uncertainty/support-aware acquisition of actual local video frames, with a
 pre-RoPE attention-times-distance proposal and cached native context. Self-designed
 adaptation, not full EcoFrame reproduction; source/data/cost/control differences
-explicit. Independent proposal review in progress; no implementation yet.
+explicit. Independent proposal review PASS; implementation started, no real-video run yet.
 Input audit read old frame provenance/prep script without GT: old JPEG timestamps
 are nominal seek times and may hide a .5s retry. New proposal distinguishes nominal
 support from verified new-frame PTS, preserves the native baseline and records
