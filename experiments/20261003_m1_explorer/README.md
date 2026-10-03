@@ -206,3 +206,26 @@ raw HMM1 input-only probe also decoded2845PTS entries, mapped28legal candidates
 in the first8s and retrieved the selected source frames139/4 by exact PTS;
 `runs/20261003_m1_explorer/input_selfcheck/`. No GT/scoring used for this probe.
 Independent code review requested; real5video GPU smoke not launched yet.
+
+Target uoa-lab2 HateVLM/transformers5.15.1 CPU selfcheck also PASS, returned as
+`runs/20261003_m1_explorer/selfcheck_lab2/numerics.json`. The raw-input audit for
+HCS bit_AxrVklzh9Cyf (the18-frame native cache) finds24931decoded frames with
+last actual PTS207.75s versus manifest226.439002s; source report
+`runs/20261003_m1_explorer/input_selfcheck_18/report.json`. Later windows have
+no legal new visual candidates and therefore return the native read with an
+explicit candidate_exhausted trace. No frame is borrowed from another interval,
+no original input/GT/duration is modified. This is a noGT media-coverage fact.
+
+The target input availability audit found all333 raw files and decoded the first
+frame of every file (215 HateMM,118 HateClipSeg); no missing/failed entries.
+Codecs:330h264,2libdav1d,1vp9. This is a first-frame availability check, not a
+complete-media integrity claim. Source
+`runs/20261003_m1_explorer/input_availability/report.json`, host sc474399,
+returned locally before documentation; no GT was read.
+
+Independent rule6 code review PASS2026-10-03:
+`docs/reviews/20261003_m1_explorer_code.md`. An independent pre-RoPE numeric
+oracle, cached/fresh appended-image comparisons, exact native replay, actual
+source PTS decoding, full synthetic333 evaluator pipeline, and entropy/support/
+candidate-exhaustion branches passed. Ready for the fixed5video real8B smoke;
+this is implementation evidence, not performance or mechanism evidence.
