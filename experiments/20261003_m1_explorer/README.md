@@ -264,9 +264,18 @@ re-gating; the fixed4 arm instead always acquires up to4legal frames. Mismatch
 uses original receiver timestamp slots and rotated donor content. All controls
 retain exact native speech/global, read original visual once, and return only
 the last expanded margin. Source decoding/image encodes are charged. Independent
-review requested for this new path; no control GPU run is authorized by a positive
-result yet because R1 full performance has not been read. It will only run if the
-main gate warrants the declared mechanism controls. Smoke uses r1_smoke traces;
+review requested for this new path; no control GPU run has been launched. R1 full performance has not been read;
+controls will run only if the main gate warrants the declared mechanism tests. Smoke uses r1_smoke traces;
 formal controls use complete r1_main traces. `prepare` reports actual token
 matching separately from image/call counts; no token-matched claim if it fails.
 No new proposal constants or mechanisms are introduced.
+
+Conditional controls independent code review PASS2026-10-03:
+`docs/reviews/20261003_m1_explorer_controls_code.md`. No control reader correction
+was needed. Two post-scoring report gaps were fixed before any control GPU run:
+matched/unmatched window and video-group counts/effects are now separate, and
+all decoded rate/duration/length/finite/global checks occur before GT access.
+The reviewer verified these with synthetic333 cases, including18frames and an
+unmatched video, plus actual36-layer FP32/BF16 tests for all four control readers.
+This establishes implementation validity only. Full R1 is still collecting;
+no real main/control accuracy has yet been read for this candidate.
