@@ -255,3 +255,18 @@ root; no GT. Do not infer selection quality from selection differences.
 full evaluation, with nominal support/acquisition masks, visual/raw/final branches,
 native-global correctness and largest final gains/losses. These are descriptive
 subgroups, not causal controls; no selected cases/constants feed back into R1.
+
+Conditional control implementation is in `controls.py`, with
+`analyze_controls.py` and `launch/control_lab.sbatch`. It does not modify the
+running R1 reader or select new constants. The original four declared controls
+rebuild native context independently and replay main counts without entropy
+re-gating; the fixed4 arm instead always acquires up to4legal frames. Mismatch
+uses original receiver timestamp slots and rotated donor content. All controls
+retain exact native speech/global, read original visual once, and return only
+the last expanded margin. Source decoding/image encodes are charged. Independent
+review requested for this new path; no control GPU run is authorized by a positive
+result yet because R1 full performance has not been read. It will only run if the
+main gate warrants the declared mechanism controls. Smoke uses r1_smoke traces;
+formal controls use complete r1_main traces. `prepare` reports actual token
+matching separately from image/call counts; no token-matched claim if it fails.
+No new proposal constants or mechanisms are introduced.
