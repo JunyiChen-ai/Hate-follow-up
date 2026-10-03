@@ -251,9 +251,11 @@ pre-RoPE attention-times-distance proposal and cached native context. Self-desig
 adaptation, not full EcoFrame reproduction; source/data/cost/control differences
 explicit. Independent proposal/code review PASS; real5video smoke and full333 R1 complete.
 HCS improves in all three main metrics, but HMM misses the dual-corpus goal and its
-raw ordering falls. First revision removes forced acquisition for initially
-confident windows, declared before cached R2 scoring; independent replay review
-requested. Numbers and GT/case-read log are in the candidate README/STATUS.
+raw ordering falls. R2 entropy-only cache replay passed independent review but
+still misses the HateMM goal. R3, the second revision, always acquires the first
+two eligible local frames and retains the .3 entropy gate for two more. Its narrow
+code review passed before the fixed5 GPU smoke; full333 scoring remains pending.
+Numbers and GT/case-read log are in the candidate README/STATUS.
 Input audit read old frame provenance/prep script without GT: old JPEG timestamps
 are nominal seek times and may hide a .5s retry. New proposal distinguishes nominal
 support from verified new-frame PTS, preserves the native baseline and records

@@ -77,7 +77,7 @@ def read_images(j,engine,cache,native,question,entries,source):
 
 
 @torch.no_grad()
-def read_video(j,engine,row,segments,out,smoke=False,support_override=True):
+def read_video(j,engine,row,segments,out,smoke=False,support_override=True,always_acquire_first=False):
     ds,vid,duration=row['dataset'],row['video_id'],float(row['duration'])
     frames=frame_paths(ds,vid,20,'k20');assert 0<len(frames)<=20
     wins=fixed_windows(duration,8);texts=[window_text(segments,a,b) for a,b in wins]
@@ -117,8 +117,8 @@ def read_video(j,engine,row,segments,out,smoke=False,support_override=True):
             'rounds':[],'initial_prior':prior.tolist()}
         acquired=[];observed=[ft for ft,_ in frames]
         for round_index in range(2):
-            threshold=(.1,.3)[round_index]
-            if (round_index>0 or support>0 or not support_override) and binary_entropy(z)<threshold:break
+            threshold=(None if always_acquire_first else .1) if round_index==0 else .3
+            if threshold is not None and (round_index>0 or support>0 or not support_override) and binary_entropy(z)<threshold:break
             t0=tick()
             if source is None:
                 ts=tick();source=FrameSource(row,frames,out/'acquired_frames'/ds/vid);source_seconds+=tick()-ts
@@ -175,7 +175,7 @@ def read_video(j,engine,row,segments,out,smoke=False,support_override=True):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2'),default='r1');a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
     out=ROOT/'runs/20261003_m1_explorer'/(a.version+('_smoke' if a.smoke else '_main'));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
@@ -192,8 +192,8 @@ def main():
     config={'date':time.strftime('%Y-%m-%d'),'host':socket.gethostname(),'smoke':a.smoke,'seed':0,'model':MODEL,
         'torch':torch.__version__,'transformers':transformers.__version__,'GT_in_reader':False,
         'code':'experiments/20261003_m1_explorer/{measure,explorer}.py + src/{video_inputs,mllm_judge}.py; sources2026-10-03',
-        'entropy_thresholds':[.1,.3],'frames_per_round':2,'round_limit':2,'attention_exponent':.5,
-        'revision':a.version,'support_override':a.version=='r1',
+        'entropy_thresholds':[None if a.version=='r3' else .1,.3],'frames_per_round':2,'round_limit':2,'attention_exponent':.5,
+        'revision':a.version,'support_override':a.version=='r1','always_acquire_first':a.version=='r3',
         'layers':list(range(36)),'scope':'pre-RoPE normalized Q/K, image-only softmax',
         'frames':20,'window_seconds':8,'fps':FPS,'video_question':VIDEO_QUESTION,
         'global_and_answer':'original native','speech':'original native',
@@ -209,7 +209,7 @@ def main():
     for k,row in enumerate(rows):
         key=row['dataset'],row['video_id']
         if key in seen:continue
-        recs,check,details=read_video(j,engine,row,asr[key[0]].get(key[1],[]),out,a.smoke,support_override=a.version=='r1')
+        recs,check,details=read_video(j,engine,row,asr[key[0]].get(key[1],[]),out,a.smoke,support_override=a.version=='r1',always_acquire_first=a.version=='r3')
         dest=out/'details'/key[0];dest.mkdir(parents=True,exist_ok=True)
         (dest/(key[1]+'.json')).write_text(json.dumps(details)+'\n')
         for arm,r in recs.items():handles[arm].write(json.dumps(r)+'\n');handles[arm].flush()

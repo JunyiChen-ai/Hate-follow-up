@@ -378,3 +378,74 @@ Slurm invocation, if cached performance qualifies:
 `sbatch experiments/20261003_m1_explorer/launch/lab.sbatch smoke r2`, then `main r2`.
 CPU fresh-run analysis uses `launch/run_analysis.sh r2`. No real R2 output exists
 yet; all method constants were declared above before implementing this path.
+
+## R2 cache result and R3 declaration (2026-10-03)
+
+R2 replay and minimal reader code independently PASS:
+`docs/reviews/20261003_m1_explorer_r2_replay_code.md`. Complete333 CPU replay and
+canonical evaluation finished, with zero new model calls and no invented timing.
+Source `runs/20261003_m1_explorer/r2_cache_decoded/explore/metrics.json`:
+HMM ROC/PR/within .8979400346061241/.6901514840919151/.7523310911070054;
+HCS .7303704475729428/.6830040006451092/.6539606639444846.
+Within gains +.0015490 / +.0166116; HMM PR -.0040831, HCS ROC/PR
++.0135456/+.0119319. Paired within CIs [-.026309,.027596] / [-.001340,.036979].
+Still not promoted; no fresh R2 GPU confirmation or controls, since dual-corpus
+gate fails. Removed715/784forced windows and769/876acquisition reads. HMM raw
+visual remains -.015528 below native, so removing the exception is insufficient.
+
+Additional post-scoring decomposition reads the same canonical GT, raw R1/R2
+predictions and R1 traces, and calls canonical within on four positive/negative
+frame subsets according to acquisition status. The weighted contributions sum
+exactly to full visual within delta. Source
+`runs/20261003_m1_explorer/r1_main_analysis/read_format_diagnostic.json`.
+HMM R1 loss -.018807 comprises -.005873 from comparisons across the two read
+formats and -.012934 within acquired frames. R2 loss -.015528 comprises -.008690
+across formats and -.006838 within acquired frames. HCS has positive contributions
+in both categories. Acquisition status is selected/confounded: this is a rank
+error decomposition, NOT proof of a causal input-format effect. It explicitly
+rules out blaming all R1 degradation on mixing read formats.
+
+R3 is the second revision, declared here before R3 scoring: ALWAYS acquire the
+first two eligible local frames for every window, regardless of initial entropy
+or nominal frame support. The original native visual read still supplies its
+pre-RoPE frame prior. After that first read, preserve the original .3-nat stop;
+otherwise acquire up to two more using the refreshed prior. Everything else
+(candidate4fps/actualPTS, A^.5 times distance, earliest ties, cached full context,
+original prompts/global/speech, final margin and r6) stays identical. Physical
+candidate exhaustion still returns the last available read and is reported.
+The initial .1 threshold is not used by R3, not scanned or retuned. Same rule on
+both corpora. This is a bounded feedback reader with a common minimum local
+input, not a new unrelated method or per-corpus routing.
+
+Hypothesis: eliminating the mixture of native-only and expanded local input may
+recover some cross-format ranking loss; it cannot by itself guarantee fixing
+within-acquired errors, static hateful visuals or annotation disagreement.
+The experiment may therefore fail. R1/R2 already-expanded windows must reproduce
+exactly, while previously skipped windows need new reads. Full R3 will still be
+run as one complete333 paired collection on lab2, not spliced into a claimed fresh
+result. Initial estimate35–45GPUmin (native3+B plus at least one acquisition per
+window and an optional second; max6V image encodes); replace with the same five
+video smoke before full run. Reuse the model/original inputs, charge all new reads
+and decoding. No threshold scan, added model, label fitting, score averaging or
+changed downstream inference. This consumes revision2 of3; one revision remains.
+
+If R3 passes the complete dual-corpus gate, the same predeclared control family is
+still required using R3's own actual counts/traces. Uniform and distance-only
+would test its selector; mismatched images would test time/content association;
+fixed4 uniform would test whether a simple constant input budget explains its
+gain. No entropy contribution will be claimed from matched-count replay alone.
+
+R3 implementation adds only the explicit `always_acquire_first` flag and version
+paths; configuration records `[null,.3]` entropy thresholds so the unused initial
+.1 is not misrepresented as active. Existing R1/R2 defaults stay intact. R3 noGT
+prepare additionally checks all R1-already-expanded windows: selected source
+entries, each-round margins and final window values must reproduce exactly.
+Fresh previously skipped windows are the only new reads. Independent narrow code
+review requested before the original five-video GPU smoke and full333 run.
+
+R3 narrow review PASS: `docs/reviews/20261003_m1_explorer_r3_code.md`.
+The prepare audit now also reconstructs eligible first-round candidates from saved
+source PTS and legacy exclusions: a legal candidate requires acquisition, while
+zero legal candidates require an explicit exhaustion record. Independent tests
+cover32 control-flow fixtures, complete333 synthetic prepare and the fixed5 smoke
+set, including negative checks. No real R3 scores were read before this review.

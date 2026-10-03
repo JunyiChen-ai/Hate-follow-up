@@ -33,7 +33,8 @@ def prepare(root,out,smoke=False,version='r1'):
     cfg=json.load((root/'config.json').open())
     assert cfg['smoke']==smoke and cfg['layers']==list(range(36))
     assert cfg.get('revision','r1')==version and cfg.get('support_override',True)==(version=='r1')
-    assert cfg['entropy_thresholds']==[.1,.3] and cfg['frames_per_round']==2 and cfg['round_limit']==2
+    assert cfg.get('always_acquire_first',False)==(version=='r3')
+    assert cfg['entropy_thresholds']==[None if version=='r3' else .1,.3] and cfg['frames_per_round']==2 and cfg['round_limit']==2
     assert cfg['attention_exponent']==.5 and cfg['GT_in_reader'] is False
     assert cfg['model']=='Qwen/Qwen3-VL-8B-Instruct' and cfg['frames']==20 and cfg['window_seconds']==8 and cfg['fps']==4
     assert cfg['global_and_answer']==cfg['speech']=='original native'
@@ -51,6 +52,11 @@ def prepare(root,out,smoke=False,version='r1'):
         c=checks[k];dur=float(manifest[k]['duration']);wins=fixed_windows(dur,8);ws=b['extra']['windows'];V=len(wins)
         B=sum(1+('z_speech' in w) for w in ws)
         details=json.load((root/'details'/k[0]/(k[1]+'.json')).open());traces=details['traces']
+        if version=='r3':
+            assert details['source'] is not None
+            source_times=np.asarray([e['time'] for e in details['source']['frames']])
+            assert len(source_times)>0
+            excluded=set(details['source']['legacy_excluded_indices'])
         assert len(ws)==len(h['extra']['windows'])==V==len(traces)
         frames=frame_paths(*k,20,'k20')
         assert details['original_frame_times']==[f[0] for f in frames]
@@ -64,12 +70,19 @@ def prepare(root,out,smoke=False,version='r1'):
                 assert w.get(name)==hw.get(name);count+=name.startswith('z_') and name in w
             assert t['window']==i and t['initial_z']==w['z_visual'] and len(t['rounds'])<=2
             support=sum(start<=ft<end for ft,_ in frames);assert t['nominal_support']==support
+            if version=='r3':
+                targets=(np.arange(max(0,math.ceil(4*start-.5)),math.ceil(4*end-.5))+.5)/4
+                targets=targets[(targets>=start)&(targets<end)]
+                mapped=np.searchsorted(source_times,targets)
+                eligible={int(j) for j in mapped if j<len(source_times) and start<=source_times[j]<end and int(j) not in excluded}
+                if eligible:assert t['rounds'] and len(t['rounds'][0]['added'])==min(2,len(eligible))
+                else:assert not t['rounds'] and t.get('candidate_exhausted') is True
             prior=np.asarray(t['initial_prior']);assert len(prior)==len(frames) and np.isfinite(prior).all() and abs(prior.sum()-1)<1e-5
             last=w['z_visual'];used=set()
             for ri,step in enumerate(t['rounds']):
                 assert 1<=len(step['added'])<=2
                 x=abs(last);e=math.exp(-x);entropy=math.log1p(e)+x*e/(1+e)
-                assert (ri==0 and support==0 and cfg.get('support_override',True)) or entropy>=(.1,.3)[ri]
+                assert (ri==0 and cfg.get('always_acquire_first',False)) or (ri==0 and support==0 and cfg.get('support_override',True)) or entropy>=(.1,.3)[ri]
                 for f in step['added']:
                     assert start<=f['time']<end and f['index'] not in used
                     assert f['index'] not in details['source']['legacy_excluded_indices']
@@ -101,6 +114,20 @@ def prepare(root,out,smoke=False,version='r1'):
             assert r['extra']['windows']==h['extra']['windows'] and r['calls']==h['calls']
             assert r['extra']['z_video']==h['extra']['z_video'] and np.array_equal(r['score_curve'],h['score_curve'])
         result['r2_cached_replay_exact']=True
+    if version=='r3':
+        original=ROOT/'runs/20261003_m1_explorer'/('r1_smoke' if smoke else 'r1_main')
+        r1=read(original/'explore/predictions.jsonl');matched=0
+        for k,r in raw['explore'].items():
+            old_details=json.loads((original/'details'/k[0]/(k[1]+'.json')).read_text())
+            new_details=json.loads((root/'details'/k[0]/(k[1]+'.json')).read_text())
+            for i,(t,nt) in enumerate(zip(old_details['traces'],new_details['traces'])):
+                if not t['rounds']:continue
+                assert r['extra']['windows'][i]==r1[k]['extra']['windows'][i]
+                assert len(t['rounds'])==len(nt['rounds'])
+                for before,after in zip(t['rounds'],nt['rounds']):
+                    assert before['added']==after['added'] and before['z']==after['z']
+                matched+=1
+        result['r1_expanded_windows_exact']=matched
     if smoke:
         result['estimated_seconds']={ds:{arm:n*np.mean([r['standalone_seconds'][arm] for r in rows if r['dataset']==ds and r['video_id']!='hate_video_114']) for arm in ARMS} for ds,n in [('HateMM',215),('HateClipSeg',118)]}
     (out/('plumbing_summary.json' if smoke else 'alignment.json')).write_text(json.dumps(result,indent=2)+'\n')
@@ -164,7 +191,7 @@ def report(root,decoded,out):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2'),default='r1');a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
     if a.stage=='evaluate' and not a.arm:ap.error('evaluate requires arm')
     if a.smoke and a.stage!='prepare':ap.error('smoke is plumbing only')
     parent=ROOT/'runs/20261003_m1_explorer';root=parent/(a.version+('_smoke' if a.smoke else '_main'));decoded=parent/(a.version+'_main_decoded');out=root if a.smoke else parent/(a.version+'_main_analysis')

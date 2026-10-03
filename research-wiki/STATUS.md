@@ -51,7 +51,7 @@ within仅+.003885/+.000548，无主指标+.01，归档为第15项。来源 `runs
 within仅+.000607/+.001170，无主指标+.01，归档为第16项。来源 `runs/20261003_m1_stabilizer/r1_main_decoded/stable/metrics.json`。
 第十七候选Preserver完整333完成：HateMM .895610/.689651/.752658，HCS .715189/.672282/.629401；
 无主指标+.01，原始visual/max排序两语料下降，归档为第17项。来源 `runs/20261003_m1_preserver/r1_main_decoded/preserve/metrics.json`。
-第十八候选Explorer完整333完成：HateMM .897600/.689538/.754830，HCS .731875/.683986/.658440；HCS三项+.01以上，但HMM within仅+.00405且原始排序下降，尚未晋级。来源 `runs/20261003_m1_explorer/r1_main_decoded/explore/metrics.json`。已声明R2移除强制无帧补帧例外，只由原生不确定性触发（首次修订）；先做完整缓存精确回放，不伪报新GPU耗时。入口 `experiments/20261003_m1_explorer/README.md`。
+第十八候选Explorer完整333完成：HateMM .897600/.689538/.754830，HCS .731875/.683986/.658440；HCS三项+.01以上，但HMM within仅+.00405且原始排序下降，尚未晋级。来源 `runs/20261003_m1_explorer/r1_main_decoded/explore/metrics.json`。R2完整缓存回放仅within+.00155/+.01661，仍未过门；来源 `runs/20261003_m1_explorer/r2_cache_decoded/explore/metrics.json`，无新GPU计时。已声明R3统一先补两张局部帧，再由.3熵决定是否再补两张（第二次修订），不是已证实的机制。入口 `experiments/20261003_m1_explorer/README.md`。
 运行环境更新：实验室四机启用了Slurm-only GPU访问策略，普通SSH会话访问nvidiactl被EPERM拒绝；使用qian_pilot的local-主机名分区。当前任务不更新Overleaf。
 
 **累计十五个归档小结（规则11，不超过10行）**：
