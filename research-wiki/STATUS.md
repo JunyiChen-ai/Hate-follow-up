@@ -50,6 +50,7 @@ within仅+.003885/+.000548，无主指标+.01，归档为第15项。来源 `runs
 第十六候选Stabilizer完整333完成：HateMM .897011/.694135/.751389，HCS .715720/.670317/.638519；
 within仅+.000607/+.001170，无主指标+.01，归档为第16项。来源 `runs/20261003_m1_stabilizer/r1_main_decoded/stable/metrics.json`。
 第十七候选Preserver（无转录视觉问题表示注入完整上下文）独立方案/代码审查PASS；sc448960 Slurm作业54的5视频smoke通过，292分支和5global精确复现，alpha0/缓存恢复通过；结果已回传，完整333在sc448960 Slurm作业55运行。
+第十八候选Explorer已声明按不确定性/帧支持情况补充局部新帧的方案，独立方案审查中，未实施；入口 `experiments/20261003_m1_explorer/README.md`。
 运行环境更新：实验室四机启用了Slurm-only GPU访问策略，普通SSH会话访问nvidiactl被EPERM拒绝；使用qian_pilot的local-主机名分区。当前任务不更新Overleaf。
 
 **累计十五个归档小结（规则11，不超过10行）**：

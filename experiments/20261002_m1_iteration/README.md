@@ -225,3 +225,31 @@ and1233/3591HCS windows contain no sampled native frame;114/215 and118/118videos
 have at least one such window. This is sparse visual coverage, not evidence that
 those windows contain missed hateful visual content. No new sampler/candidate,
 frame extraction or scoring change is selected from this count alone.
+
+
+Unselected source follow-up while Preserver job55 runs: EcoFrame2608.03918v1
+sections2,4.1–4.4,5.1 and appendixA.3/B/C read, with the official repository
+https://github.com/AK-DREAM/EcoFrame (README-only as checked2026-10-03).
+It combines whole-vocabulary answer entropy, progressive budgets4/8/16/32,
+pre-RoPE query/image attention from layers19–21, attention-times-distance candidate
+expansion, and CLIP-relevance-times-distance reselection. Defaults m4,
+attention exponent.5/relevance exponent1; length factor clamps sqrt(duration/120)
+to[1,4]. Source uses different entropy thresholds by benchmark; any adaptation
+here must fix one shared setting and declare it first. Binary normalized Yes/No
+entropy is not the source's full-vocabulary entropy, and a confident answer is
+not a correctness guarantee. No candidate, encoder/cache extraction, new scoring
+or threshold scan selected from this reading. VAP2605.01662v1 introduction and
+method start only: it requires a video-diffusion interpolator, not free evidence
+from the existing MLLM. No VAP implementation/weights requested. New searches
+also surfaced VideoRoPE2502.05173 and WRWS2609.37345; no complete method read or
+adaptation made for either. These observations do not change current M1.
+
+Candidate18 proposal: `experiments/20261003_m1_explorer/README.md`, bounded
+uncertainty/support-aware acquisition of actual local video frames, with a
+pre-RoPE attention-times-distance proposal and cached native context. Self-designed
+adaptation, not full EcoFrame reproduction; source/data/cost/control differences
+explicit. Independent proposal review in progress; no implementation yet.
+Input audit read old frame provenance/prep script without GT: old JPEG timestamps
+are nominal seek times and may hide a .5s retry. New proposal distinguishes nominal
+support from verified new-frame PTS, preserves the native baseline and records
+the limits of legacy source-index exclusion. No new scoring/data extraction yet.
