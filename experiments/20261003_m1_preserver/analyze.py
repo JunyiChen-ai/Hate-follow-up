@@ -12,8 +12,8 @@ from scipy.special import logsumexp
 ROOT=next(p for p in Path(__file__).resolve().parents if (p/'CLAUDE.md').is_file())
 sys.path.insert(0,str(ROOT))
 from src.eval.evaluate import within_video_macro
-from src.video_inputs import fixed_windows
-DATASETS=('HateMM','HateClipSeg');ARMS=('base','highlight')
+from src.video_inputs import fixed_windows,frame_paths
+DATASETS=('HateMM','HateClipSeg');ARMS=('base','preserve')
 METRICS=('frame_ROC_AUC','frame_PR_AUC','within_video_macro_ROC_AUC')
 
 
@@ -31,10 +31,10 @@ def boot(v):
 
 def prepare(root,out,smoke=False):
     cfg=json.load((root/'config.json').open())
-    assert cfg['smoke']==smoke and cfg['coefficient']==.2 and cfg['epsilon']==cfg['active_threshold']==1e-8
-    assert cfg['layers']==list(range(4,18)) and cfg['top_k']==10 and cfg['projection_batch']==128
+    assert cfg['smoke']==smoke and cfg['alpha']==.5 and cfg['layers']==list(range(36))
     assert cfg['model']=='Qwen/Qwen3-VL-8B-Instruct' and cfg['frames']==20 and cfg['window_seconds']==8 and cfg['fps']==4
     assert cfg['GT_in_reader'] is False and cfg['global_and_answer']==cfg['speech']=='original native'
+    assert cfg['scope']=='all identical query suffix rows, post-o_proj'
     for a in ARMS:assert json.load((root/a/'config.json').open())=={**cfg,'arm':a}
     raw={a:read(root/a/'predictions.jsonl') for a in ARMS};checks=read(root/'checks.jsonl')
     manifest=read(ROOT/'data/omsl_v6_inputs/manifests/all_test.jsonl')
@@ -49,41 +49,30 @@ def prepare(root,out,smoke=False):
         ws=b['extra']['windows'];c=checks[k];dur=float(manifest[k]['duration']);wins=fixed_windows(dur,8);V=len(wins)
         B=sum(1+('z_speech' in w) for w in ws)
         assert len(ws)==len(h['extra']['windows'])==V
-        assert c['actual_forwards']==3+B+V+(3+B if smoke else 0)
-        assert c['visual_queries']==V and c['native_branches']==B and c['layer_indices']==list(range(4,18))
-        assert len(c['geometry']['highlight'])==len(c['gammas']['highlight'])==len(c['local_counts'])==V
-        for n,g,hg in zip(c['local_counts'],c['geometry']['highlight'],c['gammas']['highlight']):
-            if n:
-                g=np.asarray(g);hg=np.asarray(hg)
-                assert g.shape==(14,7) and hg.shape==(14,1,32) and np.isfinite(g).all() and np.isfinite(hg).all()
-                assert (g>=0).all() and (hg>=0).all() and (hg<=2).all()
-            else:assert g==[] and hg==[]
-        if smoke:assert c['verify']['native_windows_exact'] and c['verify']['native_global_exact']
+        assert c['actual_forwards']==4+B+2*V+(3+B+V if smoke else 0)
+        assert c['visual_queries']==V and c['native_branches']==B and c['layer_indices']==list(range(36))
+        g=np.asarray(c['geometry']);assert g.shape==(V,36,3) and np.isfinite(g).all() and (g>=0).all()
+        if smoke:assert all(c['verify'][n] for n in ('native_windows_exact','native_global_exact','alpha_zero_exact','inputs_exact'))
         for w,hw in zip(ws,h['extra']['windows']):
             for name in ('start','end','z_visual','z_speech'):
                 assert w.get(name)==hw.get(name);count+=name.startswith('z_') and name in w
         with np.load(root/'tokens'/k[0]/(k[1]+'.npz')) as t:
             ny=len(t['yes_ids']);N=ny+len(t['no_ids'])
-            for a in ('highlight',):assert t[a].shape==(V,N) and np.isfinite(t[a]).all()
+            for a in ('preserve','reference'):assert t[a].shape==(V,N) and np.isfinite(t[a]).all()
             assert len(t['visual'])==len(t['input_ids'])==c['prefix_tokens'] and t['visual'].sum()==c['visual_tokens']
-            positions=t['image_positions'];frameids=t['frame_indices'];times=t['frame_times'];vss=t['salience'];G=t['guidance']
-            assert np.array_equal(positions,np.flatnonzero(t['visual'])) and len(times)==len(t['image_counts'])==20
-            assert np.array_equal(frameids,np.repeat(np.arange(20),t['image_counts']))
-            assert vss.shape==positions.shape and np.isfinite(vss).all() and (vss>=0).all()
-            assert G.shape==(V,c['prefix_tokens']) and np.isfinite(G).all() and (G>=0).all()
-            assert (G[:,~t['visual']]==0).all()
-            for i,(start,end) in enumerate(wins):
-                ft=times[frameids];mask=(ft>=start)&((ft<=end) if i==V-1 else (ft<end));idx=positions[mask]
-                assert len(idx)==c['local_counts'][i]
-                expected_g=np.zeros(c['prefix_tokens'],np.float32)
-                if len(idx):
-                    vals=vss[mask];expected_g[idx]=vals/vals.sum() if vals.sum()>0 else np.ones(len(idx))/len(idx)
-                assert np.allclose(G[i],expected_g,atol=2e-7,rtol=1e-5)
-                if not len(idx):assert raw['highlight'][k]['extra']['windows'][i]['z_visual']==ws[i]['z_visual']
+            assert len(t['reference_input_ids'])==len(t['reference_visual'])==c['reference_prefix_tokens']
+            assert t['reference_visual'].sum()==t['visual'].sum()==t['image_counts'].sum()
+            assert np.array_equal(t['input_ids'][t['visual']],t['reference_input_ids'][t['reference_visual']])
+            frames=frame_paths(k[0],k[1],20,'k20')
+            assert 0<len(frames)<=20 and np.array_equal(t['frame_times'],[f[0] for f in frames])
+            assert len(t['frame_times'])==len(t['image_counts'])==len(frames)
+            off=t['query_offsets'];assert len(off)==V+1 and off[0]==0 and off[-1]==len(t['query_ids']) and (np.diff(off)>0).all()
+            assert t['reference_margins'].shape==(V,) and np.isfinite(t['reference_margins']).all()
+            for i in range(V):assert abs(t['reference_margins'][i]-(logsumexp(t['reference'][i,:ny])-logsumexp(t['reference'][i,ny:])))<2e-5
             for a in ARMS:
                 r=raw[a][k];assert r['extra']['z_video']==b['extra']['z_video'] and r['extra']['stance']==b['extra']['stance']
                 assert r['duration']==dur and r['native_rate']==4 and len(r['score_curve'])==math.ceil(4*dur) and np.isfinite(r['score_curve']).all()
-                assert len(r['extra']['windows'])==V and r['calls']==3+B
+                assert len(r['extra']['windows'])==V and r['calls']==(3+B if a=='base' else 4+B+V)
                 for i,(w,v,extent) in enumerate(zip(ws,r['extra']['windows'],wins)):
                     assert (v['i'],v['start'],v['end'])==(i,*extent) and w.get('z_speech')==v.get('z_speech')
                     assert np.isfinite(v['z_visual'])
@@ -140,10 +129,10 @@ def report(root,decoded,out):
         allrows+=rows
         result['datasets'][ds]={'final':{a:{m:mm[a][ds][m] for m in METRICS} for a in ARMS},
             'raw':{a:{m:rm[a][ds][m] for m in METRICS} for a in ARMS},
-            'delta':{m:mm['highlight'][ds][m]-mm['base'][ds][m] for m in METRICS},
-            'delta_vs_current':{m:mm['highlight'][ds][m]-old[ds][m] for m in METRICS},
-            'within_paired':boot([r['highlight']-r['base'] for r in rows]),
-            'raw_within_paired':boot([r['highlight_raw']-r['base_raw'] for r in rows])}
+            'delta':{m:mm['preserve'][ds][m]-mm['base'][ds][m] for m in METRICS},
+            'delta_vs_current':{m:mm['preserve'][ds][m]-old[ds][m] for m in METRICS},
+            'within_paired':boot([r['preserve']-r['base'] for r in rows]),
+            'raw_within_paired':boot([r['preserve_raw']-r['base_raw'] for r in rows])}
         costs[ds]={a:{'standalone_seconds':sum(r['extra']['standalone_seconds'] for k,r in raw[a].items() if k[0]==ds),
             'mean_forwards':float(np.mean([r['calls'] for k,r in raw[a].items() if k[0]==ds]))} for a in ARMS}
         costs[ds]['peak_GiB']=max(c['peak_GiB'] for k,c in checks.items() if k[0]==ds)
@@ -159,7 +148,7 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
     if a.stage=='evaluate' and not a.arm:ap.error('evaluate requires arm')
     if a.smoke and a.stage!='prepare':ap.error('smoke is plumbing only')
-    parent=ROOT/'runs/20261003_m1_highlighter';root=parent/('r1_smoke' if a.smoke else 'r1_main');decoded=parent/'r1_main_decoded';out=root if a.smoke else parent/'r1_main_analysis'
+    parent=ROOT/'runs/20261003_m1_preserver';root=parent/('r1_smoke' if a.smoke else 'r1_main');decoded=parent/'r1_main_decoded';out=root if a.smoke else parent/'r1_main_analysis'
     out.mkdir(parents=True,exist_ok=True);print('host',socket.gethostname(),flush=True)
     if a.stage=='prepare':prepare(root,out,a.smoke)
     elif a.stage=='evaluate':evaluate(root,decoded,a.arm)

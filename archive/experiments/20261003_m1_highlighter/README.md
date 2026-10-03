@@ -1,4 +1,15 @@
+Archived 2026-10-03: no final metric improves by .01; localization mechanism unsupported.
+
 # M1 Highlighter: local visual-semantic value guidance
+
+2026-10-03 full collection completed on sc448960:333videos,948.6s, outputs returned
+locally. Initial post-scoring prepare stopped on an incorrect exact20frames
+assertion. Existing `data/frames_k20/PROVENANCE.md` explicitly permits incomplete
+end-of-video extraction;332videos have20frames, HateClipSeg `bit_AxrVklzh9Cyf`
+has18. The reader already consumed exactly the available native cached frames,
+and no scoring code, predictions or input cache changed. Validator now compares
+actual frame paths/timestamps/counts rather than a constant20, and all333 prepare
+checks pass without GT. Independent narrow confirmation requested before metrics.
 
 Candidate15, declared2026-10-03 before Reinforcer or Projector full performance
 is read. Independent candidate, not combined with either. Frozen Qwen3-VL-8B,
@@ -145,3 +156,41 @@ First2per corpus excluding stress extrapolate native207.09/285.86s versus guided
 replace with full costs. Native includes read-only prefix capture. No GT or
 performance read and no constants changed. Launch after fresh sync/preflight:
 `bash experiments/20261003_m1_highlighter/launch/run_lab.sh main` onsc448960.
+
+
+## Full333 result and disposition (archive15)
+
+Host sc448960, full run completed before the Slurm-only lab policy change;
+all outputs returned locally. Scoring completed333videos in948.6s paired wall.
+The first CPU prepare failed on an incorrect exactly20frame assumption; one
+unchanged input has18frames. A validation-only repair passed independent review
+(`docs/reviews/20261003_m1_highlighter_frame_metadata_code.md`), then all333global
+and13939native branch values exactly reproduced base_gridA. No scoring or metric
+implementation changed, no frames were synthesized and no test result selected
+this repair.
+
+Final canonical source: `runs/20261003_m1_highlighter/r1_main_decoded/highlight/metrics.json`.
+
+| corpus | pooled ROC | pooled PR | within | delta within |
+|---|---:|---:|---:|---:|
+| HateMM | .897078 | .694292 | .754667 | +.003885 |
+| HateClipSeg | .716890 | .671082 | .637897 | +.000548 |
+
+Within eligible84/99; paired video95%CI for differences[-.001177,.010568] /
+[-.002174,.003139]. No final metric gains>=.01, so rule9 archive without additional
+controls or parameter revisions. Main/native r6 and both pooled metrics effectively
+unchanged. Mechanism is not supported and current method is not replaced.
+
+Post-scoring error analysis read the two new prediction arms, their decoded outputs,
+`data/gt_4fps/{HateMM,HateClipSeg}.npz` and historical current r6 for canonical
+comparison only. Raw max within falls from .680011/.610130 to .679598/.608545;
+the attention intervention did not provide better combined local ordering.
+Artifacts: `r1_main_analysis/{summary,branch_diagnostics,per_video}.json` under
+this experiment's runs directory. This evidence decides archive, not a new fit,
+threshold, data selection or inference routing. All development-selected.
+
+Measured standalone guided times377.73s/306.76s (total11.41min), versus native
+355.91s/291.25s (10.79min):1.058x overall. Peak20.142/19.866GiB. Both deployed
+arms have3+B forwards; native timing includes the declared read-only hidden
+capture. Paired collection3+B+V, plus the smoke-only native reconstruction.
+No full-paper or Overleaf edits.

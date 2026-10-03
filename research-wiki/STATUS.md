@@ -2,9 +2,13 @@
 
 截至 **2026-10-03**。旧的 2026-09-09 引言保留在本页下方各节。
 
+**2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
+两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
+验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。
+
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档14个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档15个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -41,8 +45,19 @@ within+.003601/-.000927，无主指标+.01，归档为第11项，视觉原始排
 无主指标+.01，HMM PR−.032826，归档为第13项；来源 `runs/20261003_m1_reinforcer/r1_main_decoded/full/metrics.json`。
 第十四候选Projector完整333完成：HateMM .896986/.694111/.750851，HCS .717685/.671516/.637883；
 within仅+.000069/+.000534，归档为第14项；来源 `runs/20261003_m1_projector/r1_main_decoded/project/metrics.json`。
-第十五候选Highlighter（VGA局部视觉value引导）方案/代码及5视频实机检查PASS，完整333已在sc448960运行；尚无性能结果。
-第十六候选Stabilizer（PAS时间RoPE相位分组）独立方案审查PASS，已实施并通过数值/实际小模型检查，独立代码审查中；无性能结果。
+第十五候选Highlighter完整333完成：HateMM .897078/.694292/.754667，HCS .716890/.671082/.637897；
+within仅+.003885/+.000548，无主指标+.01，归档为第15项。来源 `runs/20261003_m1_highlighter/r1_main_decoded/highlight/metrics.json`。
+第十六候选Stabilizer（PAS时间RoPE相位分组）独立方案/代码审查PASS，含18帧和每臂独立全局判断检查；Slurm实机5视频smoke通过（5global/292branches精确复现）；完整333在sc474399作业52运行，尚无性能结果。
+第十七候选Preserver（无转录视觉问题表示注入完整上下文）独立方案审查PASS；已实施并通过36层FP32/BF16、18/20帧数值检查，独立代码审查中；未完整评分。
+运行环境更新：实验室四机启用了Slurm-only GPU访问策略，普通SSH会话访问nvidiactl被EPERM拒绝；使用qian_pilot的local-主机名分区。当前任务不更新Overleaf。
+
+**累计十五个归档小结（规则11，不超过10行）**：
+- 最近五项为Recycler、Integrator、Reinforcer、Projector、Highlighter；未找到通过双语料性能和机制门的版本。
+- Integrator多轮只在HateMM有定位提升，HCS pooled退化；其允许的3次修订已用完。
+- 这五项的最后一项Highlighter within仅+.003885/+.000548，原始max排序两语料均下降。
+- 来源 `runs/20261003_m1_highlighter/r1_main_decoded/highlight/metrics.json`；无新增机制结论。
+- 累计双语料within较强的视觉对比R1仍因HMM PR下降与机制对照失败而未采用。
+- 继续Stabilizer及Preserver；当前r6不变，全部development-selected，不更新Overleaf。
 
 **累计十个归档小结（规则11，不超过10行）**：
 - 后五项覆盖内部层间对比、像素扰动对比、图像注意力增强、前缀隔离；SHAP迁移因已有目标任务方法STOP。

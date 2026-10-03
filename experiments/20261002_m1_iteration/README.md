@@ -65,7 +65,7 @@ Running candidates:
   Native reads exact, matched eager near baseline, no component controls after
   failed main gate.
 
-Cumulative archives14 (twelve performance/mechanism failures, two proposal novelty STOPs).
+Cumulative archives15 (thirteen performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
@@ -120,11 +120,11 @@ proposal/code/real-input review PASS; full333 complete, no qualifying main gain;
 archived as14. No further controls/tuning. This is distinct from residual steering, sink transfer
 and image-logit boosts. PRP was not selected after finding the prior PWC failure.
 
-Candidate15 proposal: `experiments/20261003_m1_highlighter/README.md`, VGA visual-
+Candidate15 proposal: `archive/experiments/20261003_m1_highlighter/README.md`, VGA visual-
 semantic value guidance restricted to local frame support, preserving native
 context. Paper and official Qwen2.5 code read; source discrepancies and Qwen3
 adaptations declared. Independent proposal/code review and real5video checks PASS;
-full333 running on sc448960, no performance screening yet. FV-Action inspected but not selected because existing
+full333 complete and canonically evaluated; no qualifying gain, archived15. FV-Action inspected but not selected because existing
 M1 already uses binary window reads. VideoTree/VAP only discovered, no new data.
 
 
@@ -167,8 +167,8 @@ no timing candidate selected or implemented.
 Candidate16 proposal: `experiments/20261003_m1_stabilizer/README.md`, PAS-derived
 head-dependent native temporal RoPE phase during image prefix encoding. Paper/code
 read; multi-image Qwen3 pairing/axis adaptations and source theorem limitations
-explicit. Independent proposal review requested; no implementation, new GT reads
-or full performance available at declaration. Each arm uses its own coherent
+explicit. Independent proposal/code review PASS, implemented and CPU checked; no real-video
+performance yet. Lab execution now uses Slurm allocation. Each arm uses its own coherent
 global assessment and ordinary isolated window queries.
 
 Adjacent unselected sources inspected during Highlighter collection: VideoTree
@@ -181,3 +181,16 @@ No proposal, implementation, new frame extraction, external data or score screen
 was made from these reads. Their full source recipes do not automatically satisfy
 our no-ensemble/no-postprocessing and new-video-cost constraints; any adaptation
 needs a separately declared complete mechanism and independent review.
+
+
+Candidate17: `experiments/20261003_m1_preserver/README.md`. MAD-RAG-derived
+preservation of reference visual question attention outputs in the normal full
+context read. Paper/official Qwen code and discrepancies inspected; two-cache/full
+suffix adaptation declared, cost and controls fixed before performance. Independent
+proposal review requested; implementation follows PASS. No data/encoder change.
+
+2026-10-03 resumed autonomous work on user instruction, explicitly no Overleaf.
+Lab nvidia-smi failure was traced to /dev/nvidiactl EPERM from user.slice
+50-slurm-gpu-only.conf, not established hardware failure. qian_pilot Slurm has
+local partitions for all four lab hosts. Stabilizer will use its existing reviewed
+HateVLM environment in a local-sc474399 GPU allocation, not alter system policy.
