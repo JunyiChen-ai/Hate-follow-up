@@ -10,4 +10,4 @@ set -euo pipefail
 cd /home/jehc223/Hate-follow-up
 echo "host $(hostname)"
 nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu --format=csv,noheader
-bash experiments/20261003_m1_explorer/launch/run_lab.sh "${1:-smoke}"
+bash experiments/20261003_m1_explorer/launch/run_lab.sh "${1:-smoke}" "${2:-r1}"

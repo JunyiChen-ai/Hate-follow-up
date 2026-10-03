@@ -249,8 +249,12 @@ Candidate18 proposal: `experiments/20261003_m1_explorer/README.md`, bounded
 uncertainty/support-aware acquisition of actual local video frames, with a
 pre-RoPE attention-times-distance proposal and cached native context. Self-designed
 adaptation, not full EcoFrame reproduction; source/data/cost/control differences
-explicit. Independent proposal review PASS; implementation started, no real-video run yet.
+explicit. Independent proposal/code review PASS; real5video smoke and full333 R1 complete.
+HCS improves in all three main metrics, but HMM misses the dual-corpus goal and its
+raw ordering falls. First revision removes forced acquisition for initially
+confident windows, declared before cached R2 scoring; independent replay review
+requested. Numbers and GT/case-read log are in the candidate README/STATUS.
 Input audit read old frame provenance/prep script without GT: old JPEG timestamps
 are nominal seek times and may hide a .5s retry. New proposal distinguishes nominal
 support from verified new-frame PTS, preserves the native baseline and records
-the limits of legacy source-index exclusion. No new scoring/data extraction yet.
+the limits of legacy source-index exclusion. All original inputs remain unchanged.

@@ -29,9 +29,10 @@ def boot(v):
     return {'n':len(v),'mean':float(v.mean()),'ci95':np.quantile(v[rng.integers(len(v),size=(2000,len(v)))].mean(1),[.025,.975]).tolist()}
 
 
-def prepare(root,out,smoke=False):
+def prepare(root,out,smoke=False,version='r1'):
     cfg=json.load((root/'config.json').open())
     assert cfg['smoke']==smoke and cfg['layers']==list(range(36))
+    assert cfg.get('revision','r1')==version and cfg.get('support_override',True)==(version=='r1')
     assert cfg['entropy_thresholds']==[.1,.3] and cfg['frames_per_round']==2 and cfg['round_limit']==2
     assert cfg['attention_exponent']==.5 and cfg['GT_in_reader'] is False
     assert cfg['model']=='Qwen/Qwen3-VL-8B-Instruct' and cfg['frames']==20 and cfg['window_seconds']==8 and cfg['fps']==4
@@ -68,7 +69,7 @@ def prepare(root,out,smoke=False):
             for ri,step in enumerate(t['rounds']):
                 assert 1<=len(step['added'])<=2
                 x=abs(last);e=math.exp(-x);entropy=math.log1p(e)+x*e/(1+e)
-                assert (ri==0 and support==0) or entropy>=(.1,.3)[ri]
+                assert (ri==0 and support==0 and cfg.get('support_override',True)) or entropy>=(.1,.3)[ri]
                 for f in step['added']:
                     assert start<=f['time']<end and f['index'] not in used
                     assert f['index'] not in details['source']['legacy_excluded_indices']
@@ -93,6 +94,13 @@ def prepare(root,out,smoke=False):
             'standalone_seconds':c['standalone_seconds'],'paired_seconds':c['paired_seconds'],
             'acquisition_reads':c['acquisition_reads']})
     result={'no_GT':True,'videos':len(expected),'native_branches_exact':count,'native_globals_exact':True,'rows':rows}
+    if version=='r2':
+        replayed=read(ROOT/'runs/20261003_m1_explorer/r2_cache/explore/predictions.jsonl')
+        for k,r in raw['explore'].items():
+            h=replayed[k]
+            assert r['extra']['windows']==h['extra']['windows'] and r['calls']==h['calls']
+            assert r['extra']['z_video']==h['extra']['z_video'] and np.array_equal(r['score_curve'],h['score_curve'])
+        result['r2_cached_replay_exact']=True
     if smoke:
         result['estimated_seconds']={ds:{arm:n*np.mean([r['standalone_seconds'][arm] for r in rows if r['dataset']==ds and r['video_id']!='hate_video_114']) for arm in ARMS} for ds,n in [('HateMM',215),('HateClipSeg',118)]}
     (out/('plumbing_summary.json' if smoke else 'alignment.json')).write_text(json.dumps(result,indent=2)+'\n')
@@ -156,12 +164,12 @@ def report(root,decoded,out):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2'),default='r1');a=ap.parse_args()
     if a.stage=='evaluate' and not a.arm:ap.error('evaluate requires arm')
     if a.smoke and a.stage!='prepare':ap.error('smoke is plumbing only')
-    parent=ROOT/'runs/20261003_m1_explorer';root=parent/('r1_smoke' if a.smoke else 'r1_main');decoded=parent/'r1_main_decoded';out=root if a.smoke else parent/'r1_main_analysis'
+    parent=ROOT/'runs/20261003_m1_explorer';root=parent/(a.version+('_smoke' if a.smoke else '_main'));decoded=parent/(a.version+'_main_decoded');out=root if a.smoke else parent/(a.version+'_main_analysis')
     out.mkdir(parents=True,exist_ok=True);print('host',socket.gethostname(),flush=True)
-    if a.stage=='prepare':prepare(root,out,a.smoke)
+    if a.stage=='prepare':prepare(root,out,a.smoke,a.version)
     elif a.stage=='evaluate':evaluate(root,decoded,a.arm)
     else:report(root,decoded,out)
 

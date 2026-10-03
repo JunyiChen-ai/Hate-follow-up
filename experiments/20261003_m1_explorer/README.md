@@ -279,3 +279,102 @@ The reviewer verified these with synthetic333 cases, including18frames and an
 unmatched video, plus actual36-layer FP32/BF16 tests for all four control readers.
 This establishes implementation validity only. Full R1 is still collecting;
 no real main/control accuracy has yet been read for this candidate.
+
+## R1 complete: one-corpus improvement, not promoted (2026-10-03)
+
+Host sc474399, Slurm57,333videos, collection1559.9s. All output returned locally
+before this result/status update. Native333global/13939branch values and current
+r6 metrics exact. Canonical source
+`runs/20261003_m1_explorer/r1_main_decoded/explore/metrics.json`:
+
+| corpus | pooled ROC | pooled PR | within (eligible videos) |
+|---|---:|---:|---:|
+| HateMM | .8976002308700018 | .6895375598692042 | .7548295590258155 (84) |
+| HateClipSeg | .731874629967137 | .6839855741455672 | .658439650597689 (99) |
+
+Relative to current/native, within +.0040475 / +.0210905; HMM PR -.0046970,
+HCS ROC +.0150498 / PR +.0129135. HCS paired final CI [.002057,.043759]; HMM
+[-.024510,.032065]. Main dual-corpus gate fails, but qualifying HCS gains permit
+up to3 revisions under rule9. No control GPU scoring yet, no mechanism claim,
+no promotion or Overleaf change. All evidence is development-selected.
+
+Raw visual within .613908→.595101 HMM and .546450→.582562 HCS; raw max
+.680011→.667500 and .610130→.634069. Speech unchanged. HMM's sole eligible
+single-window video contributes +.007143 to its final mean, while the other83
+videos contribute -.003095: the HMM final gain is not new within-window evidence.
+HCS raw visual/max and final paired CIs exclude zero. Sources
+`r1_main_analysis/{summary,branch_diagnostics,case_analysis}.json` under this run root;
+all main numbers above are from the canonical metrics file, not these diagnostics.
+
+Actual deployment-equivalent time including all selection/decoding/reads:
+HMM758.684s, HCS794.850s (25.89min), vs instrumented native315.847/257.687s
+(9.56min), ratio2.709. Peak17.945/17.672GiB. Mean forward counts47.088/82.322
+vs36.521/60.051; additional acquisition reads2272/2628. New frames4538/5251,
+image encodes including repeats5338/6163. Source `r1_main_analysis/cost.json`
+and `r1_main/trace_diagnostics.json`. All new images within each video have the
+same grid; selected sets differ from distance-only in1005/2272 HMM and1235/2628
+HCS rounds, conditional on the actual history. This is not a mechanism control.
+
+Post-scoring GT read log: `data/gt_4fps/{HateMM,HateClipSeg}.npz`, full R1/base
+raw and decoded predictions, canonical metrics, traces, original ASR via
+`src.video_inputs.load_asr`, and acquired PNG witnesses. The support-masked
+HMM subgroup (34 videos with both classes in no-nominal-support frames) loses
+.08515 raw-max within; CI[-.16884,-.01588]. Same mask HCS90videos is +.00025,
+while its nominal-support subgroup improves +.01637 raw max. These masks change
+the evaluated subset; they are descriptive, not alternative headline metrics.
+Read top final losses HMM hate_video_45/151/304 and gains HCS bit_7EOOUGa9y9h4 /
+yt_0Y_8MoLKn0I. Inspected actual PNGs for HMM45 index3908, HMM151 index9019,
+HMM304 index267 and HCS0Y index7222. HMM151's GT-negative tail still visibly
+contains a supremacist recruitment slogan/symbol, so its high new visual score
+must not be called semantically wrong merely because this GT labels that tail
+negative. HMM45 tail is an animated violent scene, not by itself evidence of
+protected-group hate; HMM304 has persistent organizational branding. HCS0Y's
+negative tail is a publication end card. We did not inspect every video or listen
+to audio. These cases limit a simplistic 'new frames remove false positives' claim.
+
+## R2 declaration: entropy-only acquisition (first revision, before R2 scoring)
+
+R1's special no-nominal-frame override forces acquisition even when the native
+window answer is confident. Missing a nominal frame is not a direct measurement
+of missing semantic context: original full-video visual context and speech remain
+available, and new frames may repeat persistent branding or static hateful imagery
+that does not follow the temporal annotation. R1's support-group degradation and
+some confident-negative overrides (HMM304 windows1/25, initial h .05470/.08631)
+motivate testing this exception directly, without treating all bad cases as the
+same cause. HMM45/151 also contain uncertain failures; this revision is not claimed
+to resolve them or annotation disagreements.
+
+R2 removes ONLY the no-frame override: for every window, stop immediately if
+initial binary entropy h<.1, regardless of nominal frame support. Otherwise use
+exactly the original attention/distance selector,2+2 acquisition, first-round
+h<.3 stop, final-margin output, native context/global/speech and unchanged r6.
+No threshold scan, new constants, new model or per-corpus branch. The same rule
+applies to both complete corpora. The mechanism under test is bounded feedback
+acquisition; the removed support exception is not retained as a contribution.
+
+R2 can first be replayed EXACTLY from R1 caches: each window has an independent
+restored native cache, and R2 only skips entire acquisitions of initial-confident
+windows. For retained windows every image/prior/read/stop is identical to R1.
+An explicit noGT replay script will record sources, complete333 coverage, the
+removed-window counts and deployment forward counts; it will not fabricate
+measured R2 time. This is full-corpus development evidence, not a new GPU run.
+If it meets the performance gate, run the final R2 reader on all333 to verify
+score parity and actual cost before claiming success or starting mechanism tests.
+Expected fresh R2 cost <= R1's25.89min because it only skips reads/decoding; actual
+runtime needs measurement. The replay itself uses CPU, no new MLLM calls.
+The original uniform/distance/fixed4/mismatch controls remain the planned tests,
+using the chosen final method's round traces; changing the gate alone is not a
+new independent novelty claim. This consumes revision1 of the allowed3.
+
+R2 replay implementation `replay_r2.py` and `launch/run_replay_r2.sh` write only
+`r2_cache*` outputs; source R1 records are read-only. Replay records remove measured
+R1 timing fields and explicitly record no new model calls. The deployment call
+count is recomputed from retained acquisition rounds. Independent code review
+requested before replay execution. Actual reader support is a single default-
+compatible `support_override` flag, selected by `--version r2`; R1 remains the
+default. Fresh R2 outputs are isolated in `r2_smoke`/`r2_main`, and the noGT prepare
+step requires all fresh window values, curves and call counts to equal replay.
+Slurm invocation, if cached performance qualifies:
+`sbatch experiments/20261003_m1_explorer/launch/lab.sbatch smoke r2`, then `main r2`.
+CPU fresh-run analysis uses `launch/run_analysis.sh r2`. No real R2 output exists
+yet; all method constants were declared above before implementing this path.
