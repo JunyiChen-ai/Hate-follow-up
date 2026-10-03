@@ -242,3 +242,16 @@ This tiny-input estimate is uncertain and replaces the earlier30–70min guess;
 plan20–40min, report actual full-run timing. No GT or smoke accuracy was read.
 Constants and production code unchanged. Proceed to full333 paired collection
 using `sbatch experiments/20261003_m1_explorer/launch/lab.sbatch main` on lab2.
+
+Post-scoring diagnostics added without changing the running reader:
+`trace_diagnostics.py` reconstructs candidate sets from saved source PTS and checks
+actual selection, then counts differences from distance-only at the SAME observed
+history. This is a conditional trace diagnostic, not a performance control with
+independently recomputed histories. Five-video smoke has35/110acquisition rounds
+with a different selected set from distance-only; all new images within each video
+share a processed grid. Source `r1_smoke/trace_diagnostics.json` under the same run
+root; no GT. Do not infer selection quality from selection differences.
+`case_analysis.py` is a post-scoring-only script reading canonical test GT after
+full evaluation, with nominal support/acquisition masks, visual/raw/final branches,
+native-global correctness and largest final gains/losses. These are descriptive
+subgroups, not causal controls; no selected cases/constants feed back into R1.
