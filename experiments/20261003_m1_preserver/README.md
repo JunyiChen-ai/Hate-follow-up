@@ -136,3 +136,14 @@ reaches final logits; reference tensors remain read-only. This is a random-weigh
 CPU witness, not an8B performance result. Independent code review requested.
 Intended target sc448960 via `launch/lab.sbatch smoke`, then main after validation;
 Slurm default/pilot partition is not used. Reuse its reviewed HateVLM environment.
+
+
+Independent code review PASS2026-10-03:
+`docs/reviews/20261003_m1_preserver_code.md`. Actual36-layer Qwen retains32/8heads,
+head_dim128 and native mRoPE on torch2.14/transformers5.16.1 CPU; both dtypes,
+18/20images, all-suffix post-o_proj oracle, shared native12-token FP32 head,
+alpha0/fresh restore, separate real positions/caches, complete reader call counts
+and333 synthetic canonical report pass. Target5.15.1 position implementation was
+also read independently; implementer target5.15.1 selfcheck passed and returned
+as `runs/20261003_m1_preserver/selfcheck_lab_server/numerics.json`.
+GPU5video smoke remains required before any full performance result.

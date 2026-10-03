@@ -1,0 +1,44 @@
+# M1 Preserver — independent code review
+
+Date: 2026-10-03. Reviewer: `/root/m1_grounder_code_review`, independent of the implementer. Scope: rule 6, observation-affecting correctness in `experiments/20261003_m1_preserver/{README.md,preserver.py,measure.py,analyze.py,selfcheck.py,launch/}` and shared reader/evaluation interfaces. Proposal review was already PASS. No production code, environment or data was changed; no GPU/8B execution, GT access, real performance inspection or hashes were used. This is a new report.
+
+## Decision: PASS
+
+No production fix is required. All suffix rows are mixed after the attention output projection at all 36 layers, reference captures remain native/read-only, both caches restore correctly, and final scores use the native 12-token FP32 head path. Native global/answer/speech are preserved. Full-coverage analysis evaluates only base/preserve with the canonical evaluator and unchanged r6; saved reference-only values do not select the main branch. GPU smoke and complete performance remain separate requirements.
+
+Independent evidence:
+
+- `runs/20261003_m1_preserver/independent_review/check_preserver.py`
+- `runs/20261003_m1_preserver/independent_review/check_preserver.json`
+- `runs/20261003_m1_preserver/independent_review/check_preserver.out`
+- `runs/20261003_m1_preserver/independent_review/prepare_synthetic_inputs.py` and its four synthetic input NPZ files.
+
+The completed independent model run used `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES='' /home/jehc223/miniconda3/envs/memora/bin/python runs/20261003_m1_preserver/independent_review/check_preserver.py`, with torch 2.14.0 and transformers 5.16.1 on CPU. The synthetic image tensors were prepared using Qwen2VLImageProcessorFast in the existing HateVideo/transformers 4.57.6 environment; the preparation helper records that construction. The new-model fixture adds the processor-equivalent image `mm_token_type_ids`.
+
+## Actual-model intervention and native checks
+
+Both FP32 and BF16 execute an actual Qwen3VLModel with 36 language layers, 32 query heads/eight KV heads, head_dim 128, mRoPE [24,20,20], and a three-layer vision encoder with DeepStack outputs [0,1]. Residual width is 64 to limit CPU parameters; this preserves the requested attention dimensions without pretending to be the 8B model. Twenty/18 synthetic images produce 100/90 expanded image-token positions in noncontiguous blocks. Production `read_video`, hooks and mixing run directly; only media/text token inputs and CUDA timers are supplied by the CPU fixture. Shared `Judge.prefix_messages`, `_logits_fp32`, `margins_fp32` and `cached_margin` are used, with six Yes and six No IDs.
+
+- Hooks on either side of each production `o_proj` hook independently observe the input, original output and replaced output. Projection input is `[1,Q,4096]`, while the output and mixed tensor are `[1,Q,64]`, distinguishing post-projection mixing from a head-space operation. Every row in every one of the 36 suffix blocks exactly matches `.5*output.float()+.5*reference.float()` cast back to model dtype. Earlier suffix rows change as declared; this is not a last-row-only intervention.
+- Reference capture leaves actual outputs unchanged and saves exact read-only clones. Mixing does not mutate them. The full-context output at a later layer already contains effects of previous-layer mixing; it is not mislabeled here as a second completely native trajectory. The reference trajectory remains unmixed.
+- Independent double-precision arithmetic agrees with the half-weight blend. Identity reference and alpha zero return native values exactly. Alpha zero uses the shared native 12-token head/reduction path and yields bitwise equal logits, margins and hidden states in both dtypes. Changed mixed final margins verify active computation only, not model effectiveness.
+- Full and reference prefixes have separate cache objects and lengths. Every capture/mix/alpha-zero call leaves its own K/V exactly unchanged after crop. A second query must capture a fresh reference; using mismatched query IDs or attempting mixing after `clear` is rejected. Reused versus independently copied caches produce exact same-query logits, ruling out cross-window residue in the tested path.
+- `run` restores the supplied native mRoPE state even when the fixture deliberately poisons the current model state before the call. Actual captured suffix positions differ between the two prefix lengths. Native reconstruction after clearing/removing hooks is exact. All input tensors, model/head weights and reference arrays remain unchanged.
+
+One initial fixture assertion was affected by version behavior, not by Preserver: local transformers 4.57.6 omits the cache offset in its model-level suffix-position calculation when `cache_position` is omitted. The reviewer read the installed target 5.15.1 `compute_3d_position_ids` on lab2 and confirmed that it uses `past_key_values_length + rope_deltas`. Independent execution therefore continued in the already installed 5.16.1 environment with that newer model interface; production scoring was not patched. Equal `rope_deltas` can be valid for the same image layout, so equality of that offset alone is not used as evidence of equal suffix positions. Target 5.15.1 selfcheck is additional implementer evidence, not substituted for the independent run.
+
+## Complete reader, reference scope and cost
+
+The direct reader test runs on both 20-image and 18-image inputs in both dtypes. The frames/policy reference receives exactly the same pixel tensors/grid and shared policy/system messages, excludes the transcript, and receives no global question or answer. The reference consumes the exact native visual-query token IDs. Only native and fresh-native prefixes append a verdict. Missing speech stays missing, and every preserved-arm speech value, global margin and answer equals native.
+
+With three windows and one available speech query, `V=3, B=4`. Actual forward hooks count 24 smoke calls: paired `4+B+2V=14`, plus `3+B+V=10` for fresh native and all-window alpha-zero checks. Native deployment is 7 calls, Preserver deployment 11 (`4+B+V`). The 96-value 4-fps output exactly matches window maxima. The 18-frame path uses 90 image tokens and the same count formulas, with no artificial frame filling.
+
+Reader traces confirm capture/mix/zero ordering and both cache identities for every window. Reference margins/logits are saved solely as declared diagnostics; the main visual score always comes from the mixed run. Standalone candidate time includes the original prefix/global/answer, speech, second image prefix encoding, all reference questions and all mixing operations; native visual reads needed only for paired comparison are excluded from its deployment estimate. Paired time includes both. Two KV caches coexist and one window's 36 reference-output arrays remain resident. Actual 8B GPU memory and wall time, not unchanged model weights or cached assets, must substantiate costs.
+
+## Full coverage and canonical analysis
+
+A complete 333-record synthetic manifest (215/118), including an 18-frame record and full 12-token arrays, exercises prepare/report. It checks fixed config, arm coverage, native baseline parity, reference/full image metadata, actual frame timestamps, query offsets, saved reference and mixed margin reconstruction, native global/speech retention and curve dimensions. Wrong alpha, missing paired video, incorrect duration/speech, an invalid query span, decoded NaN and altered decoded global are rejected. Config/coverage and decoded finite/global rejection occur before GT loading. All labels and metric values used in report fixtures are synthetic; no corpus GT or real scores were inspected.
+
+Report calls canonical `within_video_macro` and bootstraps paired video differences. Synthetic eligible counts 215/118 test the unit and coverage, not real-dataset eligibility. Passing and below-threshold metric fixtures exercise the declared gate; `mechanism_supported` remains false. Only `base` and `preserve` appear in main metrics and evaluation commands. `reference` has no main evaluation or winner-selection path, and report fields contain no stale candidate name.
+
+Intercepted commands call `src.eval.evaluate_four_datasets` and unchanged `experiments/20260926_twolevel/twolevel_r2.py` with `--noleak --transform nscore --key calib --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2`. Input, decoded and report paths are isolated under Preserver. Shell/Slurm launch files pass syntax checks. Analysis validates prepare before launching the two output arms, waits for every exit status, and reports only after success. This review does not infer a visual-preservation explanation from activation changes or from the source method; that requires the declared experiment and conditional controls.

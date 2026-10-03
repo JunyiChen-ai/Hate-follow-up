@@ -194,3 +194,33 @@ Lab nvidia-smi failure was traced to /dev/nvidiactl EPERM from user.slice
 50-slurm-gpu-only.conf, not established hardware failure. qian_pilot Slurm has
 local partitions for all four lab hosts. Stabilizer will use its existing reviewed
 HateVLM environment in a local-sc474399 GPU allocation, not alter system policy.
+
+
+Additional primary method reads while candidate16 full run and candidate17 code
+review proceed: VideoTree2405.19209v1 sections3.1–3.3 and implementation details
+(adaptive breadth, relevance-dependent tree depth, caption-based reasoning);
+Temporal Search2507.02946v1 algorithms1–2/section3 (interval proposals, confidence
+plus self-evaluation, global keyframe descriptions, sequential/best-first search);
+ReMem2607.24794v1 source discovered/opened, not yet fully method-audited. These are
+unselected future directions, not candidate18. No new input extraction, method
+constants, data or model was selected. Their confidence-calibration and overhead
+claims on QA do not establish validity for binary hate-window localization.
+
+ReMem full method3.1–3.3 subsequently read: entity/query feature fusion, two-step
+semantic/temporal graph diffusion and event-budget routing. Its projection-weight
+provenance and some equation/text consistency require author-code inspection before
+any faithful adaptation. No candidate selected. VTimeCoT ICCV2025 primary PDF
+method3.1–3.3 also read (visual progress bar, VideoCLIP-XL retrieval/highlights,
+iterative tool reasoning/cuts;3step maximum). This is a full tool/retrieval mechanism,
+not merely timestamp overlays, and has not been proposed or implemented here.
+Read-only source under third_party/vtimecot_source_read/. No videos were modified
+and no new feature models/data downloaded.
+
+
+Unlabeled input-coverage diagnostic2026-10-03: actual native frame timestamps
+from src.video_inputs.frame_paths plus all_test manifest/fixed8s windows, no GT.
+`runs/20261002_m1_iteration/frame_support/summary.json`:1030/3768HateMM windows
+and1233/3591HCS windows contain no sampled native frame;114/215 and118/118videos
+have at least one such window. This is sparse visual coverage, not evidence that
+those windows contain missed hateful visual content. No new sampler/candidate,
+frame extraction or scoring change is selected from this count alone.
