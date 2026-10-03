@@ -147,3 +147,14 @@ and333 synthetic canonical report pass. Target5.15.1 position implementation was
 also read independently; implementer target5.15.1 selfcheck passed and returned
 as `runs/20261003_m1_preserver/selfcheck_lab_server/numerics.json`.
 GPU5video smoke remains required before any full performance result.
+
+GPU smoke completed on sc448960 through Slurm job54,2026-10-03. All5videos,
+292native branches and5globals reproduce the historical native input/readout
+exactly; all-window alpha0 and fresh native replay pass. No GT was used.
+Source: `runs/20261003_m1_preserver/r1_smoke/plumbing_summary.json`, checks.jsonl
+and run.log. Total smoke45.4s (including extra checks), peak17.824GiB.
+The first2videos/corpus extrapolate deployed Preserver332.1s/417.7s
+(HateMM/HateClipSeg), paired385.4s/536.1s, about15.36min paired total.
+These are small-sample scheduling estimates, replacing the initial estimate;
+full-run measured costs will be reported. No constants or input rules changed
+after smoke. Full333 runs on the same sc448960 Slurm local partition.

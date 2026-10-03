@@ -47,8 +47,8 @@ within+.003601/-.000927，无主指标+.01，归档为第11项，视觉原始排
 within仅+.000069/+.000534，归档为第14项；来源 `runs/20261003_m1_projector/r1_main_decoded/project/metrics.json`。
 第十五候选Highlighter完整333完成：HateMM .897078/.694292/.754667，HCS .716890/.671082/.637897；
 within仅+.003885/+.000548，无主指标+.01，归档为第15项。来源 `runs/20261003_m1_highlighter/r1_main_decoded/highlight/metrics.json`。
-第十六候选Stabilizer（PAS时间RoPE相位分组）独立方案/代码审查PASS，含18帧和每臂独立全局判断检查；Slurm实机5视频smoke通过（5global/292branches精确复现）；完整333在sc474399作业52运行，尚无性能结果。
-第十七候选Preserver（无转录视觉问题表示注入完整上下文）独立方案审查PASS；已实施并通过36层FP32/BF16、18/20帧数值检查，独立代码审查中；未完整评分。
+第十六候选Stabilizer（PAS时间RoPE相位分组）独立方案/代码审查PASS；完整333在sc474399作业52完成并回传，配对耗时1108.1s，CPU统一评测中，尚无性能结论。
+第十七候选Preserver（无转录视觉问题表示注入完整上下文）独立方案/代码审查PASS；sc448960 Slurm作业54的5视频smoke通过，292分支和5global精确复现，alpha0/缓存恢复通过；结果已回传，准备完整333。
 运行环境更新：实验室四机启用了Slurm-only GPU访问策略，普通SSH会话访问nvidiactl被EPERM拒绝；使用qian_pilot的local-主机名分区。当前任务不更新Overleaf。
 
 **累计十五个归档小结（规则11，不超过10行）**：
