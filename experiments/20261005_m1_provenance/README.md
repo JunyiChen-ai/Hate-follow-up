@@ -289,3 +289,58 @@ allraw exact; no GT accessed. `runs/20261005_m1_provenance/r1_full_smoke_analysi
 and `source_interface_diagnosis/plumbing_failure.json` retain this observation.
 Actual aggregate new treatment HMM313.626489s/HCS134.534627s, versus native
 8.398999s/4.098451s; source193.566707/84.738675s included. No main/idea verdict.
+
+## Source interface B predeclaration (before B implementation/generation)
+
+Independent actualGPU diagnosis
+`docs/reviews/20261005_m1_provenance_gpu_interface_diagnosis.md` confirms original
+A input/token/grid/strict-parser observations; no actual HF5.15.1 implementation
+bug located.158ledger calls:156missing speaker,2missing entity quote;22link
+calls:9root arrays,13valid empty objects. Local HF4.57.6 position concern is not
+the GPU path. A is retained, not retrospectively parsed/repaired or evaluated.
+
+B is a newly declared structured source-handle interface for the SAME complete
+persistent entity/discourse graph family, not an A bug fix or performance
+revision. A had no reliable execution/main/GT performance, so no result-guided
+revision has been consumed. Use separate `data/temporal_entity_discourse_graph_handles`
+and `r1_handles_*` outputs. Native current inputs/G/own hard stance, exact
+source PTS/2local frames/full ASR, graph types/components/path retrieval, fresh
+independent V/S readers/max/fixedr6/canonical4fps and whole main/control gates
+unchanged. Actual frame witnesses may be reused after exact source/pixel
+validation, but their original decode cost remains charged on new videos.
+
+One FP32 constrained-greedy generation per ledger and per8-window link block
+with the same Qwen. Force JSON punctuation/known generated occurrence IDs,
+choose only exact local frame IDs or exact uniquely occurring text spans,
+choose only real current graph endpoints/legal types. Every forced and chosen
+token is forwarded and recorded; no post-output salvage, retries, hidden
+semantic parser or gold entity inventory. Arrays can terminate empty at every
+optional list; unsupported descriptions/speakers/owners may be UNKNOWN. Do not
+force any entity/relation just to meet the unchanged actual-exercise guard.
+
+B constants uniformly both corpora: ledger512/link2048 token caps unchanged;
+max4entities/2actions/2quotations/64links unchanged; descriptions max24words and
+64generated content tokens. Text-entity candidates are every unique contiguous
+1-4whitespace-word source span; quotation candidates every unique contiguous
+1-16word span. These source catalogs contain no semantic labels; exact original
+characters, not normalized copies. Entity support chooses actual local frame
+with empty quote or null frame with catalog quote; action/owner/speaker chooses
+current valid entity ID or UNKNOWN (speaker forced UNKNOWN if no actual body).
+Descriptions may be UNKNOWN; semantic accuracy is not certified by the grammar.
+Link type chooses STOP or any type with a currently legal unused endpoint pair;
+then from/to chosen among those actual endpoints with original anchor/type/time
+constraints. Repeated tuples excluded from future choices; same_entity retains
+canonical symmetric endpoints. Limits reject the WHOLE incomplete ledger/link
+as UNKNOWN with exact actual utterance source retained. Record exact current
+source prompts/tokens/choice events/positions, full costs and input replay.
+
+No predicted performance claim. Intended gain is consistent actual source
+entity/ownership retrieval entering the reader rather than JSON compliance
+alone. Estimated complete new-video treatment180-360GPUmin, unmeasured; same
+W+ceil(W/8)source calls plus up to2Wfresh readings and original decode/source
+encoding charged. Cached old A model outputs cannot serve as B observations.
+Meaningful CPU replay/bounds/whole-rejection/typed-source graph checks and
+independent narrow code/interface review precede the SAME original fixed5.
+Each corpus still requires nonempty valid ledger AND nonlocal retrieval,
+allraw native exact and current repeat checks before any main/GT performance.
+Empty/UNKNOWN B remains a failed execution observation, never forced success.

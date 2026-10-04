@@ -357,3 +357,5 @@ remain honestly reported; no GT/smoke-performance selection. Independent actual
 source-generation version investigation confirmed lab HateVLM/HF5.15 infers
 correct cached 3D positions from get_seq_length; root4.57 diagnostic concern
 does not apply to these GPU runs. Identical R2 full333 next.
+
+Identical R2 complete333 Slurm141 dispatched onsc474399 at10:21. Current machine code synchronization and actual source-generation version investigation confirmed; no scientific code/input change from fixed5. Whole paired native/conditional readings use unchanged R1 source cache with original per-new-video acquisition cost charged.
