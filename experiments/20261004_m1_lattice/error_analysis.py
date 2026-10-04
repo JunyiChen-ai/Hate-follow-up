@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Postscore descriptive error analysis; never imported by scoring."""
+import argparse
 import json
 import os
 import socket
@@ -10,16 +11,18 @@ from analyze import read
 
 
 def main():
-    run=ROOT/'runs/20261004_m1_lattice/r1_full_main'
-    report=ROOT/'runs/20261004_m1_lattice/r1_full_main_analysis'
-    out=ROOT/'runs/20261004_m1_lattice/r1_error_analysis';out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser();ap.add_argument('--revision',type=int,choices=(1,2),default=1);args=ap.parse_args()
+    stem=f'r{args.revision}'
+    run=ROOT/f'runs/20261004_m1_lattice/{stem}_full_main'
+    report=ROOT/f'runs/20261004_m1_lattice/{stem}_full_main_analysis'
+    out=ROOT/f'runs/20261004_m1_lattice/{stem}_error_analysis';out.mkdir(parents=True,exist_ok=True)
     print(socket.gethostname(),flush=True);(out/'run.pid').write_text(str(os.getpid()))
     raw={a:read(run/a/'predictions.jsonl') for a in ('base','optimized')}
-    final={a:read(run.parent/'r1_full_main_decoded'/a/'predictions.jsonl') for a in raw}
+    final={a:read(run.parent/f'{stem}_full_main_decoded'/a/'predictions.jsonl') for a in raw}
     paired={(r['dataset'],r['video_id']):r for r in json.loads((report/'per_video.json').read_text())}
     sources=[str(p.relative_to(ROOT)) for p in [report/'summary.json',report/'per_video.json']]
     sources += [str((run/a/'predictions.jsonl').relative_to(ROOT)) for a in raw]
-    sources += [str((run.parent/'r1_full_main_decoded'/a/'predictions.jsonl').relative_to(ROOT)) for a in raw]
+    sources += [str((run.parent/f'{stem}_full_main_decoded'/a/'predictions.jsonl').relative_to(ROOT)) for a in raw]
     rows=[];summary={};examples=[]
     for ds in DATASETS:
         path=ROOT/f'data/gt_4fps/{ds}.npz';sources.append(str(path.relative_to(ROOT)))
@@ -67,7 +70,7 @@ def main():
                 chosen_windows=sorted(candidates,key=lambda w:-(w['new_speech']-w['base_speech']))[:2]
                 examples.append(dict(group=kind,video=r,source=str((CACHE/ds/(r['video_id']+'.json')).relative_to(ROOT)),
                     speech_examples=[dict(diagnostic=w,input=metadata['windows'][w['i']]) for w in chosen_windows]))
-    payload=dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),scope='development-selected postscore only; no scoring/fitting/threshold input',
+    payload=dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),revision=args.revision,scope='development-selected postscore only; no scoring/fitting/threshold input',
         GT_read=True,sources=sources,input_root=str(CACHE.relative_to(ROOT)),datasets=summary)
     (out/'summary.json').write_text(json.dumps(payload,indent=2)+'\n')
     (out/'per_video.json').write_text(json.dumps(rows,indent=2)+'\n')

@@ -59,9 +59,15 @@ HMM within+.048220、配对区间[.017740,.084486]为正，保留这项正向进
 按规则9继续R2：保留完整beam的词语关联、替换独立槽重组；修订1/3，CPU/独立窄检查PASS。
 R2固定5在sc474399/Slurm124完成并回传；noGT prepare PASS、native全读数精确、134新S变化、5clone/unit均精确。
 来源`runs/20261004_m1_lattice/r2_full_smoke_analysis/plumbing_summary.json`。
-R2完整333在sc474399/Slurm125于07:26:23完成，输入与输出已回传本机，统一评测进行中，尚无R2性能结果。
+R2完整333在sc474399/Slurm125于07:26:23完成并回传，native原始读数/六项精确。
+HateMM ROC/PR/within .896267/.677443/.802410（84），HCS .712939/.667846/.639245（99）。
+HMM within+.051628、配对区间[.019888,.088288]为正，保留这项进展；HMM PR−.016791/HCS within+.001896，performance FAIL。
+权威来源`runs/20261004_m1_lattice/r2_full_main_decoded/optimized/metrics.json`；实测新视频72.45min/native7.88倍。
 R2六个结构/转写/质量/错来源对照已准备，独立CPU/代码审查PASS；仅prepared，完整主门通过才启动控制GPU。
 审查来源`docs/reviews/20261005_m1_lattice_path_controls_code.md`；尚无实际控制读数。
+完整误差分析已记录，R3改为每条完整转写一个末端表示、只由末端进入查询；修订2/3。
+CPU与独立窄代码检查PASS，来源`docs/reviews/20261005_m1_lattice_terminal_code.md`；实际8B固定5验证待运行。
+算法/成本/全部读过的GT与设计关联唯一明细仍为实验README；全部development-selected，机制尚未建立。
 备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS，未跑GPU/读GT。
 入口`experiments/20261005_m1_program/README.md`，仅为后续备用，等待Lattice的结果分流。
 备用候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；

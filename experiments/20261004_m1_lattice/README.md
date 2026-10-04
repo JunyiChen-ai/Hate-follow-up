@@ -549,3 +549,112 @@ Both output and unchanged source input returned locally immediately, without
 checksum/delete options; transfer logs `r2_main_{run,input}_transfer.log` under
 the run root. Detached CPU noGT prepare and canonical evaluation are running;
 no completed R2 performance or mechanism claim yet.
+
+## R2 completed result and R3 predeclaration, 2026-10-05
+
+R2 complete333 native raw G/windows/curves and six final metrics EXACT. Authority
+`runs/20261004_m1_lattice/r2_full_main_decoded/optimized/metrics.json`:
+HateMM ROC/PR/within .8962667642452506/.6774431550730213/.8024099744861634
+(84eligible); HateClipSeg .7129393756053307/.6678464475414709/.6392448429477551
+(99eligible). HMM within+.05162793052019643 with95% pairedCI
+[.01988807419459929,.0882880597997688] is preserved positive progress. HMM
+PR−.01679144827318968; HCS within+.0018957291436563217. No common dual-corpus
+gain and a loss outside noise: performanceFAIL. Six R2 control arms remain
+prepared only, no controlGPU and no mechanism claim. Raw shared speech within
+changes+.051619701603807265/+.023100667764692343, raw max+.027426282117242944/
+.004811282404509483; native visual exactly unchanged. All development-selected.
+Cost authority `r2_full_main_analysis/alignment.json` under the run root:
+new-video35.076396/37.373454min, total72.449850min/native7.883060 times, including
+the actual unchanged ASR59.950735min. 6580new S; reader11291/10227 actual paired
+forwards, diagnostics0; graph752874/842297tokens and17182/15696complete paths.
+No epsilon/zero-mass paths; peaks17.823454/17.807392GiB. Physical reuse of ASR
+does not remove its standalone new-video cost.
+
+Postscore R2 error analysis read the actual native/optimized raw and fixed-r6
+predictions, summary/per_video, `data/gt_4fps/{HateMM,HateClipSeg}.npz`, and the
+actual ASR cache. Exact read paths are in
+`runs/20261004_m1_lattice/r2_error_analysis/summary.json`; diagnostics and actual
+source texts in `per_video.json`/`examples.json`. Native ASR “Music”/repetition
+misses local language recovered by beams, consistent with positive within cases.
+Counterexamples include non_hate_video_188 recovered profanity (newS+11.091 vs
+native−14.608, GTnegative), hate_video_114 first-window profanity (newS+13.800
+vsnative−17.627, GTnegative), HCS hearing questions/quoted threats and lyric
+profanity with positive newS in GTnegative windows. These are descriptive cases,
+not an automatic profanity filter or proof that any one cause explains the loss.
+Frame-weighted raw speech shifts positive/negative are−2.090669/+.304951 onHMM
+and−1.019886/+.426233 onHCS. No label enters scoring, fitting, constant selection
+or thresholds; the next design is explicitly development-selected.
+
+An additional descriptive key-budget calculation read the actual R2 graph records
+and completed per-window error analysis; saved in
+`r2_error_analysis/path_key_budget.json`. Mean weighted word-key mass is43.883710/
+53.666988 per available window (not measured realized attention), while merged
+path mass sums to1. Almost5 distinct paths/window contain218.922361/268.162050
+tokens. Thus a hypothesis contributes its mass once per token to the query's
+prior key inventory; R2 preserves sentence dependencies but still exposes every
+candidate word directly. Long repetitive hypotheses can supply hundreds of keys.
+This is a mathematical/readout observation, not a proven cause of the errors.
+
+R3 hypothesis: encode each complete uncertain utterance, then read one end-state
+per path instead of all of its word keys. This is revision2/3 of the same family,
+not a new candidate. No R3 GPU/GT result yet. Sources,5beams, scores/FP32softmaxT1,
+seed0,448ASR cap,8s/16k availability, G/own hard stance/V/policy,4fps/fixedr6 and
+the literal R2 scaffold/question are unchanged on both corpora. Append exactly
+one literal newline `\n` token to each nonempty positive-mass complete path;
+assert the frozen Qwen tokenizer encodes this literal as one token. It is a
+neutral boundary, not an independently generated label or class vote. Exact
+duplicate texts merge as before; epsilon/zero mass remain no-KV and unnormalized.
+Each boundary has its path's consecutive logical position and sees native prefix,
+scaffold and its own complete utterance at all36BF16 layers. Candidate histories
+remain mutually exclusive. Every query/tail row sees native prefix/scaffold,
+earlier query/self and ONLY the path boundary keys with log merged path mass;
+all candidate lexical keys are−inf for that query. Query logical start follows
+the maximum path length including boundary. Native full ASR/overview remain
+visible; no global hard isolation or calibrated acoustic-posterior claim.
+One final Qwen newS; no hypothesis classification, output average, rerouting,
+score calibration, postprocessing or label-dependent vocabulary filter.
+
+R3 `terminal_{graph,reader,measure,analyze}.py` and corresponding launch files
+preserve R1/R2 files/results. Atomic current-source/CPU native-prefix/geometry/
+token/margin/cost replay remains required. Hand masks and independent real36-layer
+CPU tests must establish endpoint-only query visibility and exception restoration
+before GPU. Actualfixed5 native allraw exact and cloned R3 replay exact remain
+mandatory. A one-path end-state reader does intentionally differ from an ordinary
+all-word causal query; it instead must agree within the unchanged .01 tolerance
+with a separately constructed one-path end-state matrix on IDENTICAL token IDs.
+This reference is independently checked, uses the same boundary-only operator,
+and never substitutes for native parity. No performance or numeric tolerance
+is relaxed. Empty graph reduces to the original scaffold/query causal reader.
+
+Physical new ASR calls0 with cache reuse. New videos still pay full59.95min source
+acquisition for333; additional Qwen reader planning10–25min, total70–90min,
+unmeasured until smoke/main. At most5additional boundary tokens/window; input
+encoder/decoder acquisition count unchanged. One newS per available window;
+fixed5 clone/unit/reference adds3diagnostics per eligible video, excluded from
+standalone deployment cost but reported physically. Full333 has no diagnostics.
+
+If and only if complete R3 main passes, declare/review/run matched controls before
+their scores: ordinary-onebest with boundary and same scaffold, flat with all
+identical R3 tokens/serial positions, binary endpoint accessibility with finite
+bias0, wrong-mass with fixed ID inventory, truthful wrong-audio window and an
+all-word query operator on otherwise identical boundary tokens. Structural novelty
+must beat both onebest and matchedflat in the same main metric≥.01 on BOTH corpora;
+the terminal bottleneck can only be a novelty component if its removal also drops
+a common main metric≥.01 on BOTH corpora. The historical R2 is descriptive only:
+its token inventory differs, so it is not the matched all-word ablation. Require
+raw ordering, paired intervals, actual intervention coverage and final independent
+mechanism assessment. No R2 control run or historical-number hybrid rescues a
+failed R3 gate. Otherwise rule9/max3revisions governs the next branch.
+
+R3 author hand graph/mass/end-state accessibility/position/empty/underflow oracles
+and actual frozen Qwen one-token newline check PASS:
+`runs/20261004_m1_lattice/terminal_cpu_checks/selfcheck.log`. Independent narrow
+code review PASS, same-family provisional:
+`docs/reviews/20261005_m1_lattice_terminal_code.md`; actual evidence in
+`terminal_code_review/` under the run root. Real36-layer BF16 attention/clone/
+nonempty-and-empty unit/exception restoration tests, actualfixed5 current source/
+CPU-expanded native prefix with18corruptions and canonical identity/4subprocess
+checks passed. Two diagnostic-only bugs were fixed and independently confirmed:
+FP32 duplicate mass can sum to1.000000014901 rather than exact Python1, and empty
+unit paths require no terminal key. Production path mass/readout unchanged;
+.01 GPU reference tolerance unchanged. Actual8B fixed5/full333 remains pending.
