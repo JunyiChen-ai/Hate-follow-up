@@ -327,3 +327,63 @@ diagnostics9/6 (.31564/.19191s). ASR encoder87/52, decoder4800/1097 including
 language detection. Graph tokens5768/1425, slots2093/841. Rough full-corpus cost
 33.88266/16.06688min =49.94954min; an extrapolation, not actual complete cost.
 Proceed identical complete333/main, without changed constants or selected windows.
+
+### Control execution details, declared before control implementation/result
+
+Complete333 main submitted sc474399/Slurm123. Controls remain conditional on the
+complete main performance gate, never partial results. There are six independent
+new speech arms: full, onebest, flat, binary, wrong_mass, wrong_audio_window;
+native G/own stance/V and reference S are recollected once and held common.
+Each arm makes one new S forward per actually available window on its own restored
+cache. Joint workload3+W+native_S+6*available_S; fixed5 additionally clone the first
+available S of EACH arm, separately timed6 calls/video. Input acquisition is the
+same real beam cache, charged to every arm's standalone new-video cost but performed
+only once in the physical experiment. No new ASR/model/label/threshold/metric input.
+Full and native must exactly reproduce the corresponding completed main BEFORE
+any control evaluator reads GT. Main performance PASS is a launcher hard guard.
+
+onebest tokenizes `one leading space + exact onebest text` in one call between the
+exact same chat scaffold and question, with ordinary causal mask/serial positions.
+flat retains the exact graph IDs/head/tail, causal mask and serial positions;
+binary retains IDs/graph positions and all mask exclusions, finite logmass->0.
+wrong_mass rotates option masses by floor(K/2) and retains original serialized
+token IDs/branch identity/positions even when mass order changes. Null alternatives
+participate. Slots containing any zero mass are recorded as unchanged because
+moving positive mass to a previously omitted text node would change the matched
+token inventory; this coverage limitation is reported, not hidden. Singleton
+slots are unchanged. No per-corpus filtering or score-based arm selection.
+
+wrong_audio_window rotates only actually acquired available windows by floor(W/2).
+Its scaffold states the DONOR's true window/time; immediately before the original
+final speech question it adds `Judge destination window {i} of {n}, from {a:.1f}s
+to {b:.1f}s of this video. The transcription above comes from source window {j}
+of {n}, from {c:.1f}s to {d:.1f}s.` These are truthful source/destination coordinates,
+not mislabeled evidence. No available window/singleton stays unchanged. This arm
+necessarily changes the source/destination instruction and is a scoped diagnostic,
+not a perfectly text-matched isolation claim. Native full transcript remains visible.
+
+Controls save current-source confusion/compiled IDs/positions/mask specification,
+actual changed mass bindings/source windows, per-arm raw/native curves and physical
+call/time/memory records. Resume and noGT prepare rebuild from current beam inputs
+and current native chat/template/tokenizer, without hashes. Same canonical evaluator
+and fixed r6 apply to all seven output streams. Require common same-metric+.01
+over BOTH onebest AND flat on BOTH datasets for structural novelty, raw-ordering
+and paired intervals, actual incorrect-input coverage and independent final review.
+binary/mass weighting is diagnostic unless its own rule14g removal gate passes.
+Preliminary six-arm reader work20–60GPUmin/333 on5090 in addition to main collection,
+shared beam acquisition reused for this experiment; unmeasured. No control GPU yet.
+
+Controls prepared, independent rule6 PASS (same-family provisional):
+`docs/reviews/20261005_m1_lattice_controls_code.md`. Actual evidence
+`runs/20261004_m1_lattice/controls_code_review/`: actual5 CPU processor/ASR/beam
+source/token binding and12 corruption rejections; memory-stub reader6arm/call/copy
+checks and noavailable boundary; real36-layer tiny BF16 Qwen6arm clones/exception
+KV+delta recovery; independent epsilon rotation/zero/causal/binary/donor cases;
+canonical7streams14 subprocess commands and launcher four gate cases. These are
+CPU checks, not actual8B control predictions or mechanism evidence. Reviewer found
+cost binding gap; validator now ties prep/ASR counts to current metadata and
+reconstructs every native/arm standalone time from actual components. Three cost
+corruption cases rejected. Actual author CPU fixed5 compile summary in
+`controls_cpu_compile/summary.json` binds native expanded image IDs and token
+inventories. Native/full GPU parity still required after complete main PASS.
+No control GPU or control score/GT analysis has run.
