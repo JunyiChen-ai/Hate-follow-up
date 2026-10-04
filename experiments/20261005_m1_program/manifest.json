@@ -1,6 +1,6 @@
 {
   "date": "2026-10-05",
-  "role": "Independent fixed5 plumbing running on lab3 Slurm130 while Lattice22 R3 main runs; complete Program main deferred",
+  "role": "Actualfixed5 GPU completed locally, noGT mechanism-exercise guard FAIL; no main/GT/performance verdict",
   "proposal": "experiments/20261005_m1_program/README.md",
   "proposal_review": "docs/reviews/20261005_m1_program_proposal.md",
   "proposal_pass": true,
@@ -15,5 +15,8 @@
   "performance_result": null,
   "constants_declared_before_run": true,
   "selected_host": "sc474398",
-  "smoke_host": "sc474398"
+  "smoke_host": "sc474398",
+  "smoke": "runs/20261005_m1_program/r1_full_smoke_analysis/run.log",
+  "smoke_pass": false,
+  "interface_diagnosis": "requested independent narrow diagnosis; no algorithm change"
 }

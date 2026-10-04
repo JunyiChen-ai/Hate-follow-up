@@ -21,6 +21,25 @@ partition differs from reviewedlab2 wrapper); acquisition and paired scoring
 stay together onthishost. Actual8B/schema/clone/native parity pending; no main
 or performance evaluation/GT use at this point.
 
+Actualfixed5 Slurm130 completedsc474398 at08:00:22. Both complete run and derived
+program inputs returned immediately to local paths. Acquisition/schema binding,
+native and cloned reads completed, but the declared noGT `analyze.py --stage
+prepare --smoke` FAILed at `mechanism not exercised in this corpus smoke`:
+both corpora have0actual fresh module calls. Authority error log
+`runs/20261005_m1_program/r1_full_smoke_analysis/run.log`; actual acquisition
+records `data/temporal_evidence_program/{HateMM,HateClipSeg}/<video>.json`, host,
+prompt/tokens/parse/execute records included. Complete Program main is NOT
+launched; no performance metric/GT/idea verdict. The guard is unchanged.
+
+Observed generated interface violations include segment argument `"s0"` instead
+of integer0 and timestamp94.94 in a character-offset slot; programs with21
+frame/emit operations exceed declared12; missing requested windows, invalid
+top-level arrays and one truncated chunk. Strict execution records UNKNOWN and
+does not coerce invented IDs/coordinates or fabricate perception. An independent
+narrow diagnosis is requested to distinguish real generator/interpreter/cache
+bugs from correctly rejected noncompliant model outputs before any repair. No
+scientific constants/prompt/parse contract have been changed after this smoke.
+
 ## Mechanism, source and scope
 
 A program selects source objects and composes factual perception through explicit
