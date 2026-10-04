@@ -88,7 +88,7 @@ def read_control(j,engine,row,segments,out,arm,main,smoke=False,expanded_without
                 if count>2:sizes.append(count-2)
             count=sum(sizes)
             if arm in ('uniform','fixed4'):chosen=uniform(all_candidates,a,b,count)
-            elif arm=='mismatch':chosen=[e for r in main_trace['rounds'] for e in r['added']]
+            elif arm in ('mismatch','verdict_replay'):chosen=[e for r in main_trace['rounds'] for e in r['added']]
             else:chosen=[]
             observed=[f[0] for f in frames];acquired=[];offset=0
             for size in sizes:
@@ -133,7 +133,8 @@ def read_control(j,engine,row,segments,out,arm,main,smoke=False,expanded_without
     details={'dataset':ds,'video_id':vid,'traces':traces,'actual_forwards':j.forward_calls-initial,
         'acquisition_reads':acquisitions,'native_replay_exact':True if smoke else None,
         'peak_GiB':torch.cuda.max_memory_allocated()/2**30,'paired_seconds':elapsed,
-        'diagnostic_seconds':diagnostic_seconds,'main_trace':f'runs/20261003_m1_explorer/r1_main/details/{ds}/{vid}.json'}
+        'diagnostic_seconds':diagnostic_seconds,'main_trace':f'runs/20261003_m1_explorer/r1_main/details/{ds}/{vid}.json',
+        'expanded_context':'observation_only' if expanded_without_verdict else 'native_verdict','native_prefix_tokens':n}
     if expanded_without_verdict:
         details['observational_copy_seconds']=copy_seconds
         details['expanded_prefix']={'context':'observation_only','tokens':P,'global_dialogue_tokens_removed':n-P,
@@ -145,9 +146,11 @@ def read_control(j,engine,row,segments,out,arm,main,smoke=False,expanded_without
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch'),required=True)
+    ap=argparse.ArgumentParser();ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch','verdict_replay'),required=True)
     ap.add_argument('--smoke',action='store_true')
     ap.add_argument('--version',choices=('r1','r2','r3','r4'),default='r1');a=ap.parse_args()
+    if a.arm=='verdict_replay' and a.version!='r4':ap.error('verdict_replay requires R4 trajectories')
+    without_verdict=a.version=='r4' and a.arm!='verdict_replay'
     main_root=ROOT/'runs/20261003_m1_explorer'/(a.version+('_smoke' if a.smoke else '_main'))
     control_name='controls' if a.version=='r1' else a.version+'_controls'
     out=ROOT/'runs/20261003_m1_explorer'/(control_name+('_smoke' if a.smoke else ''))/a.arm
@@ -160,7 +163,7 @@ def main():
     import transformers
     config={'host':socket.gethostname(),'date':time.strftime('%Y-%m-%d'),'arm':a.arm,'smoke':a.smoke,'revision':a.version,
         'code':'experiments/20261003_m1_explorer/controls.py + reviewed measure.py/explorer.py; sources2026-10-04',
-        'expanded_context':'observation_only' if a.version=='r4' else 'native_verdict',
+        'expanded_context':'observation_only' if without_verdict else 'native_verdict',
         'model':MODEL,'torch':torch.__version__,'transformers':transformers.__version__,'seed':0,'GT_in_reader':False,
         'counts':'always up to4' if a.arm=='fixed4' else 'replay actual main per-window round counts',
         'main_trace_root':str(main_root.relative_to(ROOT)),'entropy_regating':False,'new_frames_per_round':2,
@@ -173,7 +176,7 @@ def main():
     with (out/'predictions.jsonl').open('w') as handle:
         for i,row in enumerate(rows):
             ds,vid=row['dataset'],row['video_id'];source=main_root/'details'/ds/(vid+'.json')
-            record,details=read_control(j,engine,row,asr[ds].get(vid,[]),out,a.arm,json.loads(source.read_text()),a.smoke,expanded_without_verdict=a.version=='r4')
+            record,details=read_control(j,engine,row,asr[ds].get(vid,[]),out,a.arm,json.loads(source.read_text()),a.smoke,expanded_without_verdict=without_verdict)
             details['main_trace']=str(source.relative_to(ROOT));dest=out/'details'/ds;dest.mkdir(parents=True,exist_ok=True)
             (dest/(vid+'.json')).write_text(json.dumps(details)+'\n');handle.write(json.dumps(record)+'\n');handle.flush()
             logging.info('progress %d/%d %s %s elapsed=%.1f peak_GiB=%.2f acquisitions=%d',i+1,len(rows),ds,vid,time.time()-started,details['peak_GiB'],details['acquisition_reads'])

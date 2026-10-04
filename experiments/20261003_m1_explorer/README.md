@@ -613,3 +613,46 @@ extrapolate HMM525.73s/HCS958.72s,total24.74min; this is a small-sample estimate
 with processor diagnostics included, and R3's analogous estimate underestimated
 its full collection by about10min. Retain35–40min as a practical budget pending
 actual R4 time. Proceed to unchanged complete333 collection on the same target.
+
+## Conditional fixed-trajectory context control, declared before R4 results
+
+Declaration2026-10-04, while Slurm87 collects full R4 and before any R4 metric/GT
+analysis. If the main gate passes, run `verdict_replay` on complete333 and the
+same fixed5 smoke; paths `r4_controls[_smoke]/verdict_replay` and
+`r4_controls_decoded/verdict_replay`. It is a control, not revision4 or a new
+method. Obtain the unchanged native prefix/global answer/visual/speech. For each
+window use exactly the R4 trace's round counts, added source entries, cumulative
+chronological sets, actual timestamp strings and original visual question.
+Replay every declared round on the ORIGINAL full native cache with its global
+question/answer dialogue, rather than R4's observation-only cache. No re-gating,
+re-selection, changed answer, alternate prompt, R3 margins, score averaging or
+label input. Return the final replay margin; zero-round windows return the
+unchanged native read. Original global and speech remain exact. Reject use on
+R1/R2/R3. All tokens/grids other than the removed/restored dialogue must match
+the R4 acquired observations at fixed sets. Native replay checks still required.
+
+Budget matches the realized main `3+B+sum(R_w)` and cumulative image encodes;
+it needs no second observational cache. Reuse original20-frame/ASR inputs and
+R4 trace entries; pixels are re-encoded for every replay. Charge actual source
+indexing/decoding/reading time, estimated35–40GPUmin total. Shared canonical
+evaluation and the same independent full-corpus r6 fit apply. Compare all three
+final metrics and paired raw visual/max/decoded within; final comparisons include
+changed r6 fitting and must not be described as solely a hidden-model effect.
+This estimates the effect of the ENTIRE dialogue treatment conditional on R4's
+chosen trajectories, including changed positions/conversation structure, not a
+Yes/No-token causal effect or an effect averaged over arbitrary policies. It does
+not establish acquisition novelty. The four already declared acquisition controls
+still use R4 observation-only conditioning and its own traces. Independent narrow
+review of this fixed replay before implementation/use, then target smoke, is
+required. No control GPU job is submitted before R4's full performance gate.
+
+Fixed-trajectory proposal and narrow code review PASS:
+`docs/reviews/20261004_m1_explorer_verdict_replay_{proposal,code}.md`, evidence
+`runs/20261003_m1_explorer/verdict_replay_review/`. Actual CPU replay and old-four-
+arm compatibility,333synthetic analysis,negative-version/trace checks and CPU
+launcher pass. An independent derived CPU Judge supplies cache_position for
+old4.57 native incremental calls; this is a test-runtime adapter, not a production
+change. Target5.15.1 actual source1108–1141 uses cache.get_seq_length() directly
+when incremental native calls omit attention_mask, so no production adaptation
+is needed. CPU evidence does not replace target8B control smoke. Main R4 code
+and its running collection are unchanged. The conditional GPU gate remains.

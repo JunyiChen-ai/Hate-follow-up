@@ -12,6 +12,7 @@ from src.eval.evaluate import within_video_macro
 
 
 def paths(arm,version='r1',smoke=False):
+    assert arm!='verdict_replay' or version=='r4'
     parent=ROOT/'runs/20261003_m1_explorer'
     name='controls' if version=='r1' else version+'_controls'
     return (parent, parent/(version+('_smoke' if smoke else '_main')),
@@ -26,7 +27,7 @@ def prepare(arm,smoke,version='r1'):
     assert cfg['GT_in_reader'] is False and cfg['entropy_regating'] is False
     assert cfg['arm']==arm and cfg['smoke']==smoke and cfg['model']=='Qwen/Qwen3-VL-8B-Instruct'
     assert cfg.get('revision','r1')==version and cfg['main_trace_root']==str(main.relative_to(ROOT))
-    assert cfg.get('expanded_context','native_verdict')==('observation_only' if version=='r4' else 'native_verdict')
+    assert cfg.get('expanded_context','native_verdict')==('observation_only' if version=='r4' and arm!='verdict_replay' else 'native_verdict')
     rows=[]
     for key,b in base.items():
         p=pred[key];ds,vid=key
@@ -34,12 +35,15 @@ def prepare(arm,smoke,version='r1'):
         assert b['duration']==p['duration'] and b['native_rate']==p['native_rate']==4
         assert len(b['score_curve'])==len(p['score_curve']) and np.isfinite(p['score_curve']).all()
         dt=json.loads((root/'details'/ds/(vid+'.json')).read_text());mt=json.loads((main/'details'/ds/(vid+'.json')).read_text())
-        if version=='r4':
+        if version=='r4' and arm!='verdict_replay':
             ep=dt['expanded_prefix'];assert ep['context']=='observation_only' and ep['tokens']==b['extra']['prefix_tokens']
             assert ep['global_dialogue_tokens_removed']==mt['expanded_prefix']['global_dialogue_tokens_removed']>0
             assert ep['copy_created']==ep['positions_match_observational_render']==(dt['acquisition_reads']>0)
             assert dt['observational_copy_seconds']>=0
             if smoke and dt['acquisition_reads']>0:assert ep['fresh_render_checked_counts']
+        if arm=='verdict_replay':
+            assert dt['expanded_context']=='native_verdict' and 'expanded_prefix' not in dt
+            ep=mt['expanded_prefix'];assert dt['native_prefix_tokens']==ep['tokens']+ep['global_dialogue_tokens_removed']
         ws=p['extra']['windows'];assert len(ws)==len(b['extra']['windows'])==len(dt['traces'])==len(mt['traces'])
         sizes_match=tokens_match=True;matched_windows=0;image_encodes=0;rounds=0
         groups=Counter(sum(len(r['added']) for r in t['rounds']) for t in mt['traces'])
@@ -68,7 +72,15 @@ def prepare(arm,smoke,version='r1'):
                 assert len(r['image_counts'])==len(r['image_grid_thw'])==len(r['paths'])==len(used)
                 assert all((ROOT/path).is_file() for path in r['paths'])
                 image_encodes+=len(r['image_counts']);rounds+=1
-                if version=='r4':assert r['expanded_context']=='observation_only' and r['cached_prefix_tokens']==ep['tokens']
+                if version=='r4':
+                    context='native_verdict' if arm=='verdict_replay' else 'observation_only'
+                    prefix=dt['native_prefix_tokens'] if arm=='verdict_replay' else ep['tokens']
+                    assert r['expanded_context']==context and r['cached_prefix_tokens']==prefix
+                if arm=='verdict_replay':
+                    mr=m['rounds'][k]
+                    assert r['added']==mr['added'] and r['acquired']==mr['acquired']
+                    assert r['suffix_ids']==mr['suffix_ids'] and r['image_grid_thw']==mr['image_grid_thw']
+                    assert r['image_counts']==mr['image_counts']
                 if arm!='fixed4':tokens_match &= r['image_counts']==m['rounds'][k]['image_counts']
         assert p['calls']==3+b['extra']['n_branches']+rounds
         assert dt['actual_forwards']==p['calls']+(len(ws) if smoke else 0) and dt['acquisition_reads']==rounds
@@ -111,13 +123,21 @@ def report(arm,version='r1'):
     for ds in DATASETS:
         with np.load(ROOT/f'data/gt_4fps/{ds}.npz',allow_pickle=True) as gt:
             ys={str(v):np.asarray(gt['y4'][i]) for i,v in enumerate(gt['video_ids']) if str(gt['split'][i])=='test'}
-        diffs=[];group_values={name:{branch:[] for branch in ('visual','raw_max','final')} for name in (
+        diffs=[];raw_diffs={'visual':[],'raw_max':[]};group_values={name:{branch:[] for branch in ('visual','raw_max','final')} for name in (
             'matched_windows','unmatched_windows','videos_with_matched_windows','videos_without_matched_windows')}
         group_counts=Counter()
         for key,p in mp.items():
             if key[0]!=ds:continue
             values=[within_video_macro({key[1]:ys[key[1]]},{key[1]:np.asarray(r[key]['score_curve'])})[METRICS[-1]] for r in (mp,cp)]
             if values[0] is not None:assert values[1] is not None;diffs.append(values[0]-values[1])
+            if arm=='verdict_replay':
+                windows=raw_main[key]['extra']['windows'];n=min(len(ys[key[1]]),len(p['score_curve']))
+                y=ys[key[1]][:n];index=np.clip(np.searchsorted([w['start'] for w in windows],(np.arange(n)+.5)/4,side='right')-1,0,len(windows)-1)
+                for branch in raw_diffs:
+                    curves=[np.asarray([w['z_visual'] for w in source[key]['extra']['windows']])[index] if branch=='visual'
+                        else np.asarray(source[key]['score_curve'])[:n] for source in (raw_main,raw_control)]
+                    v=[within_video_macro({'v':y},{'v':curve})[METRICS[-1]] for curve in curves]
+                    if v[0] is not None:assert v[1] is not None;raw_diffs[branch].append(v[0]-v[1])
             if arm=='mismatch':
                 details=json.loads((root/'details'/ds/(key[1]+'.json')).read_text())
                 flags=np.asarray([bool(t['matched']) for t in details['traces']]);windows=raw_main[key]['extra']['windows']
@@ -139,6 +159,9 @@ def report(arm,version='r1'):
             'main_minus_control':{m:mm[ds][m]-cm[ds][m] for m in METRICS},'within_paired':boot(diffs),
             'standalone_seconds':sum(p['extra']['standalone_seconds'] for k,p in raw_control.items() if k[0]==ds),
             'mean_forwards':float(np.mean([p['calls'] for k,p in raw_control.items() if k[0]==ds]))}
+        if arm=='verdict_replay':
+            result['datasets'][ds]['raw_within_paired']={branch:boot(values) for branch,values in raw_diffs.items()}
+            result['treatment_note']='Entire native global Q/answer dialogue on fixed R4 trajectories, including positions/conversation structure; final metrics also include independent corpus r6 fitting. No isolated answer-token or arbitrary-policy effect.'
         if arm=='mismatch':
             result['datasets'][ds]['mismatch_counts']={name:group_counts[name] for name in group_values}
             result['datasets'][ds]['mismatch_subgroups']={group:{branch:{'eligible_videos':len(pairs),
@@ -153,7 +176,7 @@ def report(arm,version='r1'):
 
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True)
-    ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch'),required=True);ap.add_argument('--smoke',action='store_true')
+    ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch','verdict_replay'),required=True);ap.add_argument('--smoke',action='store_true')
     ap.add_argument('--version',choices=('r1','r2','r3','r4'),default='r1');a=ap.parse_args()
     if a.smoke and a.stage!='prepare':ap.error('smoke is no-GT plumbing only')
     if a.stage=='prepare':prepare(a.arm,a.smoke,a.version)

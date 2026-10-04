@@ -87,6 +87,20 @@ content-derived tie-breaking seed in the archived August
 CLAUDE prohibition; script not executed, historical results not reinterpreted.
 
 Unselected possibilities inspected while full jobs run, not additional candidates:
+- 2026-10-04, during Explorer R4 full collection: actually read primary VideoTree
+  v3 methods3.1–3.3/implementation4,
+  https://arxiv.org/html/2405.19209v3 . It groups visual features, captions
+  representatives, expands breadth until enough query-relevant clusters and
+  refines relevant clusters hierarchically, then reasons over chronological
+  captions. This is more than an entropy threshold or nearest-time selector.
+  The source uses separate visual encoder/captioner/LLM and dense feature
+  preprocessing; any transfer here must address our one-model-per-modality and
+  new-video cost constraints. No implementation, features, new dataset or
+  candidate selected, no claim of target-task novelty. Actual hateful-video
+  neighbors surfaced in search require primary-method checking before a future
+  proposal. The current Explorer inputs/selector/gates were not changed by this
+  reading. Existing ASR provenance/window slicing was also reread; no alignment
+  extraction or timing method was selected.
 - Soft expected-answer embeddings (SoftThinking source previously noted) would
   differ mainly near uncertain native verdicts. Read only native z_video from
   `runs/20260926_glr/base_gridA/predictions.jsonl`, no GT: smaller Yes/No probability
