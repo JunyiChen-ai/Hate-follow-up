@@ -59,6 +59,7 @@ R3控制代码已准备且独立CPU/代码窄审PASS，但不是模型或机制�
 R4独立窄代码审查PASS，sc474399/Slurm119固定5 GPU完成并全部回传，noGT prepare PASS。
 原生全读数精确，new V逐值等于R2；V/S fresh及clone各5次通过，当前源图像/token绑定通过。
 来源`runs/20261004_m1_tree/r4_full_smoke_analysis/plumbing_summary.json`；接着固定完整333，尚无R4性能结论。
+R4完整333已提交sc474399/Slurm120；对应双分支局部控制代码及独立窄审PASS，仅prepared，完整主门过后才可跑控制GPU。
 实际新处理134.40min/native14.62倍；原始视觉排序HMM下降，机制未成立。
 按规则9继续此族，第二修订R3已声明native anchor后追加完整factual tree context再独立读取V/S。
 独立窄代码确认和CPU检查PASS，保存token/会话绑定缺口已修；随后固定5 GPU parity通过。

@@ -698,3 +698,41 @@ Reference8.41256/4.07185s; actual paired forwards375/234 incldiagnostics6/4,
 diagnostic seconds.67100/.43647. V images170/99; S images149/78, actual new S
 read9.99192/4.61175s. Rough full79.20228/59.00547min=138.20775min, not actual
 full cost or performance. Continue identical full333; no GT or parameter change.
+
+## R4 controls adaptation, before control code/GPU or main result
+
+Same seven independent arms and exact temporal/fresh-priority topology controls
+as declared above, but no arm appends any shared tree observation/ack turn.
+Each arm clones the same restored native G/stance cache and independently reads
+its packet into BOTH V and available S with their exact native questions. The
+stored arm-wide factual observation field is unused in R4. flat changes only
+local ancestor formatting/inventory order; wrong_links changes the local ancestor
+association in both branches, retaining actual local pixels and original full
+overview/ASR. Correct global tree links are not appended, but the native video
+context remains visible; do not claim absence of recoverable global information.
+no_depth/no_added_pixels and two matched temporal variants use their declared
+actual packets in both branches. All seven moderation reads are freshly measured.
+
+Production3+W+S, actual joint3+W+S+A*(W+S)+separately measured smoke clones.
+Each arm has actual first V/first available S full-render and clone checks; no
+extension check exists. Complete control main/native must exactly reproduce R4,
+and corresponding current V/S suffix tokens/source files must bind to that arm's
+packet. Acquisition machinery/prompts are unchanged, isolated inputs now in
+`data/semantic_tree_controls/r4/`, version of the unchanged input transformation
+retained with explicit control_run_revision=r4. Costs include actual extra temporal
+captions/fresh priorities and per-arm required new witnesses including no_depth;
+joint physical source work/copies/diagnostics separate. Preliminary additional
+acquisition80–120min and seven-arm reads150–220min, total230–340GPUmin, unmeasured.
+Existing common dual-corpus performance/acquisition-vs-BOTH-temporal/part necessity,
+actual incorrect-binding coverage, raw ordering and paired CI gates remain fixed.
+If R4 main passes, narrow independent review then fixed5 noGT controls/full333;
+launcher requires R4 complete performance_pass=True. Otherwise no control GPU.
+
+R4 controls narrow independent code confirmation PASS, same-family provisional:
+`docs/reviews/20261005_m1_tree_r4_controls_code.md`, actual CPU evidence in
+`runs/20261004_m1_tree/r4_controls_code_review/`. Seven-arm six availability/smoke
+cases with actual cached processor/images and explicit model/position stubs,
+nine corruption rejections, exception crop/rope restoration, per-arm V/S image
+and physical calls/cost, revision paths/guard and default R3 compatibility PASS.
+No GT, saved prediction or real summary read by reviewer; no control GPU/input
+generation. This does not establish actual control model parity or mechanism.

@@ -12,7 +12,7 @@ from src.video_inputs import load_asr
 from src.eval.evaluate import within_video_macro
 from extract import CACHE,DATASETS,selected_rows,validate_cached
 from control_inputs import ARMS
-from control_extract import CONTROL_CACHE,CONTROL_VERSION,validate_control
+from control_extract import CONTROL_CACHE,CONTROL_VERSION,validate_control,cache_root
 from control_measure import validate_bundle,BindingRenderer
 from analyze import METRICS,read,metrics,evaluate,bootstrap
 
@@ -22,22 +22,23 @@ def equivalent(a,b):
     for key in ('z_video','stance','prefix_tokens','windows'):assert a['extra'][key]==b['extra'][key]
 
 
-def prepare(root,out,smoke):
+def prepare(root,out,smoke,revision='r3'):
     rows=selected_rows(smoke);expected={(r['dataset'],r['video_id']):r for r in rows}
     config=json.loads((root/'config.json').read_text())
     assert config['GT_read'] is False and config['smoke']==smoke and config['control_version']==CONTROL_VERSION
     assert config['arms']==list(ARMS)
+    assert config.get('reader_revision','r3')==revision
     predictions={name:read(root/name/'predictions.jsonl') for name in ('base',)+ARMS}
     assert all(set(rr)==set(expected) for rr in predictions.values())
-    main=ROOT/'runs/20261004_m1_tree'/('r3_full_smoke' if smoke else 'r3_full_main')
+    main=ROOT/'runs/20261004_m1_tree'/(revision+'_full_'+('smoke' if smoke else 'main'))
     reference={name:read(main/name/'predictions.jsonl') for name in ('base','optimized')}
     asr={ds:load_asr(ds) for ds in DATASETS};renderer=BindingRenderer(cpu_renderer());cost=[];changed={a:0 for a in ARMS if a!='main'}
     binding_coverage=[]
     for key,row in expected.items():
         metadata,features=validate_cached(CACHE/key[0]/key[1],row)
-        controls=validate_control(CONTROL_CACHE/key[0]/key[1],row,metadata,features,renderer.tok)
+        controls=validate_control(cache_root(revision)/key[0]/key[1],row,metadata,features,renderer.tok,revision)
         bundle=json.loads((root/'records'/key[0]/(key[1]+'.json')).read_text())
-        validate_bundle(row,bundle,metadata,controls,asr[key[0]].get(key[1],[]),renderer,smoke)
+        validate_bundle(row,bundle,metadata,controls,asr[key[0]].get(key[1],[]),renderer,smoke,revision)
         assert predictions['base'][key]==bundle['base']
         for arm in ARMS:assert predictions[arm][key]==bundle['arms'][arm]
         equivalent(predictions['base'][key],reference['base'][key]);equivalent(predictions['main'][key],reference['optimized'][key])
@@ -58,9 +59,10 @@ def prepare(root,out,smoke):
                 if original['ancestor_ids']==wrong['ancestor_ids']:reasons.append('same_donor_ancestor_chain')
             windows.append(dict(window=i,binding_changed=binding_changed,unchanged_reasons=reasons,
                 main_ancestors=original['ancestor_ids'],donor_ancestors=wrong['ancestor_ids'],
-                shared_inventory_changed=False,local_pixels_fixed=True))
+                shared_inventory_changed=False,local_pixels_fixed=True,
+                shared_tree_inventory_present=revision=='r3'))
         binding_coverage.append(dict(dataset=key[0],video_id=key[1],terminal_leaves=len(leaves),windows=windows))
-    summary=dict(coverage=len(rows),GT_read=False,native_and_main_raw_exact=True,changed_windows=changed,
+    summary=dict(coverage=len(rows),GT_read=False,reader_revision=revision,native_and_main_raw_exact=True,changed_windows=changed,
         main_metric_results_not_in_reader=True,mechanism_supported=False,cost_per_video=cost,
         wrong_link_binding_coverage=binding_coverage)
     (out/'alignment.json').write_text(json.dumps(summary,indent=2)+'\n')
@@ -68,13 +70,13 @@ def prepare(root,out,smoke):
     print('CONTROL_PREPARE_DONE',flush=True)
 
 
-def report(root,decoded,out):
+def report(root,decoded,out,revision='r3'):
     names=('base',)+ARMS;mm={a:metrics(decoded/a/'metrics.json') for a in names}
-    main_old=metrics(ROOT/'runs/20261004_m1_tree/r3_full_main_decoded/optimized/metrics.json')
+    main_old=metrics(ROOT/'runs/20261004_m1_tree'/(revision+'_full_main_decoded')/'optimized/metrics.json')
     baseline=metrics(ROOT/'runs/20260926_twolevel/r6_bma/metrics.json')
     raw={a:read(root/a/'predictions.jsonl') for a in names};final={a:read(decoded/a/'predictions.jsonl') for a in names}
     alignment=json.loads((out/'alignment.json').read_text())
-    assert alignment['native_and_main_raw_exact'] is True and alignment['coverage']==333
+    assert alignment['native_and_main_raw_exact'] is True and alignment['coverage']==333 and alignment['reader_revision']==revision
     result=dict(scope='development-selected; controls at fixed original topology; unchanged r6',
         metric_sources={a:str((decoded/a/'metrics.json').relative_to(ROOT)) for a in names},datasets={},mechanism_supported=False)
     all_video=[]
@@ -128,10 +130,11 @@ def report(root,decoded,out):
             peak_reader_GiB=max(c['peak_reader_GiB'] for c in cc),
             arms={a:{k:sum(c['arm_costs'][a][k] for c in cc) for k in (
                 'actual_forwards','diagnostic_forwards','cache_copy_seconds','extension_seconds','visual_seconds',
-                'speech_seconds','diagnostic_seconds','control_input_acquisition_seconds')} for a in ARMS})
+                'speech_seconds','diagnostic_seconds','control_input_acquisition_seconds','visual_images','speech_images')} for a in ARMS})
     result['scope_limits']=[
         'Temporal controls inherit actual main topology/member counts; fresh priority changes selection only, not adaptive re-expansion.',
-        'wrong_links rewires local ancestor packets; the shared factual inventory still exposes correct global links.',
+        ('wrong_links rewires local ancestor packets; the shared factual inventory still exposes correct global links.' if revision=='r3'
+         else 'wrong_links rewires local ancestor packets in both branches; native full overview/ASR remain visible, without shared tree inventory.'),
         'Components without a dual-corpus common metric drop>=.01 must be demoted; breadth is not separately tested.',
         'Raw ordering, paired uncertainty, actual interventions and independent final review determine supported mechanism; gates alone do not prove it.']
     (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n')
@@ -141,12 +144,13 @@ def report(root,decoded,out):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True)
-    ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base',)+ARMS);a=ap.parse_args()
-    root=ROOT/'runs/20261004_m1_tree'/('r3_controls_'+('smoke' if a.smoke else 'main'))
+    ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base',)+ARMS)
+    ap.add_argument('--revision',choices=('r3','r4'),default='r3');a=ap.parse_args()
+    root=ROOT/'runs/20261004_m1_tree'/(a.revision+'_controls_'+('smoke' if a.smoke else 'main'))
     out=root.parent/(root.name+'_analysis');out.mkdir(parents=True,exist_ok=True);decoded=root.parent/(root.name+'_decoded')
-    if a.stage=='prepare':prepare(root,out,a.smoke)
+    if a.stage=='prepare':prepare(root,out,a.smoke,a.revision)
     elif a.stage=='evaluate':assert not a.smoke and a.name;evaluate(root,decoded,a.name)
-    else:assert not a.smoke;report(root,decoded,out)
+    else:assert not a.smoke;report(root,decoded,out,a.revision)
 
 
 if __name__=='__main__':main()

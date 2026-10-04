@@ -15,14 +15,17 @@ case "${1:?smoke or main}" in
   main) opts=();;
   *) exit 2;;
 esac
+revision=${2:-r3}
+case "$revision" in r3|r4) ;; *) exit 2;; esac
 nvidia-smi
-python - <<'PY'
+python - "$revision" <<'PY'
 import json
+import sys
 from pathlib import Path
-summary=json.loads(Path('runs/20261004_m1_tree/r3_full_main_analysis/summary.json').read_text())
-assert summary['gates']['performance_pass'] is True, 'R3 full main performance gate has not passed; controls forbidden'
+summary=json.loads(Path('runs/20261004_m1_tree',sys.argv[1]+'_full_main_analysis/summary.json').read_text())
+assert summary['gates']['performance_pass'] is True, 'Complete main performance gate has not passed; controls forbidden'
 assert summary['datasets']['HateMM']['n_eligible']==84 and summary['datasets']['HateClipSeg']['n_eligible']==99
 PY
-python -u experiments/20261004_m1_tree/control_extract.py "${opts[@]}"
-python -u experiments/20261004_m1_tree/control_measure.py "${opts[@]}"
+python -u experiments/20261004_m1_tree/control_extract.py "${opts[@]}" --revision "$revision"
+python -u experiments/20261004_m1_tree/control_measure.py "${opts[@]}" --revision "$revision"
 echo CONTROL_GPU_DONE

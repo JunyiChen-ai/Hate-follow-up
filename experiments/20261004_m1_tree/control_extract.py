@@ -23,13 +23,19 @@ CONTROL_VERSION='R3 exact-topology temporal witnesses and fresh root priorities;
 CONTROL_CACHE=ROOT/'data/semantic_tree_controls/r3'
 
 
-def validate_control(folder,row,main,features,tokenizer=None):
+def cache_root(revision):
+    assert revision in ('r3','r4');return ROOT/'data/semantic_tree_controls'/revision
+
+
+def validate_control(folder,row,main,features,tokenizer=None,revision='r3'):
     """Replay all actual input transforms and source binding, without scoring."""
     if tokenizer is None:
         from transformers import AutoTokenizer
         tokenizer=AutoTokenizer.from_pretrained(MODEL,local_files_only=True)
     folder=Path(folder);meta=json.loads((folder/'metadata.json').read_text())
     assert meta['control_version']==CONTROL_VERSION and meta['main_cache_version']==CACHE_VERSION
+    assert meta.get('control_run_revision','r3')==revision
+    assert folder==cache_root(revision)/row['dataset']/row['video_id']
     assert meta['constants']==CONSTANTS and meta['model']==MODEL and meta['GT_read'] is False
     assert meta['dataset']==row['dataset'] and meta['video_id']==row['video_id']
     assert meta['duration']==float(row['duration']) and meta['entries']==main['entries']
@@ -82,14 +88,16 @@ def validate_control(folder,row,main,features,tokenizer=None):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
-    out=ROOT/'runs/20261004_m1_tree'/('r3_control_extract_'+('smoke' if a.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true')
+    ap.add_argument('--revision',choices=('r3','r4'),default='r3');a=ap.parse_args();cache=cache_root(a.revision)
+    out=ROOT/'runs/20261004_m1_tree'/(a.revision+'_control_extract_'+('smoke' if a.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
     config=dict(control_version=CONTROL_VERSION,main_cache_version=CACHE_VERSION,constants=CONSTANTS,
         model=MODEL,host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),GT_read=False,smoke=a.smoke,
         code='experiments/20261004_m1_tree/{tree,extract,control_inputs,control_extract}.py; sources2026-10-05',
         command='python -u '+' '.join(sys.argv))
+    config['control_run_revision']=a.revision
     (out/'config.json').write_text(json.dumps(config,indent=2)+'\n')
     torch.manual_seed(0);j=Judge(MODEL);counts=dict(language=0,vision=0)
     def language_hook(*_):counts['language']+=1
@@ -98,9 +106,9 @@ def main():
     rows=selected_rows(a.smoke)
     for number,row in enumerate(rows,1):
         main_folder=CACHE/row['dataset']/row['video_id'];main,features=validate_cached(main_folder,row)
-        folder=CONTROL_CACHE/row['dataset']/row['video_id'];folder.mkdir(parents=True,exist_ok=True)
+        folder=cache/row['dataset']/row['video_id'];folder.mkdir(parents=True,exist_ok=True)
         if (folder/'metadata.json').exists():
-            validate_control(folder,row,main,features,j.tok);logging.info('%d/%d reuse %s/%s',number,len(rows),row['dataset'],row['video_id']);continue
+            validate_control(folder,row,main,features,j.tok,a.revision);logging.info('%d/%d reuse %s/%s',number,len(rows),row['dataset'],row['video_id']);continue
         first=dict(counts);torch.cuda.reset_peak_memory_stats();start=tick()
         target=folder/'witnesses';target.mkdir(parents=True,exist_ok=True)
         for p in sorted((main_folder/'witnesses').glob('frame_*.png')):
@@ -146,14 +154,14 @@ def main():
             main_folder=str(main_folder.relative_to(ROOT)),entries=main['entries'],temporal=temporal,fresh=fresh,
             fresh_priority=dict(root_observations=root_observations,scores=scores,logprobs=logprobs),arms=arms,cost=costs)
         partial=folder/'metadata.partial';partial.write_text(json.dumps(meta)+'\n');partial.replace(folder/'metadata.json')
-        validate_control(folder,row,main,features,j.tok)
+        validate_control(folder,row,main,features,j.tok,a.revision)
         logging.info('%d/%d %s/%s newcaps=%d %.2fs',number,len(rows),row['dataset'],row['video_id'],costs['new_caption_count'],costs['acquisition_seconds'])
     for h in hooks:h.remove()
-    metas=[validate_control(CONTROL_CACHE/r['dataset']/r['video_id'],r,*validate_cached(CACHE/r['dataset']/r['video_id'],r),tokenizer=j.tok) for r in rows]
+    metas=[validate_control(cache/r['dataset']/r['video_id'],r,*validate_cached(CACHE/r['dataset']/r['video_id'],r),tokenizer=j.tok,revision=a.revision) for r in rows]
     (out/'summary.json').write_text(json.dumps(dict(coverage=len(metas),GT_read=False,datasets={
         ds:{k:sum(m['cost'][k] for m in metas if m['dataset']==ds) for k in ('acquisition_seconds','new_caption_count','new_caption_tokens','fresh_priority_forwards')}
         for ds in ('HateMM','HateClipSeg')}),indent=2)+'\n')
-    (CONTROL_CACHE/'PROVENANCE.md').write_text('# R3 semantic tree control inputs\n\n'
+    (cache/'PROVENANCE.md').write_text('# '+a.revision+' semantic tree control inputs\n\n'
         'Source: experiments/20261004_m1_tree/{tree,control_inputs,control_extract}.py; sources2026-10-05.\n'
         'Frozen Qwen/Qwen3-VL-8B-Instruct. Main source features/actual PTS: data/semantic_cluster_tree/.\n'
         'Main cache stays read-only; exact source-frame captions reused, additional temporal caption tokens and fresh root relevance saved in metadata.\n'
