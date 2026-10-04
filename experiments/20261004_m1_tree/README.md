@@ -246,3 +246,18 @@ witnesses and all failure logs returned locally. This is an implementation repai
 not an idea verdict or a counted revision. Independent narrow confirmation PASS:
 `docs/reviews/20261004_m1_tree_text_rope_fix.md`; actual target source and CPU
 None/tensor normal/exception cache checks agree. Retry the same fixed five.
+
+## Fixed five-video smoke (no performance selection)
+
+sc474399/Slurm104 completed both acquisition and paired reads; run and all new
+inputs returned to this machine before CPU prepare. NoGT prepare PASS:
+`runs/20261004_m1_tree/r1_full_smoke_analysis/plumbing_summary.json`.
+All five native global/window/frame curves match the original reader exactly;
+five fresh whole-render token/image-grid checks and cached prefix-position checks
+pass. New global changes in5/5, visual in158 windows, speech in134. This establishes
+that the intervention is executed, not that it improves performance or mechanism.
+Peak18.88/18.84GiB (HateMM/HCS), including actual extraction; five-video new
+processing166.97s versus native12.52s. Caption and rejected breadth costs are
+included. First-two-per-corpus extrapolation is about79.20/57.52min, unvalidated
+for complete333. No constant was selected from this check. Continue the fixed
+complete run with identical inputs/settings.
