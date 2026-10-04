@@ -460,3 +460,32 @@ peak17.9454GiB. Extrapolation from the original two manifest videos per corpus
 this replaces the preliminary35–45min estimate but remains a small-sample cost
 estimate. No GT or performance metric was read for this plumbing run. Proceed to
 the declared complete333 R3 collection on the same Slurm node/environment.
+
+## Autonomous continuation, 2026-10-04
+
+User renewed the instruction to continue until performance and mechanistic goals
+are met. R1 is positive development evidence, especially on HCS; its HMM PR loss
+of .004697 is inside the .005 pooled noise floor. It does not yet satisfy the
+predeclared two-corpus within gain or establish a selection mechanism.
+R3 full333 was submitted on sc474399 via Slurm job79, using the reviewed code
+and prior five-video smoke. No constants, reader inputs or r6 changed on resume.
+
+The predeclared controls now accept an explicit version to read R3 traces and
+write isolated r3_controls/r3_controls_decoded outputs. R1 remains the default
+with its original paths. This is path/config plumbing only: all four control
+algorithms, budgets, prompts and canonical evaluator/r6 calls remain identical.
+A narrow independent review is required before any real R3 control run. Controls
+will run after the full-corpus performance gate; no new source recipe or tuning
+is selected while the R3 main collection proceeds.
+
+Version plumbing independent review PASS:
+`docs/reviews/20261004_m1_explorer_version_code.md`. Complete synthetic333 cases
+cover all three versions/four arms and case diagnostics; evaluator/r6 commands
+were captured rather than run, and no real GT/performance was read for review.
+
+Conditional controls can run independently as complete333 experiments on lab2,
+lab3 or lab-server, using control_lab.sbatch/control_lab3.sbatch/control_server.sbatch
+respectively. Each script fixes the target local partition, one GPU,4CPU/32G and
+repository-only outputs. Existing HateVLM runtimes are reused; fresh target smoke
+and native parity are required before any full control, not import success alone.
+No dataset is split between machines. No control is submitted before the main gate.

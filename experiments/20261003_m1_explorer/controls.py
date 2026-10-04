@@ -129,9 +129,11 @@ def read_control(j,engine,row,segments,out,arm,main,smoke=False):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch'),required=True)
-    ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
-    main_root=ROOT/'runs/20261003_m1_explorer'/('r1_smoke' if a.smoke else 'r1_main')
-    out=ROOT/'runs/20261003_m1_explorer'/('controls_smoke' if a.smoke else 'controls')/a.arm
+    ap.add_argument('--smoke',action='store_true')
+    ap.add_argument('--version',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
+    main_root=ROOT/'runs/20261003_m1_explorer'/(a.version+('_smoke' if a.smoke else '_main'))
+    control_name='controls' if a.version=='r1' else a.version+'_controls'
+    out=ROOT/'runs/20261003_m1_explorer'/(control_name+('_smoke' if a.smoke else ''))/a.arm
     out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
@@ -139,7 +141,7 @@ def main():
     if a.smoke:rows=[r for ds in ('HateMM','HateClipSeg') for r in [x for x in rows if x['dataset']==ds][:2]]+[
         r for r in rows if r['dataset']=='HateMM' and r['video_id']=='hate_video_114']
     import transformers
-    config={'host':socket.gethostname(),'date':time.strftime('%Y-%m-%d'),'arm':a.arm,'smoke':a.smoke,
+    config={'host':socket.gethostname(),'date':time.strftime('%Y-%m-%d'),'arm':a.arm,'smoke':a.smoke,'revision':a.version,
         'code':'experiments/20261003_m1_explorer/controls.py + reviewed measure.py/explorer.py; sources2026-10-03',
         'model':MODEL,'torch':torch.__version__,'transformers':transformers.__version__,'seed':0,'GT_in_reader':False,
         'counts':'always up to4' if a.arm=='fixed4' else 'replay actual main per-window round counts',

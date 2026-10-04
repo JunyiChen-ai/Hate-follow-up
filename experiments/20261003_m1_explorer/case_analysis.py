@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Post-scoring, development-selected case diagnostics; no method fitting."""
+import argparse
 import json
 from pathlib import Path
 import socket
@@ -16,10 +17,10 @@ def score(y,s):
     return within_video_macro({'v':y},{'v':s})[KEY]
 
 
-def main():
-    parent=ROOT/'runs/20261003_m1_explorer';run=parent/'r1_main'
+def main(version='r1'):
+    parent=ROOT/'runs/20261003_m1_explorer';run=parent/(version+'_main')
     raw={a:read(run/a/'predictions.jsonl') for a in ('base','explore')}
-    final={a:read(parent/'r1_main_decoded'/a/'predictions.jsonl') for a in raw}
+    final={a:read(parent/(version+'_main_decoded')/a/'predictions.jsonl') for a in raw}
     assert all(v.keys()==raw['base'].keys() for v in [*raw.values(),*final.values()])
     report={'host':socket.gethostname(),'scope':'development-selected post-scoring diagnostics; subgroup associations are not causal tests',
         'GT_sources':[f'data/gt_4fps/{ds}.npz' for ds in ('HateMM','HateClipSeg')],
@@ -75,8 +76,10 @@ def main():
         summaries['largest_final_losses']=[r['video_id'] for r in ranked[:5]]
         summaries['largest_final_gains']=[r['video_id'] for r in ranked[-5:][::-1]]
         report['per_dataset'][ds]=summaries;report['per_video']+=rows
-    out=parent/'r1_main_analysis/case_analysis.json';out.write_text(json.dumps(report,indent=2)+'\n')
+    out=parent/(version+'_main_analysis')/'case_analysis.json';out.write_text(json.dumps(report,indent=2)+'\n')
     print('CASE_ANALYSIS_DONE',out)
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    parser=argparse.ArgumentParser();parser.add_argument('--version',choices=('r1','r2','r3'),default='r1')
+    main(parser.parse_args().version)

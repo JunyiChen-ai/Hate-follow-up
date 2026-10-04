@@ -11,14 +11,21 @@ from analyze import ROOT,DATASETS,METRICS,read,metrics,boot
 from src.eval.evaluate import within_video_macro
 
 
-def prepare(arm,smoke):
-    parent=ROOT/'runs/20261003_m1_explorer';main=parent/('r1_smoke' if smoke else 'r1_main')
-    root=parent/('controls_smoke' if smoke else 'controls')/arm
+def paths(arm,version='r1',smoke=False):
+    parent=ROOT/'runs/20261003_m1_explorer'
+    name='controls' if version=='r1' else version+'_controls'
+    return (parent, parent/(version+('_smoke' if smoke else '_main')),
+            parent/(name+('_smoke' if smoke else ''))/arm, parent/(name+'_decoded'))
+
+
+def prepare(arm,smoke,version='r1'):
+    parent,main,root,_=paths(arm,version,smoke)
     base=read(main/'base/predictions.jsonl');pred=read(root/'predictions.jsonl')
     assert base.keys()==pred.keys() and len(base)==(5 if smoke else 333)
     cfg=json.loads((root/'config.json').read_text())
     assert cfg['GT_in_reader'] is False and cfg['entropy_regating'] is False
     assert cfg['arm']==arm and cfg['smoke']==smoke and cfg['model']=='Qwen/Qwen3-VL-8B-Instruct'
+    assert cfg.get('revision','r1')==version and cfg['main_trace_root']==str(main.relative_to(ROOT))
     rows=[]
     for key,b in base.items():
         p=pred[key];ds,vid=key
@@ -65,20 +72,21 @@ def prepare(arm,smoke):
     (root/'alignment.json').write_text(json.dumps(result,indent=2)+'\n');print('CONTROL_PREPARED',arm,len(rows))
 
 
-def evaluate(arm):
-    parent=ROOT/'runs/20261003_m1_explorer';root=parent/'controls'/arm
+def evaluate(arm,version='r1'):
+    parent,_,root,decoded=paths(arm,version)
     subprocess.run([sys.executable,'-m','src.eval.evaluate_four_datasets','--predictions',str(root/'predictions.jsonl'),
         '--gt-dir','data/gt_4fps','--datasets',*DATASETS,'--out',str(root/'metrics.json')],cwd=ROOT,check=True,stdout=subprocess.DEVNULL)
     subprocess.run([sys.executable,'experiments/20260926_twolevel/twolevel_r2.py','--run',str(root),
         '--datasets',*DATASETS,'--noleak','--transform','nscore','--key','calib','--duration','bma','--bma-prior','length',
-        '--min-windows','2','--bma-grid','6','--arm','m2','--out-root',str(parent/'controls_decoded'),'--tag',arm],cwd=ROOT,check=True)
+        '--min-windows','2','--bma-grid','6','--arm','m2','--out-root',str(decoded),'--tag',arm],cwd=ROOT,check=True)
 
 
-def report(arm):
-    parent=ROOT/'runs/20261003_m1_explorer';root=parent/'controls'/arm
-    mp=read(parent/'r1_main_decoded/explore/predictions.jsonl');cp=read(parent/'controls_decoded'/arm/'predictions.jsonl')
-    mm=metrics(parent/'r1_main_decoded/explore/metrics.json');cm=metrics(parent/'controls_decoded'/arm/'metrics.json')
-    raw_main=read(parent/'r1_main/explore/predictions.jsonl');raw_control=read(root/'predictions.jsonl')
+def report(arm,version='r1'):
+    parent,main,root,decoded=paths(arm,version)
+    main_decoded=parent/(version+'_main_decoded')/'explore'
+    mp=read(main_decoded/'predictions.jsonl');cp=read(decoded/arm/'predictions.jsonl')
+    mm=metrics(main_decoded/'metrics.json');cm=metrics(decoded/arm/'metrics.json')
+    raw_main=read(main/'explore/predictions.jsonl');raw_control=read(root/'predictions.jsonl')
     assert mp.keys()==cp.keys()==raw_main.keys()==raw_control.keys()
     for key in mp:
         original=raw_main[key]
@@ -90,7 +98,8 @@ def report(arm):
             assert p['extra']['z_video']==original['extra']['z_video']
             if 'stance' in p['extra']:assert p['extra']['stance']==original['extra']['stance']
     result={'scope':'development-selected complete-corpus control, r6 independently refit; no automatic causal conclusion',
-        'arm':arm,'datasets':{},'metric_source':str((parent/'controls_decoded'/arm/'metrics.json').relative_to(ROOT))}
+        'arm':arm,'revision':version,'datasets':{},'metric_source':str((decoded/arm/'metrics.json').relative_to(ROOT)),
+        'main_metric_source':str((main_decoded/'metrics.json').relative_to(ROOT))}
     for ds in DATASETS:
         with np.load(ROOT/f'data/gt_4fps/{ds}.npz',allow_pickle=True) as gt:
             ys={str(v):np.asarray(gt['y4'][i]) for i,v in enumerate(gt['video_ids']) if str(gt['split'][i])=='test'}
@@ -136,8 +145,9 @@ def report(arm):
 
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True)
-    ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch'),required=True);ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
+    ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch'),required=True);ap.add_argument('--smoke',action='store_true')
+    ap.add_argument('--version',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
     if a.smoke and a.stage!='prepare':ap.error('smoke is no-GT plumbing only')
-    if a.stage=='prepare':prepare(a.arm,a.smoke)
-    elif a.stage=='evaluate':evaluate(a.arm)
-    else:report(a.arm)
+    if a.stage=='prepare':prepare(a.arm,a.smoke,a.version)
+    elif a.stage=='evaluate':evaluate(a.arm,a.version)
+    else:report(a.arm,a.version)
