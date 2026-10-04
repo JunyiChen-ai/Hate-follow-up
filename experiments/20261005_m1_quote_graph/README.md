@@ -274,3 +274,18 @@ Actual complete results pending; no GT/performance verdict.
 Complete333 Slurm132 finished09:51:11 onsc474399. Both graph inputs and paired
 run returned immediately tosc474397; local noGT input/native alignment and
 canonical/fixed-r6 analysis launched. No performance verdict before report.
+
+R1 complete333 canonical/fixed-r6 report finished onsc474397. Authority
+`runs/20261005_m1_quote_graph/r1_full_main_decoded/optimized/metrics.json`:
+HMM ROC/PR/within .8952316993171214/.6826257279789387/.7617883418675452 (84);
+HCS .709027535899747/.6567629524600227/.6296614019643806 (99). Native allraw/all6
+exact; G/V unchanged,6580S changed. HMMwithin+.011006298 (paired95CI
+[-.012058777,.036432422]) is a qualifying development signal, not robust mechanism
+evidence; HMM PR-.011608875, HCSROC/PR/within-.007797328/-.014309132/-.007687712.
+Performance FAIL/any qualifying gain TRUE; keep R1 and begin actual logged GT
+error analysis for at most3 revisions. Rawmax within-.021992913/-.008209162;
+rawspeech shared-.007728745/-.008996150, intervals contain0. No claimed mechanism
+or controlGPU after failed main. Actual new-video processing83.13min/native9.04x
+(source73.37min); full source coverage178/3768HMM and198/3591HCS windows have
+nonempty remote spans. Exact cost/coverage authority
+`runs/20261005_m1_quote_graph/r1_full_main_analysis/alignment.json`.

@@ -260,3 +260,9 @@ available. Actual generated complete link tables are counted before their GPU
 prefills, never silently truncated. Actual SAME fixed5 GPU next only after code
 synchronization/fresh idle-node check; main remains blocked on actual native/
 fresh-repeat and each-corpus nonempty-ledger/nonlocal-source exercise PASS.
+
+Actual SAME fixed5 dispatched09:56 onsc474399/Slurm138, after full333 source
+preflight and independent code PASS; all four laboratory code synchronized/clean,
+selected lab2 idle/569Gfree. `machines_before_smoke{,_note}.txt`; exact foreign
+home names unchanged. Whole acquisition+paired native/new scoring together
+onlab2, no GT/performance or pilot choice.

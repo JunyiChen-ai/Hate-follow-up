@@ -12,9 +12,11 @@
   "source_preflight": "runs/20261005_m1_provenance/source_preflight/summary.json",
   "input_cache": "data/temporal_entity_discourse_graph",
   "GT_read": false,
-  "GPU_run": false,
+  "GPU_run": true,
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Initial complete method implemented and CPU/code PASS; actual fixed5 next after synchronization and fresh node check"
+  "state": "Actual fixed5 whole acquisition and paired native/new scoring running onsc474399/Slurm138; no GT/performance",
+  "smoke_job": 138,
+  "selected_host": "sc474399"
 }

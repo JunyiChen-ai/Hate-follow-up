@@ -95,10 +95,13 @@ B noGT prepare PASS，native allraw/G及10clone精确，实际126/91个结构有
 原生allraw精确、G/V不变、134新S变化、5clone/contextless检查通过；来源
 `runs/20261005_m1_quote_graph/r1_full_smoke_analysis/plumbing_summary.json`。
 HMM三个样本图节点0/非空上下文0of96；HCS13节点/12边、13of62窗获得上下文。
-仅实现验证，不是机制证据；原声明允许空图/拒绝块，不改接口/guard。相同R1完整333在sc474399/Slurm132于09:51:11完成，输入/配对结果已全部回传本机；统一评测进行中，尚无性能结论。
+仅实现验证，不是机制证据；原声明允许空图/拒绝块，不改接口/guard。相同R1完整333在sc474399/Slurm132于09:51:11完成，输入/配对结果已全部回传本机；native allraw/六项精确，完整主门FAIL。
+R1 HMM ROC/PR/within .895232/.682626/.761788（84），HCS .709028/.656763/.629661（99）；
+HMMwithin+.011006（配对区间含0）保留为开发期信号，但HMM PR−.011609/HCS各项下降，尚无机制证据。
+来源`runs/20261005_m1_quote_graph/r1_full_main_decoded/optimized/metrics.json`；按规则9开始实际误差分析/最多三修订，尚未跑控制GPU。
 入口`experiments/20261005_m1_quote_graph/README.md`；当前累计归档22项。
 备用候选25持久实体/话语图驱动实际端点媒体检索：独立方案/代码审查、真实fixed5来源CPU检查与完整333输入预检PASS；
-入口`experiments/20261005_m1_provenance/README.md`。还未GPU，没有性能/机制结论。
+入口`experiments/20261005_m1_provenance/README.md`。固定5已在sc474399/Slurm138启动，无GT/性能或机制结论。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
