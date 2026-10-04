@@ -16,7 +16,19 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Actual fixed5 whole acquisition and paired native/new scoring running onsc474399/Slurm138; no GT/performance",
+  "state": "A actual fixed5 source guard FAIL/noGPUimplementationbug; declared B CPU/independent code PASS, same fixed5 GPU next",
   "smoke_job": 138,
-  "selected_host": "sc474399"
+  "selected_host": "sc474399",
+  "A_smoke_job": 138,
+  "A_native_allraw_exact": true,
+  "A_source_exercise_pass": false,
+  "A_interface_diagnosis": "docs/reviews/20261005_m1_provenance_gpu_interface_diagnosis.md",
+  "B_version": "R1 structured entity-discourse source handles B; sources2026-10-05",
+  "B_code_review": "docs/reviews/20261005_m1_provenance_handle_code.md",
+  "B_code_pass": true,
+  "B_cpu_checks": "runs/20261005_m1_provenance/handle_cpu_checks/summary.json",
+  "B_input_cache": "data/temporal_entity_discourse_graph_handles",
+  "B_GPU_run": false,
+  "B_smoke_pass": false,
+  "result_guided_revisions_used": 0
 }

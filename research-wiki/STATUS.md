@@ -100,12 +100,14 @@ R1 HMM ROC/PR/within .895232/.682626/.761788（84），HCS .709028/.656763/.6296
 HMMwithin+.011006（配对区间含0）保留为开发期信号，但HMM PR−.011609/HCS各项下降，尚无机制证据。
 来源`runs/20261005_m1_quote_graph/r1_full_main_decoded/optimized/metrics.json`；按规则9开始实际误差分析/最多三修订，尚未跑控制GPU。
 R1实际GT误差分析已记录：图上下文只覆盖约5%窗口，HMM正向信号集中于无图上下文视频，不能归因于图机制。
-R2事前声明空packet精确原生S、有真实context保留原结构读数；修订1/3，实际fixed5 source/token CPU及独立窄代码修复确认PASS，相同fixed5 Slurm139于10:17:49完成并回传，noGT/native allraw/G/V、5clone/contextless PASS，13HCS S变化/0HMM，完整333已在sc474399/Slurm141启动，性能结论待完成。
-来源`runs/20261005_m1_quote_graph/r2_cpu_checks/summary.json`；入口`experiments/20261005_m1_quote_graph/README.md`；当前累计归档22项。
+R2事前声明空packet精确原生S、有真实context保留原结构读数；修订1/3，实际fixed5 source/token CPU及独立窄代码修复确认PASS，相同fixed5 Slurm139于10:17:49完成并回传，noGT/native allraw/G/V、5clone/contextless PASS，13HCS S变化/0HMM，完整333在sc474399/Slurm141于10:31:46完成并回传，native allraw/六项精确。
+R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；无任一主指标+.01，按规则9归档，不跑R3/控制GPU。
+来源`runs/20261005_m1_quote_graph/r2_full_main_decoded/optimized/metrics.json`；实际82.85min/native9.01倍，R1正向信号保留。
+来源`runs/20261005_m1_quote_graph/r2_cpu_checks/summary.json`；入口`archive/experiments/20261005_m1_quote_graph/README.md`；当前累计归档23项。
 备用候选25持久实体/话语图驱动实际端点媒体检索：独立方案/代码审查、真实fixed5来源CPU检查与完整333输入预检PASS；
 入口`experiments/20261005_m1_provenance/README.md`。固定5在sc474399/Slurm138于10:12:37完成，BOTH inputs/runs已回传本机。
 全部158源ledger实际schema fields拒绝，五视频graph edges/remote contexts均0，声明的实际执行guard未满足；不降低guard、不跑主实验/GT性能。
-来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证及10repeat精确，随后声明guard失败；独立窄接口诊断确认未发现实际GPU实现bug；A源接口未可靠执行。事前声明独立B结构约束来源接口，仍不放宽guard/不读GT。
+来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证及10repeat精确，随后声明guard失败；独立窄接口诊断确认未发现实际GPU实现bug；A源接口未可靠执行。事前声明独立B结构约束来源接口；实际fixed5 CPU来源/grammar replay与完整333 span输入预检PASS，独立窄代码确认PASS，最大实际source22image7701tokens/6550全部span保留；相同fixed5 GPU下一步，仍不放宽guard/不读GT。
 来源`docs/reviews/20261005_m1_provenance_gpu_interface_diagnosis.md`；无机制结论。
 当前零标签性能与机制目标仍未完成。
 
@@ -115,7 +117,7 @@ R2事前声明空packet精确原生S、有真实context保留原结构读数；�
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档22个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档23个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。

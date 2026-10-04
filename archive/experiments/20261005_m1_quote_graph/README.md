@@ -1,3 +1,5 @@
+> Archived2026-10-05 under rule9: complete R2 has no qualifying +.01 main gain; R1 positive signal retained, no R3/controlGPU.
+
 # M1 candidate24 backup: source-bound quotation and reference graph
 
 Declared2026-10-05 while candidate22 full333 is collecting. Independent proposal
@@ -359,3 +361,31 @@ correct cached 3D positions from get_seq_length; root4.57 diagnostic concern
 does not apply to these GPU runs. Identical R2 full333 next.
 
 Identical R2 complete333 Slurm141 dispatched onsc474399 at10:21. Current machine code synchronization and actual source-generation version investigation confirmed; no scientific code/input change from fixed5. Whole paired native/conditional readings use unchanged R1 source cache with original per-new-video acquisition cost charged.
+
+## Complete R2 outcome and archive decision
+
+Whole333 Slurm141 finished10:31:46 onsc474399. BOTH graph inputs and paired
+readings returned immediately before local analysis. Native allraw/all six
+exact; G/V unchanged,375actual S changes. Authority
+`runs/20261005_m1_quote_graph/r2_full_main_decoded/optimized/metrics.json`:
+HMM ROC/PR/within .8979977380066259/.6971059194174642/.7416898666015614 (84);
+HCS .7163452367117615/.6710032869832141/.6382551118640671 (99). Deltas
++.000879077/+.002871316/-.009092177 and
+-.000479627/-.000068797/+.000905998. All losses within declared noise, but NO
+qualifying .01 gain; performance FAIL. Paired final within CI
+[-.023932737,-.000094567] HMM and[-.006603536,.009018776] HCS. Rawmax within
+-.001104546/-.002192950, rawspeech shared-.003469396/-.006381418; their CIs
+contain0. No mechanism evidence or full controlGPU. Complete costs
+`runs/20261005_m1_quote_graph/r2_full_main_analysis/alignment.json`: HMM
+2625.444907s/HCS2345.695060s, total82.852333min/native9.01x, including original
+unchanged acquired sources73.371445min. Paired reference graph-window native
+S timing is overhead, fallback S is charged once in standalone new method.
+
+R1 HMMwithin+.011006 development signal and all six authority values remain
+preserved above; its CI contains0 and gains were associated with empty-wrapper
+changes rather than demonstrated graph ownership. R2 result cannot be described
+as a graph mechanism win or copied into R1. Rule9 archive as cumulative23rd
+negative candidate; no R3, no parameter search or historical splice. Whole family
+code moved to archive/experiments/20261005_m1_quote_graph. Original run code_path
+records its actual generation-time location; archived contents preserve it.
+All results development-selected. Continue Program23 and entity/discourse25 B.

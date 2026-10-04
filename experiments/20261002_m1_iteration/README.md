@@ -313,3 +313,10 @@ the limits of legacy source-index exclusion. All original inputs remain unchange
   Program23 fixed5 correctly rejected0module calls due actual noncompliant generated
   typed programs, no main/GT/performance verdict; explicit interface design needed.
   Continue independently reviewed source-bound quotation/referrer graph candidate24.
+
+23. `archive/experiments/20261005_m1_quote_graph/README.md`: complete R1 positive
+  HMMwithin+.011006 retained, but main FAIL; logged actual GT error analysis
+  led to exact-native fallback on empty packets. Complete fresh R2 all333 and
+  native allraw/all6 exact, no qualifying main gain; rule9 archive, no R3/full
+  controls. Original graph/source generation and actual cost retained, no
+  retrospective scalar splice. Continue Program23 main and provenance25 B.

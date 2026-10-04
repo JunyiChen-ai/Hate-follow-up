@@ -3,7 +3,7 @@
   "method": "source-bound quotation and reference graph with asymmetric speech reading",
   "version": "R2 native fallback for empty source packet; sources2026-10-05",
   "scope": "development-selected R1 qualifying signal retained; R2 predeclared native fallback; CPU source checks PASS",
-  "state": "R2 full333 paired scoring running sc474399 Slurm141; main verdict pending",
+  "state": "Archived rule9 after complete R2 no qualifying gain; R1 positive signal retained",
   "proposal_review": "docs/reviews/20261005_m1_quote_graph_proposal.md",
   "proposal_verdict": "PASS",
   "code_review": "docs/reviews/20261005_m1_quote_graph_code.md",
@@ -42,5 +42,8 @@
   "r2_smoke_pass": true,
   "r2_smoke": "runs/20261005_m1_quote_graph/r2_full_smoke_analysis/plumbing_summary.json",
   "r2_main_job": 141,
-  "r2_main_host": "sc474399"
+  "r2_main_host": "sc474399",
+  "r2_main_authority": "runs/20261005_m1_quote_graph/r2_full_main_decoded/optimized/metrics.json",
+  "archived": true,
+  "cumulative_archived": 23
 }

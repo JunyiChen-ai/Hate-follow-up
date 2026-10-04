@@ -344,3 +344,48 @@ independent narrow code/interface review precede the SAME original fixed5.
 Each corpus still requires nonempty valid ledger AND nonlocal retrieval,
 allraw native exact and current repeat checks before any main/GT performance.
 Empty/UNKNOWN B remains a failed execution observation, never forced success.
+
+B schema clarification before writer implementation: generated ledger entities
+use `{id,description,support}` with support a local frame ID or exact span handle;
+quotations use `{id,span,owner}`. The deterministic source compiler expands
+these chosen handles to original parser frame/quote fields and exact current
+characters; this is the new declared interface, not a repair of A output.
+Catalog in the prompt lists handle/start/end/entity-eligible coordinates with
+the actual body once, avoiding quadratic duplicate text. Handles t000000 etc.
+refer to unique exact1-16word spans; only≤4word handles allowed for text entities.
+The generated link schema is `{choices:[{type:STOP} or {type,from,to},...]}`;
+STOP only terminates the list, never becomes an edge. Generated grammar choice
+and compiled literal original-schema fields are both recorded and replayed.
+Original strict typed graph parser receives only this declared deterministic
+compiled schema; any incomplete generation rejects the WHOLE record. No
+semantic repair or unchecked description-to-identity conversion occurs.
+
+B source-only full333 preflight (no scores/GT) found the exhaustive catalog
+serialization expands to164,242tokens in the largest window, despite only
+2,225source characters. This is duplicate coordinate serialization, not needed
+scientific context. Before any B generation, compact the identical choice set:
+handles `t<start-word:04d>_<exclusive-end-word:04d>` refer to the current full
+source body's whitespace-word boundaries. Prompt lists word start/end character
+coordinates once, plus the same1-4/1-16word eligibility and exact uniqueness
+rule; the constrained decoder still enumerates ALL identical unique source
+spans, with no truncation/selection/parameter change. The compiler still copies
+original characters. Actual new prompt tokens/choice replay audited separately;
+never describe the discarded exhaustive serialization as actual GPU prefill.
+
+B author CPU/complete source-only checks PASS; authority
+`runs/20261005_m1_provenance/handle_cpu_checks/summary.json`. All7359 source
+windows in full333 keep all unique legal span choices; maximum boundary table
+4093tokens, not the discarded exhaustive164242token representation. Actual
+first-ledger fixed5 real22image encodings3135/3098/3255/3273/3097 tokens and
+source/pixels/positions valid. Generated fixture routes/retrieval are artificial
+CPU legal-source tests, not observations of factual model choices.
+
+Independent narrow code/interface review PASS after fixing current input mRoPE
+delta binding; authority `docs/reviews/20261005_m1_provenance_handle_code.md`.
+Real36layerBF16 CPU tiny-generation checks, actualHF4.57/targetHF5.15 position
+oracles,40corruption rejects,typed/legal source compiler/replay and original
+reader/canonical wrapper checks PASS. Maximum actual source yt_VWWnMsLjCdY/w29
+retains all6550 legal span choices; independent actual rawPTS/PNG validation
+and22image encoding7701expandedtokens. Changed handle/prompt IDs are explicitly
+new B inputs; no old/new generated-logit equivalence claimed. Same8B original
+fixed5 GPU next, no main/GT or semantic/mechanism claim before actual guards.
