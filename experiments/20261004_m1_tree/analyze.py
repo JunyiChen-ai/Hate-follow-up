@@ -11,7 +11,8 @@ sys.path.insert(0,str(ROOT))
 from src.eval.evaluate import within_video_macro
 from src.video_inputs import load_asr
 from extract import DATASETS,CACHE,selected_rows,validate_cached
-from measure import existing,validate_records
+from measure import existing,validate_records,validate_extension_inputs
+from src.mllm_renderer import cpu_renderer
 METRICS=('frame_ROC_AUC','frame_PR_AUC','within_video_macro_ROC_AUC')
 
 
@@ -26,6 +27,7 @@ def metrics(path):return {r['dataset']:r for r in json.loads(path.read_text())['
 
 
 def prepare(root,out,smoke,revision='r1'):
+    renderer=cpu_renderer() if revision=='r3' else None
     rows=selected_rows(smoke);expected={(r['dataset'],r['video_id']):r for r in rows}
     cfg=json.loads((root/'config.json').read_text());assert cfg['GT_in_reader'] is False and cfg['smoke']==smoke
     assert cfg.get('reader_revision','r1')==revision
@@ -33,13 +35,15 @@ def prepare(root,out,smoke,revision='r1'):
     checks=existing(root/'checks.jsonl',expected)
     assert all(r.keys()==expected.keys() for r in [*records.values(),checks])
     old=read(ROOT/'runs/20260926_glr/base_gridA/predictions.jsonl');asr={ds:load_asr(ds) for ds in DATASETS}
-    changed_global=changed_visual=changed_speech=verified=cloned=0
+    changed_global=changed_visual=changed_speech=verified=cloned=speech_cloned=extension_verified=0
     for key,row in expected.items():
         metadata,features=validate_cached(CACHE/key[0]/key[1],row)
         detail=json.loads((root/'details'/key[0]/(key[1]+'.json')).read_text())
         assert detail.get('reader_revision','r1')==revision
+        if revision=='r3':extension_verified+=detail['extension']['fresh_render_verified']
         base,new=records['base'][key],records['optimized'][key]
         validate_records(row,base,new,checks[key],detail,metadata)
+        if renderer is not None:validate_extension_inputs(renderer,row,asr[key[0]].get(key[1],[]),base,detail,metadata)
         assert detail['segments']==[list(s) for s in asr[key[0]].get(key[1],[])]
         assert base['extra']['z_video']==old[key]['extra']['z_video']
         assert base['extra']['windows']==old[key]['extra']['windows']
@@ -49,15 +53,23 @@ def prepare(root,out,smoke,revision='r1'):
             changed_visual+=a['z_visual']!=b['z_visual'];changed_speech+=a.get('z_speech')!=b.get('z_speech')
             verified+=t['fresh_render_verified']
             cloned+='cloned_margin' in t
+            speech_cloned+='cloned_speech_margin' in t
     assert changed_visual>0
     if revision=='r2':assert changed_global==changed_speech==0
+    elif revision=='r3':assert changed_global==0 and changed_speech>0
     else:assert changed_global>0
     if smoke:assert verified==len(rows)
     if revision=='r2':assert cloned==(len(rows) if smoke else 0)
+    if revision=='r3':
+        assert cloned==extension_verified==(len(rows) if smoke else 0)
+        expected_speech=sum(any('z_speech' in w for w in r['extra']['windows']) for r in records['base'].values()) if smoke else 0
+        assert speech_cloned==expected_speech
     result=dict(coverage=len(rows),native_exact=True,GT_read=False,changed_global=changed_global,
         changed_visual_windows=changed_visual,changed_speech_windows=changed_speech,
         fresh_render_checks=verified,cost={},mechanism_supported=False)
     if revision=='r2':result.update(reader_revision='r2',cloned_margin_checks=cloned)
+    if revision=='r3':result.update(reader_revision='r3',cloned_margin_checks=cloned,
+        cloned_speech_checks=speech_cloned,extension_fresh_render_checks=extension_verified)
     for ds in DATASETS:
         rr=[r for key,r in checks.items() if key[0]==ds]
         result['cost'][ds]=dict(standalone_seconds={a:sum(r['standalone_seconds'][a] for r in rr) for a in ('base','optimized')},
@@ -66,6 +78,9 @@ def prepare(root,out,smoke,revision='r1'):
             input_actual_forwards={k:sum(r['input_actual_forwards'][k] for r in rr) for k in ('vision','language')})
         if revision=='r2':result['cost'][ds].update({k:sum(r[k] for r in rr) for k in (
             'prefix_seconds','native_visual_seconds','shared_speech_seconds','new_visual_seconds','diagnostic_forwards','diagnostic_seconds')})
+        if revision=='r3':result['cost'][ds].update({k:sum(r[k] for r in rr) for k in (
+            'prefix_seconds','reference_branch_seconds','extension_seconds','new_visual_seconds','new_speech_seconds',
+            'diagnostic_forwards','diagnostic_seconds')})
         if smoke:
             sample=[r for r in rr if r['video_id']!='hate_video_114']
             result['cost'][ds]['rough_full_seconds']=(215 if ds=='HateMM' else 118)*np.mean([r['standalone_seconds']['optimized'] for r in sample])
@@ -130,7 +145,7 @@ def report(root,decoded,out):
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True)
     ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base','optimized'))
-    ap.add_argument('--revision',choices=('r1','r2'),default='r1');a=ap.parse_args()
+    ap.add_argument('--revision',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
     stem=a.revision+'_full_'+('smoke' if a.smoke else 'main');root=ROOT/'runs/20261004_m1_tree'/stem
     out=root.parent/(stem+'_analysis');out.mkdir(parents=True,exist_ok=True);decoded=root.parent/(stem+'_decoded')
     if a.stage=='prepare':prepare(root,out,a.smoke,a.revision)

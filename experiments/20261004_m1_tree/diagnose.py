@@ -17,7 +17,7 @@ def read(path):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--revision',choices=('r1','r2'),default='r1');args=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--revision',choices=('r1','r2','r3'),default='r1');args=ap.parse_args()
     stem=args.revision+'_full_main'
     out=ROOT/'runs/20261004_m1_tree'/(args.revision+'_error_analysis');out.mkdir(parents=True,exist_ok=True)
     root=out.parent/stem;decoded=root.parent/(stem+'_decoded')

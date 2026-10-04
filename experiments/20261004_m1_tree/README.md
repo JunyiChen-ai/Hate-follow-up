@@ -440,3 +440,90 @@ tool/chunk selection and iterative local/global reasoning; full report/poster
 still403, no claim of excluding all clustering overlap. Evidence and exact query
 scope `runs/20261004_m1_tree/r2_source_scope/`. No scoring/constants change and
 no reopened proposal review. No first generic retrieval/tool/rereading claim.
+
+## R2 complete333 and branch (2026-10-05)
+
+sc474399/Slurm116 DONE333; outputs/inputs local before canonical CPU analysis.
+All native raw reads/curves and six final metrics exact; G/S unchanged,7359 visual
+windows changed. `runs/20261004_m1_tree/r2_full_main_analysis/{alignment,summary}.json`.
+Authoritative final `runs/20261004_m1_tree/r2_full_main_decoded/optimized/metrics.json`:
+HateMM ROC/PR/within .8975298327452879/.6906542914243219/.7725214943334161 (84),
+HCS .7296312611274366/.6829391036197541/.6425199749331614 (99).
+Delta+.000411/−.003580/+.021739;+.012806/+.011867/+.005171 respectively.
+All losses inside noise, but no same metric+.01 BOTH; performance FAIL,
+any_qualifying_gain TRUE. Retain for second revision,2/3 revisions remain.
+Raw max within−.027095/+.009278, raw visual−.049536/+.022907,
+shared speech exactly0. No dual-corpus raw improvement or mechanism claim.
+Paired final CI95[−.000185,.046749]/[−.017174,.027705]. No full controls run.
+New-video processing74.216min HMM/60.187min HCS=134.404min/native9.190min (~14.62x),
+including117.075min original acquisition. Peak19.119/19.110GiB.
+
+R2 descriptive test access: current full raw/decoded predictions, per_video.json,
+both canonical test GT arrays; `runs/20261004_m1_tree/r2_error_analysis/{summary,per_video}.json`.
+G and S stayed exactly native; HCS visual raw ordering improved but raw max/final
+within improvement is smaller. HMM visual ordering fell despite final within
+improvement; no claim of new evidence localization established. R1's full tree
+context gave different raw visual/speech behavior; comparison also changes stance
+and G, so it is not proof that one context factor alone caused the difference.
+
+## R3 declaration: native anchor, factual tree context before local reads
+
+Declared2026-10-05 after full R2 analysis, before R3 code/GPU; second revision2/3,
+one remaining revision after it. Source/error files above and R1 analysis are the
+only result inputs to design; scoring reads none of them or GT. No constants scan.
+Hypothesis: complete chronological tree observations can aid both local branches
+without changing the original whole-video anchor/own hard stance. This keeps the
+complete acquisition and observation inventory, not an alternate-score mixture.
+
+Build exact native20/fullASR prefix, ask original VIDEO_QUESTION once and append
+its native hard Yes/No. Paired native V/S are read independently on this cache.
+Then append one factual user turn containing the EXACT existing tree_text (same
+chronological nodes/captions/actual source times/links), followed by the literal
+non-decision assistant acknowledgement `Context recorded.`. Cache this extension
+in one text-only forward, without a moderation question/global reread. Its global
+margin/stance remain the original measured values; no overwriting a different
+judgment or combining two scores. Reconstruct actual IDs/grids/3D positions and
+verify the original native prefix positions remain exact. This shared factual
+extension is visible to all later independent local branches.
+
+New visual uses the exact existing local leaf pixels/ancestor packet and original
+visual question; new speech uses the exact original speech question/body on the
+extended cache. Empty native speech stays absent. New S and V both replace their
+native reads directly; max and fixed r6 remain untouched. G is native; S is now
+new, rather than copied native. Full overview/ASR/all tree observations remain
+visible: no hard evidence isolation claim. All acquisition/caption/local
+constants, policy, seeds and prompts unchanged; the exact acknowledgement above
+is cache/conversation bookkeeping and is not a novelty component.
+
+Production moderation calls4+W+available_S (native3 plus1 factual extension);
+paired reference adds W+available_S calls. Fixed5 smoke adds one cloned new V
+and one cloned new S when speech exists, separately counted/timed. Fresh render
+and native prefix geometry verified both at factual extension and appended local
+pixels, clone margins exact, then the same full333. All input acquisition117.075min
+remains charged per new video; no new captions/features for these existing inputs.
+Preliminary full135–150GPUmin, unmeasured until smoke/main. Outputs
+`r3_full_{smoke,main}` with matching analysis/decoded directories.
+
+If R3 passes, full controls must be adapted to this declared shared factual
+extension/new S, with exact native/R3 raw parity and same component/falsifiable
+gates; the R2 native-S control reader is not a substitute. Pure geometry remains
+reusable. No mechanism/promotion conclusion from current positive R1/R2 alone.
+
+R3 independent narrow code confirmation PASS:
+`docs/reviews/20261005_m1_tree_r3_code.md`. CPU evidence
+`runs/20261004_m1_tree/r3_code_review/{extension_oracle,binding_oracle}.{py,log}`.
+Detected saved extension token/role binding gap was fixed before any GPU run:
+resume and prepare rebuild the current native frames/ASR/stance conversation and
+literal factual extension, distinguish native prefix P from stance-cache N, and
+compare suffix text/IDs and full lengths. Actual Qwen CPU processor validated eight
+corruption rejections; stub cache oracles verify calls/restoration/cost/empty speech.
+These are not GPU model parity. Existing CPU selfcheck and R2 full noGT prepare
+regression PASS in `runs/20261004_m1_tree/cpu_checks/r3_existing_regression.log`
+and `r2_prepare_after_r3.log`. Shared CPU renderer is in `src/mllm_renderer.py`;
+the prepared Program helper now imports it with equivalent rendering semantics.
+No Program scoring or GPU run was performed for this extraction.
+
+Conditional fixed5 then main commands: `sbatch .../launch/lab2.sbatch smoke r3`,
+return runs/data, `analyze.py --stage prepare --smoke --revision r3`; after PASS
+`sbatch .../launch/lab2.sbatch main r3`, return runs/data and detach
+`launch/run_analysis.sh r3`. All commands run from project root on correct host.

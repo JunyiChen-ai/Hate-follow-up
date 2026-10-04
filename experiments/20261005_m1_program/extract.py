@@ -12,22 +12,14 @@ import torch
 from PIL import Image
 ROOT=next(p for p in Path(__file__).resolve().parents if (p/'CLAUDE.md').is_file())
 sys.path.insert(0,str(ROOT))
-from src.mllm_judge import Judge,MODEL,FAMILY_IMAGE_KW
+from src.mllm_judge import Judge,MODEL
+from src.mllm_renderer import cpu_renderer
 from src.video_inputs import load_asr
 from inputs import DATASETS,CACHE,selected_rows,sources,validate
 from program import CACHE_VERSION,CONSTANTS,canonical,PLANNER_SYSTEM,API,PLANNER_END,MODULE_SYSTEM,SCOPE_QUESTION,ACTION_QUESTION,parse_chunk,execute
 
 
 def tick():torch.cuda.synchronize();return time.perf_counter()
-
-
-def cpu_renderer():
-    from transformers import AutoProcessor,AutoConfig
-    j=object.__new__(Judge);j.processor=AutoProcessor.from_pretrained(MODEL);j.tok=j.processor.tokenizer
-    j.family=AutoConfig.from_pretrained(MODEL).model_type;j.img_kw=dict(FAMILY_IMAGE_KW[j.family])
-    j.list_content=j.family=='llava_onevision';j.same_turn=False;j.loose_stance_seam=False
-    assert j.family=='qwen3_vl'
-    return j
 
 
 @torch.no_grad()
