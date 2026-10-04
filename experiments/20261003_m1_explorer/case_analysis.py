@@ -81,5 +81,5 @@ def main(version='r1'):
 
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--version',choices=('r1','r2','r3'),default='r1')
+    parser=argparse.ArgumentParser();parser.add_argument('--version',choices=('r1','r2','r3','r4'),default='r1')
     main(parser.parse_args().version)

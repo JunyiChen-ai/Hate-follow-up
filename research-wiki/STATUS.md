@@ -4,8 +4,14 @@
 
 **2026-10-04 M1 自主迭代恢复**：用户确认 Explorer R1 为正向进展，并要求达到性能与机制目标后再停止。
 当前正式方法仍为 r6_bma。已审查并通过五视频 smoke 的 Explorer R3 全量333在 sc474399
-提交 Slurm job79，输出目标 `runs/20261003_m1_explorer/r3_main/`；尚无全量评测结论。
+提交 Slurm job79，已完成并回传本机、统一评测；HateMM ROC/PR/within
+.897364/.688901/.757720，HCS .735061/.685685/.663234。HCS 三项继续提升，
+HMM within+.00694、PR-.00533，双语料门仍未过。来源
+`runs/20261003_m1_explorer/r3_main_decoded/explore/metrics.json`。
 R3 每窗先补两帧，再按既定 .3 熵决定是否再补两帧，两语料流程一致，r6/评测器固定。
+R4 最后一次修订已声明：新增局部帧的读取不再带模型自身的全局问答轮，原始观察语境、
+native 全局/语音和 r6 保持；独立方案、代码审查与实际36层CPU缓存测试已PASS，
+待目标8B五视频smoke后全量。不是已证实的偏置机制。
 入口 `experiments/20261003_m1_explorer/README.md`。不更新 Overleaf。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，

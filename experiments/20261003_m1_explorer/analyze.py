@@ -33,8 +33,9 @@ def prepare(root,out,smoke=False,version='r1'):
     cfg=json.load((root/'config.json').open())
     assert cfg['smoke']==smoke and cfg['layers']==list(range(36))
     assert cfg.get('revision','r1')==version and cfg.get('support_override',True)==(version=='r1')
-    assert cfg.get('always_acquire_first',False)==(version=='r3')
-    assert cfg['entropy_thresholds']==[None if version=='r3' else .1,.3] and cfg['frames_per_round']==2 and cfg['round_limit']==2
+    assert cfg.get('always_acquire_first',False)==(version in ('r3','r4'))
+    assert cfg.get('expanded_context','native_verdict')==('observation_only' if version=='r4' else 'native_verdict')
+    assert cfg['entropy_thresholds']==[None if version in ('r3','r4') else .1,.3] and cfg['frames_per_round']==2 and cfg['round_limit']==2
     assert cfg['attention_exponent']==.5 and cfg['GT_in_reader'] is False
     assert cfg['model']=='Qwen/Qwen3-VL-8B-Instruct' and cfg['frames']==20 and cfg['window_seconds']==8 and cfg['fps']==4
     assert cfg['global_and_answer']==cfg['speech']=='original native'
@@ -52,7 +53,7 @@ def prepare(root,out,smoke=False,version='r1'):
         c=checks[k];dur=float(manifest[k]['duration']);wins=fixed_windows(dur,8);ws=b['extra']['windows'];V=len(wins)
         B=sum(1+('z_speech' in w) for w in ws)
         details=json.load((root/'details'/k[0]/(k[1]+'.json')).open());traces=details['traces']
-        if version=='r3':
+        if version in ('r3','r4'):
             assert details['source'] is not None
             source_times=np.asarray([e['time'] for e in details['source']['frames']])
             assert len(source_times)>0
@@ -65,12 +66,19 @@ def prepare(root,out,smoke=False,version='r1'):
         assert c['acquisition_reads']==sum(len(t['rounds']) for t in traces)
         assert c['visual_queries']==V and c['native_branches']==B and c['baseline_instrumented'] is True
         if smoke:assert c['native_replay_exact'] is True
+        if version=='r4':
+            ep=details['expanded_prefix'];assert ep['context']=='observation_only'
+            assert ep['tokens']==c['prefix_tokens']==len(details['input_ids']) and ep['global_dialogue_tokens_removed']>0
+            acquired=c['acquisition_reads']>0
+            assert ep['copy_created']==ep['positions_match_observational_render']==acquired
+            assert c['observational_copy_seconds']>=0
+            if smoke and acquired:assert ep['fresh_render_checked_counts']
         for i,(w,hw,t,(start,end)) in enumerate(zip(ws,h['extra']['windows'],traces,wins)):
             for name in ('start','end','z_visual','z_speech'):
                 assert w.get(name)==hw.get(name);count+=name.startswith('z_') and name in w
             assert t['window']==i and t['initial_z']==w['z_visual'] and len(t['rounds'])<=2
             support=sum(start<=ft<end for ft,_ in frames);assert t['nominal_support']==support
-            if version=='r3':
+            if version in ('r3','r4'):
                 targets=(np.arange(max(0,math.ceil(4*start-.5)),math.ceil(4*end-.5))+.5)/4
                 targets=targets[(targets>=start)&(targets<end)]
                 mapped=np.searchsorted(source_times,targets)
@@ -94,6 +102,8 @@ def prepare(root,out,smoke=False,version='r1'):
                 assert all((ROOT/p).is_file() for p in step['paths'])
                 assert np.isfinite(step['z']) and np.isfinite(step['prior']).all()
                 assert len(step['prior'])==len(frames)+len(used) and abs(sum(step['prior'])-1)<1e-5
+                if version=='r4':
+                    assert step['expanded_context']=='observation_only' and step['cached_prefix_tokens']==c['prefix_tokens']
                 last=step['z']
             assert t['final_z']==last==raw['explore'][k]['extra']['windows'][i]['z_visual']
         for arm in ARMS:
@@ -128,6 +138,17 @@ def prepare(root,out,smoke=False,version='r1'):
                     assert before['added']==after['added'] and before['z']==after['z']
                 matched+=1
         result['r1_expanded_windows_exact']=matched
+    if version=='r4':
+        original=ROOT/'runs/20261003_m1_explorer'/('r3_smoke' if smoke else 'r3_main');matched=0
+        for k in raw['explore']:
+            before=json.loads((original/'details'/k[0]/(k[1]+'.json')).read_text())
+            after=json.loads((root/'details'/k[0]/(k[1]+'.json')).read_text())
+            for t,nt in zip(before['traces'],after['traces']):
+                assert t['window']==nt['window'] and t['initial_z']==nt['initial_z'] and t['initial_prior']==nt['initial_prior']
+                assert bool(t['rounds'])==bool(nt['rounds'])
+                if t['rounds']:
+                    assert t['rounds'][0]['added']==nt['rounds'][0]['added'];matched+=1
+        result['r3_first_acquired_sets_exact']=matched
     if smoke:
         result['estimated_seconds']={ds:{arm:n*np.mean([r['standalone_seconds'][arm] for r in rows if r['dataset']==ds and r['video_id']!='hate_video_114']) for arm in ARMS} for ds,n in [('HateMM',215),('HateClipSeg',118)]}
     (out/('plumbing_summary.json' if smoke else 'alignment.json')).write_text(json.dumps(result,indent=2)+'\n')
@@ -191,7 +212,7 @@ def report(root,decoded,out):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--arm',choices=ARMS);ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2','r3','r4'),default='r1');a=ap.parse_args()
     if a.stage=='evaluate' and not a.arm:ap.error('evaluate requires arm')
     if a.smoke and a.stage!='prepare':ap.error('smoke is plumbing only')
     parent=ROOT/'runs/20261003_m1_explorer';root=parent/(a.version+('_smoke' if a.smoke else '_main'));decoded=parent/(a.version+'_main_decoded');out=root if a.smoke else parent/(a.version+'_main_analysis')

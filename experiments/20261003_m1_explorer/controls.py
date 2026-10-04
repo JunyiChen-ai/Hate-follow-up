@@ -11,7 +11,7 @@ import sys
 import time
 import numpy as np
 import torch
-from measure import ROOT,tick,rope_positions,read_suffix,read_images
+from measure import ROOT,tick,rope_positions,read_suffix,read_images,observational_native,observational_cache
 from explorer import FrameAttention,FrameSource,choose_frames
 from src.mllm_judge import Judge,MODEL,VIDEO_QUESTION,yesno_question
 from src.video_inputs import FPS,frame_paths,load_asr,load_manifest,fixed_windows,window_text
@@ -47,7 +47,7 @@ class MismatchSource:
 
 
 @torch.no_grad()
-def read_control(j,engine,row,segments,out,arm,main,smoke=False):
+def read_control(j,engine,row,segments,out,arm,main,smoke=False,expanded_without_verdict=False):
     ds,vid,duration=row['dataset'],row['video_id'],float(row['duration'])
     frames=frame_paths(ds,vid,20,'k20');wins=fixed_windows(duration,8)
     texts=[window_text(segments,a,b) for a,b in wins];V=len(wins)
@@ -59,7 +59,8 @@ def read_control(j,engine,row,segments,out,arm,main,smoke=False):
     counts=list(j.img_tokens);engine.start('prefix',enc['input_ids'][0]==j.image_token_id)
     try:cache=j.prefix_cache(enc)
     finally:engine.stop()
-    P=cache.get_seq_length();qid,qtext=j.branch_ids(msgs,VIDEO_QUESTION)
+    P=cache.get_seq_length();observational_rope=j.model.model.rope_deltas.clone() if expanded_without_verdict else None
+    qid,qtext=j.branch_ids(msgs,VIDEO_QUESTION)
     zv=j.cached_margin(cache,qid,in_place=True);stance='Yes' if zv>0 else 'No'
     aid,atext=j.answer_ids(msgs,VIDEO_QUESTION,stance);j.extend_cache(cache,aid)
     history=[{'role':'user','content':[{'type':'text','text':VIDEO_QUESTION}]},j.turn('assistant',stance)]
@@ -67,7 +68,7 @@ def read_control(j,engine,row,segments,out,arm,main,smoke=False):
     ids=torch.cat((enc['input_ids'].to(j.device),torch.tensor([qid+aid],device=j.device)),1)
     grids=enc['image_grid_thw'].to(j.device);positions,_=rope_positions(j,ids,grids)
     native={'msgs':msgs,'history':history,'head':head,'ids':ids,'grids':grids,'positions':positions,'counts':counts,'rope':rope}
-    source=None;windows=[];traces=[];acquisitions=0;diagnostic_seconds=0.
+    source=None;windows=[];traces=[];acquisitions=0;diagnostic_seconds=0.;local_cache=None;local_native=None;copy_seconds=0.
     for i,((a,b),transcript) in enumerate(zip(wins,texts)):
         q=yesno_question(i,V,a,b,transcript,'visual')
         bids,_=j.branch_ids(msgs,q,history,head_text=head)
@@ -99,7 +100,16 @@ def read_control(j,engine,row,segments,out,arm,main,smoke=False):
                 assert len(added)==size and size>0
                 offset+=size;acquired.extend(added);acquired.sort(key=lambda e:e['time'])
                 picture_source=MismatchSource(source,mapping) if arm=='mismatch' else source
-                z,prior,meta=read_images(j,engine,cache,native,q,acquired,picture_source)
+                if expanded_without_verdict:
+                    if local_cache is None:
+                        tc=tick();local_cache=observational_cache(cache,P)
+                        local_native=observational_native(j,msgs,text,enc,counts,observational_rope)
+                        assert torch.equal(local_native['positions'],positions[:,:,:P])
+                        local_native.update(files=files,verify_render=smoke,render_checked_counts=set())
+                        copy_seconds+=tick()-tc
+                    z,prior,meta=read_images(j,engine,local_cache,local_native,q,acquired,picture_source)
+                    assert local_cache.get_seq_length()==P
+                else:z,prior,meta=read_images(j,engine,cache,native,q,acquired,picture_source)
                 observed=[f[0] for f in frames]+[e['time'] for e in acquired];acquisitions+=1
                 trace['rounds'].append({'added':added,'acquired':list(acquired),'z':z,
                     'donor_entries':[mapping[e['index']] for e in acquired] if arm=='mismatch' else None,**meta})
@@ -124,13 +134,20 @@ def read_control(j,engine,row,segments,out,arm,main,smoke=False):
         'acquisition_reads':acquisitions,'native_replay_exact':True if smoke else None,
         'peak_GiB':torch.cuda.max_memory_allocated()/2**30,'paired_seconds':elapsed,
         'diagnostic_seconds':diagnostic_seconds,'main_trace':f'runs/20261003_m1_explorer/r1_main/details/{ds}/{vid}.json'}
+    if expanded_without_verdict:
+        details['observational_copy_seconds']=copy_seconds
+        details['expanded_prefix']={'context':'observation_only','tokens':P,'global_dialogue_tokens_removed':n-P,
+            'positions_match_observational_render':local_native is not None,
+            'copy_created':local_cache is not None,
+            'fresh_render_checked_counts':sorted(local_native['render_checked_counts']) if local_native else []}
+    del local_cache,local_native,cache
     return record,details
 
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch'),required=True)
     ap.add_argument('--smoke',action='store_true')
-    ap.add_argument('--version',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
+    ap.add_argument('--version',choices=('r1','r2','r3','r4'),default='r1');a=ap.parse_args()
     main_root=ROOT/'runs/20261003_m1_explorer'/(a.version+('_smoke' if a.smoke else '_main'))
     control_name='controls' if a.version=='r1' else a.version+'_controls'
     out=ROOT/'runs/20261003_m1_explorer'/(control_name+('_smoke' if a.smoke else ''))/a.arm
@@ -142,7 +159,8 @@ def main():
         r for r in rows if r['dataset']=='HateMM' and r['video_id']=='hate_video_114']
     import transformers
     config={'host':socket.gethostname(),'date':time.strftime('%Y-%m-%d'),'arm':a.arm,'smoke':a.smoke,'revision':a.version,
-        'code':'experiments/20261003_m1_explorer/controls.py + reviewed measure.py/explorer.py; sources2026-10-03',
+        'code':'experiments/20261003_m1_explorer/controls.py + reviewed measure.py/explorer.py; sources2026-10-04',
+        'expanded_context':'observation_only' if a.version=='r4' else 'native_verdict',
         'model':MODEL,'torch':torch.__version__,'transformers':transformers.__version__,'seed':0,'GT_in_reader':False,
         'counts':'always up to4' if a.arm=='fixed4' else 'replay actual main per-window round counts',
         'main_trace_root':str(main_root.relative_to(ROOT)),'entropy_regating':False,'new_frames_per_round':2,
@@ -155,7 +173,7 @@ def main():
     with (out/'predictions.jsonl').open('w') as handle:
         for i,row in enumerate(rows):
             ds,vid=row['dataset'],row['video_id'];source=main_root/'details'/ds/(vid+'.json')
-            record,details=read_control(j,engine,row,asr[ds].get(vid,[]),out,a.arm,json.loads(source.read_text()),a.smoke)
+            record,details=read_control(j,engine,row,asr[ds].get(vid,[]),out,a.arm,json.loads(source.read_text()),a.smoke,expanded_without_verdict=a.version=='r4')
             details['main_trace']=str(source.relative_to(ROOT));dest=out/'details'/ds;dest.mkdir(parents=True,exist_ok=True)
             (dest/(vid+'.json')).write_text(json.dumps(details)+'\n');handle.write(json.dumps(record)+'\n');handle.flush()
             logging.info('progress %d/%d %s %s elapsed=%.1f peak_GiB=%.2f acquisitions=%d',i+1,len(rows),ds,vid,time.time()-started,details['peak_GiB'],details['acquisition_reads'])

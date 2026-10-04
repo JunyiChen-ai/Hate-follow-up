@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 version="${1:-r1}"
-if [[ "$version" != r1 && "$version" != r2 && "$version" != r3 ]]; then exit 2; fi
+if [[ "$version" != r1 && "$version" != r2 && "$version" != r3 && "$version" != r4 ]]; then exit 2; fi
 out="runs/20261003_m1_explorer/${version}_main_analysis"
 mkdir -p "$out"
 exec > "$out/run.log" 2>&1

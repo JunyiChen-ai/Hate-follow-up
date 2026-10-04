@@ -489,3 +489,112 @@ respectively. Each script fixes the target local partition, one GPU,4CPU/32G and
 repository-only outputs. Existing HateVLM runtimes are reused; fresh target smoke
 and native parity are required before any full control, not import success alone.
 No dataset is split between machines. No control is submitted before the main gate.
+
+## R3 complete and R4 declaration (2026-10-04)
+
+R3 full333 completed on sc474399, Slurm79,2117.2s, and was returned to the
+local repository before evaluation/documentation. NoGT prepare verifies all333
+native globals/13939native branches exactly and4044R1-expanded windows exactly.
+Canonical source `runs/20261003_m1_explorer/r3_main_decoded/explore/metrics.json`:
+HMM ROC/PR/within .8973644548066193/.6889007126470338/.7577197411625319(84);
+HCS .7350612119211078/.6856850467787075/.6632335093864848(99).
+Relative to r6, within+.0069377/+.0258844; HMM PR-.0053339, HCS ROC/PR
++.0182363/+.0146130. Within paired CIs[-.022153,.035225]/[.002129,.052897].
+The two-corpus gate still fails. Native r6 exactly reproduced; no controls or
+mechanism claim yet. R3 is further positive HCS development evidence.
+
+Deployment-equivalent reading time, including source indexing/decoding/selection:
+HMM1068.975s/HCS1041.455s(total35.174min), vs native315.964/257.855s, ratio3.678.
+Mean outer forwards56.279/95.288 vs36.521/60.051; new frames8489/8311,
+image encodes including repeats9469/9455; peak17.945/17.672GiB.
+Sources `r3_main_analysis/cost.json`, `r3_main/trace_diagnostics.json` under the
+same run root. Original20-frame/ASR inputs are reused here; their extraction
+remains a common new-video prerequisite, not a free deployment input.
+
+Post-scoring read log: canonical GT arrays, complete R3 raw/decoded/base
+predictions, metrics, alignment and traces; `r3_main_analysis/case_analysis.json`.
+HMM raw visual within .613908→.587017 and raw max .680011→.656391;
+HCS visual .546450→.588579 and raw max .610130→.629204. HMM's sole eligible
+one-window video contributes+.0071429 to final within; the other83contribute
+-.0002052. Uniform minimum local input did not establish new HMM localization.
+HMM losses151/304/45 again have high expanded visual scores near GT-negative
+tails; e.g.45last window visual-1.804→11.551 with no speech read. The prior
+image inspection for151 found real supremacist content there, so this tail must
+not be described as semantically non-hateful merely from GT. R3 analysis does
+not itself inspect all new image semantics or prove a self-conditioning bias.
+
+R4 is revision3of3, declared before implementation/scoring. Retain R3's native
+global, native speech, native initial visual/prior, first2local-frame acquisition,
+.3-nat continuation, actualPTS candidates, attention/distance selector, final
+margin and r6. Change ONLY expanded-read conditioning: ask the exact original
+visual question with all acquired local frames on the original observational
+prefix (policy,20frames,full ASR) BEFORE the model's global question/answer
+dialogue. The native global question/answer remains for native reads and M4,
+but is absent from expanded local reads. No alternate Yes/No, new prompt wording,
+score averaging, per-corpus rule or model. No-label context choice is fixed in
+both corpora. Candidate exhaustion returns the original native read.
+
+Hypothesis: an acquired visual observation may be judged with less reinforcement
+from the model's own earlier global answer. This may improve ranking in cases
+where generic imagery inherits the earlier verdict; it cannot resolve annotation
+disagreements or guarantee correcting the global judgement. The matched older
+Reader analysis `experiments/20261002_verdict_analysis/README.md` motivates testing
+this conditioning with actual new local pixels, not treating its older numbers
+as the latest-reader ablation or proving a causal Yes/No-token effect. The changed
+treatment is the ENTIRE self-verdict dialogue, as in that analysis.
+
+Implementation uses an independently restored pre-verdict KV prefix for expanded
+reads. All cached-prefix mRoPE positions must equal a fresh observational-prefix
+render. Original native cache/global/speech and post-acquisition native replays
+must remain exact. A second prefix copy costs memory/copy time and is charged;
+there is no extra language or vision forward from making the copy. Calls remain
+3+B+sum(R_w); budget at most4new images/2expanded reads per window and6image
+encodes including the second-round repeats. Estimate35–40GPUmin for full333,
+replace with the same fixed5smoke. No constant scan, ensemble or new dataset.
+
+The same four declared complete-corpus controls use R4's own conditioning and
+traces. Matched uniform/distance/fixed4/mismatch still distinguish budget,
+selection and content/time association. If R4 passes, an additional treatment
+control restoring the self-verdict at R4's acquired sets/counts can test this
+context hypothesis without attributing all differences from R3 to one token;
+declare and review its exact replay before use. The context choice is not a
+standalone novelty claim. Independent proposal-delta review before implementation,
+then a narrow code review and fresh fixed5smoke/full333. If it still fails the
+performance/required mechanism gates, record the best R1/R3 evidence and archive
+this family; continue another complete method under the autonomous goal.
+
+R4 proposal-delta review PASS:
+`docs/reviews/20261004_m1_explorer_r4_proposal.md`. The original, stricter Explorer
+gate remains final within >=+.01 on BOTH corpora, relative to native/current,
+and pooled losses <=.005. R3-to-R4 differences are the strategy's total effect:
+first selected pairs stay fixed, but changed first-round read/prior/entropy may
+change the second round. They do not isolate a context effect at fixed pixels.
+
+R4 implementation, awaiting independent code review: lazily deep-copy the native
+KV cache at its restored full length, then crop only the copy to the observational
+length P. Recompute positions from the original observational token IDs/grids;
+check they equal the first P positions of the native prefix. Capture/restore the
+observational rotary delta independently. Copy/preparation time is charged to
+acquisition and a separate per-video field reports it. Native cache is never
+cropped to P and expanded suffixes never remain between windows/rounds.
+In the fixed5 smoke, for each cumulative new-image count first encountered in a
+video, encode a fresh full observational-plus-local rendering with all original
+and new images. Its token IDs/grids must equal the cached-prefix-plus-suffix
+encoding; all expanded reads verify unchanged prefix positions. These extra
+processor-only smoke diagnostics are charged to smoke acquisition time (making
+its deployment extrapolation conservative), add no model forwards, and do not
+run in the full collection. Independent CPU model tests must also check actual
+cached-vs-fresh hidden outputs and KV isolation; a textual render check alone is
+not evidence of equivalent model computation. No R4 performance is read before
+these checks and the target smoke.
+
+Independent R4 code review PASS (2026-10-04):
+`docs/reviews/20261004_m1_explorer_r4_code.md`, evidence under
+`runs/20261003_m1_explorer/r4_review/`. Actual 36-layer Qwen CPU tests cover
+FP32/BF16,18/20 original images,1/2/3/4 new images, independent clone/crop,
+cached/fresh hidden outputs and positions, native exact replay, main/four controls.
+Synthetic333/fixed5 prepare,32 decision cases,13 rejection cases and version/CLI
+paths pass; canonical evaluator/r6 commands were captured with unchanged flags.
+This CPU environment is torch2.7.1/transformers4.57.6, not target5.15 or actual8B
+weights. Target fixed5 smoke remains required before full333. No GT/R4 performance
+was used in this review; no evaluator, r6 or reader constants changed.

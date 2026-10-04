@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Native paired reads and bounded raw-frame acquisition; no ground-truth inputs."""
 import argparse
+import copy
 import inspect
 import json
 import logging
@@ -31,6 +32,24 @@ def rope_positions(j,ids,grids):
     return model.get_rope_index(**kwargs)
 
 
+def observational_native(j,msgs,text,enc,counts,rope):
+    """The unchanged observational turn, before the native global Q/answer."""
+    assert not j.same_turn and text==j.render(msgs,False)
+    ids=enc['input_ids'].to(j.device);grids=enc['image_grid_thw'].to(j.device)
+    positions,delta=rope_positions(j,ids,grids)
+    assert torch.equal(delta,rope)
+    return {'msgs':msgs,'history':[],'head':text,'ids':ids,'grids':grids,
+        'positions':positions,'counts':counts,'rope':rope,'context':'observation_only'}
+
+
+def observational_cache(cache,prefix_tokens):
+    """Clone then crop; never crop or overwrite the native verdict cache."""
+    n=cache.get_seq_length();assert prefix_tokens<n
+    local=copy.deepcopy(cache);local.crop(prefix_tokens)
+    assert local.get_seq_length()==prefix_tokens and cache.get_seq_length()==n
+    return local
+
+
 @torch.no_grad()
 def read_suffix(j,engine,cache,ids,rope,counts):
     n=cache.get_seq_length();j.model.model.rope_deltas=rope.clone()
@@ -51,7 +70,18 @@ def read_images(j,engine,cache,native,question,entries,source):
     full=j.render(native['msgs']+native['history']+[{'role':'user','content':content}],True)
     assert full.startswith(native['head'])
     suffix=full[len(native['head']):]
-    try:enc=j.encode(suffix,imgs)
+    fresh_verified=False
+    try:
+        enc=j.encode(suffix,imgs)
+        if native.get('verify_render') and len(entries) not in native['render_checked_counts']:
+            from PIL import Image
+            originals=[Image.open(p).convert('RGB') for p in native['files']]
+            try:fresh=j.encode(full,originals+imgs)
+            finally:
+                for im in originals:im.close()
+            assert torch.equal(fresh['input_ids'].to(j.device),torch.cat((native['ids'],enc['input_ids'].to(j.device)),1))
+            assert torch.equal(fresh['image_grid_thw'].to(j.device),torch.cat((native['grids'],enc['image_grid_thw'].to(j.device)),0))
+            fresh_verified=True;native['render_checked_counts'].add(len(entries));del fresh
     finally:
         for im in imgs:im.close()
     newids=enc['input_ids'].to(j.device)
@@ -73,11 +103,13 @@ def read_images(j,engine,cache,native,question,entries,source):
     z=j.margins_fp32(h[None])[0]
     prior=engine.prior(native['counts']+counts)
     return z,prior,{'paths':paths,'image_counts':counts,'image_grid_thw':enc['image_grid_thw'].tolist(),
-        'suffix_ids':newids[0].cpu().tolist(),'suffix_positions':pos[:,:,n:].cpu().tolist()}
+        'suffix_ids':newids[0].cpu().tolist(),'suffix_positions':pos[:,:,n:].cpu().tolist(),
+        'expanded_context':native.get('context','native_verdict'),'cached_prefix_tokens':n,
+        'fresh_render_verified':fresh_verified}
 
 
 @torch.no_grad()
-def read_video(j,engine,row,segments,out,smoke=False,support_override=True,always_acquire_first=False):
+def read_video(j,engine,row,segments,out,smoke=False,support_override=True,always_acquire_first=False,expanded_without_verdict=False):
     ds,vid,duration=row['dataset'],row['video_id'],float(row['duration'])
     frames=frame_paths(ds,vid,20,'k20');assert 0<len(frames)<=20
     wins=fixed_windows(duration,8);texts=[window_text(segments,a,b) for a,b in wins]
@@ -88,7 +120,8 @@ def read_video(j,engine,row,segments,out,smoke=False,support_override=True,alway
     engine.start('prefix',enc['input_ids'][0]==j.image_token_id)
     try:cache=j.prefix_cache(enc)
     finally:engine.stop()
-    P=cache.get_seq_length();qid,qtext=j.branch_ids(msgs,VIDEO_QUESTION)
+    P=cache.get_seq_length();observational_rope=j.model.model.rope_deltas.clone() if expanded_without_verdict else None
+    qid,qtext=j.branch_ids(msgs,VIDEO_QUESTION)
     zv=j.cached_margin(cache,qid,in_place=True);stance='Yes' if zv>0 else 'No'
     aid,atext=j.answer_ids(msgs,VIDEO_QUESTION,stance);j.extend_cache(cache,aid)
     history=[{'role':'user','content':[{'type':'text','text':VIDEO_QUESTION}]},j.turn('assistant',stance)]
@@ -100,7 +133,7 @@ def read_video(j,engine,row,segments,out,smoke=False,support_override=True,alway
         'positions':positions,'counts':counts,'rope':rope}
     prefix_time=tick()-started
     vs=[];ss=[];ev=[];traces=[];base_visual_seconds=speech_seconds=extra_seconds=diagnostic_seconds=0.
-    source=None;source_seconds=0.
+    source=None;source_seconds=0.;local_cache=None;local_native=None;copy_seconds=0.
     for i,((a,b),t) in enumerate(zip(wins,texts)):
         q= yesno_question(i,V,a,b,t,'visual')
         bids,_=j.branch_ids(msgs,q,history,head_text=head)
@@ -127,7 +160,16 @@ def read_video(j,engine,row,segments,out,smoke=False,support_override=True,alway
             selected=choose_frames(candidates,observed,prior,2)
             added=[candidates[k] for k in selected];acquired.extend(added)
             acquired.sort(key=lambda e:e['time'])
-            z,prior,meta=read_images(j,engine,cache,native,q,acquired,source)
+            if expanded_without_verdict:
+                if local_cache is None:
+                    tc=tick();local_cache=observational_cache(cache,P)
+                    local_native=observational_native(j,msgs,text,enc,counts,observational_rope)
+                    assert torch.equal(local_native['positions'],positions[:,:,:P])
+                    local_native.update(files=files,verify_render=smoke,render_checked_counts=set())
+                    copy_seconds+=tick()-tc
+                z,prior,meta=read_images(j,engine,local_cache,local_native,q,acquired,source)
+                assert local_cache.get_seq_length()==P
+            else:z,prior,meta=read_images(j,engine,cache,native,q,acquired,source)
             observed=[ft for ft,_ in frames]+[e['time'] for e in acquired]
             trace['rounds'].append({'added':added,'acquired':list(acquired),'z':z,'entropy':binary_entropy(z),
                 'prior':prior.tolist(),**meta})
@@ -170,12 +212,18 @@ def read_video(j,engine,row,segments,out,smoke=False,support_override=True,alway
         'baseline_instrumented':True,'paired_seconds':tick()-started}
     details={'traces':traces,'source':source_metadata,'image_counts':counts,
         'original_frame_times':[ft for ft,_ in frames],'input_ids':enc['input_ids'][0].tolist()}
-    del cache
+    if expanded_without_verdict:
+        check['observational_copy_seconds']=copy_seconds
+        details['expanded_prefix']={'context':'observation_only','tokens':P,'global_dialogue_tokens_removed':n-P,
+            'positions_match_observational_render':local_native is not None,
+            'copy_created':local_cache is not None,
+            'fresh_render_checked_counts':sorted(local_native['render_checked_counts']) if local_native else []}
+    del local_cache,local_native,cache
     return records,check,details
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--version',choices=('r1','r2','r3','r4'),default='r1');a=ap.parse_args()
     out=ROOT/'runs/20261003_m1_explorer'/(a.version+('_smoke' if a.smoke else '_main'));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
@@ -191,9 +239,10 @@ def main():
     import transformers
     config={'date':time.strftime('%Y-%m-%d'),'host':socket.gethostname(),'smoke':a.smoke,'seed':0,'model':MODEL,
         'torch':torch.__version__,'transformers':transformers.__version__,'GT_in_reader':False,
-        'code':'experiments/20261003_m1_explorer/{measure,explorer}.py + src/{video_inputs,mllm_judge}.py; sources2026-10-03',
-        'entropy_thresholds':[None if a.version=='r3' else .1,.3],'frames_per_round':2,'round_limit':2,'attention_exponent':.5,
-        'revision':a.version,'support_override':a.version=='r1','always_acquire_first':a.version=='r3',
+        'code':'experiments/20261003_m1_explorer/{measure,explorer}.py + src/{video_inputs,mllm_judge}.py; sources2026-10-04',
+        'entropy_thresholds':[None if a.version in ('r3','r4') else .1,.3],'frames_per_round':2,'round_limit':2,'attention_exponent':.5,
+        'revision':a.version,'support_override':a.version=='r1','always_acquire_first':a.version in ('r3','r4'),
+        'expanded_context':'observation_only' if a.version=='r4' else 'native_verdict',
         'layers':list(range(36)),'scope':'pre-RoPE normalized Q/K, image-only softmax',
         'frames':20,'window_seconds':8,'fps':FPS,'video_question':VIDEO_QUESTION,
         'global_and_answer':'original native','speech':'original native',
@@ -209,7 +258,7 @@ def main():
     for k,row in enumerate(rows):
         key=row['dataset'],row['video_id']
         if key in seen:continue
-        recs,check,details=read_video(j,engine,row,asr[key[0]].get(key[1],[]),out,a.smoke,support_override=a.version=='r1',always_acquire_first=a.version=='r3')
+        recs,check,details=read_video(j,engine,row,asr[key[0]].get(key[1],[]),out,a.smoke,support_override=a.version=='r1',always_acquire_first=a.version in ('r3','r4'),expanded_without_verdict=a.version=='r4')
         dest=out/'details'/key[0];dest.mkdir(parents=True,exist_ok=True)
         (dest/(key[1]+'.json')).write_text(json.dumps(details)+'\n')
         for arm,r in recs.items():handles[arm].write(json.dumps(r)+'\n');handles[arm].flush()

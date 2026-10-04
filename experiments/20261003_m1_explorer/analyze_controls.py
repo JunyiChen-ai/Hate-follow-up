@@ -26,6 +26,7 @@ def prepare(arm,smoke,version='r1'):
     assert cfg['GT_in_reader'] is False and cfg['entropy_regating'] is False
     assert cfg['arm']==arm and cfg['smoke']==smoke and cfg['model']=='Qwen/Qwen3-VL-8B-Instruct'
     assert cfg.get('revision','r1')==version and cfg['main_trace_root']==str(main.relative_to(ROOT))
+    assert cfg.get('expanded_context','native_verdict')==('observation_only' if version=='r4' else 'native_verdict')
     rows=[]
     for key,b in base.items():
         p=pred[key];ds,vid=key
@@ -33,6 +34,12 @@ def prepare(arm,smoke,version='r1'):
         assert b['duration']==p['duration'] and b['native_rate']==p['native_rate']==4
         assert len(b['score_curve'])==len(p['score_curve']) and np.isfinite(p['score_curve']).all()
         dt=json.loads((root/'details'/ds/(vid+'.json')).read_text());mt=json.loads((main/'details'/ds/(vid+'.json')).read_text())
+        if version=='r4':
+            ep=dt['expanded_prefix'];assert ep['context']=='observation_only' and ep['tokens']==b['extra']['prefix_tokens']
+            assert ep['global_dialogue_tokens_removed']==mt['expanded_prefix']['global_dialogue_tokens_removed']>0
+            assert ep['copy_created']==ep['positions_match_observational_render']==(dt['acquisition_reads']>0)
+            assert dt['observational_copy_seconds']>=0
+            if smoke and dt['acquisition_reads']>0:assert ep['fresh_render_checked_counts']
         ws=p['extra']['windows'];assert len(ws)==len(b['extra']['windows'])==len(dt['traces'])==len(mt['traces'])
         sizes_match=tokens_match=True;matched_windows=0;image_encodes=0;rounds=0
         groups=Counter(sum(len(r['added']) for r in t['rounds']) for t in mt['traces'])
@@ -61,6 +68,7 @@ def prepare(arm,smoke,version='r1'):
                 assert len(r['image_counts'])==len(r['image_grid_thw'])==len(r['paths'])==len(used)
                 assert all((ROOT/path).is_file() for path in r['paths'])
                 image_encodes+=len(r['image_counts']);rounds+=1
+                if version=='r4':assert r['expanded_context']=='observation_only' and r['cached_prefix_tokens']==ep['tokens']
                 if arm!='fixed4':tokens_match &= r['image_counts']==m['rounds'][k]['image_counts']
         assert p['calls']==3+b['extra']['n_branches']+rounds
         assert dt['actual_forwards']==p['calls']+(len(ws) if smoke else 0) and dt['acquisition_reads']==rounds
@@ -146,7 +154,7 @@ def report(arm,version='r1'):
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True)
     ap.add_argument('--arm',choices=('uniform','distance','fixed4','mismatch'),required=True);ap.add_argument('--smoke',action='store_true')
-    ap.add_argument('--version',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
+    ap.add_argument('--version',choices=('r1','r2','r3','r4'),default='r1');a=ap.parse_args()
     if a.smoke and a.stage!='prepare':ap.error('smoke is no-GT plumbing only')
     if a.stage=='prepare':prepare(a.arm,a.smoke,a.version)
     elif a.stage=='evaluate':evaluate(a.arm,a.version)
