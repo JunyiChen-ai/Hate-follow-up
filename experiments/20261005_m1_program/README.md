@@ -493,3 +493,9 @@ accuracy. Structural validity of217 factual calls does not establish ownership,
 context retrieval, joining or semantic correctness. Preserve these inactive
 components explicitly in complete-run interpretation and mechanism decisions;
 do not force activation or weaken the existing guard after this observation.
+
+Source-only size-selected whole N134 capacity check dispatched09:15:25 on
+sc474398/Slurm136 after independent narrow PASS and four clean synchronized
+laboratory code checks. Selected partition idle/1.4Tfree; foreign home names
+unchanged. Evidence `machines_before_capacity{,_note}.txt`. No GT/scoring in
+this check; full333 waits for actual success.
