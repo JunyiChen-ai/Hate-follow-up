@@ -140,3 +140,17 @@ sc474399/Slurm96在两个HMM声学抽取后发现HCS manifest仍指向迁移前i
 记录原manifest路径与实际路径，不改媒体/ASR/评分算法；旧两条已生成HMM缓存仅在实际路径
 与manifest字面一致时兼容无独立manifest_video_path字段。后续解析按ID和实际加载检查。
 这是输入实现修复，不评价idea、不算方法修订。修复独立复核后重跑固定5。
+
+## 真实模型smoke通过（2026-10-04）
+
+主机sc474399，Slurm98完成五视频输入抽取和配对Qwen读取，并已全部回传本机。
+本机无GT prepare通过：native global/逐窗两分支/曲线精确一致，146窗新speech读数变化，
+4次有效支持干预及4次margin干预变化，显式neutral prior精确native、复制缓存重放精确。
+来源`runs/20261004_m1_acoustic/r1_soft_smoke_analysis/plumbing_summary.json`。
+模型峰值18.07GiB；Whisper抽取HMM10.83s/HCS6.81s（包含长HMM114），
+纯模型新视频附加对齐+读取时间五视频合计32.78s，共137个encoder/142个decoder/146个新speech读取。
+初始两HMM缓存是在Slurm96实际生成，保留其测量成本，不能把复用说成免费新视频输入。
+两个普通视频/语料外推完整约17.22min，仅估计，不用smoke性能选参数。
+共有原生帧/ASR预处理成本两臂共用，以上为读取及本候选全部新增处理成本，
+不是宣称原生ASR/帧预处理在新视频上免费。完整模型加载/采集墙钟另报。
+机制未支持，没有计算smoke GT/性能指标；下一步同一版本完整333。

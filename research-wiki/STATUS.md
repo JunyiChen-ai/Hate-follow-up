@@ -21,7 +21,9 @@ HCS .685951/.652592/.566666（99），全部development-selected。
 实际成本64.34min、native约6.28倍。明细唯一入口
 `archive/experiments/20261004_m1_latents/README.md`，官方contextual版本尚未测试。
 候选20声学路径分布条件化读取已声明确定算法/成本/完整对照，方案审查PASS、CPU验证PASS；
-入口`experiments/20261004_m1_acoustic/README.md`。独立代码审查PASS、三项修复已确认；准备Slurm五视频smoke，尚无GPU/GT性能。
+入口`experiments/20261004_m1_acoustic/README.md`。独立代码/路径修复复核PASS；sc474399/Slurm98五视频真实模型smoke完成回传，
+native输出精确，146窗speech改变，4次有效support干预改变读数，峰值18.07GiB。
+来源`runs/20261004_m1_acoustic/r1_soft_smoke_analysis/plumbing_summary.json`；准备完整333，尚无性能结果。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
