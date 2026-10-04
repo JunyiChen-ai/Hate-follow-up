@@ -31,7 +31,7 @@
     "GPU_run": true,
     "smoke_pass": true,
     "smoke_job": 134,
-    "state": "Slurm136 longest-source complete and locally replay-bound; fixed5 noGT PASS; full333 next; no GT/performance",
+    "state": "Full333 same B acquisition and paired native/new scoring running onsc474398/Slurm137; fixed5 and whole longest source noGT PASS; no performance yet",
     "allocator": "expandable_segments:True",
     "allocator_review": "docs/reviews/20261005_m1_program_handle_allocator_fix.md",
     "failed_attempt_seconds": 175,
@@ -41,6 +41,7 @@
     "source_size_audit": "runs/20261005_m1_program/handle_full_size_preflight/source_sizes.json",
     "factual_source_audit": "runs/20261005_m1_program/handle_smoke_input_audit/summary.json",
     "capacity_job": 136,
-    "capacity_validation": "runs/20261005_m1_program/handle_capacity_validation/summary.json"
+    "capacity_validation": "runs/20261005_m1_program/handle_capacity_validation/summary.json",
+    "main_job": 137
   }
 }

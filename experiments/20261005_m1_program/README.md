@@ -509,3 +509,11 @@ score was read. The earlier actualfixed5/native/clone/factual guard remains PASS
 Identical complete333 B acquisition+paired native/new measurement is now ready
 forlab3 after synchronization and fresh machine check; source-bound prior B
 cache records retain original actual costs, no scientific change or score tuning.
+
+Complete333 SAME R1 B dispatched09:20 onsc474398/Slurm137, after synchronized
+clean four laboratory code checks and idle lab3/1.4Tfree. Current record
+`machines_before_handles_main{,_note}.txt`; foreign home names unchanged. Both
+whole source acquisition and paired native/new scoring stay onlab3. No labels
+in reader/acquisition, no performance conclusion until all333 return and the
+local canonical evaluator runs. Longest capacity/fixed5 caches reused only after
+current source/grammar/token execution replay; their actual incurred costs retained.
