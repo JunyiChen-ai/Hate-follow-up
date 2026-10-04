@@ -228,6 +228,9 @@ HateMM video was unavailable there. This operational input failure is not a meth
 revision. Logs returned locally; use sc474399 (uoa-lab2), which has both complete
 raw corpora. Full333 noGT media preflight recorded before resubmission:
 `runs/20261004_m1_tree/cpu_checks/media_preflight_lab2.json`.
+Independent host-interface confirmation PASS:
+`docs/reviews/20261004_m1_tree_host_interface.md`; actual lab2/lab3 HF5.15.1
+image output and incremental position interfaces agree by direct source reading.
 `sbatch experiments/20261004_m1_tree/launch/lab2.sbatch smoke` then `main`.
 After each remote job, return both this run and `data/semantic_cluster_tree/`
 with ordinary rsync before local noGT prepare; full scores then run

@@ -28,7 +28,8 @@ within+.007991/+.008406，HMM PR−.009075，无任一主指标+.01，按规则9
 实际新处理合计25.26min/native2.77倍，全部development-selected；明细
 `archive/experiments/20261004_m1_acoustic/README.md`。
 候选21完整语义聚类树获取+新global/local读取：方案/独立代码审查及CPU检查PASS，
-入口`experiments/20261004_m1_tree/README.md`；准备固定5 noGT Slurm smoke，尚无GPU/性能结果。
+入口`experiments/20261004_m1_tree/README.md`；首个Slurm102在实际媒体输入前因文件缺失退出，日志已回传。
+改用有完整333媒体且前一轮native精确的sc474399；固定5 noGT smoke待重跑，尚无方法读数/性能结果。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
