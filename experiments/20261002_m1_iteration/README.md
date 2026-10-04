@@ -294,3 +294,12 @@ the limits of legacy source-index exclusion. All original inputs remain unchange
   standard-metric gains; HMM PR loss exceeds noise. Native all six exact.
   Archive under rule9; raw shared-speech subset is not a standard main metric,
   no R2/full controls. Continue reviewed complete semantic tree candidate21.
+
+21. `archive/experiments/20261004_m1_tree/README.md`: R1 common within gains and
+  R2 positive gains with all losses inside noise remain retained, but no version
+  passed the same-metric dual-corpus performance gate. Full333 R4 native exact,
+  HMM PR loss exceeds noise and HCS within declines; raw max HMM declines with
+  wholly negative CI. Initial+3 revisions exhausted, no R5 or control GPU.
+  Actual acquisition/reading costs and all authority pointers in archived README.
+  Continue reviewed temporal speech-lattice candidate22, then typed-program23
+  only when the result branch permits; goals still unmet.

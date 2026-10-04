@@ -1,10 +1,10 @@
 {
-  "entry": "experiments/20261004_m1_tree/README.md",
+  "entry": "archive/experiments/20261004_m1_tree/README.md",
   "proposal": "docs/reviews/20261004_m1_tree_proposal.md",
   "code_review": "docs/reviews/20261004_m1_tree_code.md",
   "outputs": "runs/20261004_m1_tree/",
   "inputs": "data/semantic_cluster_tree/",
-  "status": "R1 full333 complete/local native exact; common within gain but HateMM PR loss beyond noise, retained for <=3 revisions; no mechanism claim",
+  "status": "archived candidate21: R1 plus3 revisions exhausted; no dual-corpus performance PASS or supported mechanism; positive R1/R2 retained",
   "GT_in_reader": false,
   "date": "2026-10-05",
   "main_metrics": "runs/20261004_m1_tree/r1_full_main_decoded/optimized/metrics.json",
@@ -17,9 +17,11 @@
   "r3_smoke": "runs/20261004_m1_tree/r3_full_smoke_analysis/plumbing_summary.json",
   "r3_main_metrics": "runs/20261004_m1_tree/r3_full_main_decoded/optimized/metrics.json",
   "r3_controls_review": "docs/reviews/20261005_m1_tree_r3_controls_code.md",
-  "r4_status": "full333 Slurm120 running after exact fixed5 GPU parity; final revision3/3; no partial GT/gate",
+  "r4_status": "DONE333/local native six exact and R2 V exact; performance FAIL; family archived, no R5",
   "r4_code_review": "docs/reviews/20261005_m1_tree_r4_code.md",
   "r4_smoke": "runs/20261004_m1_tree/r4_full_smoke_analysis/plumbing_summary.json",
   "r4_controls_review": "docs/reviews/20261005_m1_tree_r4_controls_code.md",
-  "r4_controls_status": "prepared only, independent CPU/code PASS; hard gate requires complete R4 performance PASS"
+  "r4_controls_status": "prepared only, independent CPU/code PASS; never run because completed R4 main gate failed",
+  "r4_main_metrics": "runs/20261004_m1_tree/r4_full_main_decoded/optimized/metrics.json",
+  "r4_analysis": "runs/20261004_m1_tree/r4_full_main_analysis/summary.json"
 }

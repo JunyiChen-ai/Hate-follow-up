@@ -1,9 +1,13 @@
 # M1 candidate21: complete semantic cluster tree and local evidence reading
 
-Declared 2026-10-04 while candidate20 was running. Current branch: R1 complete333
-retained for common within gains but excessive HateMM PR loss; R2 native G/S with
-tree local visual is now in its complete run. Chronological GPU/analysis records
-are below. Proposal review
+ARCHIVED 2026-10-05: initial R1 plus all three allowed revisions completed; no
+version passed the common dual-corpus performance gate. No R5 or control GPU.
+R1 common within gains and R2 gains with losses inside noise are retained below.
+Actual archived code is in `archive/experiments/20261004_m1_tree/`; older commands
+record the original generation location. Formal method remains r6_bma.
+
+Declared 2026-10-04 while candidate20 was running. Chronological GPU/analysis
+records are below. Proposal review
 PASS: `docs/reviews/20261004_m1_tree_proposal.md`; implementation and CPU checks
 prepared after PASS, independent rule6 review PASS (below). Current formal method
 remains r6_bma. Development-selected. No Explorer fifth revision:
@@ -736,3 +740,46 @@ nine corruption rejections, exception crop/rope restoration, per-arm V/S image
 and physical calls/cost, revision paths/guard and default R3 compatibility PASS.
 No GT, saved prediction or real summary read by reviewer; no control GPU/input
 generation. This does not establish actual control model parity or mechanism.
+
+## R4 complete333 result and family disposition (2026-10-05)
+
+Running host sc474399, Slurm120: DONE333. All run outputs and current source
+inputs were returned to uoa-lab1 before prepare/evaluation. Native raw reads and
+all six native final metrics exactly reproduce the current reference; all7359
+new V reads exactly equal R2, G unchanged,6580 S reads changed. Current actual
+source images, suffix text/token IDs and native conversation bind across all333.
+
+Authority: `runs/20261004_m1_tree/r4_full_main_decoded/optimized/metrics.json`.
+Development-selected, same canonical evaluator and unchanged r6.
+
+| Dataset | pooled ROC | pooled PR | within (eligible) | Delta ROC / PR / within |
+| --- | --- | --- | --- | --- |
+| HateMM | .8944150321 | .6748502882 | .7658006411 (84) | −.0027036293 / −.0193843152 / +.0150185972 |
+| HateClipSeg | .7194210802 | .6754075442 | .6350463112 (99) | +.0025962163 / +.0043354598 / −.0023028026 |
+
+`r4_full_main_analysis/summary.json`: no common gain metric; losses exceed noise,
+performance_pass=false. Final within paired95% CI [−.014635,.047709] /
+[−.024739,.020202]. Raw max/V/shared-S within deltas HMM
+−.044756/−.049536/−.016783 (84/84/82); HCS +.002938/+.022907/+.003271
+(99/99/97). HMM raw max CI [−.078818,−.014237] is wholly negative. No supported
+mechanism; prepared R3/R4 controls remain unrun and are not model evidence.
+
+Actual new-video processing HMM4674.65636s/HCS3827.94690s =141.71005min total,
+including117.07481min input acquisition; native reference9.18316min,15.43151x.
+New V images6462/6302; new S images5917/5515; actual paired forwards15059/13818,
+no diagnostics in production. Peaks19.11876/19.10972GiB. Costs and exact source
+bindings: `r4_full_main_analysis/alignment.json` and per-video records.
+
+Post-score error analysis actually read native/optimized decoded predictions,
+canonical per-video results, and `data/gt_4fps/{HateMM,HateClipSeg}.npz`; file lists
+and outputs are in `runs/20261004_m1_tree/r4_error_analysis/{summary,per_video}.json`.
+G unchanged and no stance flips. Frame-weighted raw-max/K changes for positive
+versus negative GT frames are +.594924/+2.190354 HMM and +2.036022/+2.745579 HCS.
+These are descriptive distributions, not proof of a unique failure cause. No
+labels entered extraction, scoring, fitting or threshold selection, and no R5
+design was made from this analysis.
+
+Initial+3 revisions exhausted under rule9: archive candidate21, retain separate
+R1/R2 positive findings and all canonical results, no cherry-picked hybrid row.
+Continue independently reviewed candidate22 temporal speech-lattice reading.
+The performance and mechanism goals remain unmet.

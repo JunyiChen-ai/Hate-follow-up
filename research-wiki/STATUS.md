@@ -27,50 +27,28 @@ within+.007991/+.008406，HMM PR−.009075，无任一主指标+.01，按规则9
 原始speech共享帧子集有正向趋势，但不是标准主指标、不作续跑门；机制控制未运行。
 实际新处理合计25.26min/native2.77倍，全部development-selected；明细
 `archive/experiments/20261004_m1_acoustic/README.md`。
-候选21完整语义聚类树获取+新global/local读取：方案/独立代码审查及CPU检查PASS，
-入口`experiments/20261004_m1_tree/README.md`；首个Slurm102在实际媒体输入前因文件缺失退出，日志已回传。
-改用有完整333媒体且前一轮native精确的sc474399；Slurm103在首个纯text relevance处发现None rotary复制错误。
-已修并获独立窄确认PASS；Slurm104固定5 noGT smoke完成，run/输入回传后prepare PASS。
-原生全读数精确，5次fresh token/grid和prefix位置检查通过；峰值<19GiB。
-来源`runs/20261004_m1_tree/r1_full_smoke_analysis/plumbing_summary.json`；进入固定完整333，尚无性能结果。
-完整333在sc474399/Slurm105完成且run/输入回传；native全读数和全部六项精确。
-Tree R1 HateMM ROC/PR/within .895411/.679329/.779693（84），
-HCS .729941/.689819/.650289（99）；within+.028910/+.012940，但HMM PR−.014905，未晋级。
-权威来源`runs/20261004_m1_tree/r1_full_main_decoded/optimized/metrics.json`。
-原始max排序两语料未改善，机制仍不成立；实际新增处理138.50min/native15.06倍。
-按规则9保留此族，开始result-guided修订，最多3次；累计归档仍20项。
-首修订Tree R2已声明：保留原生global和speech，只改树证据驱动的local visual。
-输入获取与常数沿用R1，CPU编排/调用计数及损坏记录拒绝检查与独立窄代码确认PASS。
-R2固定5 GPU smoke在sc474399/Slurm115完成且run/输入回传，noGT prepare PASS：
-原生全读数精确、G/S不变、158 visual窗变化、fresh/clone各5次通过；进入固定完整333。
-来源`runs/20261004_m1_tree/r2_full_smoke_analysis/plumbing_summary.json`，完整主结果与机制控制仍待验证。
-R2完整333在sc474399/Slurm116完成且全部回传，native全读数及六项精确。
-HateMM ROC/PR/within .897530/.690654/.772521（84）；HCS .729631/.682939/.642520（99）。
-来源`runs/20261004_m1_tree/r2_full_main_decoded/optimized/metrics.json`。
-HMM within+.021739，HCS ROC/PR+.012806/+.011867但within仅+.005171；所有损失在噪声内，仍无同指标双语料+.01。
-R3完整333在sc474399/Slurm118完成并回传本机，原生全读数及六项精确。
-HateMM ROC/PR/within .893445/.675568/.761225（84）；HCS .716635/.670358/.633798（99）。
-权威来源`runs/20261004_m1_tree/r3_full_main_decoded/optimized/metrics.json`。
-HMM within+.010443但PR−.018666，HCSwithin−.003552；未过门，原始max仍无双语料改善。
-实际新视频处理138.95min/native15.13倍；全部development-selected，机制不支持，不跑控制GPU。
-R3控制代码已准备且独立CPU/代码窄审PASS，但不是模型或机制证据；启动脚本硬性要求主门PASS。
-已记录R3完整error analysis并预声明R4：不插入共享全树turn，原生G/stance不变，同一局部实像素与祖先上下文分别进入V/S独立读取。
-这是该方法族最后一次允许修订（3/3），失败后归档，不跑R5。细节唯一入口仍为Tree README；目标未完成。
-R4独立窄代码审查PASS，sc474399/Slurm119固定5 GPU完成并全部回传，noGT prepare PASS。
-原生全读数精确，new V逐值等于R2；V/S fresh及clone各5次通过，当前源图像/token绑定通过。
-来源`runs/20261004_m1_tree/r4_full_smoke_analysis/plumbing_summary.json`；接着固定完整333，尚无R4性能结论。
-R4完整333已提交sc474399/Slurm120；对应双分支局部控制代码及独立窄审PASS，仅prepared，完整主门过后才可跑控制GPU。
-实际新处理134.40min/native14.62倍；原始视觉排序HMM下降，机制未成立。
-按规则9继续此族，第二修订R3已声明native anchor后追加完整factual tree context再独立读取V/S。
-独立窄代码确认和CPU检查PASS，保存token/会话绑定缺口已修；随后固定5 GPU parity通过。
-R3固定5在sc474399/Slurm117完成并回传，noGT prepare PASS：原生全读数精确/G不变，V/S变化，
-extension/local fresh各5与V/S clone各5通过，会话/token重建绑定全通过；继续固定完整333。
-来源`runs/20261004_m1_tree/r3_full_smoke_analysis/plumbing_summary.json`；完整结果及R4分流见上文。
-备用候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS，尚未跑GPU/读GT。
-固定五视频的实际音频CPU预检也通过；遇到的AAC重叠PTS实现问题已修并获独立窄确认PASS，明细见同实验README。
-入口`experiments/20261004_m1_lattice/README.md`；仅在Tree结果按规则分流允许切换后启动固定五视频smoke。
+候选21完整语义聚类树已完成初版和三次修订，按规则9归档；不跑R5或控制GPU。
+完整原生读数及六项指标各轮精确复现，所有输入/输出已回传本机。
+Tree R1 HateMM ROC/PR/within .895411/.679329/.779693（84），HCS .729941/.689819/.650289（99）；
+within+.028910/+.012940，但HMM PR−.014905。保留此正向结果；未过门。
+来源`runs/20261004_m1_tree/r1_full_main_decoded/optimized/metrics.json`。
+R2 HateMM .897530/.690654/.772521，HCS .729631/.682939/.642520；
+HMM within+.021739、HCS ROC/PR+.012806/+.011867，所有损失在噪声内，但无同指标双语料+.01。
+来源`runs/20261004_m1_tree/r2_full_main_decoded/optimized/metrics.json`，此正向版本保留。
+R3 HateMM .893445/.675568/.761225，HCS .716635/.670358/.633798，HMM PR退化/无共同提升。
+来源`runs/20261004_m1_tree/r3_full_main_decoded/optimized/metrics.json`。
+R4完整333在sc474399/Slurm120完成，HateMM .894415/.674850/.765801，
+HCS .719421/.675408/.635046；within+.015019/−.002303，HMM PR−.019384，performance FAIL。
+来源`runs/20261004_m1_tree/r4_full_main_decoded/optimized/metrics.json`。
+R4原始max within−.044756/+.002938，HMM区间全负；G不变、新V与R2逐值精确，6580 S变化。
+实际新视频处理141.71min/native15.43倍，包含获取117.07min。全部development-selected。
+控制代码及独立CPU/代码审查PASS仅为prepared，不是机制证据，完整主门失败所以未跑控制GPU。
+细节唯一入口`archive/experiments/20261004_m1_tree/README.md`；累计归档21项。
+当前候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS。
+固定五视频实际音频CPU预检通过；AAC重叠PTS问题已修并获独立窄确认。
+入口`experiments/20261004_m1_lattice/README.md`；现在启动固定五视频GPU smoke，尚无性能或机制结论。
 备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS，未跑GPU/读GT。
-入口`experiments/20261005_m1_program/README.md`，仅为后续备用，仍先等待Tree及Lattice的结果分流。
+入口`experiments/20261005_m1_program/README.md`，仅为后续备用，等待Lattice的结果分流。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
@@ -79,7 +57,7 @@ extension/local fresh各5与V/S clone各5通过，会话/token重建绑定全通
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档20个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档21个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
