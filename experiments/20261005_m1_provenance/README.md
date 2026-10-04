@@ -399,3 +399,18 @@ pending; partial nonempty source graphs do not establish semantic or performance
 claims. Run authority `runs/20261005_m1_provenance/r1_handles_extract_smoke/`
 and `r1_handles_full_smoke/`; machine selection evidence
 `runs/20261005_m1_provenance/machines_before_handles_smoke.txt`.
+
+## B fixed5 complete, local noGT guards PASS
+
+sc474399/Slurm142 DONE2026-10-05 11:16:41; BOTH runs and new input cache
+returned to sc474397 before local analysis/STATUS. Authority
+`runs/20261005_m1_provenance/r1_handles_full_smoke_analysis/plumbing_summary.json`.
+Native G/stance/allV/S/raw curves exact;158newV/134newS,10fresh repeats exact.
+Original unchanged source guard passed: HMM96valid nonempty ledgers/1152edges/51remote
+windows; HCS60valid nonempty ledgers/749edges/57remote windows (2wholecap rejects
+retained). No GT or performance read. New fixed5 standalone1298.71s/675.09s
+including sources1141.00s/588.85s; rough full two-corpus extrapolation927.13GPUmin
+from first2/corpus, uncertain due duration variation, above original unmeasured
+estimate and explicitly charged. Longest fixed5 link45459 actual expandedtokens,
+whole source/native+new peak27.12GiB; larger actual full generated link capacity
+remains pending. Same complete333 onlab2 next; no shard/corpus-specific changes.

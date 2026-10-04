@@ -3,7 +3,7 @@
 Rank8 from the unchanged nine-candidate pool:
 `experiments/20261004_m1_ideation/CANDIDATES.json`; jury
 `docs/reviews/20261004_m1_ideation_jury.md`. Proposed2026-10-05 onsc474397;
-not implemented/reviewed/run yet. Current formal reference remains r6_bma.
+initial scientific implementation and CPU checks complete; independent code review PASS, scientific GPU not run. Current formal reference remains r6_bma.
 Whole215HateMM+118HateClipSeg, canonical4fps, development-selected.
 
 ## Complete mechanism and hypothesis
@@ -173,3 +173,29 @@ remain. One deepest-parent trigger per leaf; exact tie order in spec. NewG
 appends complete canonical final tree to native prefix; own hard stance;
 independent local branches add source path/local media and original questions.
 This is pre-run design material, not an implemented or successful method.
+
+## Initial implementation and CPU verification
+
+Independent proposal PASS: `docs/reviews/20261005_m1_interval_witness_proposal.md`;
+unchanged review supplement `runs/20261005_m1_interval_witness/proposal_review/spec_confirmation.md`.
+Actual code `interface.py`, `inputs.py`, `extract.py`, `reader.py`, `measure.py`,
+`analyze.py`; only stable src imports, shared canonical evaluator/native Judge unchanged.
+Author CPU checks `runs/20261005_m1_interval_witness/cpu_checks/summary.json`:
+29 executable composition/coverage/owned-source/repair-order and actual model-visible path checks; all7359
+source windows current-ASR span preflight; actual fixed5 rawPTS/PNG source validation
+and leaf input encoding3202/3157/3457/3483/3180 expanded tokens22images.
+Existing candidate25A pixels used only as CPU input-check sources; scientific
+26 extraction decodes its own sources and charges actual acquisition. Synthetic
+grammar/composition fixture choices are not Qwen observations or semantic evidence.
+No GT or performance measured. Root native runtime Slurm143 was cancelled before execution after the reviewer
+found the project HF_HOME model directory incomplete. Existing complete local
+model cache is now linked into project HF_HOME, old partial directory preserved;
+actual tokenizer/config and all750 indexed safetensors parameters parse, same
+Slurm native fixed5 will be resubmitted.
+
+Independent once-only code review PASS: `docs/reviews/20261005_m1_interval_witness_code.md`.
+Fixed actual overlapping-substring uniqueness and removed model-visible internal
+frame paths with class-bearing video names before any scientific GPU run. Full
+source/audit paths and actual image content retained. Real36layer BF16 tinyCPU
+multimodal production newG/ownstance/V/S/strict binding and structured generation
+proved executable; these random-model CPU fixtures are not8B observations.

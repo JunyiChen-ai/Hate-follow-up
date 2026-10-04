@@ -16,7 +16,7 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "B same fixed5 source/native paired smoke RUNNING sc474399/Slurm142; noGT/no performance judgement",
+  "state": "B fixed5 Slurm142 DONE/BOTH returned/local noGT native allraw+10repeat+actualsource exercise PASS; full333 next",
   "smoke_job": 138,
   "selected_host": "sc474399",
   "A_smoke_job": 138,
@@ -29,7 +29,10 @@
   "B_cpu_checks": "runs/20261005_m1_provenance/handle_cpu_checks/summary.json",
   "B_input_cache": "data/temporal_entity_discourse_graph_handles",
   "B_GPU_run": true,
-  "B_smoke_pass": false,
+  "B_smoke_pass": true,
   "result_guided_revisions_used": 0,
-  "B_smoke_job": 142
+  "B_smoke_job": 142,
+  "B_native_allraw_exact": true,
+  "B_source_exercise_pass": true,
+  "B_smoke_summary": "runs/20261005_m1_provenance/r1_handles_full_smoke_analysis/plumbing_summary.json"
 }
