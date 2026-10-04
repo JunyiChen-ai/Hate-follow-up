@@ -71,7 +71,10 @@ class Stream:
         assert options and len(set(options))==len(options)
         sequences=[self.j.tok.encode(x,add_special_tokens=False) for x in options]
         assert all(sequences) and len({tuple(x) for x in sequences})==len(sequences)
-        assert not any(len(a)<len(b) and b[:len(a)]==a for a in sequences for b in sequences)
+        # A strict token prefix, if present, has a descendant immediately
+        # after it in lexicographic order. Same guard without all-pairs work.
+        ordered=sorted(tuple(sequence) for sequence in sequences)
+        assert not any(len(a)<len(b) and b[:len(a)]==a for a,b in zip(ordered,ordered[1:]))
         start=len(self.tokens);prefix=[];pool=list(range(len(options)))
         while True:
             n=len(prefix);allowed={sequences[i][n] for i in pool}

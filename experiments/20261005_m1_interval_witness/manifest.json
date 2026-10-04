@@ -16,5 +16,9 @@
   "performance_result": null,
   "constants_declared_before_run": true,
   "state": "Initial CPU/proposal/independent code PASS; native GPU runtime then scientific fixed5 next",
-  "result_guided_revisions_used": 0
+  "result_guided_revisions_used": 0,
+  "native_runtime_job": 145,
+  "native_runtime_pass": true,
+  "native_runtime_summary": "runs/_setup_local_hatevlm/native_smoke/summary.json",
+  "source_guard_equivalence_review": "docs/reviews/20261005_structured_choice_prefix_guard.md"
 }

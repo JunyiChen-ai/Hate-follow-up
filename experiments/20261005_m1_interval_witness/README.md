@@ -199,3 +199,17 @@ frame paths with class-bearing video names before any scientific GPU run. Full
 source/audit paths and actual image content retained. Real36layer BF16 tinyCPU
 multimodal production newG/ownstance/V/S/strict binding and structured generation
 proved executable; these random-model CPU fixtures are not8B observations.
+
+## Native runtime and unchanged source grammar capacity
+
+Root Slurm145 completed2026-10-05 11:24:58: actual fixed5 current native G/own
+stance/allV/S windows exact against frozen base_gridA, noGT. Authority
+`runs/_setup_local_hatevlm/native_smoke/summary.json`; isolated runtime now usable.
+Source-only all333 menu audit found largest root26310 unique speech candidates
+(old prefix guard would enumerate692216100 ordered pairs). Guard-only lexicographic
+adjacent check retains exact accepted/rejected options and token/forward/event
+semantics; independent narrow equivalence PASS
+`docs/reviews/20261005_structured_choice_prefix_guard.md`, actual26310tokenizer
+menu and54241ordered cases plus realBF16 CPU generation. No scientific input,
+constant or output schema changed; not a result-guided version. This arithmetic
+bound is not an old-loop GPU/CPU timing measurement.

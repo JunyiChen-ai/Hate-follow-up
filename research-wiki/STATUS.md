@@ -110,7 +110,7 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证及10repeat精确，随后声明guard失败；独立窄接口诊断确认未发现实际GPU实现bug；A源接口未可靠执行。事前声明独立B结构约束来源接口；实际fixed5 CPU来源/grammar replay与完整333 span输入预检PASS，独立窄代码确认PASS，最大实际source22image7701tokens/6550全部span保留；相同fixed5在sc474399/Slurm142于11:16:41完成，BOTH已回传本机；本机noGT native allraw/10repeat精确，原source guard PASS：HMM96有效ledger/51remote窗、HCS60/57（2wholecap拒绝保留），完整333下一步。来源`runs/20261005_m1_provenance/r1_handles_full_smoke_analysis/plumbing_summary.json`。
 来源`docs/reviews/20261005_m1_provenance_gpu_interface_diagnosis.md`；无机制结论。
 备用候选26区间来源见证组合/分歧触发重读，独立方案审查PASS；入口`experiments/20261005_m1_interval_witness/README.md`，科学代码及29项CPU检查/独立代码审查PASS，科学GPU尚未跑；来源`docs/reviews/20261005_m1_interval_witness_code.md`。
-本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，项目离线缓存缺口已通过现有完整本地模型symlink修复；原生fixed5 GPU复现待重提，无性能结论。
+本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，项目离线缓存缺口已通过现有完整本地模型symlink修复；Slurm145于11:24:58完成，原生fixed5全部G/stance/V/S逐值精确，来源`runs/_setup_local_hatevlm/native_smoke/summary.json`；科学26 GPU待跑，无性能结论。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
