@@ -243,5 +243,6 @@ prefixes. Fixed snapshot/restore to preserve None (ordinary text positions follo
 KV length), rather than unconditionally cloning it. No video tree/score was
 completed; no input version, constant or scientific design changed. Partial
 witnesses and all failure logs returned locally. This is an implementation repair,
-not an idea verdict or a counted revision. Independent narrow confirmation is
-required before retry.
+not an idea verdict or a counted revision. Independent narrow confirmation PASS:
+`docs/reviews/20261004_m1_tree_text_rope_fix.md`; actual target source and CPU
+None/tensor normal/exception cache checks agree. Retry the same fixed five.
