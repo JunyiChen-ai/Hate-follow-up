@@ -3,7 +3,7 @@
 Rank9, last entry of the unchanged original9 pool:
 `experiments/20261004_m1_ideation/CANDIDATES.json`, jury
 `docs/reviews/20261004_m1_ideation_jury.md`. Declared2026-10-05 onsc474397.
-Independent proposal review pending; no scientific implementation/GPU yet.
+Independent once-only proposal review PASS: `docs/reviews/20261005_m1_verification_proposal.md`; no scientific implementation/GPU yet.
 Native formal reference r6_bma, full215HateMM+118HateClipSeg, canonical4fps,
 fixedr6, all results development-selected. Candidate25/26 outcomes pending;
 this independent proposal does not prejudge them or reset a previous family.
@@ -83,6 +83,11 @@ with actual rawPTS/PNG/source checks and their original decode cost retained.
 [CoVe](https://aclanthology.org/2024.findings-acl.212.pdf)3.1-3.4 was actually
 reopened/read2026-10-05, including factored execution and final revision. It
 uses one LLM, excludes the draft and other answers during independent checking.
+Its original3.4 final revision sees the baseline and verification question/answer
+pairs. This target adaptation uses typed replacement, retains unqueried valid
+fields, and excludes obsolete replaced draft values before ordinary modality
+reading: four functional phases, not literal3.4 reproduction or Factor+Revise
+additional inconsistency cross-check.
 The source does not execute video witnesses. This is a source/time-constrained
 multimodal adaptation, not an exact reproduction of its fewshot tasks.
 [LEAF](https://aclanthology.org/2026.findings-acl.604.pdf)3.2/3.3 actually read
@@ -136,3 +141,14 @@ not certified semantic truth), raw V/S/max ordering and pairedwithin CIs. No
 real corrections, gains only fromwrappers, or controls belowthreshold defeat the
 claimed mechanism even if a mainmetric rises. Independent final review/actual
 local raw outputs/STATUS required before any successful goal report.
+
+## Literal preimplementation definition
+
+`spec.json` freezes all draft/planner/verification systems and instructions,
+fourfield/plan schema, source availability, cap/UNKNOWN behavior, complete
+source/compiler replacement/exclusion rules and final native conversation
+serialization. Empty/incomplete generated planner retains cost and no questions,
+not an invented successful verification. Final reader uses newly compiled facts,
+not obsolete replaced draft values. Filepaths remain internal audit information
+and are absent from model-visible source descriptions. No implementation or
+scientificGPU yet. Independent once-only proposal review PASS; literal source-adaptation and complete updated four-field serialization clarified within that review. Implementation next.

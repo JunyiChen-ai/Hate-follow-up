@@ -107,10 +107,11 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 备用候选25持久实体/话语图驱动实际端点媒体检索：独立方案/代码审查、真实fixed5来源CPU检查与完整333输入预检PASS；
 入口`experiments/20261005_m1_provenance/README.md`。固定5在sc474399/Slurm138于10:12:37完成，BOTH inputs/runs已回传本机。
 全部158源ledger实际schema fields拒绝，五视频graph edges/remote contexts均0，声明的实际执行guard未满足；不降低guard、不跑主实验/GT性能。
-来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证及10repeat精确，随后声明guard失败；独立窄接口诊断确认未发现实际GPU实现bug；A源接口未可靠执行。事前声明独立B结构约束来源接口；实际fixed5 CPU来源/grammar replay与完整333 span输入预检PASS，独立窄代码确认PASS，最大实际source22image7701tokens/6550全部span保留；相同fixed5在sc474399/Slurm142于11:16:41完成，BOTH已回传本机；本机noGT native allraw/10repeat精确，原source guard PASS：HMM96有效ledger/51remote窗、HCS60/57（2wholecap拒绝保留），完整333下一步。来源`runs/20261005_m1_provenance/r1_handles_full_smoke_analysis/plumbing_summary.json`。
+来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证及10repeat精确，随后声明guard失败；独立窄接口诊断确认未发现实际GPU实现bug；A源接口未可靠执行。事前声明独立B结构约束来源接口；实际fixed5 CPU来源/grammar replay与完整333 span输入预检PASS，独立窄代码确认PASS，最大实际source22image7701tokens/6550全部span保留；相同fixed5在sc474399/Slurm142于11:16:41完成，BOTH已回传本机；本机noGT native allraw/10repeat精确，原source guard PASS：HMM96有效ledger/51remote窗、HCS60/57（2wholecap拒绝保留），相同完整333 B已在sc474399/Slurm146运行，未读GT/无性能结论。来源`runs/20261005_m1_provenance/r1_handles_full_smoke_analysis/plumbing_summary.json`。
 来源`docs/reviews/20261005_m1_provenance_gpu_interface_diagnosis.md`；无机制结论。
 备用候选26区间来源见证组合/分歧触发重读，独立方案审查PASS；入口`experiments/20261005_m1_interval_witness/README.md`，科学代码及29项CPU检查/独立代码审查PASS，科学GPU尚未跑；来源`docs/reviews/20261005_m1_interval_witness_code.md`。
-本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，项目离线缓存缺口已通过现有完整本地模型symlink修复；Slurm145于11:24:58完成，原生fixed5全部G/stance/V/S逐值精确，来源`runs/_setup_local_hatevlm/native_smoke/summary.json`；科学26 GPU待跑，无性能结论。
+本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，项目离线缓存缺口已通过现有完整本地模型symlink修复；Slurm145于11:24:58完成，原生fixed5全部G/stance/V/S逐值精确，来源`runs/_setup_local_hatevlm/native_smoke/summary.json`；科学fixed5已提交sc474397/Slurm147，PENDING(QOSMaxGRESPerUser)，科学代码尚未执行，无性能结论。
+备用候选27独立事实重观察/typed修订：原9池rank9最后一项，一次独立方案审查PASS；来源`docs/reviews/20261005_m1_verification_proposal.md`。完整factored CoVe四阶段功能迁移的target差异、来源归属与成本已事前声明；`experiments/20261005_m1_verification/README.md`及`spec.json`为入口，实施下一步，未跑GPU/未读GT。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，

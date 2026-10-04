@@ -15,10 +15,12 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Initial CPU/proposal/independent code PASS; native GPU runtime then scientific fixed5 next",
+  "state": "CPU/proposal/code PASS and actual native145 PASS; scientific fixed5 Slurm147 queued under QOSMaxGRESPerUser",
   "result_guided_revisions_used": 0,
   "native_runtime_job": 145,
   "native_runtime_pass": true,
   "native_runtime_summary": "runs/_setup_local_hatevlm/native_smoke/summary.json",
-  "source_guard_equivalence_review": "docs/reviews/20261005_structured_choice_prefix_guard.md"
+  "source_guard_equivalence_review": "docs/reviews/20261005_structured_choice_prefix_guard.md",
+  "smoke_job": 147,
+  "GPU_submitted": true
 }

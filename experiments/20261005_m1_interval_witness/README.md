@@ -213,3 +213,7 @@ semantics; independent narrow equivalence PASS
 menu and54241ordered cases plus realBF16 CPU generation. No scientific input,
 constant or output schema changed; not a result-guided version. This arithmetic
 bound is not an old-loop GPU/CPU timing measurement.
+
+## Current dispatch2026-10-05
+
+Actual root native runtime145 PASS precedes scientific fixed5 submission147 onsc474397. Slurm147 is PENDING(QOSMaxGRESPerUser) behind running137/146; no scientific execution or semantic result inferred. Machine evidence `runs/20261005_m1_interval_witness/machines_before_smoke.txt` and `_note.txt`.

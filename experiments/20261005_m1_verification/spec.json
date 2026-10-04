@@ -1,0 +1,65 @@
+{
+  "version": "R1 factored local factual reobservation; sources2026-10-05",
+  "constants": {
+    "window_seconds": 8,
+    "rate": 4,
+    "local_images": 2,
+    "seed": 0,
+    "draft_tokens": 1024,
+    "planner_tokens": 256,
+    "verification_tokens": 256,
+    "description_words": 24,
+    "field_tokens": 64,
+    "max_witnesses": 2,
+    "quote_words": 16,
+    "min_questions_with_sources": 1,
+    "max_questions": 2,
+    "passes": 1
+  },
+  "fields": [
+    "act",
+    "actor",
+    "target",
+    "quotation_owner"
+  ],
+  "draft_system": "Describe only neutral observable local facts. Preserve current source ownership. Do not give a hate verdict, numeric score, invented identity or unobserved event.",
+  "draft_instruction": "Record act, actor, target and quotation_owner for THIS local interval. Original overview and full transcript provide interpretation context, not local occurrence evidence. Each known field needs at least one actual LOCAL frame or unique literal speech-span witness. Value at most24 whitespace words. Unresolved or unsupported fields are UNKNOWN. Never infer a speaker identity or quotation attribution that the sources do not establish. Return exactly the requested four field records, no numeric scores.",
+  "planner_system": "Plan independent factual reobservation of a neutral local record. Ask open questions rather than supplying the proposed answer.",
+  "planner_instruction": "Select one or two distinct fields to reobserve and give one open factual question for each, at most24 whitespace words per question. Question only act, actor, target or quotation_owner. Do not ask whether hate occurs, emit confidence, supply a candidate answer, or propose an opposing hate interpretation. It may identify a topic from the draft but must not simply state its value. If there are no actual local sources return no questions. Current question wording is an unverified model plan, not proof that answer contamination is absent.",
+  "verification_system": "Independently answer one factual question using the original current sources. Previous proposed answers and other verification answers are absent. Keep local ownership and use UNKNOWN when unsupported.",
+  "verification_instruction": "Answer THIS one question for its declared field in the current local interval. Return a field record with value at most24 whitespace words and at most two real LOCAL witnesses. Context may explain a referent but cannot create a local act. Do not assign a quoted act to the current speaker unless actual sources establish that attribution. Unresolved identity, missing sources or unsupported answers remain UNKNOWN. No hate verdict or numeric confidence.",
+  "field_schema": {
+    "name": "one of four fixed field names",
+    "known": "boolean; true needs nonempty value and >=1 owned witness",
+    "value": "<=24 whitespace words/64content tokens; literal UNKNOWN when known=false",
+    "witnesses": "0..2 distinct real local source handles; UNKNOWN has []"
+  },
+  "planner_schema": {
+    "questions": "1..2 distinct field/question records if at least one current local frame or nonempty ASR body; otherwise[]",
+    "question": "generated text <=24words/64content tokens; empty/incomplete planner=>explicit UNKNOWN wholeplan/noquestion and retained actual cost, no retry"
+  },
+  "compile_rules": [
+    "Validate field name/known/value/witness count/type against current complete source catalog.",
+    "Unique contiguous1-16word speech spans use overlapping-safe unique occurrence and actual character offsets; frames cite original actual PTS coordinates.",
+    "A complete true field with empty value becomes UNKNOWN; whole incomplete generation becomes allfields UNKNOWN.",
+    "Preserve unqueried structurally valid initial draft fields.",
+    "Replace queried field with its fresh validated observation, including UNKNOWN; do not revert to draft on disagreement or unsupported fresh answer.",
+    "Preserve raw draft/plan/verification, all values/witnesses/actual costs and literal_changed flags for audit.",
+    "The complete updated four-field record enters the final reader, including retained unqueried valid draft fields; exclude obsolete replaced values and numeric generated hate outputs. Structural validity never certifies semantic correctness."
+  ],
+  "exclusions_for_independent_verification": [
+    "draft values/answers/witness choices",
+    "other verification answers",
+    "planner reasoning",
+    "native global verdict or stance",
+    "previous model conversation caches"
+  ],
+  "original_input": "Current native20 requested overview/fullASR plus local2 actual PTS-based third frames and exact proportional ASR crop. Frame/video filesystem paths and class-bearing identifiers excluded from every model-visible text. Audit metadata retains paths.",
+  "global_reading": "Fresh unchanged native Judge/build currentG and its own hard YesNo stance; reference native measurements paired exact; no newG or categorical ensemble.",
+  "branch_header": "The following neutral local fields are model observations, not verified truth. Each witness belongs to this local window. Missing or UNKNOWN fields do not prove absence. Original overview/transcript is interpretation context; judge only the requested modality and occurrences in the current interval.\n",
+  "branch_serialization": "Current native prefix/G/ownhardstance + independent fresh user turn containing header and canonical compiled four fields with actual literal owned witness sources, local2 actualimage labels/pixels, local speech body forS, unchanged original yesno_question. Original full multimodal forward and FP32 Yes/No margin, max(V,S), fixedr6. All filesystem paths omitted from visible record.",
+  "input_cache": "data/temporal_factual_verification",
+  "output": "runs/20261005_m1_verification/r1_*",
+  "GT_read": false,
+  "source_adaptation": "CoVe3.4 final source revision sees baseline and verification question/answer pairs. This target adaptation uses deterministic typed field replacement and excludes obsolete draft values before ordinary modality reading. Four functional phases, not literal3.4 reproduction or Factor+Revise additional cross-check."
+}

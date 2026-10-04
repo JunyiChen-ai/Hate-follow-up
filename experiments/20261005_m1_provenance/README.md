@@ -414,3 +414,7 @@ from first2/corpus, uncertain due duration variation, above original unmeasured
 estimate and explicitly charged. Longest fixed5 link45459 actual expandedtokens,
 whole source/native+new peak27.12GiB; larger actual full generated link capacity
 remains pending. Same complete333 onlab2 next; no shard/corpus-specific changes.
+
+## Current dispatch2026-10-05
+
+After the declared B fixed5 source/native/repeat guard PASS and actual machine check, full333 B submitted onsc474399/Slurm146, same committed native/graph code. It acquires then reads complete videos on one host; all partial/final costs preserved. NoGT/performance conclusion yet. Machine evidence `runs/20261005_m1_provenance/machines_before_handles_main.txt` and `_note.txt`.
