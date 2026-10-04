@@ -1,0 +1,62 @@
+"""Predeclared R2 input controls; no labels, scores, models or evaluator."""
+import copy
+import numpy as np
+from tree import CONTEXT_HEADER,record,window_packet
+
+
+def temporal_tree(main,features,entries,caption):
+    """Time-ordered membership with exactly the main topology/member counts."""
+    old={n['id']:n for n in main['nodes']};nodes=[];captions={};events=[];reused=[]
+    def build(source,members):
+        assert len(members)==len(source['members']) and len(members)>0
+        center=features[members].mean(0,dtype=np.float32);rep=members[len(members)//2]
+        key=str(rep)
+        if key not in captions:
+            if key in main['captions']:captions[key]=copy.deepcopy(main['captions'][key]);reused.append(rep)
+            else:captions[key]=caption(rep);events.append(rep)
+        n=dict(id=source['id'],parent=source['parent'],depth=source['depth'],
+            root_relevance=source['root_relevance'],members=members,center=center.tolist(),
+            representative=rep,time=entries[rep]['time'],caption=captions[key]['text'],
+            caption_tokens=captions[key]['tokens'])
+        nodes.append(n);cursor=0
+        children=sorted((c for c in old.values() if c['parent']==n['id']),key=lambda c:c['id'])
+        for child in children:
+            count=len(child['members']);build(child,members[cursor:cursor+count]);cursor+=count
+        if children:assert cursor==len(members)
+    roots=sorted((n for n in old.values() if n['parent'] is None),key=lambda n:n['id'])
+    cursor=0
+    for root in roots:
+        count=len(root['members']);build(root,list(range(cursor,cursor+count)));cursor+=count
+    assert cursor==len(entries) and len(nodes)==len(main['nodes'])
+    return dict(nodes=nodes,captions=captions,caption_events=events,reused_main_captions=reused,
+        rounds=[],matched_main_rounds=copy.deepcopy(main['rounds']),
+        membership='time ordered; exact main node counts/topology')
+
+
+def packet_control(arm,main,features,entries,start,end):
+    """Keep true coordinates while changing one declared representation."""
+    packet=window_packet(main,features,entries,start,end)
+    nodes={n['id']:n for n in main['nodes']}
+    if arm=='flat':
+        ancestors=sorted((nodes[i] for i in packet['ancestor_ids']),key=lambda n:(n['time'],n['id']))
+        packet['context']=CONTEXT_HEADER+(''.join(f'[t={n["time"]:.3f}s]\n{n["caption"]}\n' for n in ancestors) if ancestors else '(none)\n')
+    elif arm=='no_added_pixels':packet['pool_members']=[]
+    elif arm=='no_depth':
+        roots={**main,'nodes':[n for n in main['nodes'] if n['parent'] is None]}
+        packet=window_packet(roots,features,entries,start,end)
+    elif arm=='wrong_links':
+        parents={n['parent'] for n in main['nodes'] if n['parent'] is not None}
+        leaves=sorted(n['id'] for n in main['nodes'] if n['id'] not in parents)
+        shifted={i:leaves[(k+len(leaves)//2)%len(leaves)] for k,i in enumerate(leaves)}
+        ancestors=[];seen=set()
+        for leaf in packet['leaf_ids']:
+            chain=[];parent=nodes[shifted[leaf]]['parent']
+            while parent is not None:
+                chain.append(nodes[parent]);parent=nodes[parent]['parent']
+            for n in reversed(chain):
+                if n['id'] not in seen:ancestors.append(n);seen.add(n['id'])
+        packet['ancestor_ids']=[n['id'] for n in ancestors]
+        packet['context']=CONTEXT_HEADER+(''.join(record(n) for n in ancestors) if ancestors else '(none)\n')
+    else:raise ValueError(arm)
+    assert all(start<=entries[i]['time']<end for i in packet['pool_members'])
+    return packet

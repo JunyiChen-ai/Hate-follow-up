@@ -129,6 +129,45 @@ def test_r2_single_native_anchor():
         else:raise AssertionError('validator accepted '+mutate+' corruption')
 
 
+def test_control_membership_and_true_coordinates():
+    from control_inputs import temporal_tree,packet_control
+    from collections import Counter
+    angles=np.linspace(0,2.5,40);features=np.c_[np.cos(angles),np.sin(angles)].astype(np.float32)
+    entries=[dict(index=i,time=float(i)) for i in range(40)]
+    cap=lambda i:dict(text=f'actual source {i}',tokens=[i])
+    main=tree.Builder(features,entries,cap,lambda roots:[3,3,2,1]).build()
+    new=temporal_tree(main,features,entries,cap)
+    old={n['id']:n for n in main['nodes']};nodes={n['id']:n for n in new['nodes']}
+    assert old.keys()==nodes.keys()
+    for key,n in nodes.items():
+        assert (n['parent'],n['depth'],n['root_relevance'],len(n['members']))==(
+            old[key]['parent'],old[key]['depth'],old[key]['root_relevance'],len(old[key]['members']))
+        assert n['members']==list(range(n['members'][0],n['members'][-1]+1))
+        children=[c for c in nodes.values() if c['parent']==key]
+        if children:assert Counter(i for c in children for i in c['members'])==Counter(n['members'])
+        assert n['representative']==n['members'][len(n['members'])//2]
+        assert n['caption']==f'actual source {n["representative"]}' and n['time']==entries[n['representative']]['time']
+    roots=[n for n in nodes.values() if n['parent'] is None]
+    assert Counter(i for n in roots for i in n['members'])==Counter(range(40))
+    changed_links=0
+    for a in range(0,40,8):
+        original=tree.window_packet(main,features,entries,a,a+8)
+        flat=packet_control('flat',main,features,entries,a,a+8)
+        assert flat['pool_members']==original['pool_members'] and flat['ancestor_ids']==original['ancestor_ids']
+        assert 'parent=' not in flat['context'] and 'depth=' not in flat['context']
+        for nodeid in original['ancestor_ids']:
+            assert old[nodeid]['caption'] in flat['context'] and f't={old[nodeid]["time"]:.3f}s' in flat['context']
+        wrong=packet_control('wrong_links',main,features,entries,a,a+8)
+        assert wrong['pool_members']==original['pool_members'];changed_links+=wrong['ancestor_ids']!=original['ancestor_ids']
+        for nodeid in wrong['ancestor_ids']:assert tree.record(old[nodeid]) in wrong['context']
+        empty=packet_control('no_added_pixels',main,features,entries,a,a+8)
+        assert not empty['pool_members'] and empty['context']==original['context']
+        shallow=packet_control('no_depth',main,features,entries,a,a+8)
+        assert not shallow['ancestor_ids'] and all(old[i]['parent'] is None for i in shallow['leaf_ids'])
+    assert changed_links>0
+
+
 if __name__=='__main__':
-    for test in (test_hierarchy,test_identical_singleton_and_breadth,test_real_pts_and_coverage,test_r2_single_native_anchor):
+    for test in (test_hierarchy,test_identical_singleton_and_breadth,test_real_pts_and_coverage,
+                 test_r2_single_native_anchor,test_control_membership_and_true_coordinates):
         test();print(test.__name__+' PASS',flush=True)

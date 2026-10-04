@@ -1,8 +1,9 @@
 # M1 candidate21: complete semantic cluster tree and local evidence reading
 
-Declared 2026-10-04 while candidate20 is running. This is a prepared independent
-backup; no performance result or GT analysis yet. GPU plumbing attempts are
-recorded below. Proposal review
+Declared 2026-10-04 while candidate20 was running. Current branch: R1 complete333
+retained for common within gains but excessive HateMM PR loss; R2 native G/S with
+tree local visual is now in its complete run. Chronological GPU/analysis records
+are below. Proposal review
 PASS: `docs/reviews/20261004_m1_tree_proposal.md`; implementation and CPU checks
 prepared after PASS, independent rule6 review PASS (below). Current formal method
 remains r6_bma. Development-selected. No Explorer fifth revision:
@@ -369,3 +370,73 @@ including88.474s/48.860s acquisition; reference native8.422s/4.071s.
 Rough extrapolation78.148/55.850min (~134.00min total), not full measured cost.
 Only prefix/local read is rerun using existing inputs. Proceed with fixed complete333;
 no smoke GT or performance/constant selection.
+
+## R2 controls scope, declared while main is running
+
+These controls run only after a complete R2 performance pass. They all use the
+same native G/own stance/shared S and unchanged r6, never R1 tree-global context.
+One full333 control run also rereads R2 main and native for exact raw parity.
+GT is read only after every arm has finished and been returned locally.
+
+`flat` retains the exact current-window ancestor caption/time inventory and local
+pixels, lists observations chronologically without node/parent/depth labels. It
+tests explicit reading-link representation only: it does NOT remove the semantic
+acquisition or which ancestor observations were selected. No broader claim that
+this control removes all selection/association. `wrong_links` independently tests
+association: keep exact main local pixels; rotate terminal-leaf ancestor chains
+by floor(leaf_count/2), preserve all actual source times/text, deduplicate as main.
+Singleton/no-change cases are reported. `no_added_pixels` retains the exact main
+ancestor packet but removes new local images. `no_depth` retains final roots,
+their actual captions/relevance/features, removes descendants, and applies the
+same center-nearest local rule. Any extra witness is decoded into a separate
+control input cache, never by modifying the scored main input.
+
+R2 `temporal` matches the full final topology AND each node's actual member count:
+assign all pool indices in time order to roots with the main root member counts,
+recursively to children with each main child's member count. This replaces the
+earlier R1 equal-count temporal-group plan, which can fail to reproduce a small
+group's declared child counts. Actual counts/topology and all partition coverage
+must match exactly, with no duplicate or invented membership. Choose each temporal
+node's middle real member (index len(group)//2), compute its actual feature mean,
+retain corresponding main root relevance for diagnostic depth matching AND the
+unchanged local selection priority (descending root relevance before distance), and
+caption with the identical frozen model/prompt/96-token cap. Local selection uses
+the same in-window center-nearest rule. This diagnostic is not deployable because
+it consumes main topology; it isolates semantic membership from chronological
+membership with the same node opportunities and frozen main per-root priorities,
+not a claim of equal measured time
+or necessarily equal unique-caption calls. Reuse only exact same source-frame
+captions; all actual unique/reused caption forwards/tokens and added witnesses are
+reported. Whole new-video costs remain charged. All literal headers/constants
+otherwise remain as declared; no scan or result-driven control selection.
+
+Scope limitation: inherited root priorities describe the original semantic roots,
+not freshly judged temporal roots. Their effect on local ranking is intentionally
+held fixed along with topology/counts; this control cannot establish superiority
+over a deployable temporal algorithm that recalculates its own priorities/depth.
+The R2 specification explicitly replaces R1's "main relevance for branching only"
+wording; input construction alone cannot verify a stronger end-to-end competitor.
+
+For each claimed component, require a same-main decline>=.01 in BOTH corpora;
+otherwise delete/demote that component and evaluate any changed final code fully.
+Complete acquisition must beat the temporal control on the same main metric by
+>=.01 BOTH; all raw ordering/incorrect-link effects and eligible-video bootstrap
+are reported. A flat/no-pixels control cannot establish acquisition effectiveness
+alone. These declarations do not imply mechanism support or a main result.
+
+Pure control geometry CPU implementation and complete333 input preflight PASS:
+`runs/20261004_m1_tree/cpu_checks/r2_control_geometry.log` and
+`runs/20261004_m1_tree/cpu_control_preflight/{summary,per_video}.json`.
+No control captions, predictions, GT access or GPU. Placeholder strings were
+transient geometry fixtures only, discarded; temporal changed-window counts refer
+to selected indices/links, not ungenerated observations. Additional actual caption
+and witness opportunities are reported, not inferred actual processing seconds.
+Independent narrow scope PASS: `docs/reviews/20261005_m1_tree_r2_controls_geometry.md`.
+The not-yet-implemented control acquisition/reader still requires its own narrow
+code confirmation before running.
+
+Waiting-time source scope check: DSTA official MAESTRO indexed appendix confirms
+tool/chunk selection and iterative local/global reasoning; full report/poster
+still403, no claim of excluding all clustering overlap. Evidence and exact query
+scope `runs/20261004_m1_tree/r2_source_scope/`. No scoring/constants change and
+no reopened proposal review. No first generic retrieval/tool/rereading claim.

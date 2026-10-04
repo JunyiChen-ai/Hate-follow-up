@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Postscore error analysis only; never called by acquisition or reader."""
+import argparse
 import json
 import socket
 from pathlib import Path
@@ -16,15 +17,17 @@ def read(path):
 
 
 def main():
-    out=ROOT/'runs/20261004_m1_tree/r1_error_analysis';out.mkdir(parents=True,exist_ok=True)
-    root=ROOT/'runs/20261004_m1_tree/r1_full_main';decoded=root.parent/'r1_full_main_decoded'
+    ap=argparse.ArgumentParser();ap.add_argument('--revision',choices=('r1','r2'),default='r1');args=ap.parse_args()
+    stem=args.revision+'_full_main'
+    out=ROOT/'runs/20261004_m1_tree'/(args.revision+'_error_analysis');out.mkdir(parents=True,exist_ok=True)
+    root=out.parent/stem;decoded=root.parent/(stem+'_decoded')
     raw={a:read(root/a/'predictions.jsonl') for a in ('base','optimized')}
     final={a:read(decoded/a/'predictions.jsonl') for a in raw}
-    per={ (r['dataset'],r['video_id']):r for r in json.loads((root.parent/'r1_full_main_analysis/per_video.json').read_text())}
+    per={ (r['dataset'],r['video_id']):r for r in json.loads((root.parent/(stem+'_analysis')/'per_video.json').read_text())}
     results=[];summary=dict(host=socket.gethostname(),GT_read=True,scope='development-selected postscore descriptive diagnostic; no new predictions or gate',
-        sources=['runs/20261004_m1_tree/r1_full_main/{base,optimized}/predictions.jsonl',
-            'runs/20261004_m1_tree/r1_full_main_decoded/{base,optimized}/predictions.jsonl',
-            'runs/20261004_m1_tree/r1_full_main_analysis/per_video.json','data/gt_4fps/{HateMM,HateClipSeg}.npz'],datasets={})
+        sources=[f'runs/20261004_m1_tree/{stem}/{{base,optimized}}/predictions.jsonl',
+            f'runs/20261004_m1_tree/{stem}_decoded/{{base,optimized}}/predictions.jsonl',
+            f'runs/20261004_m1_tree/{stem}_analysis/per_video.json','data/gt_4fps/{HateMM,HateClipSeg}.npz'],datasets={})
     for ds in ('HateMM','HateClipSeg'):
         g=np.load(ROOT/f'data/gt_4fps/{ds}.npz',allow_pickle=True)
         ys={str(v):np.asarray(g['y4'][i]) for i,v in enumerate(g['video_ids']) if str(g['split'][i])=='test'}
