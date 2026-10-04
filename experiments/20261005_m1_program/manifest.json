@@ -1,6 +1,6 @@
 {
   "date": "2026-10-05",
-  "role": "Independent fixed5 plumbing prepared on idle lab3 while Lattice22 R3 main runs; complete Program main still deferred",
+  "role": "Independent fixed5 plumbing running on lab3 Slurm130 while Lattice22 R3 main runs; complete Program main deferred",
   "proposal": "experiments/20261005_m1_program/README.md",
   "proposal_review": "docs/reviews/20261005_m1_program_proposal.md",
   "proposal_pass": true,
@@ -11,8 +11,9 @@
   "code_review": "docs/reviews/20261005_m1_program_code.md",
   "code_pass": true,
   "GT_read": false,
-  "GPU_run": false,
+  "GPU_run": true,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "selected_host": "sc474398"
+  "selected_host": "sc474398",
+  "smoke_host": "sc474398"
 }

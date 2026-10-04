@@ -11,6 +11,16 @@ constants and fixed5 as previously declared. This scheduling change does not use
 Lattice test predictions or modify this candidate's scientific specification.
 Formal method is still r6_bma; all future results development-selected.
 
+Execution host selectedsc474398/uoa-lab3 on2026-10-05. Full333 current source
+inventory/20cached frames CPU preflight PASS, noGT/GPU; readable evidence
+`runs/20261005_m1_program/lab3_source_preflight.json`. All laboratory code synced
+and clean/current partition idle/1.4Tfree; scoped machine check and unchanged
+foreign-home note in `runs/20261005_m1_program/machines_before_smoke{,_note}.txt`.
+Slurm130 submitted the originalfixed5 via committed `launch/lab3.sbatch` (only
+partition differs from reviewedlab2 wrapper); acquisition and paired scoring
+stay together onthishost. Actual8B/schema/clone/native parity pending; no main
+or performance evaluation/GT use at this point.
+
 ## Mechanism, source and scope
 
 A program selects source objects and composes factual perception through explicit

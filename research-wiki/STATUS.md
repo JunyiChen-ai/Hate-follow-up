@@ -71,8 +71,9 @@ CPU与独立窄代码检查PASS，来源`docs/reviews/20261005_m1_lattice_termin
 来源`runs/20261004_m1_lattice/r3_full_smoke_analysis/plumbing_summary.json`；尚无R3性能结果。
 R3七臂matched控制独立CPU/代码检查PASS，来源`docs/reviews/20261005_m1_lattice_terminal_controls_code.md`；仅prepared，主门通过才运行。
 算法/成本/全部读过的GT与设计关联唯一明细仍为实验README；全部development-selected，机制尚未建立。
-备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS，未跑GPU/读GT。
-入口`experiments/20261005_m1_program/README.md`，仅为后续备用，等待Lattice的结果分流。
+备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS。
+原先声明的固定5在空闲sc474398/Slurm130做独立plumbing，与Lattice在不同机器各自完整运行；尚无性能评测/GT。
+入口`experiments/20261005_m1_program/README.md`，完整主实验仍等待Lattice结果分流。
 备用候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
 尚无GPU、GT或性能结论，等待22/23结果分流。入口`experiments/20261005_m1_quote_graph/README.md`。
 当前零标签性能与机制目标仍未完成。
