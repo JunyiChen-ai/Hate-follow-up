@@ -17,5 +17,6 @@
   "cpu_checks": "runs/20261004_m1_lattice/cpu_checks/selfcheck.log",
   "GPU_run": true,
   "bias_dtype_review": "docs/reviews/20261005_m1_lattice_bias_dtype_fix.md",
-  "status": "Slurm121 all5 beam inputs local, failed first structural bias dtype; independently confirmed API fix, repeat exact5"
+  "status": "fixed5 GPU/local noGT prepare PASS; native all reads exact, G/V exact,134changedS,5clones and unit degeneration EXACT; next identical full333",
+  "smoke": "runs/20261004_m1_lattice/r1_full_smoke_analysis/plumbing_summary.json"
 }

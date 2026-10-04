@@ -47,7 +47,9 @@ R4原始max within−.044756/+.002938，HMM区间全负；G不变、新V与R2逐
 当前候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS。
 固定五视频实际音频CPU预检通过；AAC重叠PTS问题已修并获独立窄确认。
 入口`experiments/20261004_m1_lattice/README.md`；Slurm121完成5视频真实beam输入并回传，首个结构读取因CUDA bias类型失败。
-已修为BF16 query相同类型并获独立窄CPU确认PASS；重跑相同5视频，不评价方法优劣，尚无性能或机制结论。
+已修为BF16 query相同类型并获独立窄CPU确认PASS；Slurm122相同5完成并回传本机，noGT prepare PASS。
+原生全读数精确、G/V不变，134新S变化，clone和单路径结构/普通顺序margin各5精确一致。
+来源`runs/20261004_m1_lattice/r1_full_smoke_analysis/plumbing_summary.json`；进入固定完整333，尚无性能或机制结论。
 备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS，未跑GPU/读GT。
 入口`experiments/20261005_m1_program/README.md`，仅为后续备用，等待Lattice的结果分流。
 当前零标签性能与机制目标仍未完成。

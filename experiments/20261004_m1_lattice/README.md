@@ -308,3 +308,22 @@ sequences, never selects a method input or score. Authority
 134 distinct exact-text alternatives,114 with lexical differences ignoring
 punctuation/case;29 of670 beams truncated, all retained by declared448-token cap.
 These are input observations, not ASR accuracy or hateful localization evidence.
+
+### Fixed5 actual GPU verification complete
+
+sc474399/Slurm122 DONE5; all run outputs and source inputs returned locally before
+no-GT prepare PASS. Authority
+`runs/20261004_m1_lattice/r1_full_smoke_analysis/plumbing_summary.json`. Native
+all G/windows/curves exactly reproduce current native; G/V unchanged in new arm,
+134 speech margins changed. All5 cloned-cache margins exact; probability-one DAG
+and otherwise identical sequential token forwards also EXACT in all5 (difference0,
+within original operational tolerance .01). Actual graph token/current input
+bindings pass; no GT or metric used.
+
+Standalone sample HMM56.12289s (84 recognized windows), HCS16.33920s (50), including
+actual original beam preparation46.90260/11.88669s. Native8.40762/4.07519s.
+Peaks18.09434/17.28584GiB; paired Qwen forwards282/174 including separately timed
+diagnostics9/6 (.31564/.19191s). ASR encoder87/52, decoder4800/1097 including
+language detection. Graph tokens5768/1425, slots2093/841. Rough full-corpus cost
+33.88266/16.06688min =49.94954min; an extrapolation, not actual complete cost.
+Proceed identical complete333/main, without changed constants or selected windows.
