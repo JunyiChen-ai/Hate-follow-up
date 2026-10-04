@@ -1,6 +1,6 @@
 {
   "date": "2026-10-05",
-  "role": "Actualfixed5 GPU completed locally, noGT mechanism-exercise guard FAIL; no main/GT/performance verdict",
+  "role": "Interface A actualfixed5 noGT guard FAIL, retained; explicit interface B CPU/code PASS, same actualfixed5 next; no GT/performance",
   "proposal": "experiments/20261005_m1_program/README.md",
   "proposal_review": "docs/reviews/20261005_m1_program_proposal.md",
   "proposal_pass": true,
@@ -20,5 +20,15 @@
   "smoke_pass": false,
   "interface_diagnosis": "docs/reviews/20261005_m1_program_gpu_interface_diagnosis.md",
   "interface_bug_found": false,
-  "interface_design_needed": true
+  "interface_design_needed": true,
+  "interface_B": {
+    "version": "R1 source-handle interface B; sources2026-10-05",
+    "code_review": "docs/reviews/20261005_m1_program_handle_code.md",
+    "code_pass": true,
+    "cpu_checks": "runs/20261005_m1_program/handle_cpu_checks/run.log",
+    "input_cache": "data/temporal_evidence_program_handles",
+    "host": "sc474398",
+    "GPU_run": false,
+    "smoke_pass": false
+  }
 }

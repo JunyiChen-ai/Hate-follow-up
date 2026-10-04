@@ -80,6 +80,9 @@ R3七臂matched控制独立CPU/代码检查PASS，来源`docs/reviews/20261005_m
 保留真实非法参数/超预算/缺窗/UNKNOWN记录，独立接口窄诊断确认未观察到实现bug、原始模型输出不符合接口；
 来源`docs/reviews/20261005_m1_program_gpu_interface_diagnosis.md`。需要新接口设计；不降低guard、不启动主实验、不作性能/idea裁定。
 入口`experiments/20261005_m1_program/README.md`，错误来源`runs/20261005_m1_program/r1_full_smoke_analysis/run.log`；未读GT。
+新source-handle接口B已事前声明、CPU来源/解码检查和独立窄code/interface审查PASS；
+来源`docs/reviews/20261005_m1_program_handle_code.md`。A失败记录保留，B用独立缓存/输出，
+守门只增加真实有效感知检查、不放松；继续相同5在sc474398验证，尚无B GPU/性能结论。
 候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
 22已归档、23接口未可靠执行；24固定5在sc474399/Slurm131完成并回传本机，noGT prepare PASS。
 原生allraw精确、G/V不变、134新S变化、5clone/contextless检查通过；来源

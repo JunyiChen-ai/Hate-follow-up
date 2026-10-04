@@ -317,3 +317,101 @@ metadata/run logs record generating hostname. First line of each run.log is host
 Canonical input cache: data/temporal_evidence_program, with PROVENANCE.md generated
 by extract.py; inputs never include labels. Outputs r1_extract_{smoke,main},
 r1_full_{smoke,main}, r1_full_main_decoded and corresponding analysis directories.
+
+## R1 source-handle interface B, declared before implementation/GPU
+
+The unchanged free-JSON interface A is retained in its original files and cache.
+Its actual22chunks/158windows/zero module calls remain a failed noGT result, not
+an idea-performance verdict. Diagnosis found no implementation bug: this is an
+explicit new source/planning/decoder design, not repaired/coerced old output.
+No A/B performance comparison or GT has been seen. Interface B tests the SAME
+complete restricted source-execution method with a legally executable planner.
+It does not itself supply novelty or count as an extra result-guided revision.
+
+Native20 frames, full ASR,8s windows, source proportional character times and
+nominal frame times remain unchanged. Prebind one candidate for each real ASR
+segment's fully contained character clip in a window (the exact original `local`
+operator), all actual in-window frame IDs, and all other segment spans as
+interpretation-only context. Handles S<zero-padded8digit segment index> and
+F<zero-padded8digit frame index> only alias actual source coordinates, not
+invented entities. No lexical target/policy filtering or GT. The planner sees
+original20 images, full source inventory and the actual requested window source
+choices. One fresh planner per8windows as A, but constrained greedy decoding
+selects one local span when any exists, one local frame when any exists, and zero
+to2 DISTINCT remote context segments when speech exists. NONE is forced only
+when no actual local source exists; STOP is always allowed for context. Join is
+selected true/false only when the actual two local witnesses overlap; otherwise
+false. Source/time aliases are compiled to ordinary A span/local/context/scope/
+action/join/emit instructions, never repaired from an invalid raw program. A
+12-operation/2-perception/2-context maximum still applies: two contexts plus
+scope+action+join+emit use12operations. Local spans and module outputs, plus a
+selected actual join, are emitted; context alone is never a local occurrence.
+
+Literal output skeleton per window is a JSON object with keys window,speech,
+frame,contexts,join, in that order. Array/window keys/punctuation are forced,
+while handles, STOP and legal booleans use FP32 next-token argmax ONLY among
+legal continuations of the literal choice trie. All forced tokens are actually
+forwarded, counted, and saved; there is no hidden retry, beam, voting or free
+output repair. Choice strings include their closing punctuation so no shorter
+choice is accepted by bypassing a model decision. At most2048 total planner
+tokens, same seed0. Incomplete/capped plans retain UNKNOWN, never fabricated
+perception. Identical constants and exact frozen grammar for both corpora.
+
+Factual modules still use fresh source-only Qwen branches, max96total tokens.
+Scope JSON skeleton keys speaker,mode,target,support: speaker in
+speaker/quoted/reported/UNKNOWN; mode direct/quoted/rejected/reported/UNKNOWN;
+target UNKNOWN or one of the actual local span's contiguous1–4 whitespace words
+(with original Unicode character boundaries). This is a bounded target proposal
+set, not certified semantic ownership. Support contains the actual local source
+ID only; it records the measured source, not evidence that its interpretation is
+correct. Scope/target values are constrained greedy choices. Action keeps free
+actor/action/target descriptions (<=12words per field) and actual frame support.
+JSON syntax is forced; a field greedily generates only tokens decoding to valid
+JSON-string content without quote/backslash/control/replacement characters,
+plus the closing quote. At24content tokens or12words the closing quote is forced.
+Forced punctuation is measured; field truncation is recorded separately from
+whole96-token cap. Uncertain semantics may be UNKNOWN; grammatical validity is
+not factual accuracy. No moderation words/decision/score fields in these modules.
+
+The original A interpreter executes compiled B instructions unchanged. At most
+2 actual perception generations/window; no alternative program aggregation.
+Final independent native visual/speech questions receive the factual executed
+records exactly as A; native global/own hard stance and fixed-r6 remain frozen.
+All source choices, compiled ops, allowed option sequences, forced/generated
+actual IDs, cap/field-stop events and actual forward counts are saved for replay.
+Separate version `R1 source-handle interface B; sources2026-10-05`, cache
+`data/temporal_evidence_program_handles/`, outputs `r1_handles_extract_*` and
+`r1_handles_full_*`; original A outputs are not reused/relabelled. Full new-video
+processing includes all planner and actual module generations. Preliminary
+120–360GPUmin remains unmeasured; constrained syntax adds forwards, a one-time
+vocabulary scan and source inventories but no extra model/encoder/calls.
+
+Independent narrow code/interface review and CPU source/token/interpreter checks
+must precede actual SAME fixed5 onsc474398. The unchanged prepare guard requires
+actual perception calls and meaningful emitted evidence in EACH corpus, native
+allraw exact and real cloned margins. No main until actual noGT PASS. Full333
+and the originally declared complete main/mechanism gates remain unchanged.
+
+B implementation note before GPU: planner material contains each complete remote
+segment text ONCE in the indexed source inventory; each window's remote options
+repeat only handles/coordinates, not the full transcript. Local clips contain
+actual clip text. Scope target options cover only the selected real local span.
+The original smoke guard is retained and additionally requires at least one
+structurally non-UNKNOWN factual module in each corpus. This does not certify
+facts. CPU author fixture158plans/141scope/76action/44join/6185target-span checks
+PASS in `runs/20261005_m1_program/handle_cpu_checks/run.log`; fixture outputs are
+not measured GPU perceptions or performance. Narrow independent review pending.
+
+Interface B independent narrow code/interface review PASS (same-family provisional):
+`docs/reviews/20261005_m1_program_handle_code.md`, evidence
+`runs/20261005_m1_program/handle_code_review/`. One actual observation bug was
+fixed: new factual-validity summary counters were not replay-bound to executed
+calls. Both counters and source/program/cost/forward counts now match actual
+metadata; independent corruption checks confirm rejection. Independent real
+Qwen tokenizer/FP32 legal argmax/forced token forwards/EOS/cap/Unicode/source
+oracles, tiny two-layer BF16 KV and current firstvideo source/reader bindings
+PASS. These are CPU fixtures, no GT or actual 8B perceptions. Same fixed5 on
+sc474398 through `launch/lab3_handles.sbatch smoke` is next after synchronization;
+original A run/cache remain unchanged, no performance result. Main still requires
+actual noGT prepare including the unchanged exercise/native/clone guard and
+new structurally-valid factual-call check for EACH corpus.
