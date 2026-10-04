@@ -32,7 +32,7 @@ https://arxiv.org/html/2605.02735v1 ，已实际阅读3.2、3.3、Algorithm1、�
 Qwen问题forward正常计算实际attention，同时取得按问题平均的patch相关度。
 完整333预算初估60–120 GPU分钟，峰值预期<32GiB；五视频实际smoke后替换估计。
 smoke后更新：两个普通视频/语料外推合计46.3min，仅作粗略预算；另一个长视频用于资源验证。
-实际峰值20.45GiB，完整成本仍等333结束后记录。五视频合计107秒左右，含诊断。
+实际峰值20.45GiB，完整成本仍等333结束后记录。五视频合计108.5秒，含诊断。
 额外全词表lm_head FP32缓存约2.5GB、视觉embedding与分支缓存复制均计入内存/时间。
 原生配对诊断forward单列，不把它们冒充部署成本。
 
@@ -127,3 +127,12 @@ GPU只Slurm，日志/PID/配置/可读版本说明入run。
 `runs/20261004_m1_latents/r1_full_smoke_analysis/plumbing_summary.json`与
 `runs/20261004_m1_latents/r1_full_smoke/checks.jsonl`。
 未读GT，不计算子集性能，机制尚未支持。完整333下一步提交，无性能结果。
+
+完整采集已由主agent在smoke检查后单独提交：sc474399，Slurm93，
+`sbatch experiments/20261004_m1_latents/launch/lab2.sbatch main full`。
+所有333视频一起采集配对native/优化，核心计算代码和常数保持smoke已审查版本。
+主门后比较器`compare_controls.py`独立补审PASS（same-family provisional），
+`docs/reviews/20261004_m1_latents_controls_code.md`；实际未执行，也没有运行任何控制。
+只有完整main过性能门且四控制各完整333+统一评测结束后才允许读取GT作此比较。
+它检查正/负support的真实frame/patch映射，正支持embedding内容变化按窗口单列，
+负支持只报告映射检查，不把未存储的内容相等检查冒充已有证据。

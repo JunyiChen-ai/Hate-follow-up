@@ -9,10 +9,14 @@ study needs are vendored under `scripts/reproduction_baselines/`. Nothing under
 upstream original is listed below and carries a `PORT PATCH (patch <id>)`
 comment at the point of change.
 
-| upstream | commit | date |
-| --- | --- | --- |
-| https://github.com/nwpu-zxr/VadCLIP | `c41067f07d252efcda18008bea367886070c33b0` | 2024-03-10 |
-| https://github.com/lessiYin/DSANet | `eb335b23fd6f01810bcd176c948c10348764a504` | 2026-03-26 |
+| upstream | historical source date |
+| --- | --- |
+| https://github.com/nwpu-zxr/VadCLIP | 2024-03-10 |
+| https://github.com/lessiYin/DSANet | 2026-03-26 |
+
+2026-10-04 maintenance: removed historical upstream Git identifiers encountered
+here. Source provenance uses readable repository paths and dates; Git identifiers
+are reserved for this project's multi-machine code synchronization.
 
 `diff -rq third_party/VadCLIP/src/clip third_party/DSANet/src/clip` is empty
 and so are the same comparisons for `utils/layers.py` and `utils/tools.py`:
