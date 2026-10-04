@@ -31,6 +31,8 @@ https://arxiv.org/html/2605.02735v1 ，已实际阅读3.2、3.3、Algorithm1、�
 五步Stage I只在四个向量与所选patch上求导，不反传MLLM、不重复编码前缀。
 Qwen问题forward正常计算实际attention，同时取得按问题平均的patch相关度。
 完整333预算初估60–120 GPU分钟，峰值预期<32GiB；五视频实际smoke后替换估计。
+smoke后更新：两个普通视频/语料外推合计46.3min，仅作粗略预算；另一个长视频用于资源验证。
+实际峰值20.45GiB，完整成本仍等333结束后记录。五视频合计107秒左右，含诊断。
 额外全词表lm_head FP32缓存约2.5GB、视觉embedding与分支缓存复制均计入内存/时间。
 原生配对诊断forward单列，不把它们冒充部署成本。
 
@@ -42,7 +44,8 @@ Qwen问题forward正常计算实际attention，同时取得按问题平均的pat
   causal softmax attention，平均全部语言层/头/问题tokens。计算分母包含全部可见keys，
   不把图片间单独归一化的分布当作实际attention。排除chat header/EOS模板tokens。
 - 稳定排序：相关度降序，同值按原始token顺序；top8顺序分成四组、每组2positive。
-  bottom16按升序分成四组、每组4negative，与positive不重合。
+  bottom16按升序分成四组、每组4negative，与positive不重合；完全同值时先排除positive
+  再按原始顺序取negative，避免稳定排序两端仍重合。
   视觉token数若不足24，明确报实现错误，不静默改K或常数。
 - 四个初始向量分别为各positive组的主merger embedding均值，FP32。
   对比loss按论文Eq4，cosine similarity，tau=.1，beta=(2+4)/2=3。
@@ -113,4 +116,14 @@ setsid nohup bash experiments/20261004_m1_latents/launch/run_analysis.sh full > 
 审核实际attention与SDPA的一致性、native缓存独立/positions/merger embedding对齐、
 K=0退化原生精确、优化确实影响margin、无GT进入计算、统一r6/评测命令。
 结果runs/20261004_m1_latents/<run>/，新输入若有才建data/出处；本版无新输入缓存。
-GPU只Slurm，日志/PID/配置/可读版本说明入run。当前代码已实施，尚无GPU或性能结果。
+GPU只Slurm，日志/PID/配置/可读版本说明入run。
+
+## 实际运行记录
+
+2026-10-04，主机sc474399，Slurm92：五视频smoke完成，回传后本机prepare通过。
+覆盖5，原生global/逐窗两模态/曲线完全一致，K0重放精确；158个视觉窗改变读数，
+158个槽干预改变读数，复制缓存评价与实际已评价最佳状态reward精确一致。
+峰值20.45GiB，采集108.5s；预算/诊断来源
+`runs/20261004_m1_latents/r1_full_smoke_analysis/plumbing_summary.json`与
+`runs/20261004_m1_latents/r1_full_smoke/checks.jsonl`。
+未读GT，不计算子集性能，机制尚未支持。完整333下一步提交，无性能结果。

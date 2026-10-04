@@ -14,7 +14,9 @@ HCS .722478/.676508/.652582（99）；within+.009127/+.015233，HMM PR仅−.000
 
 候选19已进入实施：`experiments/20261004_m1_latents/README.md`。
 九项完整候选由独立jury排序，第一项为连续视觉输入状态的两阶段优化迁移；
-方案审查PASS（same-family provisional），代码审查与五视频Slurm检查进行中，尚无性能结果。
+方案/代码审查PASS（same-family provisional）；sc474399/Slurm92五视频smoke完成并回传，
+原生输出精确一致，158窗状态/槽干预进入读数，峰值20.45GiB，无GT/子集性能评测。
+来源`runs/20261004_m1_latents/r1_full_smoke_analysis/plumbing_summary.json`；准备完整333，尚无性能结果。
 保持原生全局/语音读取与固定r6；论文公式适配和官方代码差异已明确记录。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
