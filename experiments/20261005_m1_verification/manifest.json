@@ -7,7 +7,7 @@
   "proposal_pass": true,
   "implemented": true,
   "code_review": "docs/reviews/20261005_m1_verification_code.md",
-  "code_pass": false,
+  "code_pass": true,
   "cpu_checks": "runs/20261005_m1_verification/cpu_checks/summary.json",
   "cpu_pass": true,
   "input_cache": "data/temporal_factual_verification",
@@ -16,6 +16,6 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Prototype and author33CPU checks PASS; single independent code review running; no scientific GPU",
+  "state": "Prototype/author33CPU/single independent code PASS; scientific fixed5 dispatch next",
   "result_guided_revisions_used": 0
 }

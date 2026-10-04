@@ -111,7 +111,7 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 来源`docs/reviews/20261005_m1_provenance_gpu_interface_diagnosis.md`；无机制结论。
 备用候选26区间来源见证组合/分歧触发重读，独立方案审查PASS；入口`experiments/20261005_m1_interval_witness/README.md`，科学代码及29项CPU检查/独立代码审查PASS，科学GPU尚未跑；来源`docs/reviews/20261005_m1_interval_witness_code.md`。
 本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，项目离线缓存缺口已通过现有完整本地模型symlink修复；Slurm145于11:24:58完成，原生fixed5全部G/stance/V/S逐值精确，来源`runs/_setup_local_hatevlm/native_smoke/summary.json`；科学fixed5已提交sc474397/Slurm147，PENDING(QOSMaxGRESPerUser)，科学代码尚未执行，无性能结论。
-备用候选27独立事实重观察/typed修订：原9池rank9最后一项，一次独立方案审查PASS；来源`docs/reviews/20261005_m1_verification_proposal.md`。完整factored CoVe四阶段功能迁移的target差异、来源归属与成本已事前声明；`experiments/20261005_m1_verification/README.md`及`spec.json`为入口，原型与33项CPU检查PASS、唯一独立代码审查进行中，未跑GPU/未读GT。
+备用候选27独立事实重观察/typed修订：原9池rank9最后一项，一次独立方案审查PASS；来源`docs/reviews/20261005_m1_verification_proposal.md`。完整factored CoVe四阶段功能迁移的target差异、来源归属与成本已事前声明；`experiments/20261005_m1_verification/README.md`及`spec.json`为入口，原型/33项CPU检查/唯一独立代码审查PASS，科学fixed5下一步，未跑GPU/未读GT。来源`docs/reviews/20261005_m1_verification_code.md`。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，

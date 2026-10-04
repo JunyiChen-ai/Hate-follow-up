@@ -3,7 +3,7 @@
 Rank9, last entry of the unchanged original9 pool:
 `experiments/20261004_m1_ideation/CANDIDATES.json`, jury
 `docs/reviews/20261004_m1_ideation_jury.md`. Declared2026-10-05 onsc474397.
-Independent once-only proposal review PASS: `docs/reviews/20261005_m1_verification_proposal.md`; prototype implemented, independent code review running; no scientificGPU yet.
+Independent once-only proposal review PASS: `docs/reviews/20261005_m1_verification_proposal.md`; prototype/independent code review PASS; no scientificGPU yet.
 Native formal reference r6_bma, full215HateMM+118HateClipSeg, canonical4fps,
 fixedr6, all results development-selected. Candidate25/26 outcomes pending;
 this independent proposal does not prejudge them or reset a previous family.
@@ -151,7 +151,7 @@ serialization. Empty/incomplete generated planner retains cost and no questions,
 not an invented successful verification. Final reader uses newly compiled facts,
 not obsolete replaced draft values. Filepaths remain internal audit information
 and are absent from model-visible source descriptions. Prototype implemented, no
-scientificGPU yet. Independent once-only proposal review PASS; literal source-adaptation and complete updated four-field serialization clarified within that review. Independent code review in progress.
+scientificGPU yet. Independent once-only proposal review PASS; literal source-adaptation and complete updated four-field serialization clarified within that review. Independent code review PASS.
 
 
 ## Prototype and pre-GPU validation2026-10-05
@@ -195,5 +195,15 @@ Run in committed Slurm launch only:
 `python experiments/20261005_m1_verification/analyze.py --stage prepare --smoke`.
 Full CPU detached analysis entry `launch/run_analysis.sh`. Actual machine
 availability/clean sync and disk checked immediately before dispatch; no newjob
-submitted yet. Single independent rule6 code review pending; source scientific
+submitted yet. Single independent rule6 code review PASS; source scientific
 capacity and correctness still unmeasured.
+
+
+Independent initial code review PASS (same-family provisional), frozen
+`docs/reviews/20261005_m1_verification_code.md`. Actual production acquisition/
+source replay plus real36layerBF16 CPU native/freshreader generation, six speech
+availability/repeat layouts,16current source/token/stance/cost/field corruption
+rejections and actual5templates passed. Complete/capped draft/plan/verification
+production generators exercised, final compiler retains unqueried valid fields
+and never falls back to queried obsolete draft. This is executable input/code
+validation, not observed8B semantics or performance; noGT/scientificGPU yet.
