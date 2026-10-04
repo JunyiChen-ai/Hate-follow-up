@@ -359,3 +359,13 @@ G/S equality, actual call/cost separation and corruption rejection checked.
 The image/context forward is a CPU stub here; actual fixed-five GPU parity remains
 required. Full333 R1 noGT prepare regression also PASS in
 `runs/20261004_m1_tree/cpu_checks/r1_prepare_regression.log`.
+
+R2 fixed5 GPU smoke sc474399/Slurm115 DONE and run/input returned locally before
+noGT prepare: native full G/windows/curves exact, G/S unchanged,158 visual windows
+changed,5 fresh full-input/grid/prefix-position and5 cloned-margin checks PASS.
+Source `runs/20261004_m1_tree/r2_full_smoke_analysis/plumbing_summary.json`.
+Peaks18.877/18.842GiB. Whole new-video sample costs104.387s HMM/56.796s HCS,
+including88.474s/48.860s acquisition; reference native8.422s/4.071s.
+Rough extrapolation78.148/55.850min (~134.00min total), not full measured cost.
+Only prefix/local read is rerun using existing inputs. Proceed with fixed complete333;
+no smoke GT or performance/constant selection.

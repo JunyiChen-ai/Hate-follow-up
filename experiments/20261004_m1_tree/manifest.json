@@ -9,5 +9,6 @@
   "date": "2026-10-05",
   "main_metrics": "runs/20261004_m1_tree/r1_full_main_decoded/optimized/metrics.json",
   "r2_code_review": "docs/reviews/20261005_m1_tree_r2_code.md",
-  "r2_status": "native global/speech with tree local visual predeclared; CPU and independent narrow code PASS; actual fixed5 GPU pending"
+  "r2_status": "native global/speech with tree local visual; fixed5 GPU local/noGT PASS native exact, fresh/clone5; fixed full333 next",
+  "r2_smoke": "runs/20261004_m1_tree/r2_full_smoke_analysis/plumbing_summary.json"
 }

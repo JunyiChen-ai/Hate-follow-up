@@ -41,7 +41,9 @@ HCS .729941/.689819/.650289（99）；within+.028910/+.012940，但HMM PR−.014
 按规则9保留此族，开始result-guided修订，最多3次；累计归档仍20项。
 首修订Tree R2已声明：保留原生global和speech，只改树证据驱动的local visual。
 输入获取与常数沿用R1，CPU编排/调用计数及损坏记录拒绝检查与独立窄代码确认PASS。
-尚未提交R2 GPU；完整主结果与机制控制仍待验证，细节仍以同实验README为准。
+R2固定5 GPU smoke在sc474399/Slurm115完成且run/输入回传，noGT prepare PASS：
+原生全读数精确、G/S不变、158 visual窗变化、fresh/clone各5次通过；进入固定完整333。
+来源`runs/20261004_m1_tree/r2_full_smoke_analysis/plumbing_summary.json`，完整主结果与机制控制仍待验证。
 备用候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS，尚未跑GPU/读GT。
 固定五视频的实际音频CPU预检也通过；遇到的AAC重叠PTS实现问题已修并获独立窄确认PASS，明细见同实验README。
 入口`experiments/20261004_m1_lattice/README.md`；仅在Tree结果按规则分流允许切换后启动固定五视频smoke。
