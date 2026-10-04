@@ -492,3 +492,16 @@ corruption cases, emptyavailability, canonical function identity and subprocess
 flags. The sole reported count bug is fixed: epsilon counts empty text; nonempty
 zero-mass paths have a separate counter. This does not change scores, and actual
 R1 zero-mass count0. Actual8B R2 fixed5/full333 GPU checks remain pending.
+
+Actual R2 fixed5 Slurm124 completed onsc474399 at07:04:43; output and unchanged
+input cache returned locally. NoGT `path_analyze.py --stage prepare --smoke` PASS:
+native all G/window/curve exact, G/V unchanged,134new S changed,5clones exact.
+All5 probability-one graph/otherwise identical serial margins are EXACT (0
+difference), not merely within the unchanged .01 tolerance. Authority:
+`runs/20261004_m1_lattice/r2_full_smoke_analysis/plumbing_summary.json`; actual
+unit values in `r2_full_smoke/records/`. Peaks18.134567/17.310364GiB;
+actual paired forwards282/174 including9/6diagnostics. Physical graph tokens
+18069/5115 for84/50recognized windows,420/250complete paths,epsilon/zero counts0.
+These checks support identical full333 dispatch, not a performance or mechanism
+claim. The short-sample extrapolation remains descriptive; known full source
+acquisition59.95min is still charged and supersedes any smaller sample projection.
