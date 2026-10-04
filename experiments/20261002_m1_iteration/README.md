@@ -281,3 +281,10 @@ the limits of legacy source-index exclusion. All original inputs remain unchange
   preserve R1/R3/R4 gains, archive family. No full control GPU after failed main gate.
   Next: broaden complete-M1 candidates through readonly analytic lenses; maintain
   unchanged r6/evaluator and require full333 plus falsifiable mechanism evidence.
+
+19. `archive/experiments/20261004_m1_latents/README.md`: complete333 R1 paper-equation
+  adaptation has zero qualifying +.01 gains, both raw visual/max and final within
+  decline; native all six exact. Archive under rule9 without revisions/full controls.
+  Actual time/cost and all metrics in archived README/local canonical metrics.
+  Continue independent acoustic posterior candidate; official contextual variant
+  remains untested, not ruled out by this narrower negative result.

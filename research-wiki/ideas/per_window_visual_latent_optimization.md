@@ -2,9 +2,9 @@
 type: idea
 node_id: idea:per_window_visual_latent_optimization
 title: "per window visual latent optimization"
-stage: proposed
-outcome: pending
-added: 2026-10-04T07:34:08Z
+stage: archived
+outcome: negative
+added: 2026-10-04T08:54:14Z
 based_on: []
 target_gaps: []
 tags: ["m1", "zero-label", "development-selected"]
@@ -12,15 +12,15 @@ tags: ["m1", "zero-label", "development-selected"]
 
 # per window visual latent optimization
 
-**stage:** `proposed`  ·  **outcome:** `pending`
+**stage:** `archived`  ·  **outcome:** `negative`
 
-算法、来源、成本和对照的唯一明细：experiments/20261004_m1_ideation/CANDIDATES.json，键 per_window_visual_latent_optimization。独立排序见 docs/reviews/20261004_m1_ideation_jury.md。尚无性能结论。
+Full333 R1 adaptation completed, no qualifying gain; archived under rule9.
 
 ## Thesis
-按候选明细验证；本页只作检索入口。
+Actual algorithm, results and source limitations: archive/experiments/20261004_m1_latents/README.md. Canonical metrics: runs/20261004_m1_latents/r1_full_main_decoded/optimized/metrics.json.
 
 ## Key risks
-same-family provisional 审查，结果与机制均待完整双语料实测。
+Official contextual version untested; this negative result covers declared paper-equation Qwen adaptation only.
 
 ## Connections
 _Edges are recorded in `graph/edges.jsonl`; summarize here for human readers._

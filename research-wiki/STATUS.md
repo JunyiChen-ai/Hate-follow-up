@@ -12,12 +12,15 @@ HCS .722478/.676508/.652582（99）；within+.009127/+.015233，HMM PR仅−.000
 `archive/experiments/20261003_m1_explorer/README.md`。初版+三修订已用完，累计归档18项。
 继续独立候选选题、审查与完整实验；性能与机制目标均未完成。全部development-selected，不更新Overleaf。
 
-候选19已进入实施：`experiments/20261004_m1_latents/README.md`。
-九项完整候选由独立jury排序，第一项为连续视觉输入状态的两阶段优化迁移；
-方案/代码审查PASS（same-family provisional）；sc474399/Slurm92五视频smoke完成并回传，
-原生输出精确一致，158窗状态/槽干预进入读数，峰值20.45GiB，无GT/子集性能评测。
-来源`runs/20261004_m1_latents/r1_full_smoke_analysis/plumbing_summary.json`；准备完整333，尚无性能结果。
-保持原生全局/语音读取与固定r6；论文公式适配和官方代码差异已明确记录。
+候选19连续视觉状态优化完整333已完成并回传：sc474399/Slurm93。
+HateMM ROC/PR/within .894437/.691121/.727686（84），
+HCS .685951/.652592/.566666（99），全部development-selected。
+权威来源`runs/20261004_m1_latents/r1_full_main_decoded/optimized/metrics.json`。
+配对native精确复现当前全部六项，7359视觉窗干预进入读数，但原始visual/max排序下降，
+没有任一主指标+.01，按规则9直接归档为第19项；不跑完整控制/不再修订。
+实际成本64.34min、native约6.28倍。明细唯一入口
+`archive/experiments/20261004_m1_latents/README.md`，官方contextual版本尚未测试。
+九候选jury的第二项声学路径分布条件化读取正在形成确定方案，目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
@@ -25,7 +28,7 @@ HCS .722478/.676508/.652582（99）；within+.009127/+.015233，HMM PR仅−.000
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档18个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档19个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。

@@ -1,4 +1,6 @@
-# M1 连续视觉状态优化（候选19，R1实施中）
+Archived 2026-10-04: full333 shows no main metric gain ≥ .01; visual ordering and final within decline. No revision/full controls.
+
+# M1 连续视觉状态优化（候选19，R1负结果）
 
 同一个冻结Qwen3-VL-8B先按当前原生流程读取20帧、完整ASR、全局Yes/No及独立8秒分支。
 对于每个视觉分支，在原始问题的assistant header之后增加四个临时连续向量。
@@ -136,3 +138,32 @@ GPU只Slurm，日志/PID/配置/可读版本说明入run。
 只有完整main过性能门且四控制各完整333+统一评测结束后才允许读取GT作此比较。
 它检查正/负support的真实frame/patch映射，正支持embedding内容变化按窗口单列，
 负支持只报告映射检查，不把未存储的内容相等检查冒充已有证据。
+
+## 完整主实验结论与去向（2026-10-04）
+
+主机sc474399，Slurm93完整333完成并已回传本机。
+统一评测权威文件：`runs/20261004_m1_latents/r1_full_main_decoded/optimized/metrics.json`；
+配对native：同目录`base/metrics.json`，精确复现当前r6全部六项。
+
+| 语料 | ROC | PR | within | 相对当前r6变化ROC/PR/within | within有效视频 |
+|---|---:|---:|---:|---|---:|
+| HateMM | .894436599 | .691121134 | .727685515 | −.002682062 / −.003113469 / −.023096529 | 84 |
+| HateClipSeg | .685950717 | .652591954 | .566665516 | −.030874146 / −.018480131 / −.070683598 | 99 |
+
+没有任何主指标+.01，规则9要求直接归档换候选，不进入修订/完整控制。
+全部development-selected；打分无GT。评测后分析读取两臂预测、固定r6输出与
+`data/gt_4fps/{HateMM,HateClipSeg}.npz`，结果见
+`runs/20261004_m1_latents/r1_full_main_analysis/{summary,per_video}.json`。
+发现原始visual within两语料下降.133664/.040081，原始max下降.055583/.034882；
+最终within配对95%区间HMM[−.053360,.007796]，HCS[−.110661,−.032770]。
+7359个视觉窗读数确实改变，原生逐窗/global/曲线完全一致，但优化生效不等于有效定位。
+分析影响的决策仅为归档此R1公式适配，继续不同候选；不回改常数或隐藏负结果。
+它不是官方contextual-backbone反传算法的精确复现，本结果不排除该未测试实现。
+
+实际新视频处理时间HateMM2026.215s（33.77min）、HCS1834.202s（30.57min），
+合计64.34min，对应同次仪器化native10.24min，约6.28倍；
+峰值20.17/19.89GiB，实际forward71908/68133。原生14938次，新增125103次，
+即7359窗×17次；不存在新像素/新模型抽取。
+来源`runs/20261004_m1_latents/r1_full_main_analysis/alignment.json`。
+全采集墙钟3868.9s，诊断和输出不冒充方法核心耗时。
+机制未支持，未运行任何完整控制，正式当前方法保持r6_bma。

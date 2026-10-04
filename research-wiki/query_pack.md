@@ -2,3 +2,5 @@
 
 _Auto-generated. Do not edit._
 
+## Failed Ideas (avoid repeating)
+- **per window visual latent optimization**: 
