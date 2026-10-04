@@ -445,3 +445,51 @@ synced, lab3 idle/1.4Tfree, foreign names unchanged. Actual CPU current-source
 size audit reports37,798 image-expanded tokens for the first hate_video_114
 planner chunk (`handle_oom_diagnosis/source_sizes.json`), not a GT measurement.
 Original source/prompt/token contract remains frozen; retry result pending.
+
+B Slurm134 identical5 completed09:00:18; both inputs/runs returned immediately.
+Local noGT prepare PASS: authority
+`runs/20261005_m1_program/r1_handles_full_smoke_analysis/plumbing_summary.json`.
+Native allraw/global exact; actual valid perception calls126HMM/91HCS (UNKNOWN0),
+all10cloned branches exact. Source program/call/cost counts replay-bound; no GT,
+performance or semantic-truth claim. Long video peak27.864268GiB, largest saved
+prompt38,410tokens; input acquisition163.804216s. Failed133 adds175s experiment
+runtime, not concealed inside method standalone accounting.
+
+The complete333 source-only size audit finished onsc474397, no labels/scores or
+method parameter choice. `handle_full_size_preflight/source_sizes.json` records
+all333/chunks plain lengths and CPU image-expanded lengths for the three
+largest plain candidates; their maximum is53,137tokens at
+HateMM/non_hate_video_134, chunk offset40 (adjacent53,037/53,027). Larger than
+fixed5's long case. Before main, release the cached FP32 full-vocabulary copy
+BEFORE EACH fresh prefill and reconstruct the identical frozen weight.float()
+AFTER it; clone only the final hidden row rather than retaining the whole
+prefill hidden-output storage. Inputs/positions/attention/weights/FP32 logits/
+legal choices/tokens/caps/calls/guard are unchanged; this is uniform execution
+memory management, not a new scientific input version or corpus rule. Acquisition
+cost records include all re-creation work; earlier exact-source cached inputs
+remain valid mathematical measurements, not forced new outputs.
+
+Narrow independent confirmation and actual source-only largest-input capacity
+check precede full333. `launch/lab3_capacity.sbatch` invokes `handle_extract.py
+--capacity-check` for the size-selected whole non_hate_video_134, not a score/GT
+pilot. It saves actual program inputs and calls in the same exact-bound cache,
+separate `r1_handles_extract_capacity` run. No native/final performance is computed
+by this capacity check; fixed5 native/clone/exercise guards stay required. Full
+scientific gates and initial+3 result-guided revision budget remain unchanged.
+
+Independent memory/capacity-entry narrow confirmation PASS (same-family
+provisional): `docs/reviews/20261005_m1_program_handle_prefill_memory_fix.md`.
+Two consecutive real two-layer BF16 Qwen CPU generations keep every legal-choice
+FP32 logit, token, event and forward count exact; current source-only CPU replay
+confirms N134 offset40 expanded53,137. This is not actual8B GPU capacity evidence.
+
+Actual fixed5 source/factual inspection, without GT or performance:
+`runs/20261005_m1_program/handle_smoke_input_audit/summary.json`. All96HMM and62HCS
+programs selected zero remote contexts; planned joins were zero in both corpora.
+HMM90/90 scope speaker/mode were UNKNOWN/UNKNOWN; HCS49/51 were UNKNOWN/UNKNOWN
+and2/51 reported/reported. Scope target choices were non-UNKNOWN59/90 and30/51;
+action generations were36/40. These are actual selected fields, not factual
+accuracy. Structural validity of217 factual calls does not establish ownership,
+context retrieval, joining or semantic correctness. Preserve these inactive
+components explicitly in complete-run interpretation and mechanism decisions;
+do not force activation or weaken the existing guard after this observation.

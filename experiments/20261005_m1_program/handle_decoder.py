@@ -102,11 +102,14 @@ def generate(j,root,system,content,paths,limit,writer):
     try:enc=j.encode(rendered,images)
     finally:
         for image in images:image.close()
+    # The FP32 vocabulary copy is scratch; prefill does not use it. Rebuild the
+    # same values after prefill instead of keeping 2.3GiB live during long MLPs.
+    if hasattr(j,'generation_W32'):del j.generation_W32
     j.model.model.rope_deltas=None
     output=j.model.model(**j.model_inputs(enc),use_cache=True)
-    cache=output.past_key_values;hidden=output.last_hidden_state[0,-1];del output
+    cache=output.past_key_values;hidden=output.last_hidden_state[0,-1].clone();del output
     if not hasattr(j,'generation_W32'):j.generation_W32=j.model.get_output_embeddings().weight.float()
-    stream=Stream(j,limit,hidden,cache);complete=True;value=None
+    stream=Stream(j,limit,hidden,cache);del hidden;complete=True;value=None
     try:value=writer(stream)
     except Capped:complete=False
     finally:del cache

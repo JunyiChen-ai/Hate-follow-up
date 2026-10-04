@@ -68,17 +68,21 @@ def acquire(j,row,segments):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
-    out=ROOT/'runs/20261005_m1_program'/('r1_handles_extract_'+('smoke' if a.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--capacity-check',action='store_true');a=ap.parse_args()
+    assert not (a.smoke and a.capacity_check)
+    out=ROOT/'runs/20261005_m1_program'/('r1_handles_extract_'+('capacity' if a.capacity_check else 'smoke' if a.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
     import transformers
     cfg=dict(date=time.strftime('%Y-%m-%d'),host=socket.gethostname(),model=MODEL,cache_version=CACHE_VERSION,constants=CONSTANTS,
-        torch=torch.__version__,transformers=transformers.__version__,GT_read=False,smoke=a.smoke,
+        torch=torch.__version__,transformers=transformers.__version__,GT_read=False,smoke=a.smoke,capacity_check=a.capacity_check,
         code='experiments/20261005_m1_program/handle_{interface,inputs,decoder,extract}.py + original program.py; sources2026-10-05',command='python -u '+' '.join(sys.argv))
     (out/'config.json').write_text(json.dumps(cfg,indent=2)+'\n');torch.manual_seed(0);j=Judge(MODEL);j.forward_calls=0
     hook=j.model.model.register_forward_pre_hook(lambda *_:setattr(j,'forward_calls',j.forward_calls+1))
     asr={ds:load_asr(ds) for ds in DATASETS};rows=selected_rows(a.smoke)
+    if a.capacity_check:
+        rows=[r for r in rows if (r['dataset'],r['video_id'])==('HateMM','non_hate_video_134')]
+        assert len(rows)==1
     for i,row in enumerate(rows,1):
         path=CACHE/row['dataset']/(row['video_id']+'.json');path.parent.mkdir(parents=True,exist_ok=True)
         segments=asr[row['dataset']].get(row['video_id'],[])
