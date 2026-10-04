@@ -1,6 +1,6 @@
 {
   "date": "2026-10-05",
-  "role": "Deferred CPU-prepared candidate23; Tree21 and Lattice22 result branches remain prior",
+  "role": "Independent fixed5 plumbing prepared on idle lab3 while Lattice22 R3 main runs; complete Program main still deferred",
   "proposal": "experiments/20261005_m1_program/README.md",
   "proposal_review": "docs/reviews/20261005_m1_program_proposal.md",
   "proposal_pass": true,
@@ -13,5 +13,6 @@
   "GT_read": false,
   "GPU_run": false,
   "performance_result": null,
-  "constants_declared_before_run": true
+  "constants_declared_before_run": true,
+  "selected_host": "sc474398"
 }

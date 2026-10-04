@@ -4,7 +4,11 @@ Declared 2026-10-05, before implementation/GPU/GT analysis. Original unfiltered
 candidate: executable_temporal_evidence_program in
 experiments/20261004_m1_ideation/CANDIDATES.json (jury rank5). Deferred source/proposal
 preparation while Tree21 runs; Lattice22 remains the next reviewed backup.
-No GPU launch until previous families' result-based branches permit switching.
+Execution update2026-10-05: independent fixed5 plumbing may overlap Lattice22 R3
+on the idle lab3 GPU; no complete Program main before the Lattice result branch.
+All Program acquisition/scoring stays together onsc474398, with identical code,
+constants and fixed5 as previously declared. This scheduling change does not use
+Lattice test predictions or modify this candidate's scientific specification.
 Formal method is still r6_bma; all future results development-selected.
 
 ## Mechanism, source and scope
