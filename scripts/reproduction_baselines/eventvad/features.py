@@ -25,8 +25,8 @@ transform equality rather than leaving it as a claim in a comment.
 **The RAFT checkpoint path is resolved (patch E3).** Upstream hard-codes
 `model='/path/raft-things.pth'`, a placeholder. The file is the `raft-things`
 entry of the `models.zip` that `princeton-vl/RAFT`'s own `download_models.sh`
-fetches; it lives at `/home/jehc223/data/checkpoints/raft/raft-things.pth`,
-sha256 `fcfa4125d6418f4de95d84aec20a3c5f4e205101715a79f193243c186ac9a7e1`.
+fetches; the historical path is `/home/jehc223/data/checkpoints/raft/raft-things.pth`.
+Availability is established by parsing the checkpoint, without content digests.
 
 **Extraction streams (patch E4).** Upstream runs CLIP over every frame, then
 RAFT over every adjacent pair, holding the entire decoded video in RAM in

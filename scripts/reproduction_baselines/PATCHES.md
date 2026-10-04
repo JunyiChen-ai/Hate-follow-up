@@ -662,9 +662,9 @@ model; the port does the same, so CLIP runs in fp32 as published.
 ## E3 -- the RAFT checkpoint path
 
 Upstream's `'/path/raft-things.pth'` resolved to
-`/home/jehc223/data/checkpoints/raft/raft-things.pth`, sha256
-`fcfa4125...a7e1`, from `princeton-vl/RAFT`'s own `download_models.sh`.
-`clone_upstream.sh` fetches and checksums it. Upstream's import,
+`/home/jehc223/data/checkpoints/raft/raft-things.pth`, from `princeton-vl/RAFT`'s own `download_models.sh`.
+2026-10-04 maintenance: removed content-digest checks under the repository ban;
+new setup uses source paths and actual checkpoint parsing. Historical results are unchanged. Upstream's import,
 `from RAFT.core.raft import RAFT`, does not work as written either -- RAFT's
 `core/raft.py` does `from update import ...`, so `core/` has to be on
 `sys.path`, which is what `features.py` does.
