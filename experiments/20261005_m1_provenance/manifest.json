@@ -16,7 +16,7 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "A actual fixed5 source guard FAIL/noGPUimplementationbug; declared B CPU/independent code PASS, same fixed5 GPU next",
+  "state": "B same fixed5 source/native paired smoke RUNNING sc474399/Slurm142; noGT/no performance judgement",
   "smoke_job": 138,
   "selected_host": "sc474399",
   "A_smoke_job": 138,
@@ -28,7 +28,8 @@
   "B_code_pass": true,
   "B_cpu_checks": "runs/20261005_m1_provenance/handle_cpu_checks/summary.json",
   "B_input_cache": "data/temporal_entity_discourse_graph_handles",
-  "B_GPU_run": false,
+  "B_GPU_run": true,
   "B_smoke_pass": false,
-  "result_guided_revisions_used": 0
+  "result_guided_revisions_used": 0,
+  "B_smoke_job": 142
 }

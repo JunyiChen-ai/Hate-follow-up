@@ -1,0 +1,71 @@
+{
+  "version": "R1 interval-owned source witness reconciliation; sources2026-10-05",
+  "policy": "1. Encourage violence against groups based on protected status\n2. Incite hatred against groups based on protected status\n3. Dehumanize groups by comparing to non-human entities\n4. Praise or glorify violence against protected groups\n5. Use slurs and stereotypes that incite hatred (including through humor, irony, or coded language)\n6. Claim groups are inferior based on protected status\n7. Promote hateful supremacism\n8. Make conspiratorial claims about groups based on protected status\n9. Deny or minimize major violent events",
+  "constants": {
+    "window_seconds": 8,
+    "rate": 4,
+    "local_images": 2,
+    "seed": 0,
+    "generation_tokens": 512,
+    "description_words": 24,
+    "field_tokens": 64,
+    "max_witnesses": 2,
+    "quote_words": 16,
+    "repair_sweeps": 1
+  },
+  "leaf_system": "Inspect source-bound observations for a rule-violating local act. Use only the supplied actual sources. Return the requested structured record; use UNKNOWN for insufficient evidence. Do not emit confidence or numeric scores.",
+  "leaf_instruction": "For THIS local interval decide present, absent or UNKNOWN under the listed rules. present means a violating act supported by at least one actual LOCAL source. absent means none in the inspected sources, never proof about unseen frames. Describe the observed act and its context in at most24 whitespace words. Select at most two real local source handles as witnesses. Do not use the overview to invent local occurrence. UNKNOWN or empty witnesses is allowed; present requires a local witness. Schema: status,description,witnesses.",
+  "parent_system": "Assess the meaning of a source-bound temporal interval from its child observations. Preserve the owning leaf of every proposed witness. Return the requested structured record; do not emit confidence or numeric scores.",
+  "parent_instruction": "Propose present, absent or UNKNOWN for this interval under the listed rules, and at most two supported actual descendant source handles. Literal descendant speech is observable text; frame coordinates alone are not inspected pixels. Child descriptions are model observations, not certified facts. Any proposed frame handle is a suggestion for actual local inspection, not a claim you viewed it. Describe contextual meaning in at most24 whitespace words. Schema: status,description,witnesses.",
+  "repair_system": "Independently inspect the actual current local sources using the supplied parent interpretation as context. Do not inherit an occurrence from another interval. Return the requested source-bound structured record, no confidence or numeric scores.",
+  "repair_instruction": "Reobserve THIS local interval under the listed rules. The previous local answer is deliberately excluded. Parent context is interpretation only; only current sources support local occurrence. Return status,description,witnesses under the same local source restrictions and inspected-absence meaning.",
+  "schema": {
+    "status": [
+      "present",
+      "absent",
+      "UNKNOWN"
+    ],
+    "description": "one string <=24 whitespace words/64 content tokens",
+    "witnesses": "0..2 distinct actual allowed source handles; present requires at least1"
+  },
+  "coverage": {
+    "expected_modalities": [
+      "visual",
+      "speech"
+    ],
+    "visual": "at least one actual selected local frame",
+    "speech": "nonempty actual current local ASR body",
+    "absent": "model absent normalizes to UNKNOWN unless both expected modalities available; parent ALL requires both children absent with all descendant coverage flags true",
+    "present": "local actual witness allowed even if another modality unavailable",
+    "unavailable": "explicit UNKNOWN, never invent silence or negative source"
+  },
+  "parent_input": {
+    "child_table": "literal two original child records including their composed status/coverage/owned witnesses/descriptions",
+    "descendant_sources": "ALL real frame coordinate handles and ALL exact original descendant ASR bodies plus word boundaries; parent has no pixels. Handle eligibility unchanged unique1-16word spans",
+    "ordering": "chronological leaves; frame first then text spans by start/end; JSON sort_keys/separators fixed"
+  },
+  "repair_context_fields": [
+    "parent_range",
+    "parent_description",
+    "proposed_witness_literal_source_records"
+  ],
+  "repair_exclusions": [
+    "previous current-leaf record/status/description",
+    "child certificate table",
+    "parent numeric/status prediction",
+    "native global verdict"
+  ],
+  "repair_target_order": [
+    "deepest triggering parent",
+    "earliest parent left/right interval",
+    "earliest inconsistent witness leaf",
+    "earliest present leaf for absent contradiction",
+    "earliest UNKNOWN descendant if no witness-specific candidate"
+  ],
+  "final_tree": "chronological final leaves followed by parent nodes ordered interval length,left,right; parent original description/proposal witnesses, current composed status/coverage, and resolved/unresolved retained explicitly",
+  "global_header": "Reconciled interval source observations below retain source ownership. Status and descriptions are model observations, not certified facts. Inspected-source absence does not establish absence over unseen video. Read these observations with the original video and transcript.\n",
+  "global_serialization": "append header+canonical final_tree JSON to the last native prefix user content; same native20/fullASR frames/order; fresh VIDEO_QUESTION and own hard YesNo from its margin",
+  "branch_header": "The following source path is interpretation context. Each witness keeps its actual owning interval. Only sources inside the current window establish a local occurrence. Model descriptions and inspected-source absence are not certified facts. Judge only the modality requested by the original question.\n",
+  "branch_serialization": "native new-prefix/own-hard-stance conversation then independent new user turn: branch_header, canonical {local final record,leaf-to-root ancestor records,explicit literal witness source coordinates/role}, actual local2 image labels/pixels, local exact speech body for speech, unchanged yesno_question. Full multimodal forward; no stored certificate numerical score.",
+  "scope_limit": "Parent generation never certifies it saw descendant pixels; repair actually reinspects local original pixels. Literal source-bound syntax is not semantic verification."
+}

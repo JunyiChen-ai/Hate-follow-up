@@ -389,3 +389,13 @@ retains all6550 legal span choices; independent actual rawPTS/PNG validation
 and22image encoding7701expandedtokens. Changed handle/prompt IDs are explicitly
 new B inputs; no old/new generated-logit equivalence claimed. Same8B original
 fixed5 GPU next, no main/GT or semantic/mechanism claim before actual guards.
+
+## B same fixed5 GPU dispatch
+
+2026-10-05 10:40 sc474399/Slurm142, after independent B code PASS and actual
+all-lab code/queue/disk check. Whole fixed5 source acquisition then fresh paired
+native/new readings on one host. Input/run return and local noGT guards still
+pending; partial nonempty source graphs do not establish semantic or performance
+claims. Run authority `runs/20261005_m1_provenance/r1_handles_extract_smoke/`
+and `r1_handles_full_smoke/`; machine selection evidence
+`runs/20261005_m1_provenance/machines_before_handles_smoke.txt`.

@@ -107,8 +107,10 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 备用候选25持久实体/话语图驱动实际端点媒体检索：独立方案/代码审查、真实fixed5来源CPU检查与完整333输入预检PASS；
 入口`experiments/20261005_m1_provenance/README.md`。固定5在sc474399/Slurm138于10:12:37完成，BOTH inputs/runs已回传本机。
 全部158源ledger实际schema fields拒绝，五视频graph edges/remote contexts均0，声明的实际执行guard未满足；不降低guard、不跑主实验/GT性能。
-来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证及10repeat精确，随后声明guard失败；独立窄接口诊断确认未发现实际GPU实现bug；A源接口未可靠执行。事前声明独立B结构约束来源接口；实际fixed5 CPU来源/grammar replay与完整333 span输入预检PASS，独立窄代码确认PASS，最大实际source22image7701tokens/6550全部span保留；相同fixed5 GPU下一步，仍不放宽guard/不读GT。
+来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证及10repeat精确，随后声明guard失败；独立窄接口诊断确认未发现实际GPU实现bug；A源接口未可靠执行。事前声明独立B结构约束来源接口；实际fixed5 CPU来源/grammar replay与完整333 span输入预检PASS，独立窄代码确认PASS，最大实际source22image7701tokens/6550全部span保留；相同fixed5在sc474399/Slurm142运行中，整轮获取/原生配对检查仍待完成及回传，仍不放宽guard/不读GT。
 来源`docs/reviews/20261005_m1_provenance_gpu_interface_diagnosis.md`；无机制结论。
+备用候选26区间来源见证组合/分歧触发重读，独立方案审查PASS；入口`experiments/20261005_m1_interval_witness/README.md`，科学代码待实现。
+本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，Slurm原生fixed5复现待运行，无性能结论。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
