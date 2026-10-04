@@ -30,8 +30,8 @@
     "host": "sc474398",
     "GPU_run": true,
     "smoke_pass": false,
-    "smoke_job": 133,
-    "state": "Slurm133 partial4/5 acquisition returned; fifth long-prefill OOM; allocator-only independent confirmation PASS; same5 retry pending",
+    "smoke_job": 134,
+    "state": "allocator-only same5 retry Slurm134 running onsc474398; no GT/performance",
     "allocator": "expandable_segments:True",
     "allocator_review": "docs/reviews/20261005_m1_program_handle_allocator_fix.md",
     "failed_attempt_seconds": 175

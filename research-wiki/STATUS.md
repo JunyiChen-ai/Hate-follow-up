@@ -83,7 +83,7 @@ R3七臂matched控制独立CPU/代码检查PASS，来源`docs/reviews/20261005_m
 新source-handle接口B已事前声明、CPU来源/解码检查和独立窄code/interface审查PASS；
 来源`docs/reviews/20261005_m1_program_handle_code.md`。A失败记录保留，B用独立缓存/输出，
 守门只增加真实有效感知检查、不放松。Slurm133获取4/5后第五长planner prefill OOM，
-partial runs/inputs已立即回传；仅启用expandable_segments分配，经独立窄确认后重试相同5。
+partial runs/inputs已立即回传；仅启用expandable_segments分配，经独立窄确认后相同5重试在Slurm134运行。
 来源`docs/reviews/20261005_m1_program_handle_allocator_fix.md`；尚无paired B/noGT或性能结论。
 候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
 22已归档、23接口未可靠执行；24固定5在sc474399/Slurm131完成并回传本机，noGT prepare PASS。

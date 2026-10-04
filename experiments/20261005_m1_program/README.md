@@ -438,3 +438,10 @@ Allocator-only narrow confirmation PASS:
 `docs/reviews/20261005_m1_program_handle_allocator_fix.md`. It reduces allocation
 fragmentation, does not guarantee long-prefill capacity; same source/token/model/
 ops/guard contract and strict replay of four existing source records retained.
+
+Identical B fixed5 allocator-only retry dispatched onsc474398/Slurm134 at08:56:51,
+current machine/code check `machines_before_allocator_retry{,_note}.txt` clean/
+synced, lab3 idle/1.4Tfree, foreign names unchanged. Actual CPU current-source
+size audit reports37,798 image-expanded tokens for the first hate_video_114
+planner chunk (`handle_oom_diagnosis/source_sizes.json`), not a GT measurement.
+Original source/prompt/token contract remains frozen; retry result pending.
