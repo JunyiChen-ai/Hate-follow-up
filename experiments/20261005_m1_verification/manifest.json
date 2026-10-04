@@ -16,6 +16,9 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Prototype/author33CPU/single independent code PASS; scientific fixed5 dispatch next",
-  "result_guided_revisions_used": 0
+  "state": "CPU/proposal/code PASS; scientific fixed5 Slurm148 queued onsc474397 behind147, no science execution yet",
+  "result_guided_revisions_used": 0,
+  "smoke_job": 148,
+  "GPU_submitted": true,
+  "selected_host": "sc474397"
 }

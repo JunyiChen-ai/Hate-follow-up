@@ -194,8 +194,7 @@ Run in committed Slurm launch only:
 (full333 only after actual fixed5 PASS). NoGT fixed5 prepare:
 `python experiments/20261005_m1_verification/analyze.py --stage prepare --smoke`.
 Full CPU detached analysis entry `launch/run_analysis.sh`. Actual machine
-availability/clean sync and disk checked immediately before dispatch; no newjob
-submitted yet. Single independent rule6 code review PASS; source scientific
+availability/clean sync and disk checked immediately before dispatch. Single independent rule6 code review PASS; source scientific
 capacity and correctness still unmeasured.
 
 
@@ -207,3 +206,14 @@ rejections and actual5templates passed. Complete/capped draft/plan/verification
 production generators exercised, final compiler retains unqueried valid fields
 and never falls back to queried obsolete draft. This is executable input/code
 validation, not observed8B semantics or performance; noGT/scientificGPU yet.
+
+
+## Scientific dispatch2026-10-05
+
+Fixed5 submitted root/sc474397 Slurm148 after allfourlabs clean synchronized,
+rootidle484G free, source/canonical checks and independent reviews PASS. Evidence
+`runs/20261005_m1_verification/machines_before_smoke.txt` and `_note.txt`; exact
+foreign-home STRAY names unchanged, current outputs remain repository-only.
+148 queued behind147 under shared twoGPU QOS while146/137 run. Queueing is not
+scientific execution; noGT/performance claim. Source acquisition and paired
+native/new complete fixed5 on thishost; full333 requires actual noGT guard PASS.
