@@ -527,3 +527,13 @@ Conditional fixed5 then main commands: `sbatch .../launch/lab2.sbatch smoke r3`,
 return runs/data, `analyze.py --stage prepare --smoke --revision r3`; after PASS
 `sbatch .../launch/lab2.sbatch main r3`, return runs/data and detach
 `launch/run_analysis.sh r3`. All commands run from project root on correct host.
+
+R3 fixed5 sc474399/Slurm117 DONE, all outputs/inputs returned locally before
+noGT prepare PASS. Native full reads/curves exact, G unchanged;158 V/134 S windows
+changed. Extension fresh and local fresh checks5 each, V and S cloned margins5
+each exact; current native conversation/suffix token binding passes for all five.
+Source `runs/20261004_m1_tree/r3_full_smoke_analysis/plumbing_summary.json`.
+Peaks19.314/18.842GiB, prefix max9667/6393tokens; optimized whole sample109.149s
+HMM/58.757s HCS including88.474/48.860s acquisition; native8.405/4.068s.
+Rough extrapolation80.109/57.778min=137.886min, not full measured cost.
+Continue identical full333. No smoke GT, metric-based selection or constant change.

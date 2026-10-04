@@ -12,6 +12,7 @@
   "r2_status": "full333 local/native six exact; all losses within noise, positive HMM within/HCS pooled; no common+.01; retain for R3",
   "r2_smoke": "runs/20261004_m1_tree/r2_full_smoke_analysis/plumbing_summary.json",
   "r2_main_metrics": "runs/20261004_m1_tree/r2_full_main_decoded/optimized/metrics.json",
-  "r3_status": "second revision native G/stance then factual tree extension/new local V/S; independent narrow code and CPU binding PASS; fixed5 GPU next",
-  "r3_code_review": "docs/reviews/20261005_m1_tree_r3_code.md"
+  "r3_status": "fixed5 GPU local/noGT PASS native exact, G unchanged, V/S changed, extension/local fresh and V/S clones5; fixed full333 next",
+  "r3_code_review": "docs/reviews/20261005_m1_tree_r3_code.md",
+  "r3_smoke": "runs/20261004_m1_tree/r3_full_smoke_analysis/plumbing_summary.json"
 }
