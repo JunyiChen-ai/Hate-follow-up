@@ -289,3 +289,60 @@ or controlGPU after failed main. Actual new-video processing83.13min/native9.04x
 (source73.37min); full source coverage178/3768HMM and198/3591HCS windows have
 nonempty remote spans. Exact cost/coverage authority
 `runs/20261005_m1_quote_graph/r1_full_main_analysis/alignment.json`.
+
+## R1 actual error analysis and R2 predeclaration, before implementation/scoring
+
+Read files: paired raw r1_full_main/{base,optimized}/predictions.jsonl,
+r1_full_main_analysis/{summary,per_video,alignment}.json, actual
+ data/temporal_quotation_graph/{HateMM,HateClipSeg}/*.json and test
+ data/gt_4fps/{HateMM,HateClipSeg}.npz. Diagnostic authority
+`runs/20261005_m1_quote_graph/r1_error_analysis/summary.json`; only postscore
+analysis, not imported into source/reader/fitting or threshold paths. No
+alternative R2 curve/metric has been computed. All results development-selected.
+Actual findings: remote contexts exist in only178/3768 and198/3591 windows,
+while R1 changes every6580 available S. HMM qualifying final gain is concentrated
+in72eligible videos with NO graph contexts (mean+.015709), whereas12with any
+context average-.017207; HCS79no-context/20context video means-.004388/-.020722.
+Raw max on no-context frames falls-.022872/-.008748; empty-packet negative-frame
+S shifts upward2.025474/2.343073 on average. Thus a large generic empty-wrapper
+change is present without acquired graph context. This is observed association,
+not a causal ownership/attention explanation; per-source context subsets are
+small and do not establish mechanism.
+
+R2 revision1/3 changes ONLY unsupported-empty-packet behavior: when actual graph
+retrieval selects zero context spans, use the EXACT original native speech
+question/cache/readout, with no new scaffold/segmented tokenization/mask. When
+at least one actual context span is selected, keep the complete R1 graph packet,
+all relations, asymmetric36layer mask, tokens/positions/FP32 reader unchanged.
+Source acquisition/parser/graph/constants/native G/V/max/fixed-r6/8s/4fps unchanged.
+This is a source-presence input rule applied uniformly to both corpora, not
+label/score/GT gating, blending or per-corpus routing. No new prompt/parameter
+search. Missing native speech stays absent. The final whole333 is a fresh
+paired native/conditional measurement with replay-bound source/cache semantics,
+not a post-hoc curve splice from historical outputs. R1 outputs remain intact.
+R2 outputs r2_full_{smoke,main}, r2_full_main_decoded/analysis. Source cache remains
+R1 because its input/generations/graph are scientifically unchanged. Standalone
+new speech cost counts native empty-packet branch time and actual nonempty graph
+branch time; paired reference graph-window native time is diagnostic overhead,
+never double charged/omitted. Actual forward counts record graph/fallback calls.
+Independent narrow observation confirmation and the SAME fixed5 native allraw,
+clone/contextless numerical checks precede full333. Original declaration allowed
+empty HMM smoke graph; report that absence honestly, do not invent/relax coverage
+checks. Complete main/controlled mechanism gates and initial+3 budget unchanged.
+
+R2 author actualfixed5 CPU source/token binding PASS; authority
+`runs/20261005_m1_quote_graph/r2_cpu_checks/summary.json`. Native prefixes exactly
+match original actualGPU records; 84HMM/37HCS available speech windows use native
+fallback,13HCS retain exactly the original graph token packets,12HMM/12HCS
+unavailable speech windows stay absent. No alternative score curves or GT read.
+Independent narrow review observed two implementation bugs before dispatch:
+seconds-list ambiguous truth evaluation and missing per-branch cost replay.
+Both fixed: scalar timing checks exclude the list while validating each element;
+each current branch seconds is recorded, native fallback exactly binds to its
+current paired native timing, graph seconds sum into complete new S cost.
+Syntax/launch checks PASS; independent confirmation precedes GPU.
+
+R2 independent narrow code review PASS after both observed fixes;
+authority `docs/reviews/20261005_m1_quote_graph_r2_code.md`. Actualfixed5 CPU
+native/source/token bindings,8 corruptions and8 orchestration layouts pass;
+CPU stubs are not model numeric evidence. Same8B fixed5 GPU checks next.

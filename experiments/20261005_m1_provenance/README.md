@@ -266,3 +266,19 @@ preflight and independent code PASS; all four laboratory code synchronized/clean
 selected lab2 idle/569Gfree. `machines_before_smoke{,_note}.txt`; exact foreign
 home names unchanged. Whole acquisition+paired native/new scoring together
 onlab2, no GT/performance or pilot choice.
+
+## Actual initial-interface GPU smoke, 2026-10-05
+
+Slurm138 onsc474399 completed whole fixed5 source acquisition and fresh paired
+scoring at10:12:37. BOTH inputs and runs immediately returned tosc474397 before
+local source/native prepare. Source-only actual diagnosis
+`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json` reads only
+per-video metadata.json, no GT or method scores. All158 ledgers reject with
+`schema fields`; actual outputs typically have empty entities/actions/quotations
+and `utterance:{}` instead of the required speaker field. Links include root
+arrays or invalid same_entity endpoints on utterances, or valid empty edges.
+All5 actual graph edges/remote windows are0. Thus the predeclared each-corpus
+nonempty ledger AND nonlocal retrieval guard cannot pass. Do not relax parsing
+or exercise guard, read GT, run main performance or judge this idea from these
+inputs. Original A records and costs remain intact. Independent narrow actual
+interface diagnosis requested; local full source/native validation is pending.

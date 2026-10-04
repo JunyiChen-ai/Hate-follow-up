@@ -99,9 +99,13 @@ HMM三个样本图节点0/非空上下文0of96；HCS13节点/12边、13of62窗�
 R1 HMM ROC/PR/within .895232/.682626/.761788（84），HCS .709028/.656763/.629661（99）；
 HMMwithin+.011006（配对区间含0）保留为开发期信号，但HMM PR−.011609/HCS各项下降，尚无机制证据。
 来源`runs/20261005_m1_quote_graph/r1_full_main_decoded/optimized/metrics.json`；按规则9开始实际误差分析/最多三修订，尚未跑控制GPU。
-入口`experiments/20261005_m1_quote_graph/README.md`；当前累计归档22项。
+R1实际GT误差分析已记录：图上下文只覆盖约5%窗口，HMM正向信号集中于无图上下文视频，不能归因于图机制。
+R2事前声明空packet精确原生S、有真实context保留原结构读数；修订1/3，实际fixed5 source/token CPU及独立窄代码修复确认PASS，相同fixed5 GPU下一步。
+来源`runs/20261005_m1_quote_graph/r2_cpu_checks/summary.json`；入口`experiments/20261005_m1_quote_graph/README.md`；当前累计归档22项。
 备用候选25持久实体/话语图驱动实际端点媒体检索：独立方案/代码审查、真实fixed5来源CPU检查与完整333输入预检PASS；
-入口`experiments/20261005_m1_provenance/README.md`。固定5已在sc474399/Slurm138启动，无GT/性能或机制结论。
+入口`experiments/20261005_m1_provenance/README.md`。固定5在sc474399/Slurm138于10:12:37完成，BOTH inputs/runs已回传本机。
+全部158源ledger实际schema fields拒绝，五视频graph edges/remote contexts均0，声明的实际执行guard未满足；不降低guard、不跑主实验/GT性能。
+来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证与独立窄接口诊断进行中，无机制结论。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，

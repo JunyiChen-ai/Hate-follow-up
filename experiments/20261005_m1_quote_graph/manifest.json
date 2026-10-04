@@ -1,22 +1,22 @@
 {
   "candidate": 24,
   "method": "source-bound quotation and reference graph with asymmetric speech reading",
-  "version": "R1 source-bound quotation graph, sources2026-10-05",
-  "scope": "development-selected active candidate24; fixed5 noGT PASS; complete main next",
-  "state": "Slurm132 complete333 acquisition and paired scoring running onsc474399; no GT/performance verdict",
+  "version": "R2 native fallback for empty source packet; sources2026-10-05",
+  "scope": "development-selected R1 qualifying signal retained; R2 predeclared native fallback; CPU source checks PASS",
+  "state": "R2 independent code/source CPU PASS; same fixed5 GPU next",
   "proposal_review": "docs/reviews/20261005_m1_quote_graph_proposal.md",
   "proposal_verdict": "PASS",
   "code_review": "docs/reviews/20261005_m1_quote_graph_code.md",
   "code_review_verdict": "PASS; same-family provisional",
   "cpu_checks": "runs/20261005_m1_quote_graph/cpu_checks/selfcheck.log",
-  "GT_read": false,
+  "GT_read": true,
   "native_reference": "runs/20260926_twolevel/r6_bma/metrics.json",
   "input_cache": "data/temporal_quotation_graph",
   "output_root": "runs/20261005_m1_quote_graph",
   "revision_budget": {
     "initial": 1,
     "revisions": 3,
-    "revisions_used": 0
+    "revisions_used": 1
   },
   "performance_pass": false,
   "mechanism_supported": false,
@@ -30,5 +30,12 @@
     "HateClipSeg": 13
   },
   "main_host": "sc474399",
-  "main_job": 132
+  "main_job": 132,
+  "GT_scope": "R1 postscore error analysis only; no labels in source/method/threshold paths",
+  "r1_authority": "runs/20261005_m1_quote_graph/r1_full_main_decoded/optimized/metrics.json",
+  "r1_error_analysis": "runs/20261005_m1_quote_graph/r1_error_analysis/summary.json",
+  "r2_cpu_checks": "runs/20261005_m1_quote_graph/r2_cpu_checks/summary.json",
+  "r2_code_review": "docs/reviews/20261005_m1_quote_graph_r2_code.md",
+  "r2_GPU_run": false,
+  "r2_code_review_verdict": "PASS after two observed fixes; same-family provisional"
 }
