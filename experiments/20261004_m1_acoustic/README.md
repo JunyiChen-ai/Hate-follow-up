@@ -154,3 +154,16 @@ sc474399/Slurm96在两个HMM声学抽取后发现HCS manifest仍指向迁移前i
 共有原生帧/ASR预处理成本两臂共用，以上为读取及本候选全部新增处理成本，
 不是宣称原生ASR/帧预处理在新视频上免费。完整模型加载/采集墙钟另报。
 机制未支持，没有计算smoke GT/性能指标；下一步同一版本完整333。
+
+## 空音频裁剪修复（完整运行前段，尚未评价性能）
+
+sc474399/Slurm99在第三视频non_hate_video_8的旧ASR padding时间遇到空片段，
+实际音频19.27s而转录chunk至30s，尚未进入Qwen/GT。
+裁剪两个音频端点到[0,N_samples]；若交集为空，不调用Whisper、不伪造audio evidence。
+每个不可对齐字符的权重明确加到该词原比例时间分布，并记录empty_audio_blocks/原因/词ID；
+不是静默删字符，也不把其它词音频当它的声学对齐。部分字符可对齐时按原字符权重混合
+该词自身比例回退与实际字符occupancy，再统一归一化；空字符标点继承只允许真实acoustic donor。
+新可读CACHE_VERSION标记这一边界修复；旧五个缓存原样保存到本机/生成机
+runs/20261004_m1_acoustic/input_before_empty_audio_fix/，新完整抽取重新生成，不混用版本。
+新版本对旧五个正常input的support应精确不变，可在回传后核对。
+这是实现不可靠后的输入边界修复，按规则9不评价idea、不算三次设计修订。

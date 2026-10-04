@@ -7,7 +7,7 @@ import numpy as np
 import torch
 ROOT=next(p for p in Path(__file__).resolve().parents if (p/'CLAUDE.md').is_file())
 sys.path.insert(0,str(ROOT))
-from alignment import path_distribution,words_from_segments,build_blocks,CrossAttentionCapture
+from alignment import path_distribution,words_from_segments,build_blocks,CrossAttentionCapture,WhisperAligner
 from reader import token_support,arm_support,PriorReader
 
 
@@ -75,6 +75,21 @@ def test_real_whisper_capture():
     np.testing.assert_allclose(np.linalg.norm(matrix,axis=0),1,atol=1e-7)
 
 
+def test_empty_audio():
+    class Tokenizer:
+        def encode(self,char,**kwargs):return [ord(char)%90]
+        def convert_tokens_to_ids(self,x):return 100
+    aligner=WhisperAligner.__new__(WhisperAligner);aligner.tok=Tokenizer()
+    # No decoder/encoder exist: falling through to any model call fails immediately.
+    segments=[(24.,26.,'Torsdagsforskning !!!')]
+    result=aligner.align(np.zeros(int(19.27*16000),dtype=np.float32),segments,[(0,8),(8,16),(16,19.272562)])
+    assert len(result['empty_audio_blocks'])==1 and result['encoder_calls']==result['decoder_calls']==0
+    assert result['language'] is None
+    np.testing.assert_array_equal(result['soft'],result['proportional'])
+    np.testing.assert_array_equal(result['viterbi'],result['proportional'])
+    assert all(x['donor'] is None for x in result['inheritance'])
+
+
 def test_real_qwen_prior():
     from transformers import Qwen3VLConfig,Qwen3VLForConditionalGeneration
     from src.mllm_judge import Judge
@@ -107,5 +122,5 @@ def test_real_qwen_prior():
 
 
 if __name__=='__main__':
-    for check in (test_paths,test_word_identity,test_real_whisper_capture,test_real_qwen_prior):
+    for check in (test_paths,test_word_identity,test_empty_audio,test_real_whisper_capture,test_real_qwen_prior):
         check();print(check.__name__,'PASS',flush=True)

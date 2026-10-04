@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 
 ALIGN_MODEL = 'openai/whisper-large-v3'
-CACHE_VERSION = 'R1 character-only Gibbs alignment, sources 2026-10-04'
+CACHE_VERSION = 'R1 character-only Gibbs alignment with empty-audio guard, sources 2026-10-04'
 ALGORITHM = dict(block_seconds=22., context_seconds=4., char_tokens=400, top_heads=10,
                  median_width=3, temperature=1., transition_probability=1/3,
                  sample_rate=16000, frame_seconds=.02, support_floor=1e-6,
@@ -196,11 +196,22 @@ class WhisperAligner:
     def align(self, audio, segments, windows):
         words = words_from_segments(segments); blocks = build_blocks(segments,words,self.tok)
         soft = np.zeros((len(words),len(windows))); hard = soft.copy(); counts = np.zeros(len(words))
-        traces = []; language = None; decoders = 0
+        proportional = proportional_support(words,windows); acoustic_counts=counts.copy()
+        traces = []; skipped = []; language = None; decoders = 0
         for bi, block in enumerate(blocks):
-            sample_start = max(0,int(round((block['start']-4)*16000)))
-            sample_end = min(len(audio),int(round((block['end']+4)*16000)))
-            assert 0 < sample_end-sample_start <= 480000
+            sample_start = min(len(audio),max(0,int(round((block['start']-4)*16000))))
+            sample_end = min(len(audio),max(0,int(round((block['end']+4)*16000))))
+            if sample_end <= sample_start:
+                skipped.append(dict(block=bi,nominal_start=block['start'],nominal_end=block['end'],
+                    audio_start=sample_start/16000,audio_end=sample_end/16000,
+                    reason='no actual audio after interval clipping',items=block['items']))
+                for item in block['items']:
+                    if item['word'] >= 0:
+                        weight=item.get('weight',1.);wid=item['word']
+                        soft[wid]+=weight*proportional[wid];hard[wid]+=weight*proportional[wid]
+                        counts[wid]+=weight
+                continue
+            assert sample_end-sample_start <= 480000
             wave = audio[sample_start:sample_end]
             features = self.processor.feature_extractor(wave,sampling_rate=16000,return_tensors='pt').input_features
             encoded = self.model.model.encoder(features.to('cuda',torch.float16),return_dict=True).last_hidden_state
@@ -231,6 +242,7 @@ class WhisperAligner:
                     soft[item['word']] += weight*np.bincount(which,weights=pp,minlength=len(windows))
                     hard[item['word']] += weight*np.bincount(which,weights=hp,minlength=len(windows))
                     counts[item['word']] += weight
+                    acoustic_counts[item['word']] += weight
                 cursor += n
             assert cursor == len(chars)
             traces.append(dict(block=bi,nominal_start=block['start'],nominal_end=block['end'],
@@ -238,7 +250,7 @@ class WhisperAligner:
                 items=block['items'],heads=heads,frames=nframes,logZ=logZ,language=language,
                 posterior_row_sum_min=float(posterior.sum(1).min()),posterior_row_sum_max=float(posterior.sum(1).max())))
             del encoded,capture
-        proportional = proportional_support(words,windows); inherited = []; originally_aligned=counts>0
+        inherited = []; originally_aligned=acoustic_counts>0
         for w in words:
             wid = w['id']
             if counts[wid] == 0:
@@ -252,5 +264,5 @@ class WhisperAligner:
             soft /= soft.sum(1,keepdims=True); hard /= hard.sum(1,keepdims=True)
         assert np.isfinite(soft).all() and (not len(words) or np.allclose(soft.sum(1),1))
         return dict(words=words,soft=soft.tolist(),viterbi=hard.tolist(),proportional=proportional.tolist(),
-                    blocks=traces,inheritance=inherited,encoder_calls=len(blocks),decoder_calls=decoders,
+                    blocks=traces,empty_audio_blocks=skipped,inheritance=inherited,encoder_calls=len(traces),decoder_calls=decoders,
                     character_tokens=sum(t['char_tokens'] for t in traces),language=language)
