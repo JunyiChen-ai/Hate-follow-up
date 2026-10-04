@@ -40,6 +40,16 @@ narrow diagnosis is requested to distinguish real generator/interpreter/cache
 bugs from correctly rejected noncompliant model outputs before any repair. No
 scientific constants/prompt/parse contract have been changed after this smoke.
 
+Independent narrow diagnosis froze
+`docs/reviews/20261005_m1_program_gpu_interface_diagnosis.md`: no observed
+generation/cache/interpreter binding bug. Actual22chunks/158windows current
+source/prompt/image/input-output tokens and execution replay PASS; compliant
+source fixture triggers both scope/action, actual targetHF5.15.1 increment
+position branch verified onCPU. Raw output interface noncompliance is the
+observed cause of0modules. Guard remainsFAIL; no coercion/repair/cap relaxation
+or main. Explicit new source/decoder design is needed; candidate24 proceeds
+independently while this candidate has no performance/idea verdict.
+
 ## Mechanism, source and scope
 
 A program selects source objects and composes factual perception through explicit

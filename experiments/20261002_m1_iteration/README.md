@@ -303,3 +303,13 @@ the limits of legacy source-index exclusion. All original inputs remain unchange
   Actual acquisition/reading costs and all authority pointers in archived README.
   Continue reviewed temporal speech-lattice candidate22, then typed-program23
   only when the result branch permits; goals still unmet.
+
+22. `archive/experiments/20261004_m1_lattice/README.md`: R1/R2 positive HMM within
+  gains and positive paired intervals are retained with their complete six metrics;
+  neither full version passed the dual-corpus gate. R3 endpoint-only query has no
+  qualifying main gain, losses beyond noise and raw max within decreases with
+  negative intervals on both corpora. Native all six exact,6580speech changes.
+  Rule9 archive; no R4/control GPU, no hybrid historical numbers or mechanism claim.
+  Program23 fixed5 correctly rejected0module calls due actual noncompliant generated
+  typed programs, no main/GT/performance verdict; explicit interface design needed.
+  Continue independently reviewed source-bound quotation/referrer graph candidate24.

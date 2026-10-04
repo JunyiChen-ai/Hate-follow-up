@@ -44,9 +44,9 @@ R4原始max within−.044756/+.002938，HMM区间全负；G不变、新V与R2逐
 实际新视频处理141.71min/native15.43倍，包含获取117.07min。全部development-selected。
 控制代码及独立CPU/代码审查PASS仅为prepared，不是机制证据，完整主门失败所以未跑控制GPU。
 细节唯一入口`archive/experiments/20261004_m1_tree/README.md`；累计归档21项。
-当前候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS。
+候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS；现已按规则9归档。
 固定五视频实际音频CPU预检通过；AAC重叠PTS问题已修并获独立窄确认。
-入口`experiments/20261004_m1_lattice/README.md`；Slurm121完成5视频真实beam输入并回传，首个结构读取因CUDA bias类型失败。
+入口`archive/experiments/20261004_m1_lattice/README.md`；Slurm121完成5视频真实beam输入并回传，首个结构读取因CUDA bias类型失败。
 已修为BF16 query相同类型并获独立窄CPU确认PASS；Slurm122相同5完成并回传本机，noGT prepare PASS。
 原生全读数精确、G/V不变，134新S变化，clone和单路径结构/普通顺序margin各5精确一致。
 来源`runs/20261004_m1_lattice/r1_full_smoke_analysis/plumbing_summary.json`。
@@ -68,16 +68,20 @@ R2六个结构/转写/质量/错来源对照已准备，独立CPU/代码审查PA
 完整误差分析已记录，R3改为每条完整转写一个末端表示、只由末端进入查询；修订2/3。
 CPU与独立窄代码检查PASS，来源`docs/reviews/20261005_m1_lattice_terminal_code.md`。
 实际8B固定5在sc474399/Slurm128完成并回传，noGT/native allraw exact、134newS、5clone/unit差值0。
-完整333在sc474399/Slurm129于08:04:15完成并回传输入/输出，统一评测进行中。
-来源`runs/20261004_m1_lattice/r3_full_smoke_analysis/plumbing_summary.json`；尚无R3性能结果。
+完整333在sc474399/Slurm129于08:04:15完成并回传，native原始读数/六项精确。
+R3 HateMM ROC/PR/within .892420/.673876/.750112（84），HCS .705600/.644986/.601483（99）。
+无任一主指标+.01，HCS within−.035866、HMM/HCS PR−.020359/−.026086，performance FAIL；原始max两语料下降且区间全负。
+来源`runs/20261004_m1_lattice/r3_full_main_decoded/optimized/metrics.json`；新视频72.55min/native7.88倍。
+按规则9归档第22项，不跑R4/控制GPU；R1/R2正向within与六项完整数字保留。
 R3七臂matched控制独立CPU/代码检查PASS，来源`docs/reviews/20261005_m1_lattice_terminal_controls_code.md`；仅prepared，主门通过才运行。
 算法/成本/全部读过的GT与设计关联唯一明细仍为实验README；全部development-selected，机制尚未建立。
 备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS。
 原先声明的固定5在空闲sc474398/Slurm130完成并回传，但noGT prepare因实际感知模块调用0未过机制执行检查。
 保留真实非法参数/超预算/缺窗/UNKNOWN记录，独立接口窄诊断中；不降低guard、不启动主实验、不作性能/idea裁定。
 入口`experiments/20261005_m1_program/README.md`，错误来源`runs/20261005_m1_program/r1_full_smoke_analysis/run.log`；未读GT。
-备用候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
-尚无GPU、GT或性能结论，等待22/23结果分流。入口`experiments/20261005_m1_quote_graph/README.md`。
+候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
+22已归档、23接口未可靠执行，24进入固定5验证准备，尚无GPU、GT或性能结论。
+入口`experiments/20261005_m1_quote_graph/README.md`；当前累计归档22项。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
@@ -86,7 +90,7 @@ R3七臂matched控制独立CPU/代码检查PASS，来源`docs/reviews/20261005_m
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档21个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档22个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。

@@ -18,5 +18,7 @@
   "smoke_host": "sc474398",
   "smoke": "runs/20261005_m1_program/r1_full_smoke_analysis/run.log",
   "smoke_pass": false,
-  "interface_diagnosis": "requested independent narrow diagnosis; no algorithm change"
+  "interface_diagnosis": "docs/reviews/20261005_m1_program_gpu_interface_diagnosis.md",
+  "interface_bug_found": false,
+  "interface_design_needed": true
 }

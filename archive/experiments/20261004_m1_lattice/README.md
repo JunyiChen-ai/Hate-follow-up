@@ -1,3 +1,5 @@
+Archived2026-10-05: R1/R2 positive HateMM within retained, but neither passed the full dual-corpus gate; R3 has no qualifying +.01 and losses outside noise, rule9 archive. No R4/control GPU.
+
 # M1 candidate22 backup: frozen temporal speech lattice reader
 
 Declared 2026-10-04 while candidate21 was running; its allowed revisions are now
@@ -709,3 +711,30 @@ compiled IDs also match actualR3 main-reader smoke IDs exactly; full/flat/binary
 wrong_mass/allword inputs identical and effective BF16 mass changes confirmed.
 Evidence `terminal_controls_cpu_compile/` under the run root. These are CPU
 preparation checks only; no actual controlGPU/predictions/GT yet.
+
+## R3 final and branch closure, 2026-10-05
+
+R3 complete333 native raw G/windows/curves and six final metrics EXACT. Authority
+`runs/20261004_m1_lattice/r3_full_main_decoded/optimized/metrics.json`:
+HateMM ROC/PR/within .8924204974096293/.673876055773841/.7501122925823352
+(84eligible); HateClipSeg .7056003314314789/.6449858131158581/.6014832974536528
+(99eligible). Delta HMM−.004698164/−.020358548/−.000669751; HCS−.011224532/
+−.026086271/−.035865816. PerformanceFAIL, anyqualifyinggainFalse. Raw max within
+−.053077855/−.042481294 with both95% CIs wholly negative; raw shared speech
+−.021648806/−.042145964. No realized improvement supports the end-state readout.
+G/V unchanged,6580newS actually entered scores. Development-selected.
+
+Actual new-video cost 35.126324/37.420590min, total72.546913min/native7.883237 times,
+including unchanged actualASR59.950735min. Graph770056/857993tokens including
+17182/15696terminal keys; reader11291/10227paired forwards, diagnostics0,
+peaks17.823454/17.807124GiB. Detailed authority
+`runs/20261004_m1_lattice/r3_full_main_analysis/alignment.json`.
+
+R3 noqualifyinggain triggers rule9 archive. Initial+two revisions ran; noR4
+or full controls, and no mechanism/promotion claim. R1 HMM within+.048219936
+and R2+.051627931/positive paired intervals remain preserved with all six
+metrics/costs above; never blend their numbers across versions/corpora. All
+inputs/outputs local. Three control sets are only prepared/independentCPU-code
+PASS, not control results. Next independentcandidate24 may start because
+candidate23's actualfixed5 cannot exercise its typed-program mechanism and
+requires an explicitly new interface before any main. Formalr6 unchanged.

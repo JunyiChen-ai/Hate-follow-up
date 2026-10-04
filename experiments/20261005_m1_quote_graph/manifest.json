@@ -2,8 +2,8 @@
   "candidate": 24,
   "method": "source-bound quotation and reference graph with asymmetric speech reading",
   "version": "R1 source-bound quotation graph, sources2026-10-05",
-  "scope": "development-selected backup; no GPU or GT yet",
-  "state": "CPU prototype and independent code review PASS; no GPU yet",
+  "scope": "development-selected active candidate24, GPU fixed5 pending; no GT yet",
+  "state": "CPU/proposal/code PASS; candidate22 archive and23 interface failure permit fixed5 dispatch",
   "proposal_review": "docs/reviews/20261005_m1_quote_graph_proposal.md",
   "proposal_verdict": "PASS",
   "code_review": "docs/reviews/20261005_m1_quote_graph_code.md",
@@ -13,8 +13,12 @@
   "native_reference": "runs/20260926_twolevel/r6_bma/metrics.json",
   "input_cache": "data/temporal_quotation_graph",
   "output_root": "runs/20261005_m1_quote_graph",
-  "revision_budget": {"initial": 1, "revisions": 3, "revisions_used": 0},
+  "revision_budget": {
+    "initial": 1,
+    "revisions": 3,
+    "revisions_used": 0
+  },
   "performance_pass": false,
   "mechanism_supported": false,
-  "dispatch_condition": "Only after candidate22/23 result-based branching permits switching; main performance PASS precedes controls GPU"
+  "dispatch_condition": "candidate22 archived and23 noGT interface guard failed; actualfixed5 next; main PASS precedes controls"
 }

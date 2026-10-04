@@ -2,8 +2,10 @@
 
 Declared2026-10-05 while candidate22 full333 is collecting. Independent proposal
 PASS; CPU prototype and independent code review PASS. No GPU, GT or
-score. Candidate23 typed program remains next in line;
-this independent backup runs only when result-based branching permits switching.
+score. Candidate22 is now archived after R3 no qualifying gain; candidate23's
+actualfixed5 failed its unchanged mechanism-exercise guard and needs a new
+source/decoder interface. Result branch now permits this independent candidate's
+fixed5 GPU verification. No scientific code, input or constant changed in switching.
 Native Qwen3-VL-8B global/own stance/visual and fixed r6 remain formal reference.
 Development-selected. No gold speaker/entity/quote inventory, no trained target
 extractor or additional language encoder. All graph judgements use the SAME Qwen.
