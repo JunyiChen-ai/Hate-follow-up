@@ -53,6 +53,8 @@ R4原始max within−.044756/+.002938，HMM区间全负；G不变、新V与R2逐
 6个结构/转写/质量/错来源对照已准备，独立CPU/代码审查PASS；仅prepared，完整主门通过才启动控制GPU。
 备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS，未跑GPU/读GT。
 入口`experiments/20261005_m1_program/README.md`，仅为后续备用，等待Lattice的结果分流。
+备用候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
+尚无GPU、GT或性能结论，等待22/23结果分流。入口`experiments/20261005_m1_quote_graph/README.md`。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
