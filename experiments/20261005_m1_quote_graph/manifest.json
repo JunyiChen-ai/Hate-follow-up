@@ -2,8 +2,8 @@
   "candidate": 24,
   "method": "source-bound quotation and reference graph with asymmetric speech reading",
   "version": "R1 source-bound quotation graph, sources2026-10-05",
-  "scope": "development-selected active candidate24, GPU fixed5 pending; no GT yet",
-  "state": "CPU/proposal/code PASS; candidate22 archive and23 interface failure permit fixed5 dispatch",
+  "scope": "development-selected active candidate24, actualfixed5 GPU running; no GT yet",
+  "state": "actualfixed5 Slurm131 running onsc474399 after independent proposal/code/CPU PASS",
   "proposal_review": "docs/reviews/20261005_m1_quote_graph_proposal.md",
   "proposal_verdict": "PASS",
   "code_review": "docs/reviews/20261005_m1_quote_graph_code.md",
@@ -20,5 +20,7 @@
   },
   "performance_pass": false,
   "mechanism_supported": false,
-  "dispatch_condition": "candidate22 archived and23 noGT interface guard failed; actualfixed5 next; main PASS precedes controls"
+  "dispatch_condition": "candidate22 archived and23 noGT interface guard failed; actualfixed5 next; main PASS precedes controls",
+  "GPU_run": true,
+  "smoke_host": "sc474399"
 }

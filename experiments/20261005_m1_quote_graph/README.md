@@ -10,6 +10,13 @@ Native Qwen3-VL-8B global/own stance/visual and fixed r6 remain formal reference
 Development-selected. No gold speaker/entity/quote inventory, no trained target
 extractor or additional language encoder. All graph judgements use the SAME Qwen.
 
+Actualfixed5 dispatch2026-10-05 onsc474399/uoa-lab2 Slurm131, committed
+`launch/lab2.sbatch smoke`. Current machine/code/disk check and unchanged foreign
+home scope note saved in `runs/20261005_m1_quote_graph/machines_before_smoke{,_note}.txt`;
+all laboratory code synchronized/clean, selected5090 idle/569Gfree. Entire graph
+acquisition and paired native/new scoring stay onthishost. Actual8B/native/clone/
+contextless checks pending; no performance metrics or GT selection yet.
+
 ## Hypothesis and source limits
 
 A locally uttered hostile phrase may quote another person, deny a statement, or
