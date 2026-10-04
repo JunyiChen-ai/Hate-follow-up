@@ -261,3 +261,101 @@ processing166.97s versus native12.52s. Caption and rejected breadth costs are
 included. First-two-per-corpus extrapolation is about79.20/57.52min, unvalidated
 for complete333. No constant was selected from this check. Continue the fixed
 complete run with identical inputs/settings.
+
+## R1 complete333 result and branch (2026-10-05)
+
+sc474399/Slurm105 DONE; all run artifacts and acquisition inputs returned to
+sc474397 before canonical CPU analysis. Full native global/windows/curves and
+all six final metrics reproduce exactly. Source:
+`runs/20261004_m1_tree/r1_full_main_analysis/{alignment,summary}.json`.
+
+| Final4fps/fixedr6 | ROC | PR | within (eligible) |
+|---|---:|---:|---:|
+| HateMM | .8954106478490577 | .6793293896829375 | .7796925196653864 (84) |
+| HateClipSeg | .7299414573719176 | .6898192706910828 | .650288654397814 (99) |
+
+Authoritative final numbers:
+`runs/20261004_m1_tree/r1_full_main_decoded/optimized/metrics.json`;
+native `.../base/metrics.json` matches current r6. All development-selected.
+Final within gains+.02891048/+.01293954; HateMM PR−.01490521 exceeds noise.
+Therefore performance gate FAIL, any_qualifying_gain TRUE: retain this family
+for at most3 result-guided revisions. No promotion, full controls not run.
+Raw max within−.02173608/−.00180368, raw visual−.01909018/+.02071501,
+shared speech−.00111867/+.00404552; final within is not evidence of a dual-corpus
+raw ordering improvement. mechanism_supported remains false. Paired final within
+CI95 [.000724,.058337]/[−.014568,.040819], not blind confirmation.
+
+New-video processing: HateMM76.244min, HCS62.255min, total138.499min/native9.195min
+(15.06x); acquisition65.102/51.973min included. Peaks19.119/19.110GiB;
+4210/3091 caption generations and actual forward/image accounting are in alignment.
+Reusing these inputs for revisions does not remove their new-video acquisition cost.
+
+Test access for R1 analysis: the two canonical `data/gt_4fps/*.npz`, R1 native/new
+raw and decoded predictions/metrics, plus per_video/summary/alignment in the R1
+analysis directory. Findings above motivate separating the enriched global reading
+from the native whole-video anchor; no test labels enter later scoring/fitting.
+
+## R2 declaration: native anchor/speech, tree local visual (revision1/3)
+
+Declared2026-10-05 after R1 complete results, before R2 code/GPU. Postscore files
+read: R1 raw/decoded native/new predictions, R1 per_video.json, and the two test
+GT arrays; descriptive artifact `runs/20261004_m1_tree/r1_error_analysis/{summary,per_video}.json`.
+HateMM positive-frame-weighted global delta−1.1695, mean raw-max delta+.4348,
+K delta−.7347. Global decreased for26315/28319 positive frames' parent videos.
+Positive/negative group shifts differ; these are not causal attribution or proof
+that native G alone repairs PR. Raw max ordering also fell. This motivates isolating
+the visual acquisition/local read instead of modifying whole-video/speech context.
+
+One identical pipeline on both corpora: retain exact native20-frame/fullASR prefix,
+one native whole-video Yes/No margin and own hard stance; retain native independent
+speech margin. Replace only the visual branch with actual R1 selected in-window
+leaf pixels plus exact ancestor descriptions. No full-tree observations in the
+global/speech prefix, no second whole-video decision, no scalar replacement after
+scoring, no averaging or blending. Tree acquisition/packets, selection, all literal
+local headers/questions/pixel settings and numerical constants unchanged from R1.
+Global/tree-prefix and speech-context changes are removed from the novelty claim.
+The retained claim is semantic breadth/depth acquisition with local leaf regrounding;
+raw ordering, matched temporal/flat/incorrect-link controls still required.
+
+The same native stance cache is cropped/restored after every reference/new visual
+and shared speech read. New S and G must equal paired native exactly. Fixed five
+noGT smoke first, fresh full-render input/grid/positions plus cloned visual cache
+replay; then full333 and canonical/fixedr6 evaluation. No GT in either reader.
+Production Qwen moderation calls3+W+available_speech, including the single shared
+prefix/global/answer. Paired native reference adds W visual calls; smoke adds one
+cloned visual diagnostic/video, separately counted/timed. New-video cost includes
+native prefix+speech+new visual AND all original tree acquisition117.075min;
+no new feature/caption calls when reusing this input. Preliminary total125-145min,
+unmeasured until smoke/full. Acquisition reuse is an iteration saving, not free
+new-video processing. Outputs `r2_full_{smoke,main}` and their decoded/analysis dirs.
+This is the first of the three allowed revisions, not a new candidate/queue reset.
+
+R2 implementation/CPU checks: `measure.py --revision r2` builds one native stance
+cache, interleaves paired native visual/shared speech/new visual, restores each
+branch, and independently clones the first new visual branch in smoke. Production
+and diagnostic forwards/times are recorded separately; whole input acquisition
+remains in new-video cost. CPU orchestration fixture and validator corruption
+checks PASS in `runs/20261004_m1_tree/cpu_checks/r2_selfcheck.log`; these are not
+actual GPU model parity. Default R1 CLI/config/record interpretations remain intact.
+R2 input acquisition is reused, not rerun; exact native input/metadata coverage is
+still parsed before every measurement. Launch after narrow independent code
+confirmation and current machine/code synchronization:
+
+```bash
+sbatch experiments/20261004_m1_tree/launch/lab2.sbatch smoke r2
+# Return runs and data to local, then noGT prepare first:
+/home/jehc223/miniconda3/envs/HateVideo/bin/python experiments/20261004_m1_tree/analyze.py --stage prepare --smoke --revision r2
+# Only after five-video parity/clone/fresh checks PASS:
+sbatch experiments/20261004_m1_tree/launch/lab2.sbatch main r2
+# Return runs/data; detach canonical CPU analysis on sc474397:
+setsid nohup bash experiments/20261004_m1_tree/launch/run_analysis.sh r2 > runs/20261004_m1_tree/r2_analysis_launcher.log 2>&1 < /dev/null &
+```
+
+Independent R2 narrow code confirmation PASS:
+`docs/reviews/20261005_m1_tree_r2_code.md`; CPU evidence
+`runs/20261004_m1_tree/r2_code_review/{independent_r2.py,independent_r2.log}`.
+No observation-blocking bug; shared native context/production standard branches,
+G/S equality, actual call/cost separation and corruption rejection checked.
+The image/context forward is a CPU stub here; actual fixed-five GPU parity remains
+required. Full333 R1 noGT prepare regression also PASS in
+`runs/20261004_m1_tree/cpu_checks/r1_prepare_regression.log`.

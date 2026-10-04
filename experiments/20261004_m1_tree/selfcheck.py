@@ -88,6 +88,47 @@ def test_real_pts_and_coverage():
     finally:tree.image_features=original
 
 
+def test_r2_single_native_anchor():
+    """CPU orchestration fixture, not model inference or performance evidence."""
+    import copy
+    from unittest.mock import patch
+    import measure
+    calls=[];j=SimpleNamespace(forward_calls=0);clock=iter(range(100))
+    row=dict(dataset='Fixture',video_id='fixture',duration=16.)
+    packets=[dict(pool_members=[i],context='fixture',leaf_ids=[],ancestor_ids=[]) for i in range(2)]
+    meta=dict(tree={'nodes':[]},packets=packets,standalone_seconds=20.,peak_GiB=1.,
+        actual_forwards={'vision':2,'language':3},caption_count=2,caption_tokens=5,entries=[{},{}])
+    ctx=dict(global_margin=-2.,stance='No',prefix_tokens=7)
+    def fake_context(j,frames,segments,tree=None):
+        assert tree is None;j.forward_calls+=3;calls.append('prefix');return SimpleNamespace(),ctx
+    def fake_standard(j,cache,ctx,question):
+        j.forward_calls+=1;calls.append('speech' if 'speech' in question.lower() else 'visual');return 1.
+    def fake_local(j,cache,ctx,question,packet,metadata,folder,verify=False):
+        j.forward_calls+=1;calls.append('local');z=float(3+packet['pool_members'][0])
+        return z,dict(packet=packet,paths=['fixture.png'],new_image_counts=[1],fresh_render_verified=verify,
+            prefix_positions_exact=True,margin=z)
+    with patch.object(measure,'tick',lambda:float(next(clock))),patch.object(measure,'frame_paths',lambda *a:[(0.,'fixture')]),\
+        patch.object(measure,'context',fake_context),patch.object(measure,'standard',fake_standard),\
+        patch.object(measure,'local_visual',fake_local),patch.object(measure.torch.cuda,'reset_peak_memory_stats'),\
+        patch.object(measure.torch.cuda,'max_memory_allocated',lambda:0):
+        base,new,check,detail=measure.read_visual_only(j,row,[(0.,8.,'words')],meta,Path('.'),True)
+    measure.validate_records(row,base,new,check,detail,meta)
+    assert calls.count('prefix')==1 and calls.count('local')==3
+    assert check['actual_forwards']==9 and check['diagnostic_forwards']==1
+    assert base['extra']['z_video']==new['extra']['z_video']==-2.
+    assert new['extra']['windows'][0]['z_speech']==1. and 'z_speech' not in new['extra']['windows'][1]
+    assert [w['z_visual'] for w in new['extra']['windows']]==[3.,4.]
+    for mutate in ('global','speech','count','clone'):
+        b,n,c,d=copy.deepcopy((base,new,check,detail))
+        if mutate=='global':n['extra']['z_video']=-3.
+        if mutate=='speech':n['extra']['windows'][0]['z_speech']=.5
+        if mutate=='count':c['actual_forwards']+=1
+        if mutate=='clone':d['traces'][0]['cloned_margin']+=1.
+        try:measure.validate_records(row,b,n,c,d,meta)
+        except AssertionError:pass
+        else:raise AssertionError('validator accepted '+mutate+' corruption')
+
+
 if __name__=='__main__':
-    for test in (test_hierarchy,test_identical_singleton_and_breadth,test_real_pts_and_coverage):
+    for test in (test_hierarchy,test_identical_singleton_and_breadth,test_real_pts_and_coverage,test_r2_single_native_anchor):
         test();print(test.__name__+' PASS',flush=True)

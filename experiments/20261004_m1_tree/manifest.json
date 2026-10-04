@@ -4,7 +4,10 @@
   "code_review": "docs/reviews/20261004_m1_tree_code.md",
   "outputs": "runs/20261004_m1_tree/",
   "inputs": "data/semantic_cluster_tree/",
-  "status": "reviewed CPU PASS, preparing real5 noGT smoke; no GPU/performance result",
+  "status": "R1 full333 complete/local native exact; common within gain but HateMM PR loss beyond noise, retained for <=3 revisions; no mechanism claim",
   "GT_in_reader": false,
-  "date": "2026-10-04"
+  "date": "2026-10-05",
+  "main_metrics": "runs/20261004_m1_tree/r1_full_main_decoded/optimized/metrics.json",
+  "r2_code_review": "docs/reviews/20261005_m1_tree_r2_code.md",
+  "r2_status": "native global/speech with tree local visual predeclared; CPU and independent narrow code PASS; actual fixed5 GPU pending"
 }

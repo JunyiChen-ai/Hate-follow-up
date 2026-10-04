@@ -33,7 +33,15 @@ within+.007991/+.008406，HMM PR−.009075，无任一主指标+.01，按规则9
 已修并获独立窄确认PASS；Slurm104固定5 noGT smoke完成，run/输入回传后prepare PASS。
 原生全读数精确，5次fresh token/grid和prefix位置检查通过；峰值<19GiB。
 来源`runs/20261004_m1_tree/r1_full_smoke_analysis/plumbing_summary.json`；进入固定完整333，尚无性能结果。
-固定完整333在sc474399/Slurm105进行中，先完成证据获取，再做配对读取；未更新性能结论。
+完整333在sc474399/Slurm105完成且run/输入回传；native全读数和全部六项精确。
+Tree R1 HateMM ROC/PR/within .895411/.679329/.779693（84），
+HCS .729941/.689819/.650289（99）；within+.028910/+.012940，但HMM PR−.014905，未晋级。
+权威来源`runs/20261004_m1_tree/r1_full_main_decoded/optimized/metrics.json`。
+原始max排序两语料未改善，机制仍不成立；实际新增处理138.50min/native15.06倍。
+按规则9保留此族，开始result-guided修订，最多3次；累计归档仍20项。
+首修订Tree R2已声明：保留原生global和speech，只改树证据驱动的local visual。
+输入获取与常数沿用R1，CPU编排/调用计数及损坏记录拒绝检查与独立窄代码确认PASS。
+尚未提交R2 GPU；完整主结果与机制控制仍待验证，细节仍以同实验README为准。
 备用候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS，尚未跑GPU/读GT。
 固定五视频的实际音频CPU预检也通过；遇到的AAC重叠PTS实现问题已修并获独立窄确认PASS，明细见同实验README。
 入口`experiments/20261004_m1_lattice/README.md`；仅在Tree结果按规则分流允许切换后启动固定五视频smoke。

@@ -9,7 +9,11 @@ case "${1:?smoke or main}" in
   main) opts=();;
   *) exit 2;;
 esac
+revision=${2:-r1}
+case "$revision" in r1|r2) ;; *) exit 2;; esac
 nvidia-smi
-python -u experiments/20261004_m1_tree/extract.py "${opts[@]}"
-python -u experiments/20261004_m1_tree/measure.py "${opts[@]}"
+if [[ $revision == r1 ]]; then
+  python -u experiments/20261004_m1_tree/extract.py "${opts[@]}"
+fi
+python -u experiments/20261004_m1_tree/measure.py "${opts[@]}" --revision "$revision"
 echo ACQUISITION_DONE
