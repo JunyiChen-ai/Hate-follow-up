@@ -598,3 +598,18 @@ paths pass; canonical evaluator/r6 commands were captured with unchanged flags.
 This CPU environment is torch2.7.1/transformers4.57.6, not target5.15 or actual8B
 weights. Target fixed5 smoke remains required before full333. No GT/R4 performance
 was used in this review; no evaluator, r6 or reader constants changed.
+
+R4 fixed5 target smoke completed on sc474399, Slurm86,2026-10-04:48.1s,
+peak18.3231GiB. Returned locally before noGT prepare. All5 native globals and292
+native branches exact; all158 initial acquisition sets and initial priors equal
+R3. All post-acquisition native replays exact. Actual 8B/torch2.11+cu128/
+transformers5.15.1 full-token/image-grid seam and cached-prefix position checks
+passed, including real cumulative1/2/4 images. No extra full-8B fresh-hidden
+forward was performed; CPU cached/fresh numerical evidence remains as reported
+above. Prefix copy/preparation measured .01891s summed over5videos, charged.
+Source `runs/20261003_m1_explorer/r4_smoke/plumbing_summary.json`, checks and
+details. No GT/metrics were read for smoke. The first2manifest videos/corpus
+extrapolate HMM525.73s/HCS958.72s,total24.74min; this is a small-sample estimate
+with processor diagnostics included, and R3's analogous estimate underestimated
+its full collection by about10min. Retain35–40min as a practical budget pending
+actual R4 time. Proceed to unchanged complete333 collection on the same target.

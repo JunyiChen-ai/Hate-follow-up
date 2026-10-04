@@ -11,7 +11,9 @@ HMM within+.00694、PR-.00533，双语料门仍未过。来源
 R3 每窗先补两帧，再按既定 .3 熵决定是否再补两帧，两语料流程一致，r6/评测器固定。
 R4 最后一次修订已声明：新增局部帧的读取不再带模型自身的全局问答轮，原始观察语境、
 native 全局/语音和 r6 保持；独立方案、代码审查与实际36层CPU缓存测试已PASS，
-待目标8B五视频smoke后全量。不是已证实的偏置机制。
+目标8B五视频smoke也PASS：5globals/292native分支/158首轮集合精确一致，
+实际图片seam及缓存位置通过，48.1s、18.323GiB；现在进入全量333。
+来源 `runs/20261003_m1_explorer/r4_smoke/plumbing_summary.json`；不是已证实的偏置机制。
 入口 `experiments/20261003_m1_explorer/README.md`。不更新 Overleaf。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
