@@ -48,12 +48,20 @@ R2完整333在sc474399/Slurm116完成且全部回传，native全读数及六项�
 HateMM ROC/PR/within .897530/.690654/.772521（84）；HCS .729631/.682939/.642520（99）。
 来源`runs/20261004_m1_tree/r2_full_main_decoded/optimized/metrics.json`。
 HMM within+.021739，HCS ROC/PR+.012806/+.011867但within仅+.005171；所有损失在噪声内，仍无同指标双语料+.01。
+R3完整333在sc474399/Slurm118完成并回传本机，原生全读数及六项精确。
+HateMM ROC/PR/within .893445/.675568/.761225（84）；HCS .716635/.670358/.633798（99）。
+权威来源`runs/20261004_m1_tree/r3_full_main_decoded/optimized/metrics.json`。
+HMM within+.010443但PR−.018666，HCSwithin−.003552；未过门，原始max仍无双语料改善。
+实际新视频处理138.95min/native15.13倍；全部development-selected，机制不支持，不跑控制GPU。
+R3控制代码已准备且独立CPU/代码窄审PASS，但不是模型或机制证据；启动脚本硬性要求主门PASS。
+已记录R3完整error analysis并预声明R4：不插入共享全树turn，原生G/stance不变，同一局部实像素与祖先上下文分别进入V/S独立读取。
+这是该方法族最后一次允许修订（3/3），失败后归档，不跑R5。细节唯一入口仍为Tree README；目标未完成。
 实际新处理134.40min/native14.62倍；原始视觉排序HMM下降，机制未成立。
 按规则9继续此族，第二修订R3已声明native anchor后追加完整factual tree context再独立读取V/S。
-独立窄代码确认和CPU检查PASS，保存token/会话绑定缺口已修；真实固定5 GPU parity待验证。
+独立窄代码确认和CPU检查PASS，保存token/会话绑定缺口已修；随后固定5 GPU parity通过。
 R3固定5在sc474399/Slurm117完成并回传，noGT prepare PASS：原生全读数精确/G不变，V/S变化，
 extension/local fresh各5与V/S clone各5通过，会话/token重建绑定全通过；继续固定完整333。
-来源`runs/20261004_m1_tree/r3_full_smoke_analysis/plumbing_summary.json`；暂无R3性能数字。
+来源`runs/20261004_m1_tree/r3_full_smoke_analysis/plumbing_summary.json`；完整结果及R4分流见上文。
 备用候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS，尚未跑GPU/读GT。
 固定五视频的实际音频CPU预检也通过；遇到的AAC重叠PTS实现问题已修并获独立窄确认PASS，明细见同实验README。
 入口`experiments/20261004_m1_lattice/README.md`；仅在Tree结果按规则分流允许切换后启动固定五视频smoke。

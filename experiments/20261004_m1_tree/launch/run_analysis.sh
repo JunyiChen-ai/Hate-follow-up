@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 revision=${1:-r1}
-case "$revision" in r1|r2|r3) ;; *) exit 2;; esac
+case "$revision" in r1|r2|r3|r4) ;; *) exit 2;; esac
 out=runs/20261004_m1_tree/${revision}_full_main_analysis
 mkdir -p "$out"
 exec > "$out/run.log" 2>&1

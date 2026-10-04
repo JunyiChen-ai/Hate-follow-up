@@ -537,3 +537,152 @@ Peaks19.314/18.842GiB, prefix max9667/6393tokens; optimized whole sample109.149s
 HMM/58.757s HCS including88.474/48.860s acquisition; native8.405/4.068s.
 Rough extrapolation80.109/57.778min=137.886min, not full measured cost.
 Continue identical full333. No smoke GT, metric-based selection or constant change.
+
+## R3 full controls specification, before control code/GPU
+
+Only run after R3 complete performance pass. Independent-arm inventory is main,
+flat,wrong_links,no_depth,no_added_pixels,temporal,temporal_fresh_priority, plus
+native. Main/native must exactly match complete R3/current r6 before any control
+GT analysis. Shared native prefix/G/own stance and reference V/S are measured once;
+each arm clones this restored native cache, appends its factual observation turn
+and the SAME acknowledgement, independently reads V/S, then deletes its cache.
+Production4+W+S per arm; joint actual3+W+S+A*(1+W+S), plus separately recorded smoke
+clones. Native-cache copying is experimental duplication overhead, not hidden
+new-video acquisition. All input acquisition and actual arm times are reported.
+
+flat factual inventory uses TREE_HEADER then each chronological node's
+`[t={time:.3f}s]` newline exact caption newline, without node/parent/depth labels;
+local packet uses the declared flat transform. wrong_links changes LOCAL ancestor
+association only; shared full inventory remains correct, so this control cannot
+test necessity of all global association or prove the model cannot recover it.
+no_depth factual inventory contains final original roots only and local pixels
+are root-selected. no_added_pixels factual inventory/local ancestor context remain
+exact main, only added local images removed. Native overview pixels remain present.
+temporal uses the declared exact-count/topology time-membership construction and
+inherited main priorities for local selection, with accurate scope limitation.
+
+temporal_fresh_priority strengthens that diagnostic: same temporal nodes/captions/
+exact topology/member counts, but independently apply the original same-Qwen
+relevance reader to the TEMPORAL root observations once, use those root relevance
+values for local ranking and propagate to children. Actual branch counts remain
+matched to main, rather than expand again. No shared/averaged moderation decision
+or new label/model. Both variants remain topology-matched diagnostics; no claim
+of reproducing a fully independently adaptive deployable temporal method. This
+additional control addresses the inherited-priority confound, and complete
+acquisition must beat BOTH temporal variants by>=.01 on a common main metric BOTH
+corpora. No result-guided selection between the two.
+
+Reuse main features and exact same source-frame captions. Newly required temporal
+captions and local witnesses live in `data/semantic_tree_controls/r3/` with readable
+provenance, never alter `data/semantic_cluster_tree/`. Existing exact witness PNGs
+may be linked relatively; otherwise decode the actual indexed PTS into this new
+cache. No CPU placeholder becomes an observation. Additional actual caption
+calls/tokens/time and fresh-priority prefix/query calls are counted. Full333 CPU
+geometry opportunity counts predict6018 new caption frames and6926 additional
+local witnesses, not measured GPU output. Approximate extra acquisition80–120min,
+seven-arm local reads130–180min plus diagnostics; total210–300GPUmin, unmeasured.
+Use fixed5 noGT checks first, then full333 only after independent narrow code
+confirmation. Same constants/prompts/seed/window/grid/frozen models across corpora.
+Every claimed part and incorrect-link/raw ordering/paired bootstrap still obeys
+the existing mechanism gates; format details without contribution are demoted.
+
+Prepared R3 controls code is in `control_inputs.py`, `control_extract.py`,
+`control_measure.py`, `control_analyze.py`, `launch/lab2_controls.sbatch` and
+`launch/run_control_analysis.sh`. Independent narrow code confirmation PASS:
+`docs/reviews/20261005_m1_tree_r3_controls_code.md`, actual independent CPU evidence
+`runs/20261004_m1_tree/r3_controls_code_review/`. No GPU or control observations
+generated. Fixed missing actual-forward counter initialization, added per-arm
+actual new source-witness decode cost (including no_depth), bound each new caption
+text to decoded generation tokens and opened its representative image, and report
+actual incorrect-link changes separately from prediction changes. Joint physical
+acquisition/reader/copy/diagnostic cost is distinct from per-arm reused prefixes.
+The Slurm launcher requires the completed R3 main `performance_pass=True` summary;
+this guard forbids the current failed R3 from running controls. Current native CPU
+image-prefix encoding is reused only for identical messages/files within a video;
+all GPU branches remain independent. This is prepared code, not mechanism evidence.
+
+## R3 complete result and recorded error analysis
+
+sc474399/Slurm118 completed all333 at2026-10-05 04:01NZDT; run and source inputs
+returned locally before canonical prepare/evaluation. Native G/windows/curves and
+all six final metrics exactly reproduce the current method. G unchanged;7359 V
+and6580 S windows changed. Authority:
+`runs/20261004_m1_tree/r3_full_main_decoded/optimized/metrics.json`.
+
+| Dataset | pooled ROC | pooled PR | within (eligible) |
+|---|---:|---:|---:|
+| HateMM | .8934449148927398 | .6755683644708480 | .7612246847768677 (84) |
+| HateClipSeg | .7166345686592962 | .6703579776980031 | .6337975399819128 (99) |
+
+Deltas vs fixed current method HMM−.003673747/−.018666239/+.010442641;
+HCS−.000190295/−.000714107/−.003551574. No common+.01; HMM PR beyond noise:
+performance FAIL, any qualifying gain TRUE. This is revision2/3, so one revision
+remains; no promotion and no control GPU. Raw max within−.02442806/+.00158927,
+visual−.06037818/+.02376880, shared speech−.00195528/+.00406198. Final paired within
+CI95[−.019960,.043817]/[−.030969,.023454]. Mechanism unsupported; all development-selected.
+
+Actual new-video processing76.48405min HMM/62.46508min HCS=138.94913min,
+native9.18662min (~15.13x), with117.07481min original acquisition included.
+Peaks19.11876/19.10972GiB; prefix max9667/10170; actual paired moderation forwards
+15274/13936, diagnostics0. Details
+`runs/20261004_m1_tree/r3_full_main_analysis/{alignment,summary,per_video}.json`.
+
+Postscore testGT diagnostic actually read R3 raw/decoded base+optimized predictions,
+the canonical per_video report and both current4fps GT files, saved in
+`runs/20261004_m1_tree/r3_error_analysis/{summary,per_video}.json`. G delta/stance
+flips0; positive-frame-weighted mean raw/K delta HMM−1.38752 vs negative-frame
+weighted+1.59279, HCS−.14980 vs+1.21101. This is descriptive, not a sole-cause claim.
+Additional recorded examples
+`runs/20261004_m1_tree/r3_error_analysis/window_examples.json` inspected actual R2/R3
+raw reads, current tree nodes/packets, ASR and GT in HMM303/428/189 and HCS
+yt_rOPzqNGEvT4/yt_ksQif48f7Jw. R3 complete visual-text extension changes speech
+readout even on game/static-background hate-speech clips; e.g HMM303's144–152s
+native S16.50062→13.10628 while V4.33819→−3.45207. Current hierarchy context can
+come from distant visually similar frames (true times retained). These observations
+motivate the last declared R4, not a label-conditioned scoring or constant scan.
+
+## R4 last revision, declared before code/GPU
+
+Third and FINAL result-guided revision in family21. Keep the original complete
+VideoTree acquisition, source inputs and every constant. Native20/fullASR G and
+own hard stance remain exact; do NOT insert R3's shared full-tree factual turn.
+Independently re-read EACH local branch from the original restored native cache:
+V with the existing actual selected leaf pixels/ancestor context and exact native
+visual question; S, when native ASR body is nonempty, with the SAME local packet
+and actual pixels followed by the exact native speech question. V and S never
+see each other's answer or cache. All original overview/full ASR remains visible.
+This tests whether providing the actual window-associated evidence to both reads
+can improve interpretation while avoiding R3's shared full-video caption inventory.
+No calibrated or averaged old logits, no per-corpus routing, no label input.
+
+New V must EXACTLY reproduce complete R2 new V in noGT prepare, alongside exact
+all333 native reads. New S is measured, not replayed. The performance hypothesis
+is that local grounding is less disruptive to speech evidence than R3's shared
+inventory while retaining R2 visual gains; it may instead weaken valid speech,
+which the same full gate will decide. Production3+W+available_S; paired reference
+addsW+available_S; fixed5 adds one cloned V and one cloned available S, both fresh
+rendered from actual images and independent caches. Prefix/crop/rope, current
+input binding, window/pixel coverage and all physical calls/cost checks required.
+
+Reuse original117.07481min acquisition for current videos, charged for new videos;
+new S re-encodes up to2 actual local images per available speech window. No new
+model or source-caption call. Preliminary140–160GPUmin full333 including acquisition,
+unmeasured; diagnostic clones separately timed. Only fixed5 noGT smoke after narrow
+independent code confirmation, then identical full333. If it fails, archive this
+family with best retained numbers; no R5. If it passes, controls must use this
+actual local-packet-to-BOTH-branches reader, not the prepared R3 extension reader,
+and retain the same temporal/fresh-priority/raw/incorrect-link/ablation gates.
+
+R4 CPU implementation preparation: existing five meaningful selfchecks PASS in
+`runs/20261004_m1_tree/cpu_checks/r4_existing_regression.log`; actual R2 fixed5
+noGT prepare after shared local-content extraction PASS in
+`r2_smoke_prepare_after_r4.log`. Independent R4 CPU oracle
+`runs/20261004_m1_tree/r4_code_review/{oracle.py,oracle.log}` uses real cached
+Qwen processor/native and witness images, explicit synthetic model/positions,
+six smoke/main speech-availability cases, independently recomputed R2 V equality,
+exception crop/rope recovery and twelve current input/token corruption rejections.
+This is CPU evidence only; actual GPU/native/R2 parity remains pending.
+
+Independent R4 narrow code confirmation PASS, same-family provisional:
+`docs/reviews/20261005_m1_tree_r4_code.md`. No observation-validity blocker remains;
+fixed5 actual GPU native/R2 V/fresh/cloned margins remains required before full333.

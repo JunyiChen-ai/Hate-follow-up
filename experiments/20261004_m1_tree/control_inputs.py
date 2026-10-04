@@ -1,7 +1,40 @@
 """Predeclared R2 input controls; no labels, scores, models or evaluator."""
 import copy
 import numpy as np
-from tree import CONTEXT_HEADER,record,window_packet
+from tree import CONTEXT_HEADER,TREE_HEADER,record,tree_text,window_packet
+
+ARMS=('main','flat','wrong_links','no_depth','no_added_pixels','temporal','temporal_fresh_priority')
+
+
+def fresh_priority(temporal,scores,logprobs):
+    """Hold topology fixed and change only the newly measured root priorities."""
+    tree=copy.deepcopy(temporal)
+    roots=[n for n in tree['nodes'] if n['parent'] is None]
+    assert len(roots)==len(scores)==len(logprobs)
+    assert all(type(s) is int and s in (1,2,3) for s in scores)
+    by_root={n['id']:(s,lp) for n,s,lp in zip(roots,scores,logprobs)}
+    by_id={n['id']:n for n in tree['nodes']}
+    for n in tree['nodes']:
+        root=n
+        while root['parent'] is not None:root=by_id[root['parent']]
+        n['root_relevance']=by_root[root['id']][0]
+        if n['parent'] is None:n['relevance_logprobs']=copy.deepcopy(by_root[n['id']][1])
+    tree['priority']='fresh temporal roots; matched topology remains fixed'
+    return tree
+
+
+def arm_inputs(arm,main,temporal,fresh,features,entries,windows):
+    """Exact shared factual turn and local packets for one declared arm."""
+    assert arm in ARMS
+    tree=temporal if arm=='temporal' else fresh if arm=='temporal_fresh_priority' else main
+    if arm=='no_depth':tree={**main,'nodes':[n for n in main['nodes'] if n['parent'] is None]}
+    if arm=='flat':
+        nodes=sorted(main['nodes'],key=lambda n:(n['time'],n['id']))
+        observation=TREE_HEADER+(''.join(f'[t={n["time"]:.3f}s]\n{n["caption"]}\n' for n in nodes) if nodes else '(none)\n')
+    else:observation=tree_text(tree)
+    packets=[packet_control(arm,main,features,entries,a,b) if arm in ('flat','wrong_links','no_depth','no_added_pixels')
+             else window_packet(tree,features,entries,a,b) for a,b in windows]
+    return dict(observation=observation,packets=packets)
 
 
 def temporal_tree(main,features,entries,caption):

@@ -63,10 +63,9 @@ def standard(j,cache,ctx,question):
 
 
 @torch.no_grad()
-def local_visual(j,cache,ctx,question,packet,metadata,folder,verify=False):
+def local_content(question,packet,metadata,folder):
     from PIL import Image
     content=[{'type':'text','text':packet['context']+LOCAL_HEADER}];images=[];paths=[]
-    n=cache.get_seq_length()
     for i in packet['pool_members']:
         entry=metadata['entries'][i];path=folder/'witnesses'/f'frame_{entry["index"]:08d}.png'
         with Image.open(path) as image:
@@ -75,6 +74,13 @@ def local_visual(j,cache,ctx,question,packet,metadata,folder,verify=False):
         content.extend([{'type':'text','text':f'[t={entry["time"]:.3f}s]\n'},{'type':'image'}])
     if not images:content.append({'type':'text','text':'(none)\n'})
     content.append({'type':'text','text':question})
+    return content,images,paths
+
+
+@torch.no_grad()
+def local_visual(j,cache,ctx,question,packet,metadata,folder,verify=False):
+    from PIL import Image
+    content,images,paths=local_content(question,packet,metadata,folder);n=cache.get_seq_length()
     full=j.render(ctx['msgs']+ctx['history']+[{'role':'user','content':content}],True)
     assert full.startswith(ctx['head']);suffix=full[len(ctx['head']):]
     try:
@@ -102,15 +108,18 @@ def local_visual(j,cache,ctx,question,packet,metadata,folder,verify=False):
     finally:
         for im in images:im.close()
     return z,dict(packet=packet,paths=paths,suffix_tokens=len(ids[0]),
+        suffix_text=suffix,suffix_ids=ids[0].tolist(),
         new_image_counts=(enc['image_grid_thw'].prod(1)//j.processor.image_processor.merge_size**2).tolist() if images else [],
         fresh_render_verified=bool(verify),prefix_positions_exact=True,margin=z)
 
 
 @torch.no_grad()
-def extend_observations(j,cache,ctx,metadata,verify=False):
+def extend_observations(j,cache,ctx,metadata,verify=False,observation=None):
     """R3: factual text after the already measured native verdict/stance."""
     from PIL import Image
-    history=ctx['history']+[j.turn('user',tree_text(metadata['tree'])),j.turn('assistant','Context recorded.')]
+    observation=tree_text(metadata['tree']) if observation is None else observation
+    assert isinstance(observation,str)
+    history=ctx['history']+[j.turn('user',observation),j.turn('assistant','Context recorded.')]
     full=j.render(ctx['msgs']+history,False);assert full.startswith(ctx['head'])
     suffix=full[len(ctx['head']):];ids=j.tok(suffix,add_special_tokens=False)['input_ids']
     fullids=torch.cat((ctx['ids'],torch.tensor([ids],device=j.device)),1)
@@ -128,7 +137,7 @@ def extend_observations(j,cache,ctx,metadata,verify=False):
     assert torch.equal(j.model.model.rope_deltas,delta)
     new={**ctx,'head':full,'history':history,'ids':fullids,'positions':positions,'rope':delta.clone(),
         'prefix_tokens':fullids.shape[1],'observation_extension_forwards':1}
-    return new,dict(text=tree_text(metadata['tree']),acknowledgement='Context recorded.',suffix_text=suffix,suffix_ids=ids,
+    return new,dict(text=observation,acknowledgement='Context recorded.',suffix_text=suffix,suffix_ids=ids,
         native_cache_tokens=n,extended_cache_tokens=cache.get_seq_length(),prefix_positions_exact=True,
         fresh_render_verified=bool(verify))
 
@@ -275,7 +284,57 @@ def read_factual_context(j,row,segments,metadata,folder,smoke):
     return base,new,check,detail
 
 
-def validate_extension_inputs(j,row,segments,base,detail,metadata):
+@torch.no_grad()
+def read_local_branches(j,row,segments,metadata,folder,smoke):
+    """R4: native G/stance; independent actual local packet in both V and S."""
+    frames=frame_paths(row['dataset'],row['video_id'],20);assert 0<len(frames)<=20
+    wins=fixed_windows(float(row['duration']),8);texts=[window_text(segments,a,b) for a,b in wins]
+    first=j.forward_calls;torch.cuda.reset_peak_memory_stats();t=tick()
+    cache,ctx=context(j,frames,segments);prefix_seconds=tick()-t
+    vs=[];ss=[];t=tick()
+    for i,((a,b),body) in enumerate(zip(wins,texts)):
+        vs.append(standard(j,cache,ctx,yesno_question(i,len(wins),a,b,body,'visual')))
+        ss.append(standard(j,cache,ctx,yesno_question(i,len(wins),a,b,body,'speech')) if body.strip() else None)
+    reference_branch_seconds=tick()-t
+    nv=[];ns=[];traces=[];visual_seconds=speech_seconds=diagnostic_seconds=0.;diagnostics=0;speech_verified=False
+    for i,((a,b),body,packet) in enumerate(zip(wins,texts,metadata['packets'])):
+        vq=yesno_question(i,len(wins),a,b,body,'visual');sq=yesno_question(i,len(wins),a,b,body,'speech')
+        t=tick();v,vt=local_visual(j,cache,ctx,vq,packet,metadata,folder,smoke and i==0);visual_seconds+=tick()-t;nv.append(v)
+        t=tick()
+        if body.strip():s,st=local_visual(j,cache,ctx,sq,packet,metadata,folder,smoke and not speech_verified)
+        else:s,st=None,None
+        speech_seconds+=tick()-t;ns.append(s)
+        if smoke and i==0:
+            t=tick();cloned=copy.deepcopy(cache);replay,_=local_visual(j,cloned,ctx,vq,packet,metadata,folder)
+            assert replay==v;del cloned;diagnostic_seconds+=tick()-t;diagnostics+=1;vt['cloned_margin']=replay
+        if smoke and s is not None and not speech_verified:
+            t=tick();cloned=copy.deepcopy(cache);replay,_=local_visual(j,cloned,ctx,sq,packet,metadata,folder)
+            assert replay==s;del cloned;diagnostic_seconds+=tick()-t;diagnostics+=1;st['cloned_margin']=replay;speech_verified=True
+        traces.append(dict(visual=vt,speech=st))
+    del cache
+    native_seconds=prefix_seconds+reference_branch_seconds;read_seconds=prefix_seconds+visual_seconds+speech_seconds
+    base=record(row,ctx,vs,ss,native_seconds);new=record(row,ctx,nv,ns,metadata['standalone_seconds']+read_seconds)
+    assert j.forward_calls-first==base['calls']+new['calls']-3+diagnostics
+    check=dict(dataset=row['dataset'],video_id=row['video_id'],GT_read=False,reader_revision='r4',
+        actual_forwards=j.forward_calls-first,diagnostic_forwards=diagnostics,diagnostic_seconds=diagnostic_seconds,
+        standalone_seconds=dict(base=native_seconds,optimized=metadata['standalone_seconds']+read_seconds),
+        prefix_seconds=prefix_seconds,reference_branch_seconds=reference_branch_seconds,
+        new_visual_seconds=visual_seconds,new_speech_seconds=speech_seconds,read_seconds=read_seconds,
+        preprocessing_seconds=metadata['standalone_seconds'],
+        peak_GiB=max(torch.cuda.max_memory_allocated()/2**30,metadata['peak_GiB']),input_actual_forwards=metadata['actual_forwards'],
+        caption_count=metadata['caption_count'],caption_tokens=metadata['caption_tokens'],
+        added_local_images=sum(len(p['pool_members']) for p in metadata['packets']),
+        added_speech_images=sum(len(p['pool_members']) for p,s in zip(metadata['packets'],ns) if s is not None),
+        feature_images=len(metadata['entries']),new_prefix_tokens=ctx['prefix_tokens'])
+    detail=dict(dataset=row['dataset'],video_id=row['video_id'],reader_revision='r4',traces=traces,
+        global_context='native',speech_context='local tree packet',tree_in_global_prefix=False,
+        native_frame_times=[t for t,p in frames],tree_global_text=tree_text(metadata['tree']),
+        segments=[list(s) for s in segments],base_prefix_tokens=ctx['prefix_tokens'],new_prefix_tokens=ctx['prefix_tokens'],
+        cache_version=CACHE_VERSION,native_conversation={k:ctx[k] for k in ('msgs','head','history')})
+    return base,new,check,detail
+
+
+def validate_extension_inputs(j,row,segments,base,detail,metadata,observation=None):
     """Rebuild current native conversation + factual literal, without model weights."""
     msgs,files=j.prefix_messages(frame_paths(row['dataset'],row['video_id'],20),segments)
     text,enc=j.encode_prefix(msgs,files);qid,qtext=j.branch_ids(msgs,VIDEO_QUESTION)
@@ -285,11 +344,41 @@ def validate_extension_inputs(j,row,segments,base,detail,metadata):
     assert dict(msgs=msgs,head=head,history=history)==detail['native_conversation']
     assert enc['input_ids'].shape[1]==base['extra']['prefix_tokens']==detail['base_prefix_tokens']
     n=int(enc['input_ids'].shape[1])+len(qid)+len(aid)
-    full=j.render(msgs+history+[j.turn('user',tree_text(metadata['tree'])),j.turn('assistant','Context recorded.')],False)
+    observation=tree_text(metadata['tree']) if observation is None else observation
+    full=j.render(msgs+history+[j.turn('user',observation),j.turn('assistant','Context recorded.')],False)
     assert full.startswith(head);suffix=full[len(head):]
-    e=detail['extension'];assert e['suffix_text']==suffix and e['suffix_ids']==j.tok(suffix,add_special_tokens=False)['input_ids']
+    e=detail['extension'];assert e['text']==observation and e['acknowledgement']=='Context recorded.'
+    assert e['suffix_text']==suffix and e['suffix_ids']==j.tok(suffix,add_special_tokens=False)['input_ids']
     assert e['native_cache_tokens']==n and e['extended_cache_tokens']==n+len(e['suffix_ids'])
     assert detail['new_prefix_tokens']==e['extended_cache_tokens']
+
+
+def validate_local_inputs(j,row,segments,base,detail,metadata,folder):
+    """R4 actual current native images/ASR and local V/S suffix tokens, no weights."""
+    msgs,files=j.prefix_messages(frame_paths(row['dataset'],row['video_id'],20),segments)
+    text,enc=j.encode_prefix(msgs,files);qid,qtext=j.branch_ids(msgs,VIDEO_QUESTION)
+    aid,atext=j.answer_ids(msgs,VIDEO_QUESTION,base['extra']['stance'])
+    history=[{'role':'user','content':[{'type':'text','text':VIDEO_QUESTION}]},j.turn('assistant',base['extra']['stance'])]
+    head=text+qtext+atext
+    assert dict(msgs=msgs,head=head,history=history)==detail['native_conversation']
+    assert enc['input_ids'].shape[1]==base['extra']['prefix_tokens']==detail['base_prefix_tokens']==detail['new_prefix_tokens']
+    wins=fixed_windows(float(row['duration']),8)
+    for i,((a,b),packet,traces) in enumerate(zip(wins,metadata['packets'],detail['traces'])):
+        body=window_text(segments,a,b)
+        for kind in ('visual','speech'):
+            trace=traces[kind]
+            if kind=='speech' and not body.strip():assert trace is None;continue
+            assert trace is not None
+            content,images,paths=local_content(yesno_question(i,len(wins),a,b,body,kind),packet,metadata,folder)
+            full=j.render(msgs+history+[{'role':'user','content':content}],True);assert full.startswith(head)
+            suffix=full[len(head):]
+            try:local=j.encode(suffix,images)
+            finally:
+                for im in images:im.close()
+            assert trace['suffix_text']==suffix and trace['suffix_ids']==local['input_ids'][0].tolist()
+            assert trace['suffix_tokens']==len(trace['suffix_ids']) and trace['paths']==paths
+            counts=(local['image_grid_thw'].prod(1)//j.processor.image_processor.merge_size**2).tolist() if paths else []
+            assert trace['new_image_counts']==counts
 
 
 def validate_records(row,base,new,check,detail,metadata):
@@ -307,6 +396,31 @@ def validate_records(row,base,new,check,detail,metadata):
         assert np.isfinite(r['score_curve']).all()
         extra=int(detail.get('reader_revision')=='r3' and r is new)
         assert r['calls']==3+extra+len(wins)+sum('z_speech' in w for w in r['extra']['windows'])
+    if detail.get('reader_revision')=='r4':
+        assert check['reader_revision']=='r4' and check['GT_read'] is False
+        assert base['extra']['z_video']==new['extra']['z_video']
+        assert base['extra']['prefix_tokens']==new['extra']['prefix_tokens']==detail['base_prefix_tokens']==detail['new_prefix_tokens']
+        assert detail['global_context']=='native' and detail['speech_context']=='local tree packet' and detail['tree_in_global_prefix'] is False
+        assert detail['cache_version']==CACHE_VERSION and detail['tree_global_text']==tree_text(metadata['tree'])
+        assert len(detail['traces'])==len(wins)
+        diagnostics=0
+        for traces,packet,w,original in zip(detail['traces'],metadata['packets'],new['extra']['windows'],base['extra']['windows']):
+            assert ('z_speech' in w)==('z_speech' in original)
+            for kind in ('visual','speech'):
+                trace=traces[kind]
+                if kind=='speech' and 'z_speech' not in w:assert trace is None;continue
+                assert trace['packet']==packet and trace['margin']==w['z_'+kind] and trace['prefix_positions_exact'] is True
+                assert len(trace['paths'])==len(trace['new_image_counts'])==len(packet['pool_members'])
+                assert len(trace['suffix_ids'])==trace['suffix_tokens'] and isinstance(trace['suffix_text'],str)
+                if 'cloned_margin' in trace:assert trace['cloned_margin']==trace['margin'];diagnostics+=1
+        assert check['diagnostic_forwards']==diagnostics
+        assert check['actual_forwards']==base['calls']+new['calls']-3+diagnostics
+        assert check['read_seconds']==check['prefix_seconds']+check['new_visual_seconds']+check['new_speech_seconds']
+        assert check['standalone_seconds']['base']==check['prefix_seconds']+check['reference_branch_seconds']
+        assert check['standalone_seconds']['optimized']==check['preprocessing_seconds']+check['read_seconds']
+        assert check['added_local_images']==sum(len(p['pool_members']) for p in metadata['packets'])
+        assert check['added_speech_images']==sum(len(p['pool_members']) for p,w in zip(metadata['packets'],new['extra']['windows']) if 'z_speech' in w)
+        return
     if detail.get('reader_revision')=='r2':
         assert check['reader_revision']=='r2'
         assert check['actual_forwards']==base['calls']+len(wins)+check['diagnostic_forwards']
@@ -356,7 +470,7 @@ def existing(path,expected):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true')
-    ap.add_argument('--revision',choices=('r1','r2','r3'),default='r1');a=ap.parse_args()
+    ap.add_argument('--revision',choices=('r1','r2','r3','r4'),default='r1');a=ap.parse_args()
     out=ROOT/'runs/20261004_m1_tree'/(a.revision+'_full_'+('smoke' if a.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
@@ -369,6 +483,8 @@ def main():
         code='experiments/20261004_m1_tree/{tree,extract,measure}.py + src/{video_inputs,mllm_judge}.py; native visual-only revision2026-10-05')
     if a.revision=='r3':config.update(reader_revision='r3',global_context='native',speech_context='poststance factual tree',
         acknowledgement='Context recorded.',code='experiments/20261004_m1_tree/{tree,extract,measure}.py + src/{video_inputs,mllm_judge,mllm_renderer}.py; factual extension revision2026-10-05')
+    if a.revision=='r4':config.update(reader_revision='r4',global_context='native',speech_context='local tree packet',
+        code='experiments/20261004_m1_tree/{tree,extract,measure}.py + src/{video_inputs,mllm_judge,mllm_renderer}.py; local both-branch revision2026-10-05')
     cp=out/'config.json'
     if cp.exists():
         old=json.loads(cp.read_text());assert {k:v for k,v in old.items() if k!='date'}=={k:v for k,v in config.items() if k!='date'}
@@ -377,14 +493,16 @@ def main():
     done={name:existing(out/name/'predictions.jsonl',expected) for name in ('base','optimized')}
     checks=existing(out/'checks.jsonl',expected);assert done['base'].keys()==done['optimized'].keys()==checks.keys()
     asr={ds:load_asr(ds) for ds in DATASETS}
-    renderer=cpu_renderer() if a.revision=='r3' and checks else None
+    renderer=cpu_renderer() if a.revision in ('r3','r4') and checks else None
     for key in checks:
         meta,features=validate_cached(CACHE/key[0]/key[1],expected[key])
         detail=json.loads((out/'details'/key[0]/(key[1]+'.json')).read_text())
         assert detail.get('reader_revision','r1')==a.revision
         assert detail['segments']==[list(s) for s in asr[key[0]].get(key[1],[])]
         validate_records(expected[key],done['base'][key],done['optimized'][key],checks[key],detail,meta)
-        if renderer is not None:validate_extension_inputs(renderer,expected[key],asr[key[0]].get(key[1],[]),done['base'][key],detail,meta)
+        if renderer is not None:
+            if a.revision=='r4':validate_local_inputs(renderer,expected[key],asr[key[0]].get(key[1],[]),done['base'][key],detail,meta,CACHE/key[0]/key[1])
+            else:validate_extension_inputs(renderer,expected[key],asr[key[0]].get(key[1],[]),done['base'][key],detail,meta)
     torch.manual_seed(0);j=Judge(MODEL);j.forward_calls=0
     hook=j.model.model.register_forward_pre_hook(lambda *_:setattr(j,'forward_calls',j.forward_calls+1))
     handles={}
@@ -396,7 +514,7 @@ def main():
         key=row['dataset'],row['video_id']
         if key in checks:logging.info('%d/%d reuse %s/%s',i,len(rows),*key);continue
         folder=CACHE/key[0]/key[1];meta,features=validate_cached(folder,row);begin=time.perf_counter()
-        reader={'r1':read_video,'r2':read_visual_only,'r3':read_factual_context}[a.revision]
+        reader={'r1':read_video,'r2':read_visual_only,'r3':read_factual_context,'r4':read_local_branches}[a.revision]
         base,new,check,detail=reader(j,row,asr[key[0]].get(key[1],[]),meta,folder,a.smoke)
         validate_records(row,base,new,check,detail,meta)
         detaildir=out/'details'/key[0];detaildir.mkdir(parents=True,exist_ok=True)
