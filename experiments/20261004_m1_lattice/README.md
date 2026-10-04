@@ -52,6 +52,9 @@ are not the novelty claim.
    absent. If the actual audio ends before a window, record empty actual audio;
    the new speech body for that window is absent, not an invented transcription.
    Standard Whisper feature padding to30s is recorded and is not source audio.
+   Overlapping resampled blocks retain the first observed sample at each actual
+   presentation coordinate, in decode order; later overlapping samples are discarded
+   with exact intervals recorded. No averaging, shifting or time compression.
 3. Same frozen `openai/whisper-large-v3`, FP16, automatic language detection,
    transcribe task, deterministic beam search `num_beams=5`, `num_return_sequences=5`,
    do_sample=False, length_penalty=1, early_stopping=False, maximum448 total decoder
@@ -250,3 +253,27 @@ time = all new ASR preparation +prefix +visual +new speech. Reference speech and
 diagnostics are additional collection work, not silently attributed to deployment.
 Calls in each method's record still equal3+W+its available speech windows. Actual
 paired forwards are independently counted and reconciled with common/reused work.
+
+### Real audio CPU preflight, 2026-10-05
+
+Before GPU acquisition, decoding the fixed five actual smoke media passed four
+videos but failed on HateMM `hate_video_114`: AAC48k source PTS7168/7169/7170
+represent overlapping decoded blocks, triggering the initial overlap assertion.
+This was an input implementation failure, before any beam or moderation score.
+Failure evidence: `runs/20261004_m1_lattice/cpu_audio_preflight/failure.json`.
+
+The repaired, declared common policy places each resampled block at its actual
+presentation coordinate and keeps the first observed sample there in decode order.
+Later overlaps are discarded with exact block intervals saved; audio is never
+averaged, shifted or concatenated across a gap. Cache version/config/validation
+record this policy. Independent hand overlapping/backward/clipped block cases and
+the prior delayed-audio/gap oracle pass. All five real media now decode/crop
+successfully; recorded placed intervals exactly reconstruct the observed mask,
+and every window's waveform equals its source timeline slice. Actual evidence:
+`runs/20261004_m1_lattice/cpu_audio_preflight_fixed/{run.log,summary.json}`.
+This CPU parsing check does not substitute for actual ASR beam/Qwen8B smoke or
+full performance/mechanism validation. Independent narrow fix confirmation PASS
+(same-family provisional): `docs/reviews/20261005_m1_lattice_audio_overlap_fix.md`.
+Its separate per-sample first-wins oracle matches 100 deterministic overlapping
+blocks and verifies the saved actual-media interval bookkeeping. This policy
+does not claim to recover a unique waveform from malformed overlapping timestamps.

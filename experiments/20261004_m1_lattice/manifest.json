@@ -12,6 +12,8 @@
   "implementation_date": "2026-10-05",
   "code_review": "docs/reviews/20261005_m1_lattice_code.md",
   "code_pass": true,
+  "audio_fix_review": "docs/reviews/20261005_m1_lattice_audio_overlap_fix.md",
+  "actual_audio_cpu_checks": "runs/20261004_m1_lattice/cpu_audio_preflight_fixed/summary.json",
   "cpu_checks": "runs/20261004_m1_lattice/cpu_checks/selfcheck.log",
   "GPU_run": false
 }

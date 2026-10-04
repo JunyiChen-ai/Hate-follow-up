@@ -3,11 +3,12 @@ import math
 import re
 import numpy as np
 
-CACHE_VERSION='R1 temporal beam word lattice, sources 2026-10-05'
+CACHE_VERSION='R1 temporal beam word lattice, sources 2026-10-05; first-observed audio overlap'
 ASR_MODEL='openai/whisper-large-v3'
 CONSTANTS=dict(window_seconds=8,sample_rate=16000,beam_size=5,return_sequences=5,
     decoder_max_length=448,length_penalty=1,temperature=1,seed=0,
-    language_detection_seconds=30,edit_costs=[0,1,1,1],edit_ties=['diagonal','deletion','insertion'])
+    language_detection_seconds=30,edit_costs=[0,1,1,1],edit_ties=['diagonal','deletion','insertion'],
+    audio_overlap='first observed resampled sample in decode order; no shift or averaging')
 SCAFFOLD=('Consider only window {i} of {n}, from {a:.1f}s to {b:.1f}s of this video.\n'
     'The following speech lattice contains alternative transcriptions of the same audio. '
     'Alternatives in one slot are mutually exclusive; a null edge means no word. '

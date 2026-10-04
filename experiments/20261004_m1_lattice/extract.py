@@ -101,6 +101,7 @@ def validate(r,row,segments):
     assert r['cache_version']==CACHE_VERSION and r['constants']==CONSTANTS and r['model']==ASR_MODEL
     assert r['GT_read'] is False and r['dataset']==row['dataset'] and r['video_id']==row['video_id']
     assert r['duration']==float(row['duration']) and r['manifest_video_path']==row['video_path']
+    assert r['timeline']['overlap_policy']==CONSTANTS['audio_overlap']
     assert Path(r['input_video']).stem==row['video_id'] and r['segments']==[list(s) for s in segments]
     windows=fixed_windows(r['duration'],8);assert len(r['windows'])==len(windows)
     for i,(w,(a,b)) in enumerate(zip(r['windows'],windows)):

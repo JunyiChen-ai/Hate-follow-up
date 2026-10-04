@@ -3,6 +3,7 @@ import math
 from pathlib import Path
 import numpy as np
 RATE=16000
+OVERLAP_POLICY='first observed resampled sample in decode order; no shift or averaging'
 
 
 def resolve_video(row):
@@ -14,10 +15,20 @@ def resolve_video(row):
     return found
 
 
+def place_block(samples,observed,start,values):
+    """Keep presentation coordinates even when malformed media overlaps blocks."""
+    lo=max(start,0);hi=min(start+len(values),len(samples))
+    if hi<=lo:return dict(placed_intervals=[],overlap_discarded_intervals=[])
+    prior=observed[lo:hi].copy();keep=~prior
+    samples[lo:hi][keep]=values[lo-start:hi-start][keep]
+    observed[lo:hi][keep]=True
+    return dict(placed_intervals=intervals(keep,lo),overlap_discarded_intervals=intervals(prior,lo))
+
+
 def decode_audio(path,duration):
     import av
     total=math.ceil(duration*RATE);samples=np.zeros(total,dtype=np.float32)
-    observed=np.zeros(total,dtype=bool);blocks=[];previous=None
+    observed=np.zeros(total,dtype=bool);blocks=[]
     with av.open(str(path)) as container:
         origin=container.start_time/av.time_base if container.start_time is not None else None
         if origin is None:
@@ -26,30 +37,24 @@ def decode_audio(path,duration):
             assert first.pts is not None
             origin=float(first.pts*first.time_base)
         streams=list(container.streams.audio)
-    if not streams:return samples,observed,dict(video_origin=origin,blocks=[],audio_stream=None,missing_audio=True)
+    if not streams:return samples,observed,dict(video_origin=origin,blocks=[],audio_stream=None,missing_audio=True,overlap_policy=OVERLAP_POLICY)
     with av.open(str(path)) as container:
         stream=container.streams.audio[0];resampler=av.AudioResampler(format='flt',layout='mono',rate=RATE)
         def consume(frame):
-            nonlocal previous
             assert frame.pts is not None and frame.sample_rate==RATE
             start=int(round((float(frame.pts*frame.time_base)-origin)*RATE))
             a=np.asarray(frame.to_ndarray(),dtype=np.float32).reshape(-1)
             assert len(a)==frame.samples and np.isfinite(a).all()
-            if previous is not None:assert start>=previous,('overlapping resampled audio blocks',start,previous)
-            previous=start+len(a)
-            lo=max(start,0);hi=min(start+len(a),total)
-            if hi>lo:
-                assert not observed[lo:hi].any()
-                samples[lo:hi]=a[lo-start:hi-start];observed[lo:hi]=True
+            placement=place_block(samples,observed,start,a)
             blocks.append(dict(pts=int(frame.pts),time_base=[frame.time_base.numerator,frame.time_base.denominator],
-                start_sample=start,count=len(a),observed_start=max(lo,0),observed_end=max(lo,hi)))
+                start_sample=start,count=len(a),**placement))
         for source in container.decode(stream):
             assert source.pts is not None
             for frame in resampler.resample(source):consume(frame)
         for frame in resampler.resample(None):consume(frame)
         stream_info=dict(index=stream.index,codec=stream.codec_context.name,
             source_rate=stream.codec_context.sample_rate,source_layout=stream.codec_context.layout.name)
-    return samples,observed,dict(video_origin=origin,blocks=blocks,audio_stream=stream_info,missing_audio=False)
+    return samples,observed,dict(video_origin=origin,blocks=blocks,audio_stream=stream_info,missing_audio=False,overlap_policy=OVERLAP_POLICY)
 
 
 def intervals(mask,offset=0):

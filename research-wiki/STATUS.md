@@ -35,6 +35,7 @@ within+.007991/+.008406，HMM PR−.009075，无任一主指标+.01，按规则9
 来源`runs/20261004_m1_tree/r1_full_smoke_analysis/plumbing_summary.json`；进入固定完整333，尚无性能结果。
 固定完整333在sc474399/Slurm105进行中，先完成证据获取，再做配对读取；未更新性能结论。
 备用候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS，尚未跑GPU/读GT。
+固定五视频的实际音频CPU预检也通过；遇到的AAC重叠PTS实现问题已修并获独立窄确认PASS，明细见同实验README。
 入口`experiments/20261004_m1_lattice/README.md`；仅在Tree结果按规则分流允许切换后启动固定五视频smoke。
 当前零标签性能与机制目标仍未完成。
 

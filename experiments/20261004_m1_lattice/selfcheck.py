@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import numpy as np
 from lattice import align_words,confusion,tokenize_graph,graph_bias,graph_positions,validate_graph_trace
-from audio import decode_audio,crop_audio,RATE
+from audio import decode_audio,crop_audio,place_block,RATE
 ROOT=next(p for p in Path(__file__).resolve().parents if (p/'CLAUDE.md').is_file())
 
 
@@ -117,5 +117,20 @@ def actual_audio():
     print('PASS actual PyAV resampling/PTS delayed audio, absent crop, partial crop and uncompressed internal gap',flush=True)
 
 
+def overlapping_blocks():
+    samples=np.zeros(10,dtype=np.float32);observed=np.zeros(10,dtype=bool)
+    place_block(samples,observed,2,np.asarray([11,12,13,14],dtype=np.float32))
+    r=place_block(samples,observed,4,np.asarray([21,22,23,24],dtype=np.float32))
+    assert r==dict(placed_intervals=[[6,8]],overlap_discarded_intervals=[[4,6]])
+    np.testing.assert_array_equal(samples,[0,0,11,12,13,14,23,24,0,0])
+    r=place_block(samples,observed,-1,np.asarray([31,32,33,34],dtype=np.float32))
+    assert r==dict(placed_intervals=[[0,2]],overlap_discarded_intervals=[[2,3]])
+    np.testing.assert_array_equal(samples,[32,33,11,12,13,14,23,24,0,0])
+    r=place_block(samples,observed,10,np.asarray([41,42],dtype=np.float32))
+    assert r==dict(placed_intervals=[],overlap_discarded_intervals=[])
+    np.testing.assert_array_equal(observed,[True]*8+[False]*2)
+    print('PASS hand overlapping/backward/clipped source blocks keep first sample at its real presentation coordinate',flush=True)
+
+
 if __name__=='__main__':
-    graph_oracle();alignment_oracle();resume_binding();actual_audio()
+    graph_oracle();alignment_oracle();resume_binding();overlapping_blocks();actual_audio()
