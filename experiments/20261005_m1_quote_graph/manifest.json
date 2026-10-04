@@ -3,7 +3,7 @@
   "method": "source-bound quotation and reference graph with asymmetric speech reading",
   "version": "R1 source-bound quotation graph, sources2026-10-05",
   "scope": "development-selected active candidate24; fixed5 noGT PASS; complete main next",
-  "state": "Slurm131 fixed5 completed and returned; local prepare PASS; full333 pending",
+  "state": "Slurm132 complete333 acquisition and paired scoring running onsc474399; no GT/performance verdict",
   "proposal_review": "docs/reviews/20261005_m1_quote_graph_proposal.md",
   "proposal_verdict": "PASS",
   "code_review": "docs/reviews/20261005_m1_quote_graph_code.md",
@@ -28,5 +28,7 @@
   "smoke_graph_context_windows": {
     "HateMM": 0,
     "HateClipSeg": 13
-  }
+  },
+  "main_host": "sc474399",
+  "main_job": 132
 }

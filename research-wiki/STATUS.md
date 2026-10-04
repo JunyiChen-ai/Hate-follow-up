@@ -85,7 +85,7 @@ R3七臂matched控制独立CPU/代码检查PASS，来源`docs/reviews/20261005_m
 原生allraw精确、G/V不变、134新S变化、5clone/contextless检查通过；来源
 `runs/20261005_m1_quote_graph/r1_full_smoke_analysis/plumbing_summary.json`。
 HMM三个样本图节点0/非空上下文0of96；HCS13节点/12边、13of62窗获得上下文。
-仅实现验证，不是机制证据；原声明允许空图/拒绝块，不改接口/guard。继续相同R1完整333，尚无GT或性能结论。
+仅实现验证，不是机制证据；原声明允许空图/拒绝块，不改接口/guard。相同R1完整333已在sc474399/Slurm132启动，尚无GT或性能结论。
 入口`experiments/20261005_m1_quote_graph/README.md`；当前累计归档22项。
 当前零标签性能与机制目标仍未完成。
 

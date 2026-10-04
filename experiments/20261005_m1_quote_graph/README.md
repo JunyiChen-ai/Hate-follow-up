@@ -264,3 +264,9 @@ Proceed with identical frozen R1 `launch/lab2.sbatch main` after committing the
 actual checks and current machine synchronization. Whole333 stays onsc474399.
 Return BOTH outputs and derived input cache before canonical local evaluation;
 controls remain conditional on the declared complete main gate.
+
+Main Slurm132 dispatched2026-10-05 onsc474399 after fixed5 PASS and current
+`machines_before_main{,_note}.txt`: all four laboratory revisions clean/synced,
+lab2 selected5090 idle/569Gfree, exact foreign-home STRAY names unchanged from
+smoke. Whole215+118 acquisition and paired scoring use identical frozen R1.
+Actual complete results pending; no GT/performance verdict.
