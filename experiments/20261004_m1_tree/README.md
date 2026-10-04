@@ -686,3 +686,15 @@ This is CPU evidence only; actual GPU/native/R2 parity remains pending.
 Independent R4 narrow code confirmation PASS, same-family provisional:
 `docs/reviews/20261005_m1_tree_r4_code.md`. No observation-validity blocker remains;
 fixed5 actual GPU native/R2 V/fresh/cloned margins remains required before full333.
+
+R4 fixed5 sc474399/Slurm119 DONE, outputs and source inputs returned locally
+before noGT prepare PASS. Native all reads/curves exact; new V exactly equals R2
+new V, G unchanged;158 V/134 S windows changed vs native. Actual V/S fresh checks5
+each, cloned margins5 each, current native/local image/token binding all pass.
+Authority `runs/20261004_m1_tree/r4_full_smoke_analysis/plumbing_summary.json`.
+Peak18.87652/18.84197GiB; native prefix max5829/3083; new-video sample total
+111.17696s HMM/60.00556s HCS incl88.47373/48.85964s original input acquisition.
+Reference8.41256/4.07185s; actual paired forwards375/234 incldiagnostics6/4,
+diagnostic seconds.67100/.43647. V images170/99; S images149/78, actual new S
+read9.99192/4.61175s. Rough full79.20228/59.00547min=138.20775min, not actual
+full cost or performance. Continue identical full333; no GT or parameter change.

@@ -56,6 +56,9 @@ HMM within+.010443但PR−.018666，HCSwithin−.003552；未过门，原始max�
 R3控制代码已准备且独立CPU/代码窄审PASS，但不是模型或机制证据；启动脚本硬性要求主门PASS。
 已记录R3完整error analysis并预声明R4：不插入共享全树turn，原生G/stance不变，同一局部实像素与祖先上下文分别进入V/S独立读取。
 这是该方法族最后一次允许修订（3/3），失败后归档，不跑R5。细节唯一入口仍为Tree README；目标未完成。
+R4独立窄代码审查PASS，sc474399/Slurm119固定5 GPU完成并全部回传，noGT prepare PASS。
+原生全读数精确，new V逐值等于R2；V/S fresh及clone各5次通过，当前源图像/token绑定通过。
+来源`runs/20261004_m1_tree/r4_full_smoke_analysis/plumbing_summary.json`；接着固定完整333，尚无R4性能结论。
 实际新处理134.40min/native14.62倍；原始视觉排序HMM下降，机制未成立。
 按规则9继续此族，第二修订R3已声明native anchor后追加完整factual tree context再独立读取V/S。
 独立窄代码确认和CPU检查PASS，保存token/会话绑定缺口已修；随后固定5 GPU parity通过。

@@ -17,5 +17,7 @@
   "r3_smoke": "runs/20261004_m1_tree/r3_full_smoke_analysis/plumbing_summary.json",
   "r3_main_metrics": "runs/20261004_m1_tree/r3_full_main_decoded/optimized/metrics.json",
   "r3_controls_review": "docs/reviews/20261005_m1_tree_r3_controls_code.md",
-  "r4_status": "last revision predeclared: native G/stance, separate actual local pixels/ancestor packet in V/S, no shared tree extension; not run"
+  "r4_status": "last revision fixed5 GPU complete/local noGT PASS: native exact, R2 V exact, V/S fresh and clone checks5; identical full333 next",
+  "r4_code_review": "docs/reviews/20261005_m1_tree_r4_code.md",
+  "r4_smoke": "runs/20261004_m1_tree/r4_full_smoke_analysis/plumbing_summary.json"
 }
