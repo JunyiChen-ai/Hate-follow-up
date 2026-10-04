@@ -1,0 +1,10 @@
+{
+  "entry": "experiments/20261004_m1_acoustic/README.md",
+  "proposal": "docs/reviews/20261004_m1_acoustic_proposal.md",
+  "code_review": "docs/reviews/20261004_m1_acoustic_code.md",
+  "outputs": "runs/20261004_m1_acoustic/",
+  "inputs": "data/acoustic_path_support/",
+  "status": "proposal/code PASS; CPU checks PASS; GPU smoke next",
+  "GT_in_reader": false,
+  "date": "2026-10-04"
+}

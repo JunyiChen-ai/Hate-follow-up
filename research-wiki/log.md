@@ -12,3 +12,4 @@ _Append-only timeline._
 - `2026-10-04T07:34:08Z` upsert_idea: added idea:provenance_bound_temporal_entity_and_discourse_graph [stage=proposed outcome=pending]
 - `2026-10-04T07:34:08Z` upsert_idea: added idea:interval_witness_reconciliation_before_independent_window_reading [stage=proposed outcome=pending]
 - `2026-10-04T08:54:14Z` upsert_idea: updated idea:per_window_visual_latent_optimization [stage=archived outcome=negative]
+- `2026-10-04T09:18:15Z` upsert_idea: updated idea:acoustic_alignment_posterior_conditioned_reading [stage=active outcome=pending]

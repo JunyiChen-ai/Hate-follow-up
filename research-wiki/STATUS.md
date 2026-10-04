@@ -20,7 +20,9 @@ HCS .685951/.652592/.566666（99），全部development-selected。
 没有任一主指标+.01，按规则9直接归档为第19项；不跑完整控制/不再修订。
 实际成本64.34min、native约6.28倍。明细唯一入口
 `archive/experiments/20261004_m1_latents/README.md`，官方contextual版本尚未测试。
-九候选jury的第二项声学路径分布条件化读取正在形成确定方案，目标仍未完成。
+候选20声学路径分布条件化读取已声明确定算法/成本/完整对照，方案审查PASS、CPU验证PASS；
+入口`experiments/20261004_m1_acoustic/README.md`。独立代码审查PASS、三项修复已确认；准备Slurm五视频smoke，尚无GPU/GT性能。
+当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
