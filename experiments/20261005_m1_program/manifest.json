@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-05",
+  "role": "Deferred CPU-prepared candidate23; Tree21 and Lattice22 result branches remain prior",
+  "proposal": "experiments/20261005_m1_program/README.md",
+  "proposal_review": "docs/reviews/20261005_m1_program_proposal.md",
+  "proposal_pass": true,
+  "source_scope": "runs/20261004_m1_ideation/backup_source_reads/program/source_scope.json",
+  "implemented": true,
+  "cpu_checks": "runs/20261005_m1_program/cpu_checks/selfcheck.log",
+  "actual_source_checks": "runs/20261005_m1_program/cpu_source_preflight/summary.json",
+  "code_review": "docs/reviews/20261005_m1_program_code.md",
+  "code_pass": true,
+  "GT_read": false,
+  "GPU_run": false,
+  "performance_result": null,
+  "constants_declared_before_run": true
+}

@@ -61,3 +61,9 @@ Huang/Chen2019全文3.1–3.3及官方实现，用完整结构编码替代仅sep
 已交一次独立rule4审查；没有GPU/GT/性能结果，未替换候选21，也未重置任何族预算。
 
 维护记录：检索既有ASR输入脚本时遇到legacy baseline bootstrap中的内容摘要校验与第三方Git标识固定版本；按仓库禁用规则删除该校验/固定标识，模型可用性由消费者实际解析检查。默认模型输出路径归入仓库data/assets，未运行bootstrap、未重算任何历史baseline。Shell语法检查通过。
+
+后续CPU准备：原有第5名程序候选的ViperGPT全文/API与目标近邻已核读，
+MAESTRO真实工具调用的已知重叠和正文访问限制已明确。完整提案、literal材料、
+限制型时间/来源/scope执行、成本与未实施控制见`experiments/20261005_m1_program/README.md`。
+独立proposal/code审查及CPU原文/帧源包/缓存恢复检查PASS；无GPU/GT/性能结果。
+这是备用准备，Tree21/Lattice22顺序及结果分流不变，不重置任何族预算。

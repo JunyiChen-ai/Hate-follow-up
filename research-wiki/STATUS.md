@@ -37,6 +37,8 @@ within+.007991/+.008406，HMM PR−.009075，无任一主指标+.01，按规则9
 备用候选22声学词格结构读取的方案、独立代码审查和CPU检查已PASS，尚未跑GPU/读GT。
 固定五视频的实际音频CPU预检也通过；遇到的AAC重叠PTS实现问题已修并获独立窄确认PASS，明细见同实验README。
 入口`experiments/20261004_m1_lattice/README.md`；仅在Tree结果按规则分流允许切换后启动固定五视频smoke。
+备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS，未跑GPU/读GT。
+入口`experiments/20261005_m1_program/README.md`，仅为后续备用，仍先等待Tree及Lattice的结果分流。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
