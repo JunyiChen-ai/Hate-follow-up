@@ -65,7 +65,7 @@ Running candidates:
   Native reads exact, matched eager near baseline, no component controls after
   failed main gate.
 
-Cumulative archives17 (fifteen performance/mechanism failures, two proposal novelty STOPs).
+Cumulative archives18 (sixteen performance/mechanism failures, two proposal novelty STOPs).
 
 Initial candidate rationale:
 Reason: all previous score-subtraction, hypothetical counterfactual questions,
@@ -274,3 +274,10 @@ Input audit read old frame provenance/prep script without GT: old JPEG timestamp
 are nominal seek times and may hide a .5s retry. New proposal distinguishes nominal
 support from verified new-frame PTS, preserves the native baseline and records
 the limits of legacy source-index exclusion. All original inputs remain unchanged.
+
+18. `archive/experiments/20261003_m1_explorer/README.md`: R1 positive progress
+  accepted by user; R4 complete333 restored HMM pooled PR but its within gain
+  remained below the preregistered .01 on BOTH. Initial+3 revisions exhausted;
+  preserve R1/R3/R4 gains, archive family. No full control GPU after failed main gate.
+  Next: broaden complete-M1 candidates through readonly analytic lenses; maintain
+  unchanged r6/evaluator and require full333 plus falsifiable mechanism evidence.

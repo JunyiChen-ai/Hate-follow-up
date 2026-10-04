@@ -2,19 +2,15 @@
 
 截至 **2026-10-04**。旧的 2026-09-09 引言保留在本页下方各节。
 
-**2026-10-04 M1 自主迭代恢复**：用户确认 Explorer R1 为正向进展，并要求达到性能与机制目标后再停止。
-当前正式方法仍为 r6_bma。已审查并通过五视频 smoke 的 Explorer R3 全量333在 sc474399
-提交 Slurm job79，已完成并回传本机、统一评测；HateMM ROC/PR/within
-.897364/.688901/.757720，HCS .735061/.685685/.663234。HCS 三项继续提升，
-HMM within+.00694、PR-.00533，双语料门仍未过。来源
-`runs/20261003_m1_explorer/r3_main_decoded/explore/metrics.json`。
-R3 每窗先补两帧，再按既定 .3 熵决定是否再补两帧，两语料流程一致，r6/评测器固定。
-R4 最后一次修订已声明：新增局部帧的读取不再带模型自身的全局问答轮，原始观察语境、
-native 全局/语音和 r6 保持；独立方案、代码审查与实际36层CPU缓存测试已PASS，
-目标8B五视频smoke也PASS：5globals/292native分支/158首轮集合精确一致，
-实际图片seam及缓存位置通过，48.1s、18.323GiB；现在进入全量333。
-来源 `runs/20261003_m1_explorer/r4_smoke/plumbing_summary.json`；不是已证实的偏置机制。
-入口 `experiments/20261003_m1_explorer/README.md`。不更新 Overleaf。
+**2026-10-04 M1 自主迭代继续**：用户确认 Explorer R1 为正向进展，并要求达到性能与机制目标后再停止。
+当前正式方法仍为r6_bma。Explorer R4完整333在sc474399/Slurm87完成并回传本机，
+统一评测HateMM ROC/PR/within .897753/.694180/.759909（84），
+HCS .722478/.676508/.652582（99）；within+.009127/+.015233，HMM PR仅−.000054。
+来源`runs/20261003_m1_explorer/r4_main_decoded/explore/metrics.json`。
+仍未过声明的双语料within各+.01门，原始visual/max排序HMM下降，不能声称机制成立。
+实际新增像素处理合计35.43min（native3.71倍）；详情与最佳正向版本保留在
+`archive/experiments/20261003_m1_explorer/README.md`。初版+三修订已用完，累计归档18项。
+继续独立候选选题、审查与完整实验；性能与机制目标均未完成。全部development-selected，不更新Overleaf。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
@@ -22,7 +18,7 @@ native 全局/语音和 r6 保持；独立方案、代码审查与实际36层CPU
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档17个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档18个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -65,7 +61,7 @@ within仅+.003885/+.000548，无主指标+.01，归档为第15项。来源 `runs
 within仅+.000607/+.001170，无主指标+.01，归档为第16项。来源 `runs/20261003_m1_stabilizer/r1_main_decoded/stable/metrics.json`。
 第十七候选Preserver完整333完成：HateMM .895610/.689651/.752658，HCS .715189/.672282/.629401；
 无主指标+.01，原始visual/max排序两语料下降，归档为第17项。来源 `runs/20261003_m1_preserver/r1_main_decoded/preserve/metrics.json`。
-第十八候选Explorer完整333完成：HateMM .897600/.689538/.754830，HCS .731875/.683986/.658440；HCS三项+.01以上，但HMM within仅+.00405且原始排序下降，尚未晋级。来源 `runs/20261003_m1_explorer/r1_main_decoded/explore/metrics.json`。R2完整缓存回放仅within+.00155/+.01661，仍未过门；来源 `runs/20261003_m1_explorer/r2_cache_decoded/explore/metrics.json`，无新GPU计时。已声明R3统一先补两张局部帧，再由.3熵决定是否再补两张（第二次修订），不是已证实的机制。入口 `experiments/20261003_m1_explorer/README.md`。
+第十八候选Explorer已用完三次修订并归档；R1为用户认可的正向进展，R4 pooled恢复但HMM within仍差.000873未过事前门。权威结果与去向见页首及`archive/experiments/20261003_m1_explorer/README.md`。
 运行环境更新：实验室四机启用了Slurm-only GPU访问策略，普通SSH会话访问nvidiactl被EPERM拒绝；使用qian_pilot的local-主机名分区。当前任务不更新Overleaf。
 
 **累计十五个归档小结（规则11，不超过10行）**：

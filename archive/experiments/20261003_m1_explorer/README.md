@@ -1,3 +1,5 @@
+归档原因（2026-10-04）：初版及三次修订已用完；R4 HateMM within提升.009127<声明的.01双语料门。保留正向结果，继续独立候选。
+
 # M1 Explorer: uncertainty- and support-aware visual evidence acquisition
 
 Candidate18, declared2026-10-03 before Preserver performance is read.
@@ -656,3 +658,47 @@ change. Target5.15.1 actual source1108–1141 uses cache.get_seq_length() direct
 when incremental native calls omit attention_mask, so no production adaptation
 is needed. CPU evidence does not replace target8B control smoke. Main R4 code
 and its running collection are unchanged. The conditional GPU gate remains.
+
+
+## R4 完整结果与家族去向（2026-10-04，development-selected）
+
+sc474399 Slurm87 完整333视频完成，集合采集2132.4s；全部结果已回传本机，
+随后统一评测。native333全局与13939分支精确复现，7344个可扩展窗的首轮
+候选集合及先验与R3一致；新增读数使后续轨迹改变，不是固定轨迹的单token因果实验。
+
+| 语料 | pooled ROC | pooled PR | within（视频数） | 相对当前within |
+|---|---:|---:|---:|---:|
+| HateMM | .897753432 | .694180109 | .759909130（84） | +.009127086 |
+| HateClipSeg | .722477994 | .676507593 | .652581749（99） | +.015232636 |
+
+权威数字：`runs/20261003_m1_explorer/r4_main_decoded/explore/metrics.json`；
+配对判门：`runs/20261003_m1_explorer/r4_main_analysis/summary.json`。
+HMM pooled PR仅−.00005449，先前损失基本消失；但HMM within仍低于事前.01门，
+且没有另一主指标在双语料均+.01，performance_pass=false。
+配对视频bootstrap within CI为HMM[-.012700,.030586]、HCS[-.009359,.041138]，
+不能声称稳定的双语料定位机制。
+
+实际新视频处理时间HMM1079.65s/HCS1046.00s，合计35.43min、native的3.71倍；
+每视频平均forward56.55/95.56（native36.52/60.05），峰值18.323/18.020GiB。
+原有20帧/ASR复用，仍计入源视频索引/解码与新增像素编码。
+HMM新增8604帧、9700次图像编码，HCS8375帧、9583次编码；这些是部署成本，
+不是可从新视频免费复用的缓存。来源`r4_main_analysis/cost.json`与
+`r4_main/trace_diagnostics.json`（均在上述runs实验根下）。
+
+Post-score error analysis读取了本机R4/base预测、统一GT
+`data/gt_4fps/{HateMM,HateClipSeg}.npz`、R4 trace与最终解码，
+输出`runs/20261003_m1_explorer/r4_main_analysis/case_analysis.json`。
+HMM raw visual within .613908→.600846，raw max .680011→.668469；
+HCS raw visual .546450→.570853，raw max .610130→.613082。
+因此HMM最终正向幅度不能归因为新增局部证据改善原始排序。
+唯一含正负帧的单窗HMM视频hate_video_329最终仍.2→.2；
+R3的单窗贡献没有在R4复现。病例/子组关联不作为因果验证。
+本次发现只影响家族归档和下一独立候选选题；不修改任何打分/阈值路径。
+
+初版R1是用户认可的positive progress，HCS三指标均+.01，HMM PR损失.004697在噪声内；
+R3保留HCS最强within .663234，但HMM PR损失.005334超过容许值；R4保留更平衡的正向结果。
+它们的权威来源分别为`r1_main_decoded/explore/metrics.json`、
+`r3_main_decoded/explore/metrics.json`和上述R4路径，均在runs实验根下。
+初版+三次修订已耗尽，整族归档为累计第18项，不另起R5重置预算。
+条件式uniform/distance/fixed4/mismatch/verdict_replay未运行全量GPU，
+因为主门未过；审查PASS与smoke不等于消融通过。正式r6保持，继续新的完整M1方法。
