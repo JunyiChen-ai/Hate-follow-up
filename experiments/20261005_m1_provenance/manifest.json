@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-05",
+  "rank": 7,
+  "candidate_number": 25,
+  "proposal": "experiments/20261005_m1_provenance/README.md",
+  "proposal_review": "docs/reviews/20261005_m1_provenance_proposal.md",
+  "proposal_pass": true,
+  "implemented": true,
+  "code_review": "docs/reviews/20261005_m1_provenance_code.md",
+  "code_pass": true,
+  "cpu_checks": "runs/20261005_m1_provenance/cpu_checks/summary.json",
+  "source_preflight": "runs/20261005_m1_provenance/source_preflight/summary.json",
+  "input_cache": "data/temporal_entity_discourse_graph",
+  "GT_read": false,
+  "GPU_run": false,
+  "smoke_pass": false,
+  "performance_result": null,
+  "constants_declared_before_run": true,
+  "state": "Initial complete method implemented and CPU/code PASS; actual fixed5 next after synchronization and fresh node check"
+}

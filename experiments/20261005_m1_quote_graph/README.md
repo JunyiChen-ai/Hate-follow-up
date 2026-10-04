@@ -270,3 +270,7 @@ Main Slurm132 dispatched2026-10-05 onsc474399 after fixed5 PASS and current
 lab2 selected5090 idle/569Gfree, exact foreign-home STRAY names unchanged from
 smoke. Whole215+118 acquisition and paired scoring use identical frozen R1.
 Actual complete results pending; no GT/performance verdict.
+
+Complete333 Slurm132 finished09:51:11 onsc474399. Both graph inputs and paired
+run returned immediately tosc474397; local noGT input/native alignment and
+canonical/fixed-r6 analysis launched. No performance verdict before report.
