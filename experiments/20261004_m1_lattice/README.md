@@ -505,3 +505,47 @@ actual paired forwards282/174 including9/6diagnostics. Physical graph tokens
 These checks support identical full333 dispatch, not a performance or mechanism
 claim. The short-sample extrapolation remains descriptive; known full source
 acquisition59.95min is still charged and supersedes any smaller sample projection.
+
+Full R2 submittedsc474399/Slurm125 after the actualfixed5 PASS. Same code and
+configuration, full215/118; no R2 GT or score-based selection before completion.
+
+R2 controls are declared/prepared before their scores, not executed:
+`path_control_{reader,measure,analyze}.py` and
+`launch/{lab2_path_controls.sbatch,run_path_control_analysis.sh}`. Exact same
+six arms as R1, now applied to complete hypothesis paths:
+full calls the productionR2 reader; onebest ordinary serial reads the actual
+highest-scoring complete text with the same scaffold/question; flat uses ALL
+identical compiled full-path tokens but serial causal bias/positions; binary
+keeps exclusions/positions with every finite bias0. wrong_mass rotates merged
+path masses byfloor(K/2), retaining tokens/order/positions and epsilon mass.
+Groups containing a zero-mass path remain unchanged to preserve physical token
+inventory; singleton/no-op cases explicit. Report both changed float masses and
+changed BF16 logmasses, not just intended perturbations. wrong_audio_window uses
+the original available-window rotation and truthful donor coordinates plus
+literal destination instruction, with the same unmatched-text scope limit asR1.
+
+Native prefix/ownstance/V/referenceS are acquired once, six newS reads are
+independent; firstavailable cloned replay for each arm adds6diagnostics/video in
+smoke only. Actual physical calls, every arm's separate reading/diagnostic cost,
+current source/compiled-ID/geometry/native processor binding and atomic records
+are saved. Unchanged actual acoustic acquisition is physically shared but charged
+to each standalone method for new-video inference. All7streams call the canonical
+evaluator/fixedr6. full must exactly reproduce completedR2 main in noGT prepare.
+The launcher hard-guards completedR2 performance PASS and333coverage BEFORE any
+GPU reader, never passes that summary into scoring. Additional6arm planning
+estimate20–60GPUmin/333, unmeasured. Independent narrow code review PASS:
+`docs/reviews/20261005_m1_lattice_path_controls_code.md`, with actual CPU evidence
+in `runs/20261004_m1_lattice/path_controls_code_review/`. Real36-layer BF16
+six-arm forward/clone/exception tests, actualfixed5 CPU input binding and17
+corruption cases, independentR2/native/full stub parity,14canonical command
+checks and4launcher guard cases passed. Author actualfixed5 CPU compilation
+also confirms identical full/flat/binary/wrong-mass token IDs and effective
+BF16 mass changes; evidence `path_controls_cpu_compile/` under the run root.
+These are CPU preparation checks; no actual control GPU/GT analysis. Claims
+and rule14g gates remain exactly as declared.
+
+R2 full333 acquisition completedsc474399/Slurm125 at07:26:23 on2026-10-05.
+Both output and unchanged source input returned locally immediately, without
+checksum/delete options; transfer logs `r2_main_{run,input}_transfer.log` under
+the run root. Detached CPU noGT prepare and canonical evaluation are running;
+no completed R2 performance or mechanism claim yet.

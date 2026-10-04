@@ -1,6 +1,6 @@
 {
   "date": "2026-10-04",
-  "role": "active candidate22 after Tree21 archive; fixed5 actual GPU verification, no performance result",
+  "role": "active candidate22, R1 positive preserved; R2 full333 acquired locally, canonical evaluation running",
   "proposal": "experiments/20261004_m1_lattice/README.md",
   "source_scope": "runs/20261004_m1_ideation/backup_source_reads/word_lattice_source_scope.json",
   "proposal_review": "docs/reviews/20261004_m1_lattice_proposal.md",
@@ -17,7 +17,7 @@
   "cpu_checks": "runs/20261004_m1_lattice/cpu_checks/selfcheck.log",
   "GPU_run": true,
   "bias_dtype_review": "docs/reviews/20261005_m1_lattice_bias_dtype_fix.md",
-  "status": "R1 positive HMM within preserved, performance FAIL; R2 revision1/3 actualfixed5 noGT/native/clone/unit exact PASS, full333 ready",
+  "status": "R1 performance FAIL; R2 revision1/3 acquisition DONE333 local, canonical analysis running",
   "R1_performance_pass": false,
   "R1_any_qualifying_gain": true,
   "R1_error_analysis": "runs/20261004_m1_lattice/r1_error_analysis/summary.json",
@@ -26,9 +26,12 @@
   "R2_review_pass": true,
   "R2_cpu_checks": "runs/20261004_m1_lattice/path_cpu_checks/selfcheck.log",
   "R2_smoke": "runs/20261004_m1_lattice/r2_full_smoke_analysis/plumbing_summary.json",
+  "R2_controls_status": "prepared; independent narrow CPU/code PASS, no control GPU before complete R2 performance PASS",
   "revisions_declared": 1,
   "revisions_max": 3,
   "smoke": "runs/20261004_m1_lattice/r1_full_smoke_analysis/plumbing_summary.json",
   "controls_status": "prepared only; independent CPU/code PASS; no GPU until completed main performance gate PASS",
-  "controls_review": "docs/reviews/20261005_m1_lattice_controls_code.md"
+  "controls_review": "docs/reviews/20261005_m1_lattice_controls_code.md",
+  "R2_controls_review": "docs/reviews/20261005_m1_lattice_path_controls_code.md",
+  "R2_main": "runs/20261004_m1_lattice/r2_full_main"
 }
