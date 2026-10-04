@@ -420,3 +420,21 @@ B actualfixed5 Slurm133 dispatched2026-10-05 onsc474398 after code PASS and
 `machines_before_handle_smoke{,_note}.txt`: all laboratory code synchronized/clean,
 selected5090 idle/1.4Tfree, exact foreign-home names unchanged. Both acquisition
 and paired native/new scoring stay together onlab3. No actual B result yet.
+
+B Slurm133 fixed5 failed onsc474398 at08:49:52 after2m55s: actual4/5 acquisition
+completed (24/5/38/53module calls respectively), fifth hate_video_114 long planner
+PREFILL hit CUDA OOM, needing902MiB with769MiB free and3.25GiB allocator reserved
+but unused. Both partial run and input cache immediately returned to sc474397;
+source `runs/20261005_m1_program/slurm_133.out`. No paired B scoring/noGT prepare
+or performance verdict. Four successful source records retained, not relabelled
+as full validation. Failure runtime is additional incurred experiment cost.
+Only execution allocator setting changes: `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
+in B launch. No scientific prompt, token, source, cap, model, operation, scoring
+or input-version change. Same5 retry after narrow launch confirmation and code
+sync; existing exact-bound successful source records may be reused. Unchanged
+allraw/clone/exercise/factual guards still required before main.
+
+Allocator-only narrow confirmation PASS:
+`docs/reviews/20261005_m1_program_handle_allocator_fix.md`. It reduces allocation
+fragmentation, does not guarantee long-prefill capacity; same source/token/model/
+ops/guard contract and strict replay of four existing source records retained.
