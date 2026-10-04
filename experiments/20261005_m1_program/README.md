@@ -415,3 +415,8 @@ sc474398 through `launch/lab3_handles.sbatch smoke` is next after synchronizatio
 original A run/cache remain unchanged, no performance result. Main still requires
 actual noGT prepare including the unchanged exercise/native/clone guard and
 new structurally-valid factual-call check for EACH corpus.
+
+B actualfixed5 Slurm133 dispatched2026-10-05 onsc474398 after code PASS and
+`machines_before_handle_smoke{,_note}.txt`: all laboratory code synchronized/clean,
+selected5090 idle/1.4Tfree, exact foreign-home names unchanged. Both acquisition
+and paired native/new scoring stay together onlab3. No actual B result yet.

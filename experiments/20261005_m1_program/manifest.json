@@ -28,7 +28,9 @@
     "cpu_checks": "runs/20261005_m1_program/handle_cpu_checks/run.log",
     "input_cache": "data/temporal_evidence_program_handles",
     "host": "sc474398",
-    "GPU_run": false,
-    "smoke_pass": false
+    "GPU_run": true,
+    "smoke_pass": false,
+    "smoke_job": 133,
+    "state": "actualfixed5 Slurm133 running; no GT/performance"
   }
 }
