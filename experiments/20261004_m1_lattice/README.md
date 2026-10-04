@@ -669,3 +669,43 @@ within.01. Values−13.705020905/−11.671485901/−8.203338623/−11.155235291/
 9/6diagnostics; peaks18.125379/17.311294GiB;18489/5365graph tokens,420/250terminal
 paths. Smoke proves plumbing only; noGT/metric selection. Full333 dispatch uses
 identical R3 code and constants after code sync/current machine check.
+
+Full R3 submittedsc474399/Slurm129 after current machine/code check and actual
+fixed5 PASS; full215/118, same configuration. No main score-based change during
+this acquisition. R3 controls are prepared before any control score:
+`terminal_control_{reader,measure,analyze}.py` and
+`launch/{lab2_terminal_controls.sbatch,run_terminal_control_analysis.sh}`.
+Seven arms: full actualproductionR3, ordinaryserial onebest including its newline,
+flat ALL identical R3 tokens with causal/serial geometry, binary original
+endpoint-only geometry with finitebias0, wrong_mass fixedpath token/order rotation,
+truthful wrong_audio_window, and allword. allword preserves EVERY R3 input token,
+head/tail/logical position/path-history exclusion; only the tail-query graph
+access changes from weighted terminal keys to weighted ALL lexical/terminal keys.
+It uses the original R2 graph accessibility on the R3 graph, not historical R2
+scores or its different token inventory. This isolates the end-state bottleneck.
+
+Current-source/native CPU expanded-prefix/compiled-token/geometry/operator flags,
+atomic records/resume and native/full exact reference are bound before canonical
+evaluation. All8streams use the single canonical evaluator and fixedr6. Smoke
+adds7clones per video with available audio; full none. Actual arm calls/timing,
+shared physical joint cost, repeated standalone source cost and BF16 quality/source
+perturbation coverage are separate. Existing zero/singleton/noop/truthful donor
+limits apply. Launcher hard-guards complete R3 main performancePASS,84/99 and333
+before GPU/model reads. Planning additional7arm acquisition25–70GPUmin/333,
+unmeasured, actual source cache reuse means0physical ASR calls but each standalone
+arm includes the actual source acquisition59.95min. Full must beat BOTH onebest
+and flat by the same main metric≥.01 on BOTH corpora; end-state novelty additionally
+requires matchedallword removal≥.01 on BOTH corpora. Report the intersection of
+these metrics too; not just intended masks. Raw ordering/intervals/actualcoverage
+and final independent mechanism review are still required. Independent narrow
+control code review PASS, same-family provisional:
+`docs/reviews/20261005_m1_lattice_terminal_controls_code.md`; actual evidence in
+`runs/20261004_m1_lattice/terminal_controls_code_review/`. Real36-layer BF16
+seven-arm504layer checks/clone/exception restoration, same-ID/same-position
+allword-only-query access, actualfixed5 CPU source/native binding19corruptions,
+independentR3 stub reference prepare exact/corruption rejection,16canonical
+subprocess flags and4dispatch guard cases all PASS. Author actualfixed5 CPU
+compiled IDs also match actualR3 main-reader smoke IDs exactly; full/flat/binary/
+wrong_mass/allword inputs identical and effective BF16 mass changes confirmed.
+Evidence `terminal_controls_cpu_compile/` under the run root. These are CPU
+preparation checks only; no actual controlGPU/predictions/GT yet.

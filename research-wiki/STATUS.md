@@ -67,8 +67,9 @@ R2六个结构/转写/质量/错来源对照已准备，独立CPU/代码审查PA
 审查来源`docs/reviews/20261005_m1_lattice_path_controls_code.md`；尚无实际控制读数。
 完整误差分析已记录，R3改为每条完整转写一个末端表示、只由末端进入查询；修订2/3。
 CPU与独立窄代码检查PASS，来源`docs/reviews/20261005_m1_lattice_terminal_code.md`。
-实际8B固定5在sc474399/Slurm128完成并回传，noGT/native allraw exact、134newS、5clone/unit差值0；完整333下一步。
+实际8B固定5在sc474399/Slurm128完成并回传，noGT/native allraw exact、134newS、5clone/unit差值0；完整333在sc474399/Slurm129运行。
 来源`runs/20261004_m1_lattice/r3_full_smoke_analysis/plumbing_summary.json`；尚无R3性能结果。
+R3七臂matched控制独立CPU/代码检查PASS，来源`docs/reviews/20261005_m1_lattice_terminal_controls_code.md`；仅prepared，主门通过才运行。
 算法/成本/全部读过的GT与设计关联唯一明细仍为实验README；全部development-selected，机制尚未建立。
 备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS，未跑GPU/读GT。
 入口`experiments/20261005_m1_program/README.md`，仅为后续备用，等待Lattice的结果分流。

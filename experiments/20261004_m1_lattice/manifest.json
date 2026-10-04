@@ -17,7 +17,7 @@
   "cpu_checks": "runs/20261004_m1_lattice/cpu_checks/selfcheck.log",
   "GPU_run": true,
   "bias_dtype_review": "docs/reviews/20261005_m1_lattice_bias_dtype_fix.md",
-  "status": "R2 performance FAIL; R3 revision2/3 actualfixed5 native/clone/unit exact PASS, full333 next",
+  "status": "R2 performance FAIL; R3 revision2/3 actualfixed5 exact PASS, complete333 Slurm129 running",
   "R1_performance_pass": false,
   "R1_any_qualifying_gain": true,
   "R1_error_analysis": "runs/20261004_m1_lattice/r1_error_analysis/summary.json",
@@ -42,5 +42,7 @@
   "R3_review": "docs/reviews/20261005_m1_lattice_terminal_code.md",
   "R3_review_pass": true,
   "R3_cpu_checks": "runs/20261004_m1_lattice/terminal_cpu_checks/selfcheck.log",
-  "R3_smoke": "runs/20261004_m1_lattice/r3_full_smoke_analysis/plumbing_summary.json"
+  "R3_smoke": "runs/20261004_m1_lattice/r3_full_smoke_analysis/plumbing_summary.json",
+  "R3_controls_status": "seven matched controls prepared; independent CPU/code PASS; no control GPU until complete R3 main PASS",
+  "R3_controls_review": "docs/reviews/20261005_m1_lattice_terminal_controls_code.md"
 }
