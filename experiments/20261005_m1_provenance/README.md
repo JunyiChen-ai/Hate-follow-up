@@ -282,3 +282,10 @@ nonempty ledger AND nonlocal retrieval guard cannot pass. Do not relax parsing
 or exercise guard, read GT, run main performance or judge this idea from these
 inputs. Original A records and costs remain intact. Independent narrow actual
 interface diagnosis requested; local full source/native validation is pending.
+
+Local prepare completed all5 source/pixel/input-token/native bindings and10
+repeat checks before failing the declared HateMM graph/ledger guard. Native
+allraw exact; no GT accessed. `runs/20261005_m1_provenance/r1_full_smoke_analysis/run.log`
+and `source_interface_diagnosis/plumbing_failure.json` retain this observation.
+Actual aggregate new treatment HMM313.626489s/HCS134.534627s, versus native
+8.398999s/4.098451s; source193.566707/84.738675s included. No main/idea verdict.

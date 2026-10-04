@@ -346,3 +346,14 @@ R2 independent narrow code review PASS after both observed fixes;
 authority `docs/reviews/20261005_m1_quote_graph_r2_code.md`. Actualfixed5 CPU
 native/source/token bindings,8 corruptions and8 orchestration layouts pass;
 CPU stubs are not model numeric evidence. Same8B fixed5 GPU checks next.
+
+R2 same fixed5 Slurm139 onsc474399 finished10:17:49. Both source cache and run
+returned immediately; local noGT prepare PASS. Native allraw/G/V exact,13HCS S
+changes (0HMM),5clone/contextless checks PASS. Authority
+`runs/20261005_m1_quote_graph/r2_full_smoke_analysis/plumbing_summary.json`.
+HMM59.320469s versus native8.418906s, HCS47.469125s versus4.081485s, including
+original unchanged acquired source50.901563/42.972942s. Empty graph observations
+remain honestly reported; no GT/smoke-performance selection. Independent actual
+source-generation version investigation confirmed lab HateVLM/HF5.15 infers
+correct cached 3D positions from get_seq_length; root4.57 diagnostic concern
+does not apply to these GPU runs. Identical R2 full333 next.

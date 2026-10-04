@@ -3,7 +3,7 @@
   "method": "source-bound quotation and reference graph with asymmetric speech reading",
   "version": "R2 native fallback for empty source packet; sources2026-10-05",
   "scope": "development-selected R1 qualifying signal retained; R2 predeclared native fallback; CPU source checks PASS",
-  "state": "R2 independent code/source CPU PASS; same fixed5 GPU next",
+  "state": "R2 same fixed5 Slurm139 noGT/source/native/clone/contextless PASS; complete333 next",
   "proposal_review": "docs/reviews/20261005_m1_quote_graph_proposal.md",
   "proposal_verdict": "PASS",
   "code_review": "docs/reviews/20261005_m1_quote_graph_code.md",
@@ -36,6 +36,9 @@
   "r1_error_analysis": "runs/20261005_m1_quote_graph/r1_error_analysis/summary.json",
   "r2_cpu_checks": "runs/20261005_m1_quote_graph/r2_cpu_checks/summary.json",
   "r2_code_review": "docs/reviews/20261005_m1_quote_graph_r2_code.md",
-  "r2_GPU_run": false,
-  "r2_code_review_verdict": "PASS after two observed fixes; same-family provisional"
+  "r2_GPU_run": true,
+  "r2_code_review_verdict": "PASS after two observed fixes; same-family provisional",
+  "r2_smoke_job": 139,
+  "r2_smoke_pass": true,
+  "r2_smoke": "runs/20261005_m1_quote_graph/r2_full_smoke_analysis/plumbing_summary.json"
 }
