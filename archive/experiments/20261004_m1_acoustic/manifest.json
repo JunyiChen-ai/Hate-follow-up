@@ -1,0 +1,13 @@
+{
+  "entry": "archive/experiments/20261004_m1_acoustic/README.md",
+  "proposal": "docs/reviews/20261004_m1_acoustic_proposal.md",
+  "code_review": "docs/reviews/20261004_m1_acoustic_code.md",
+  "outputs": "runs/20261004_m1_acoustic/",
+  "inputs": "data/acoustic_path_support/",
+  "status": "Full333 main no qualifying standard-metric gain; rule9 archived. Positive within trend retained; no R2/full controls.",
+  "GT_in_reader": false,
+  "date": "2026-10-04",
+  "stage": "archived",
+  "outcome": "negative",
+  "canonical_metrics": "runs/20261004_m1_acoustic/r1_soft_main_decoded/optimized/metrics.json"
+}

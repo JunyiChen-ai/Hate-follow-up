@@ -20,10 +20,15 @@ HCS .685951/.652592/.566666（99），全部development-selected。
 没有任一主指标+.01，按规则9直接归档为第19项；不跑完整控制/不再修订。
 实际成本64.34min、native约6.28倍。明细唯一入口
 `archive/experiments/20261004_m1_latents/README.md`，官方contextual版本尚未测试。
-候选20声学路径分布条件化读取已声明确定算法/成本/完整对照，方案审查PASS、CPU验证PASS；
-入口`experiments/20261004_m1_acoustic/README.md`。独立代码/路径修复复核PASS；sc474399/Slurm98五视频真实模型smoke完成回传，
-native输出精确，146窗speech改变，4次有效support干预改变读数，峰值18.07GiB。
-来源`runs/20261004_m1_acoustic/r1_soft_smoke_analysis/plumbing_summary.json`；准备完整333，尚无性能结果。
+候选20声学路径分布条件化读取完整333已在sc474399/Slurm100完成回传，配对native全部六项精确。
+HateMM ROC/PR/within .893585/.685160/.758773（84）；HCS .716933/.669970/.645755（99）。
+within+.007991/+.008406，HMM PR−.009075，无任一主指标+.01，按规则9归档为第20项。
+权威来源`runs/20261004_m1_acoustic/r1_soft_main_decoded/optimized/metrics.json`。
+原始speech共享帧子集有正向趋势，但不是标准主指标、不作续跑门；机制控制未运行。
+实际新处理合计25.26min/native2.77倍，全部development-selected；明细
+`archive/experiments/20261004_m1_acoustic/README.md`。
+候选21完整语义聚类树获取+新global/local读取：方案/独立代码审查及CPU检查PASS，
+入口`experiments/20261004_m1_tree/README.md`；准备固定5 noGT Slurm smoke，尚无GPU/性能结果。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
@@ -32,7 +37,7 @@ native输出精确，146窗speech改变，4次有效support干预改变读数，
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档19个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档20个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。
@@ -77,6 +82,14 @@ within仅+.000607/+.001170，无主指标+.01，归档为第16项。来源 `runs
 无主指标+.01，原始visual/max排序两语料下降，归档为第17项。来源 `runs/20261003_m1_preserver/r1_main_decoded/preserve/metrics.json`。
 第十八候选Explorer已用完三次修订并归档；R1为用户认可的正向进展，R4 pooled恢复但HMM within仍差.000873未过事前门。权威结果与去向见页首及`archive/experiments/20261003_m1_explorer/README.md`。
 运行环境更新：实验室四机启用了Slurm-only GPU访问策略，普通SSH会话访问nvidiactl被EPERM拒绝；使用qian_pilot的local-主机名分区。当前任务不更新Overleaf。
+
+**累计二十个归档小结（规则11，不超过10行）**：
+- 最近五项为Stabilizer、Preserver、Explorer、Latents、Acoustic；尚无完整双语料性能与机制过门版本。
+- Explorer R4 within+.009127/+.015233，HMM仍低于事前双语料.01门，初版+三修订已用完。
+- Acoustic两语料within均有小于.01的正向趋势，但HMM PR下降超过噪声；原始speech子集不能替代主门。
+- 两者权威指标与成本入口见本页页首及归档README；不宣称归档等于目标解决。
+- 接下来运行完整语义聚类树获取，检验层级/语义选择对照及真实叶观测，不恢复Explorer第五版。
+- 当前仍为r6_bma，全部development-selected，零标签/评测协议/Overleaf不变。
 
 **累计十五个归档小结（规则11，不超过10行）**：
 - 最近五项为Recycler、Integrator、Reinforcer、Projector、Highlighter；未找到通过双语料性能和机制门的版本。

@@ -288,3 +288,9 @@ the limits of legacy source-index exclusion. All original inputs remain unchange
   Actual time/cost and all metrics in archived README/local canonical metrics.
   Continue independent acoustic posterior candidate; official contextual variant
   remains untested, not ruled out by this narrower negative result.
+
+20. `archive/experiments/20261004_m1_acoustic/README.md`: full333 soft acoustic
+  support reader has positive dual-corpus within trends but zero qualifying
+  standard-metric gains; HMM PR loss exceeds noise. Native all six exact.
+  Archive under rule9; raw shared-speech subset is not a standard main metric,
+  no R2/full controls. Continue reviewed complete semantic tree candidate21.

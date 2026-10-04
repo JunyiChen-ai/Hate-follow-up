@@ -1,0 +1,10 @@
+{
+  "entry": "experiments/20261004_m1_tree/README.md",
+  "proposal": "docs/reviews/20261004_m1_tree_proposal.md",
+  "code_review": "docs/reviews/20261004_m1_tree_code.md",
+  "outputs": "runs/20261004_m1_tree/",
+  "inputs": "data/semantic_cluster_tree/",
+  "status": "reviewed CPU PASS, preparing real5 noGT smoke; no GPU/performance result",
+  "GT_in_reader": false,
+  "date": "2026-10-04"
+}

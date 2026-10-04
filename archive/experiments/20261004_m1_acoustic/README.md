@@ -1,3 +1,5 @@
+归档原因（2026-10-04）：完整333的三项主指标均无≥.01提升，HateMM PR损失超过.005；按规则9归档，不修订/不跑全量控制，保留双语料within的正向趋势。
+
 # M1 声学路径分布条件化读取（候选20，R1方案）
 
 2026-10-04事前声明；本机sc474397开发，拟在实时空闲的sc474399或sc474398 Slurm运行。
@@ -167,3 +169,40 @@ sc474399/Slurm99在第三视频non_hate_video_8的旧ASR padding时间遇到空�
 runs/20261004_m1_acoustic/input_before_empty_audio_fix/，新完整抽取重新生成，不混用版本。
 新版本对旧五个正常input的support应精确不变，可在回传后核对。
 这是实现不可靠后的输入边界修复，按规则9不评价idea、不算三次设计修订。
+
+
+## 完整333结果与去向（2026-10-04，development-selected）
+
+sc474399/Slurm100以修复后的同一R1完整抽取并读取333，所有输出和派生输入已回传。
+配对native全部六指标精确复现；6871窗speech发生变化。权威新指标：
+`runs/20261004_m1_acoustic/r1_soft_main_decoded/optimized/metrics.json`。
+
+| 语料 | ROC | PR | within | ΔROC / ΔPR / Δwithin | within有效视频 |
+|---|---|---|---|---|---|
+| HateMM | .8935854216 | .6851595075 | .7587728257 | −.003533 / −.009075 / +.007991 | 84 |
+| HateClipSeg | .7169331948 | .6699696543 | .6457546245 | +.000108 / −.001102 / +.008406 | 99 |
+
+没有任一标准主指标≥.01，HMM PR损失超过.005，按规则9归档为第20项；不继续R2，不跑全量控制。
+原始speech在双方均有读数的帧子集within提升+.029883/+.012986（82/97有效视频）；
+raw max +.016879/+.005532。子集不是标准主指标，不能用它放宽继续门。
+配对final within95%CI分别[−.010153,+.027862]/[−.007034,+.025560]，均含零。
+来源`runs/20261004_m1_acoustic/r1_soft_main_analysis/{summary,per_video}.json`。
+这保留了双语料局部排序的正向趋势，但没有证明soft传播/attention conditioning机制；
+hard/proportional/unweighted/shifted全量控制均未运行，mechanism_supported=false。
+
+实际新视频读取+全部新增声学处理HMM827.968s（13.80min），HCS687.901s（11.47min），
+合计25.26min；配对native合计9.13min，约2.77倍。峰值17.82/17.55GiB。
+实际Whisper encoder3456/2767、decoder3670/2885；新speech3572/3303窗。
+原生20帧/ASR预处理两臂共有、另列，不声称新视频免此成本；配对采集与模型初始化墙钟另列日志。
+来源`runs/20261004_m1_acoustic/r1_soft_main_analysis/alignment.json`。
+
+边界修复的旧五份正常输入已全部比较，words/windows/soft/Viterbi/proportional精确相同，
+证据`runs/20261004_m1_acoustic/cpu_checks/empty_fix_real_input_parity.json`。
+完整输入实际跳过HMM16空块/7视频，HCS0空块，逐块回退原因/字符权重保留；
+word MAP与比例不同约27.6%/31.4%，仅输入描述，不能代替时间正确性或机制证据。
+来源`runs/20261004_m1_acoustic/cpu_checks/support_diagnostic_full.json`。
+独立空音频修复复核：`docs/reviews/20261004_m1_acoustic_empty_audio_fix.md`。
+
+本轮打分后读取test GT `data/gt_4fps/{HateMM,HateClipSeg}.npz`，配对原始/解码预测，
+及上述summary/per_video，发现最终收益小于.01且HMM PR退化。唯一设计决策是按事前门归档，
+继续先前已提出并独立审查的候选21完整语义聚类树；未根据GT修改本R1常数或计算路径。
