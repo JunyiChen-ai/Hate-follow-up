@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-05",
+  "rank": 9,
+  "candidate_number": 27,
+  "proposal": "experiments/20261005_m1_verification/README.md",
+  "proposal_review": "docs/reviews/20261005_m1_verification_proposal.md",
+  "proposal_pass": true,
+  "implemented": true,
+  "code_review": "docs/reviews/20261005_m1_verification_code.md",
+  "code_pass": false,
+  "cpu_checks": "runs/20261005_m1_verification/cpu_checks/summary.json",
+  "cpu_pass": true,
+  "input_cache": "data/temporal_factual_verification",
+  "GT_read": false,
+  "GPU_run": false,
+  "smoke_pass": false,
+  "performance_result": null,
+  "constants_declared_before_run": true,
+  "state": "Prototype and author33CPU checks PASS; single independent code review running; no scientific GPU",
+  "result_guided_revisions_used": 0
+}

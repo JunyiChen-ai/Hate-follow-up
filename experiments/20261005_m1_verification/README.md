@@ -3,7 +3,7 @@
 Rank9, last entry of the unchanged original9 pool:
 `experiments/20261004_m1_ideation/CANDIDATES.json`, jury
 `docs/reviews/20261004_m1_ideation_jury.md`. Declared2026-10-05 onsc474397.
-Independent once-only proposal review PASS: `docs/reviews/20261005_m1_verification_proposal.md`; no scientific implementation/GPU yet.
+Independent once-only proposal review PASS: `docs/reviews/20261005_m1_verification_proposal.md`; prototype implemented, independent code review running; no scientificGPU yet.
 Native formal reference r6_bma, full215HateMM+118HateClipSeg, canonical4fps,
 fixedr6, all results development-selected. Candidate25/26 outcomes pending;
 this independent proposal does not prejudge them or reset a previous family.
@@ -150,5 +150,50 @@ source/compiler replacement/exclusion rules and final native conversation
 serialization. Empty/incomplete generated planner retains cost and no questions,
 not an invented successful verification. Final reader uses newly compiled facts,
 not obsolete replaced draft values. Filepaths remain internal audit information
-and are absent from model-visible source descriptions. No implementation or
-scientificGPU yet. Independent once-only proposal review PASS; literal source-adaptation and complete updated four-field serialization clarified within that review. Implementation next.
+and are absent from model-visible source descriptions. Prototype implemented, no
+scientificGPU yet. Independent once-only proposal review PASS; literal source-adaptation and complete updated four-field serialization clarified within that review. Independent code review in progress.
+
+
+## Prototype and pre-GPU validation2026-10-05
+
+Implemented self-contained scientific prototype `interface.py`, `inputs.py`,
+`extract.py`, `reader.py`, `measure.py`, `analyze.py`. No inter-experiment imports;
+shared actual-source acquisition, structured FP32 generation and native Judge/
+stance cache only. `analyze.py` delegates four primary evaluations/fixedr6 runs
+to unchanged canonical evaluator/existing twolevel CLI; it never reimplements
+ROC/PR/within calculation. All score computations excludeGT.
+
+Author `selfcheck.py` completed33checks, including retained-unqueried fields,
+queriedUNKNOWN replacement, obsolete values absent final record, independently
+recreated original verification context, overlapping unique spans, invalid
+ownership/type/duplicate/cap rejection and actual fixed5 source/rawPTS/PNG/input
+binding. All7359currentwindows examined,956862 legal speech handles retained.
+Actual10 draft/verification source templates:22images and3106–6572expanded
+inputtokens; source path/class-bearing IDs absent from visible text. Evidence
+`runs/20261005_m1_verification/cpu_checks/summary.json`. Synthetic grammar choices
+are explicit author fixtures, not observed model semantics. An initial author
+fixture incorrectly encoded description+closingquote as one token sequence;
+fixed only fixture to match production's separately emitted closingquote and
+reran PASS. Actual scientific pipeline has not run.
+
+Before fixed5 source-interface acceptance require actual independent verification
+calls>0 in EACH corpus, plus complete native allraw/currentG parity, allsource/
+token/field-replacement/context bindings and fresh repeat equality. UNKNOWN
+answers and invalid/capped planners remain explicitly counted, never forced
+correct. This minimal execution guard verifies the method executes; it does not
+assert correctness, require literal changes, select windows fromGT, or certify
+mechanism. Wholecap source costs are retained. Native G/ownstance is measured
+once; paired total forwards=base.calls+new.calls−3+repeatdiagnostics, image
+forwards=1+newV/Sbranches+diagnostics. Standalone new-video cost includes source
+acquisition+nativeG/ownstance setup+allfreshnewV/S reads, excluding pairednative
+branches/diagnostics. No second global verdict or score ensemble.
+
+Run in committed Slurm launch only:
+`sbatch experiments/20261005_m1_verification/launch/lab1.sbatch` (fixed5 default);
+`sbatch --export=ALL,SCOPE=main experiments/20261005_m1_verification/launch/lab1.sbatch`
+(full333 only after actual fixed5 PASS). NoGT fixed5 prepare:
+`python experiments/20261005_m1_verification/analyze.py --stage prepare --smoke`.
+Full CPU detached analysis entry `launch/run_analysis.sh`. Actual machine
+availability/clean sync and disk checked immediately before dispatch; no newjob
+submitted yet. Single independent rule6 code review pending; source scientific
+capacity and correctness still unmeasured.
