@@ -15,3 +15,4 @@ _Append-only timeline._
 - `2026-10-04T09:18:15Z` upsert_idea: updated idea:acoustic_alignment_posterior_conditioned_reading [stage=active outcome=pending]
 - `2026-10-04T10:27:25Z` upsert_idea: updated idea:acoustic_alignment_posterior_conditioned_reading [stage=archived outcome=negative]
 - `2026-10-04T10:27:25Z` upsert_idea: updated idea:complete_semantic_cluster_tree_with_leaf_regrounding [stage=active outcome=pending]
+- `2026-10-04T11:43:22Z` upsert_idea: updated idea:single_reader_temporal_word_confusion_lattice [stage=proposed outcome=pending]

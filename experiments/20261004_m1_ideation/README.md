@@ -52,4 +52,12 @@ runs/20261004_m1_ideation/jury_evidence/。本轮选择候选19连续视觉状�
 其余候选没有被判STOP或失败。官方潜变量代码已公开，初读“未公开”由实际访问纠正，
 论文与代码的差异在候选19 README明确记录。尚无新GT分析或性能结果，所有结果均development-selected。
 
+后续选择记录：候选19/20已按完整标准主门归档；候选21完整语义树的
+独立审查与固定5 noGT检查通过，现跑完整333，结果分流尚未确定。
+当前入口`experiments/20261004_m1_tree/README.md`，权威活状态仍只有STATUS。
+在等待当前完整运行时，准备九项中原有的词混淆格候选22，新增实际阅读
+Huang/Chen2019全文3.1–3.3及官方实现，用完整结构编码替代仅separator输入。
+适配/常数/成本/源文训练范围均在`experiments/20261004_m1_lattice/README.md`，
+已交一次独立rule4审查；没有GPU/GT/性能结果，未替换候选21，也未重置任何族预算。
+
 维护记录：检索既有ASR输入脚本时遇到legacy baseline bootstrap中的内容摘要校验与第三方Git标识固定版本；按仓库禁用规则删除该校验/固定标识，模型可用性由消费者实际解析检查。默认模型输出路径归入仓库data/assets，未运行bootstrap、未重算任何历史baseline。Shell语法检查通过。

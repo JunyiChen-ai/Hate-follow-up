@@ -16,5 +16,6 @@
     "research-wiki/ideas/temporal_quotation_coreference_scope_graph.md"
   ],
   "selected_proposal": "experiments/20261004_m1_tree/README.md",
-  "experiment_outcome": "Latents and Acoustic full333 failed standard main gates and archived; complete Tree candidate21 reviewed/prepared, no GPU results yet."
+  "experiment_outcome": "Latents and Acoustic full333 failed standard main gates and archived; Tree candidate21 smoke PASS and complete333 job running, no full performance result.",
+  "prepared_backup_proposal": "experiments/20261004_m1_lattice/README.md"
 }

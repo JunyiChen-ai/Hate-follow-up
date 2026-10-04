@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-04",
+  "role": "CPU-prepared independent backup; no GPU before candidate21 result-based branch",
+  "proposal": "experiments/20261004_m1_lattice/README.md",
+  "source_scope": "runs/20261004_m1_ideation/backup_source_reads/word_lattice_source_scope.json",
+  "proposal_review": "docs/reviews/20261004_m1_lattice_proposal.md",
+  "implemented": true,
+  "GT_read": false,
+  "performance_result": null,
+  "constants_declared_before_run": true,
+  "proposal_pass": true,
+  "implementation_date": "2026-10-05",
+  "code_review": "docs/reviews/20261005_m1_lattice_code.md",
+  "code_pass": true,
+  "cpu_checks": "runs/20261004_m1_lattice/cpu_checks/selfcheck.log",
+  "GPU_run": false
+}
