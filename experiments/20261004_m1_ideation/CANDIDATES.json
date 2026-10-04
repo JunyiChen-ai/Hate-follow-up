@@ -1,0 +1,115 @@
+{
+  "stage": "unranked_generation_consolidation",
+  "scope": "Parent transcription of all nine generated candidates; no quality/novelty filtering. Exact dedup_key equality only; nine unique keys. Full shard responses retained in the session under the named agents.",
+  "common_constraints": "Qwen3-VL-8B; zero hateful labels in computation; one model per modality; identical flow/constants both corpora; native paired reproduction; fixed r6 and canonical 4fps evaluator; full215HateMM+118HCS. Same main metric must gain .01 both with no pooled loss>.005/within>.01; every claimed novelty component must pass a common-metric .01 dual-corpus ablation and falsifiable wrong-binding control. No Explorer R5, score ensemble, calibration/postprocessing, or mere prompt/encoder/input swap.",
+  "candidates": [
+    {
+      "shard_id": "temporal", "dedup_key": "acoustic_alignment_posterior_conditioned_reading",
+      "method": "Teacher-force characters from existing transcript through same Whisperlargev3 with per-utterance unsupervised head filtering. Construct monotone forward-backward distribution using normalized attention emissions; character occupancy summed into word/time/window support. Add log support to local speech-query attention over transcript tokens, with separate full-transcript interpretation context. One Qwen speech margin/window, native visual/global retained.",
+      "hypothesis": "Proportional slicing turns uncertain acoustic assignment into certain local evidence; propagating uncertainty can reduce wrong-window contamination.",
+      "sources": ["https://arxiv.org/html/2509.09987v1", "https://arxiv.org/html/2512.10408v3"],
+      "source_scope": "Whisper internal aligner II-A-C and IV-C read; hardDTW source, posterior lattice/Qwen conditioning new adaptation. MultiHateLoc3.1-3.5 read.",
+      "prior_work": "MultiHateLoc supervised temporal sentence alignment; ordinary word timing alone not novelty. Grounder failed visual attention restriction is close implementation risk.",
+      "cost_minutes": [30,90], "inputs": "ExistingASR/frames; additional originalaudio teacherforcedWhisper and Qwen speech reread, no perpath score averaging.",
+      "controls": ["hardMAP with same attention mechanism", "proportional support with same attention mechanism", "circular shifted acoustic support preserving words/entropy", "postscore alignment disagreement analysis"],
+      "risks": ["attention emission not calibrated posterior", "cannot repair wrong transcript", "fullcontext may defeat locality", "r6 may suppress boundary-only gains"],
+      "so_what": "Tests whether sensory uncertainty must enter semantic measurement instead of fixing input timing."
+    },
+    {
+      "shard_id": "temporal", "dedup_key": "single_reader_temporal_word_confusion_lattice",
+      "method": "SameWhisper fixedbeam alternatives→time-indexed confusion slots including deletion weights. One Qwen uncertain prefix: alternative spans share logical time/are branch isolated; acoustically weighted attention to subsequent local query. One final speech margin, no independently scored hypotheses averaged; nativevisual/global fixed.",
+      "hypothesis": "Consequential ASR substitution/deletion can be semantically disambiguated without treating every alternative as spoken.",
+      "sources": ["https://arxiv.org/html/2401.02921v1", "https://arxiv.org/html/2512.10408v3"],
+      "source_scope": "WCN2.1-2.4 RNNT/Kaldi textseparator source read; Whisperbeam/branchmask/sharedpositions new adaptation; MultiHateLoc methodology read.",
+      "prior_work": "MultiHateLoc one transcript; generic WCN prompting insufficient novelty.",
+      "cost_minutes": [45,120], "inputs": "New same-model beamASR; native media/global; one Qwen lattice prefix plus queries, measure token expansion.",
+      "controls": ["newbeam onebest", "flatten no branch isolation", "permute acoustic weights", "repeatonebest equal tokenlength", "postscore disagreement windows"],
+      "risks": ["correlated ASR errors", "sequence score not localposterior", "alternatives may increasefalsepositives", "substantial mask/positions implementation", "explicit noensemble review required"],
+      "so_what": "Tests one-reader representation of mutually exclusive acoustic evidence."
+    },
+    {
+      "shard_id": "temporal", "dedup_key": "temporal_quotation_coreference_scope_graph",
+      "method": "SameQwen pervideo exacttranscript-span graph of utterance/source/referent/negation/endorse-reject scope, no goldentitylist. Deterministically compile localutterances plus graph-linked interpretation spans; structural attention prevents context-only spans from independently serving as localoccurrence evidence. One speech margin/window; nativevisual/global fixed.",
+      "hypothesis": "Local quoted hostility/rejection/endorsement needs utterance ownership rather than one global hardstance.",
+      "sources": ["https://arxiv.org/html/2406.11380v2", "https://aclanthology.org/2023.acl-short.64/", "https://arxiv.org/html/2512.10408v3"],
+      "source_scope": "Quotationpaper introduction/4/limitations inclgoldcharacterlist; ACL2023abstract and MultiHateLocmethods read. Graphcompilation/scope attention self-designed.",
+      "prior_work": "Native stance/HVL/Factorizer close; MultiHateLoc aligned sentence fusion; targetselfgrounded reasoning must checked.",
+      "cost_minutes": [25,60], "inputs": "ExistingASR/frames; bounded extraction/video + packet speech reread/window, fixedchunkoverlap/merge.",
+      "controls": ["graphtext without packet construction", "equalbudget nearestcontext", "permute source/coreference edges", "remove quote versus referent edges", "fixed sample sourceaudit"],
+      "risks": ["ASR lacksquotation/speakerpunctuation", "literarygoldcharacters inapplicable", "must execute binding beyondgraphprompt", "maydiscardusefulcontext", "scope changes mayrare"],
+      "so_what": "Tests temporal ownership of local discourse versus global stance broadcast."
+    },
+    {
+      "shard_id": "orthogonal", "dedup_key": "executable_temporal_evidence_program",
+      "method": "Generate bounded typed program from sameQwen existingmedia with utterance/speaker/target/action/quote sourceIDs and no hatehypothesis. Restricted interpreter executes temporaloverlap/exactspan/sourceexistence/entity/scope primitives, max2 semantic calls; UNKNOWN unsupported references. Give executed record+originalmedia to normalbinaryreader; preserveglobal/fixedr6. No arbitraryPythonexecution, alternativeprogramvoting.",
+      "hypothesis": "Executable source binding can fix rightcontent attached to wrongspeaker/target/time.",
+      "sources": ["https://viper.cs.columbia.edu/", "https://openaccess.thecvf.com/content/ICCV2023/papers/Suris_ViperGPT_Visual_Inference_via_Python_Execution_for_Reasoning_ICCV_2023_paper.pdf", "https://arxiv.org/html/2601.15115v1", "https://github.com/Multimodal-Intelligence-Lab-MIL/RAMF", "https://arxiv.org/html/2606.11953v1", "https://aclanthology.org/2026.findings-acl.604/"],
+      "source_scope": "ViperGPTauthorpage/indexedmethod; directPDFfailed,code needsread. MARSabstract/methodcontext,RAMFofficialREADME,IAREstructure/repo,LEAFabstract read; restrictedtemporalinterpreter adaptation.",
+      "prior_work": "Generic decomposition/explanation already MARS/RAMF/IARE/LEAF; executable temporal/source/quotation binding is narrower possible delta.",
+      "cost_minutes": [45,100], "inputs": "Existingmedia; max3addedshortcalls/window with sharedprimitive reuse.",
+      "controls": ["sameprogram without execution", "wrongwindowbindings preservingvocabulary/length", "postscore sourcecorrections vsreinterpretations"],
+      "risks": ["sparsemedia cannot verifyabsence", "syntacticallyvalidscope stillwrong", "formatchecks alone promptengineering", "fullLEAF/IARE compare missing"],
+      "so_what": "Tests whether executable grounding adds more than generated explanations."
+    },
+    {
+      "shard_id": "orthogonal", "dedup_key": "per_window_visual_latent_optimization",
+      "method": "Reserve4 continuous slots before visualanswer. Frozenbackbone sourceUnsilencingVisualLatents: queryranked disjointpositive/negative patchcontrastivewarmup5steps followed15 confidenceprogression latent-searchsteps; selectsingle finalstate and readYesNo margin. Nativeglobal/speech/r6 unchanged, seed0, discardperwindow latent; no optimizationiterate scoreaveraging.",
+      "hypothesis": "Intermediate visualreasoning state may integrate evidence immediateanswer bypasses without attention reweighting or newframes.",
+      "sources": ["https://arxiv.org/html/2605.02735v1", "https://arxiv.org/html/2601.15115v1", "https://arxiv.org/html/2606.11953v1", "https://aclanthology.org/2026.findings-acl.604/"],
+      "source_scope": "3.2-3.3/Algorithm1/implementation/ablation read; 4latents5warmup15search. Exactinit/insertion/Qwen3 requiresadaptation. Correction after independent live proposal review: official repo now has code https://github.com/zhangxin-xd/Unsilencing-Latent-Reasoning . Paper/code differences and this declared adaptation are recorded in experiments/20261004_m1_latents/README.md.",
+      "prior_work": "Target reasoning neighbors inspected at scopes above; no located per-instancecontinuous optimization yet; no searchabsence noveltyproof.",
+      "cost_minutes": [60,150], "inputs": "Existingmedia only; suffix-onlysearch, detachedprefixcache, no backbonegradient.",
+      "controls": ["4unoptimizedslots", "stageIonly", "wrongwindowpositivepatches samebudget", "rawordering vsconfidence"],
+      "risks": ["confidence reinforceswronganswer", "Qwen3interface adaptation", "must not collapseattentiontweak", "expensive", "sourcehyperparamsincomplete"],
+      "so_what": "Tests optimization of latent measurement state rather than attention routing or prediction calibration."
+    },
+    {
+      "shard_id": "orthogonal", "dedup_key": "independent_factual_verification_before_window_read",
+      "method": "One factualdraft(window utterance/action,target,author), max2open factualverificationquestions. SameQwen freshbranches originalmedia exclude draftanswers/globalverdict; return exactspan/frameID. Deterministic source/timevalidator, replacecontradictedfields with verifiedrecord then binaryreader originalmedia+record. No oppositehatehypotheses/votes/averaging; nativeglobal/r6fixed.",
+      "hypothesis": "Answer-blind factualremeasurement can correct interpretation contaminated by early global stance, beyond R4contextremoval.",
+      "sources": ["https://aclanthology.org/2024.findings-acl.212.pdf", "https://arxiv.org/html/2601.15115v1", "https://github.com/Multimodal-Intelligence-Lab-MIL/RAMF", "https://aclanthology.org/2026.findings-acl.604.pdf", "https://arxiv.org/html/2606.11953v1"],
+      "source_scope": "CoVe3factoredverification read; completeLEAF/IARE mechanismcomparison outstanding; sourcechecking adaptation.",
+      "prior_work": "MARS/RAMFcompetingreasoning; LEAFselfgrounding/IAREreasoning/CLARA. Generic verification unsafe novelty; answerblind factualsourcechecks narrower.",
+      "cost_minutes": [60,120], "inputs": "Existingmedia; draft/plan/max2verification/final up to4addedcalls/window.",
+      "controls": ["jointverification seesdraft", "freshfinalcontext withoutverification", "disable sourcechecker", "wrongwindowverification media"],
+      "risks": ["samemodel repeatserror", "sparsevisual/noisyASR", "targetprioroverlap", "withoutactualsourcecorrection pureprompt"],
+      "so_what": "Separates independent evidence remeasurement from extra reasoning tokens."
+    },
+    {
+      "shard_id": "grounding", "dedup_key": "complete_semantic_cluster_tree_with_leaf_regrounding",
+      "method": "Qwenonly1fpsvisionfeatures→deterministicsemanticclustering→actualrepresentative captions→policyrelevance. CompleteVideoTree adaptivebreadth4/8/16 until2highclusters/cap, recursivedepth2. Completeleaf/windowprovenance; absentcoverage realobservation. Newglobalread chronologicaltree/fullASR/nativeoverview then independentlocalvisual/speechread ownmedia+ancestorobservations. Directnewglobal/local logits tofixedr6, noExplorerblend.",
+      "hypothesis": "Semantically distinct events need coherent multiscale representation, beyond appendingnearestframes.",
+      "sources": ["https://arxiv.org/html/2405.19209v3", "https://jianlang.org/papers/MATCH.pdf", "https://www.dsta.gov.sg/staticfile/ydsp/projects/files/reports/Report%20-%20Hear%20Me%20Out%20%28%26%20Think%29_%20MAESTRO%2C%20A%20Multimodal%20Agentic%20Model%20with%20Efficient%2C%20Synergistic%20Text-Reasoning%20Optimisation%20Framework.pdf", "https://arxiv.org/html/2512.02743v1", "https://aclanthology.org/2026.acl-long.817/"],
+      "source_scope": "VideoTree3.1-3.3/implementation actualread; EVA-CLIP/captioner/LLM source→Qwenonlyadaptation. MATCHIII-A-D/RAMF3.1-3.5read. MAESTROdirectPDFfailed indexedprimarymethods only; SAGEabstract.",
+      "prior_work": "MAESTRO alreadyhateconfidenceglobal/localloops, MATCH generate/retrieve/verify, RAMFlocalglobalfusion,SAGEdeliberation. Claim onlycompleteadaptive semanticclusterhierarchy+leafprovenance, notgenericactive rereading.",
+      "cost_minutes": [60,180], "inputs": "New1fpspixels/Qwenvisionfeatures andKcaptioncalls+breadth/depthdecisions+newglobal+2W branches chargedpernewvideo.",
+      "controls": ["flattenexactnodes/captions/media/tokenbudget", "equalcaptioncounttemporalpartition", "permuteancestorleaflinks", "remove newpixelleaves", "rawordering"],
+      "risks": ["MAESTROoverlap", "Qwenfeatures clusterstyle", "captionhallucination/cost", "newglobalpooleddamage"],
+      "so_what": "Tests scientific value of semantic hierarchy versus acquired input count."
+    },
+    {
+      "shard_id": "grounding", "dedup_key": "provenance_bound_temporal_entity_and_discourse_graph",
+      "method": "SameQwen neutralledger nativeframes+2actualframes/window+ASR with exactquotes/actions/times/referents. Linkrepeatentities/quoteownership usingexistingIDs: sameentity/quotes/responds/retracts/speakerchange sourcebothendpoints. Perwindow traverseincidentedges, retrieveactualendpointmedia/ASR nearest2supportingevents eachside. Independentlocal2branches ownmedia+scope; nativeglobalfixedr6fixed, nohypotheticalhateinterpretations.",
+      "hypothesis": "Graphboundownership/referents retain distantinterpretation while identifying localact.",
+      "sources": ["https://arxiv.org/html/2601.06097v1", "https://jianlang.org/papers/MATCH.pdf", "https://arxiv.org/html/2512.02743v1", "https://doi.org/10.1145/3774905.3796488"],
+      "source_scope": "SemanticEventGraph2.1-2.4/limitations read; YOLOproximityevents→selfdesigneddiscourseadaptation, no sourceeventhashuse. MATCH/RAMFmethods,ACMevidenceattributionabstractread.",
+      "prior_work": "MATCHcluegrounding; ACM evidencecommonstructure. Graph/ledgeralone notnovel; persistenttemporal source/discoursescope narrowclaim.",
+      "cost_minutes": [120,300], "inputs": "2Wnewpixels,Wledgergenerations,ceil(W/8)linkcalls,2Wfinalbranches. No newdetector/tracker/model.",
+      "controls": ["no crosswindowedges samepixels", "degree/lengthpreservingrewire", "nearesttimeretrieval equalcount", "correctgraph wrongcitedmedia", "postscore resolvedscope subgroup"],
+      "risks": ["unreliableentity/quoteownership", "neutralrecord mayhideverdict", "mayrepeatglobaltopic", "limitedsourceevidence/targetneighborreview"],
+      "so_what": "Tests persistent source ownership rather than an ungrounded evidence ledger."
+    },
+    {
+      "shard_id": "grounding", "dedup_key": "interval_witness_reconciliation_before_independent_window_reading",
+      "method": "Binarytree existing8secwindows, eachleafownsactualpixels/ASR. Qwenleafcertificate act/absence+exactsourceIDs+unresolveddependency. Composeparents existentialviolation requiresdescendantwitness, absenceallchildren; inconsistency one targetedactualchild reread withparentcontext, one sweep. Newglobalfromreconciledtree+overview; finalindependent2branches ownmedia+path+newstance. Tree numeric scoresdiscarded, onlynewreader margins→r6.",
+      "hypothesis": "Coverage-driven observationrepair can reduce unsupportedglobal-to-local stance transfer.",
+      "sources": ["https://arxiv.org/html/2405.19209v3", "https://jianlang.org/papers/MATCH.pdf", "https://www.dsta.gov.sg/staticfile/ydsp/projects/files/reports/Report%20-%20Hear%20Me%20Out%20%28%26%20Think%29_%20MAESTRO%2C%20A%20Multimodal%20Agentic%20Model%20with%20Efficient%2C%20Synergistic%20Text-Reasoning%20Optimisation%20Framework.pdf"],
+      "source_scope": "Selfdesignedcertificatecomposition; VideoTreefullmethod/MATCHmethods actualread; MAESTROindexedprimaryexcerpt only.",
+      "prior_work": "Genericverification MAESTRO/MATCH alreadyhate; narrow temporalpartition/witnessownership/coverage repair vs confidence-triggeredloop.",
+      "cost_minutes": [120,240], "inputs": "2Wnewpixels,Wleafgenerations,W-1parentcompositions,<=Wrepaircalls,newglobal,2Wfinalbranches. Batchedparentcallsstilltokencost.",
+      "controls": ["equalcount uniformrereads", "flatten no parentcomposition", "permutechildownership sametree/calls", "unreconciledcertificates", "rawordering/repairaccuracy"],
+      "risks": ["occurrenceexistential insufficientinterpretation", "hallucinatedwitness structuralvalid", "uninspectedneighboroverlap", "newglobalpooleddamage"],
+      "so_what": "Tests whether executable temporal witness ownership, rather than self-rated confidence, improves evidence collection."
+    }
+  ]
+}

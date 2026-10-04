@@ -12,6 +12,11 @@ HCS .722478/.676508/.652582（99）；within+.009127/+.015233，HMM PR仅−.000
 `archive/experiments/20261003_m1_explorer/README.md`。初版+三修订已用完，累计归档18项。
 继续独立候选选题、审查与完整实验；性能与机制目标均未完成。全部development-selected，不更新Overleaf。
 
+候选19已进入实施：`experiments/20261004_m1_latents/README.md`。
+九项完整候选由独立jury排序，第一项为连续视觉输入状态的两阶段优化迁移；
+方案审查PASS（same-family provisional），代码审查与五视频Slurm检查进行中，尚无性能结果。
+保持原生全局/语音读取与固定r6；论文公式适配和官方代码差异已明确记录。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。

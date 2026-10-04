@@ -1,0 +1,27 @@
+---
+type: idea
+node_id: idea:per_window_visual_latent_optimization
+title: "per window visual latent optimization"
+stage: proposed
+outcome: pending
+added: 2026-10-04T07:34:08Z
+based_on: []
+target_gaps: []
+tags: ["m1", "zero-label", "development-selected"]
+---
+
+# per window visual latent optimization
+
+**stage:** `proposed`  ·  **outcome:** `pending`
+
+算法、来源、成本和对照的唯一明细：experiments/20261004_m1_ideation/CANDIDATES.json，键 per_window_visual_latent_optimization。独立排序见 docs/reviews/20261004_m1_ideation_jury.md。尚无性能结论。
+
+## Thesis
+按候选明细验证；本页只作检索入口。
+
+## Key risks
+same-family provisional 审查，结果与机制均待完整双语料实测。
+
+## Connections
+_Edges are recorded in `graph/edges.jsonl`; summarize here for human readers._
+
