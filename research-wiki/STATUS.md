@@ -77,10 +77,15 @@ R3七臂matched控制独立CPU/代码检查PASS，来源`docs/reviews/20261005_m
 算法/成本/全部读过的GT与设计关联唯一明细仍为实验README；全部development-selected，机制尚未建立。
 备用候选23可执行时间/来源/话语程序的独立方案/代码审查与CPU检查已PASS。
 原先声明的固定5在空闲sc474398/Slurm130完成并回传，但noGT prepare因实际感知模块调用0未过机制执行检查。
-保留真实非法参数/超预算/缺窗/UNKNOWN记录，独立接口窄诊断中；不降低guard、不启动主实验、不作性能/idea裁定。
+保留真实非法参数/超预算/缺窗/UNKNOWN记录，独立接口窄诊断确认未观察到实现bug、原始模型输出不符合接口；
+来源`docs/reviews/20261005_m1_program_gpu_interface_diagnosis.md`。需要新接口设计；不降低guard、不启动主实验、不作性能/idea裁定。
 入口`experiments/20261005_m1_program/README.md`，错误来源`runs/20261005_m1_program/r1_full_smoke_analysis/run.log`；未读GT。
 候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
-22已归档、23接口未可靠执行，24进入固定5验证准备，尚无GPU、GT或性能结论。
+22已归档、23接口未可靠执行；24固定5在sc474399/Slurm131完成并回传本机，noGT prepare PASS。
+原生allraw精确、G/V不变、134新S变化、5clone/contextless检查通过；来源
+`runs/20261005_m1_quote_graph/r1_full_smoke_analysis/plumbing_summary.json`。
+HMM三个样本图节点0/非空上下文0of96；HCS13节点/12边、13of62窗获得上下文。
+仅实现验证，不是机制证据；原声明允许空图/拒绝块，不改接口/guard。继续相同R1完整333，尚无GT或性能结论。
 入口`experiments/20261005_m1_quote_graph/README.md`；当前累计归档22项。
 当前零标签性能与机制目标仍未完成。
 

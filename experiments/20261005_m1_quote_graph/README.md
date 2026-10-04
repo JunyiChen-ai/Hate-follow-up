@@ -1,8 +1,8 @@
 # M1 candidate24 backup: source-bound quotation and reference graph
 
 Declared2026-10-05 while candidate22 full333 is collecting. Independent proposal
-PASS; CPU prototype and independent code review PASS. No GPU, GT or
-score. Candidate22 is now archived after R3 no qualifying gain; candidate23's
+PASS; CPU prototype and independent code review PASS. Actual fixed-five GPU
+validation is now complete; no GT or performance score yet. Candidate22 is now archived after R3 no qualifying gain; candidate23's
 actualfixed5 failed its unchanged mechanism-exercise guard and needs a new
 source/decoder interface. Result branch now permits this independent candidate's
 fixed5 GPU verification. No scientific code, input or constant changed in switching.
@@ -15,7 +15,7 @@ Actualfixed5 dispatch2026-10-05 onsc474399/uoa-lab2 Slurm131, committed
 home scope note saved in `runs/20261005_m1_quote_graph/machines_before_smoke{,_note}.txt`;
 all laboratory code synchronized/clean, selected5090 idle/569Gfree. Entire graph
 acquisition and paired native/new scoring stay onthishost. Actual8B/native/clone/
-contextless checks pending; no performance metrics or GT selection yet.
+contextless checks passed as documented below; no performance metrics or GT selection yet.
 
 ## Hypothesis and source limits
 
@@ -229,7 +229,7 @@ attention/KV execution and exception recovery, actual five-video CPU processor
 input expansion, 17 corruption cases, 11 whole-chunk rejection cases and explicit
 generation/evaluation stubs. Evidence is in
 `runs/20261005_m1_quote_graph/code_review/`. Actual 8B fixed-five GPU validation
-is still pending; no QuoteGraph run was launched.
+completed in Slurm131; results are documented below.
 
 When this candidate's result branch is reached, launch on sc474399 only after
 code review and synchronization:
@@ -240,3 +240,27 @@ Only after these noGT checks pass, launch the identical `main` command. Complete
 results are returned locally before the detached CPU
 `launch/run_analysis.sh` evaluation. All predicted performance and cost remain
 unmeasured until these actual runs.
+
+## Actual fixed-five validation and main transition (2026-10-05)
+
+Host sc474399/uoa-lab2, Slurm131 finished08:19:06; both run outputs and
+`data/temporal_quotation_graph/` returned immediately to sc474397 without delete
+or checksum options. Local CPU `analyze.py --stage prepare --smoke` PASS.
+Authority `runs/20261005_m1_quote_graph/r1_full_smoke_analysis/plumbing_summary.json`:
+5videos, native allraw exact, global/visual unchanged,134new speech windows,
+5clone/contextless checks passed; no GT read. This is plumbing evidence only.
+
+HateMM:16chunks/10rejected/0truncated,3628generated tokens,0graph nodes/edges,
+0of96windows have new context. HCS:11chunks/8rejected/0truncated,3102generated
+tokens,13nodes/12edges,13of62windows with38added records. Empty/rejected chunks
+remain UNKNOWN under the original declaration; no coercion or new coverage guard.
+The graph mechanism was not exercised on these HateMM examples; changed S alone
+cannot establish it. Full333 must report actual coverage and all six metrics.
+Measured new-video processing59.603089s HMM/47.591444s HCS versus native
+8.437781s/4.095749s, including extraction50.901563s/42.972942s. Peaks19.000096/
+18.843460GiB. Full runtime remains unmeasured; no smoke-GT selection.
+
+Proceed with identical frozen R1 `launch/lab2.sbatch main` after committing the
+actual checks and current machine synchronization. Whole333 stays onsc474399.
+Return BOTH outputs and derived input cache before canonical local evaluation;
+controls remain conditional on the declared complete main gate.
