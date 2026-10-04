@@ -31,15 +31,16 @@
     "GPU_run": true,
     "smoke_pass": true,
     "smoke_job": 134,
-    "state": "Actual source-only size-selected whole N134 capacity running onsc474398/Slurm136; fixed5 noGT PASS; no GT/performance",
+    "state": "Slurm136 longest-source complete and locally replay-bound; fixed5 noGT PASS; full333 next; no GT/performance",
     "allocator": "expandable_segments:True",
     "allocator_review": "docs/reviews/20261005_m1_program_handle_allocator_fix.md",
     "failed_attempt_seconds": 175,
     "smoke": "runs/20261005_m1_program/r1_handles_full_smoke_analysis/plumbing_summary.json",
     "memory_review": "docs/reviews/20261005_m1_program_handle_prefill_memory_fix.md",
-    "capacity_pass": false,
+    "capacity_pass": true,
     "source_size_audit": "runs/20261005_m1_program/handle_full_size_preflight/source_sizes.json",
     "factual_source_audit": "runs/20261005_m1_program/handle_smoke_input_audit/summary.json",
-    "capacity_job": 136
+    "capacity_job": 136,
+    "capacity_validation": "runs/20261005_m1_program/handle_capacity_validation/summary.json"
   }
 }

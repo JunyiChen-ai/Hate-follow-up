@@ -499,3 +499,13 @@ sc474398/Slurm136 after independent narrow PASS and four clean synchronized
 laboratory code checks. Selected partition idle/1.4Tfree; foreign home names
 unchanged. Evidence `machines_before_capacity{,_note}.txt`. No GT/scoring in
 this check; full333 waits for actual success.
+
+Slurm136 completed09:17:59 onsc474398, whole N13457windows/8planner calls/62
+module calls/4554 actual forwards,151.571920s/29.028573GiB peak. The saved largest
+actual image-expanded prompt is53,137tokens. Both run/cache returned immediately;
+local source/token/compiler/generation replay PASS, authority
+`runs/20261005_m1_program/handle_capacity_validation/summary.json`. No GT or final
+score was read. The earlier actualfixed5/native/clone/factual guard remains PASS.
+Identical complete333 B acquisition+paired native/new measurement is now ready
+forlab3 after synchronization and fresh machine check; source-bound prior B
+cache records retain original actual costs, no scientific change or score tuning.

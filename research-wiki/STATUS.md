@@ -88,7 +88,8 @@ B noGT prepare PASS，native allraw/G及10clone精确，实际126/91个结构有
 `runs/20261005_m1_program/r1_handles_full_smoke_analysis/plumbing_summary.json`。未读GT、没有性能结论。
 固定5实际远程context/join均0，speaker/mode多为UNKNOWN；结构有效不等于语义或机制成立，明细只记实验README。
 纯输入完整333大小审计发现plain最大的三个chunk展开约53k，超过fixed5；prefill内存生命周期修复及独立等价窄确认PASS，
-来源`docs/reviews/20261005_m1_program_handle_prefill_memory_fix.md`。先实际source-only最长输入容量检查，再完整333。
+来源`docs/reviews/20261005_m1_program_handle_prefill_memory_fix.md`。Slurm136最长完整视频于09:17:59成功并回传，53,137实际tokens/29.03GiB；本机source/token重放PASS。
+来源`runs/20261005_m1_program/handle_capacity_validation/summary.json`；相同完整333 B下一步，无性能结论。
 候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
 22已归档、23接口未可靠执行；24固定5在sc474399/Slurm131完成并回传本机，noGT prepare PASS。
 原生allraw精确、G/V不变、134新S变化、5clone/contextless检查通过；来源
