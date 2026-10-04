@@ -223,8 +223,12 @@ image feature API, plus offline real tokenizer digit/FP32 read and CPU cases.
 Evidence `runs/20261004_m1_tree/code_review/`. Actual native/append-image parity
 remains for GPU smoke. Run only after candidate20 branching.
 
-Planned run host sc474398 (uoa-lab3), subject to live Slurm/code/disk checks.
-`sbatch experiments/20261004_m1_tree/launch/lab3.sbatch smoke` then `main`.
+Initial sc474398/Slurm102 exited before media processing because the first raw
+HateMM video was unavailable there. This operational input failure is not a method verdict or a
+revision. Logs returned locally; use sc474399 (uoa-lab2), which has both complete
+raw corpora. Full333 noGT media preflight recorded before resubmission:
+`runs/20261004_m1_tree/cpu_checks/media_preflight_lab2.json`.
+`sbatch experiments/20261004_m1_tree/launch/lab2.sbatch smoke` then `main`.
 After each remote job, return both this run and `data/semantic_cluster_tree/`
 with ordinary rsync before local noGT prepare; full scores then run
 `setsid nohup bash experiments/20261004_m1_tree/launch/run_analysis.sh` locally.

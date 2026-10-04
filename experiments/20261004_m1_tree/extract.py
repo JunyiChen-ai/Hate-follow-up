@@ -75,6 +75,7 @@ def main():
     import transformers
     config=dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),model=MODEL,cache_version=CACHE_VERSION,
         constants=CONSTANTS,GT_read=False,smoke=a.smoke,torch=torch.__version__,transformers=transformers.__version__,
+        command='python -u '+' '.join(sys.argv),
         code='experiments/20261004_m1_tree/{tree,extract}.py + src/{video_inputs,mllm_judge}.py; sources2026-10-04')
     (out/'config.json').write_text(json.dumps(config,indent=2)+'\n');torch.manual_seed(0)
     rows=selected_rows(a.smoke);j=Judge(MODEL);counts=dict(language=0,vision=0)
@@ -119,7 +120,7 @@ def main():
         'Input identity/duration/path: data/omsl_v6_inputs/manifests/all_test.jsonl, no GT.\n'
         'Features are FP32 mean final merged Qwen image embeddings, normed; witnessed frames are actual source pixels.\n'
         'Complete captions, rejected breadth rounds, memberships/parents/wording/costs in metadata.json.\n'
-        'Command: sbatch experiments/20261004_m1_tree/launch/lab3.sbatch {smoke|main}.\n'
+        'Command: '+config['command']+'; called by launch/run_lab.sh in an allocated lab Slurm job.\n'
         'Generating hosts: '+', '.join(sorted({r['host'] for r in metas}))+'; date '+config['date']+'.\n')
     logging.info('EXTRACTION_DONE coverage=%d',len(metas))
 
