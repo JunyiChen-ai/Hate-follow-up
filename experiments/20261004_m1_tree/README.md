@@ -1,7 +1,8 @@
 # M1 candidate21: complete semantic cluster tree and local evidence reading
 
 Declared 2026-10-04 while candidate20 is running. This is a prepared independent
-backup; no performance result, no GT analysis or GPU run yet. Proposal review
+backup; no performance result or GT analysis yet. GPU plumbing attempts are
+recorded below. Proposal review
 PASS: `docs/reviews/20261004_m1_tree_proposal.md`; implementation and CPU checks
 prepared after PASS, independent rule6 review PASS (below). Current formal method
 remains r6_bma. Development-selected. No Explorer fifth revision:
@@ -235,3 +236,12 @@ image output and incremental position interfaces agree by direct source reading.
 After each remote job, return both this run and `data/semantic_cluster_tree/`
 with ordinary rsync before local noGT prepare; full scores then run
 `setsid nohup bash experiments/20261004_m1_tree/launch/run_analysis.sh` locally.
+
+sc474399/Slurm103 passed media access and captioning, then failed in the first
+pure-text relevance round: target HF5.15 leaves `rope_deltas=None` for text-only
+prefixes. Fixed snapshot/restore to preserve None (ordinary text positions follow
+KV length), rather than unconditionally cloning it. No video tree/score was
+completed; no input version, constant or scientific design changed. Partial
+witnesses and all failure logs returned locally. This is an implementation repair,
+not an idea verdict or a counted revision. Independent narrow confirmation is
+required before retry.

@@ -262,14 +262,21 @@ def relevance(j,nodes):
     body='Observations:\n'+''.join(record(n) for n in nodes)+'\nPlatform rules:\n'+YOUTUBE_RULES+'\nQuestion:\n'+VIDEO_QUESTION+'\n'
     msgs=[j.turn('system',SYSTEM_MESSAGE),j.turn('user',body)]
     j.model.model.rope_deltas=None;text,enc=j.encode_prefix(msgs,[])
-    cache=j.prefix_cache(enc);n=cache.get_seq_length();delta=j.model.model.rope_deltas.clone();scores=[]
+    cache=j.prefix_cache(enc);n=cache.get_seq_length()
+    # A pure-text prefix has no multimodal rotary offset in target HF5.15.
+    # Preserve None so the language model derives ordinary positions from KV length.
+    delta=j.model.model.rope_deltas
+    delta=None if delta is None else delta.clone();scores=[]
     for node in nodes:
         q=(f'Rate how informative observation {node["id"]} is for answering the question, '
             'including evidence for either answer. 1 = not informative; 2 = somewhat informative; '
             '3 = highly informative. Answer with one digit: 1, 2, or 3.')
-        bids,_=j.branch_ids(msgs,q,head_text=text);j.model.model.rope_deltas=delta.clone()
+        bids,_=j.branch_ids(msgs,q,head_text=text)
+        j.model.model.rope_deltas=None if delta is None else delta.clone()
         try:lp=j.cached_choices(cache,bids,choices,in_place=True)
-        finally:cache.crop(n);j.model.model.rope_deltas=delta.clone()
+        finally:
+            cache.crop(n)
+            j.model.model.rope_deltas=None if delta is None else delta.clone()
         node['relevance_logprobs']=lp;scores.append(int(np.argmax(lp))+1)
     del cache
     return scores
