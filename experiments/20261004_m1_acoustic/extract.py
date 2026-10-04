@@ -20,6 +20,15 @@ DATASETS=('HateMM','HateClipSeg')
 CACHE=ROOT/'data/acoustic_path_support'
 
 
+def resolve_video(row):
+    given=Path(row['video_path'])
+    candidates=[given]+[p for folder in ('video','videos')
+        for p in sorted((Path.home()/'data'/row['dataset']/folder).glob(row['video_id']+'.*'))]
+    video=next((p for p in candidates if p.is_file()),None)
+    if video is None:raise FileNotFoundError((row['dataset'],row['video_id']))
+    return video
+
+
 def selected_rows(smoke):
     rows=load_manifest(ROOT/'data/omsl_v6_inputs/manifests/all_test.jsonl',DATASETS)
     if smoke:
@@ -35,7 +44,8 @@ def validate_cache(r,row,segments):
     assert r['dataset']==row['dataset'] and r['video_id']==row['video_id']
     assert r['duration']==float(row['duration']) and r['words']==words_from_segments(segments)
     assert r['segments']==[list(s) for s in segments]
-    assert r['input_video']==row['video_path']
+    assert r.get('manifest_video_path',r['input_video'])==row['video_path']
+    assert Path(r['input_video']).stem==row['video_id']
     wins=fixed_windows(float(row['duration']),8)
     assert r['windows']==[list(w) for w in wins] and r['GT_read'] is False
     for name in ('soft','viterbi','proportional'):
@@ -63,7 +73,7 @@ def main():
         dest=CACHE/ds/(vid+'.json');dest.parent.mkdir(parents=True,exist_ok=True)
         if dest.exists():
             r=json.loads(dest.read_text());validate_cache(r,row,segments);logging.info('%d/%d reuse %s/%s',i+1,len(rows),ds,vid);continue
-        video=Path(row['video_path']);assert video.is_file(),video
+        video=resolve_video(row)
         begin=time.perf_counter()
         if words_from_segments(segments):
             pcm=subprocess.run(['ffmpeg','-v','error','-i',str(video),'-vn','-ac','1','-ar','16000','-f','f32le','-'],
@@ -76,7 +86,7 @@ def main():
         torch.cuda.synchronize();align_seconds=time.perf_counter()-t0
         r.update(dataset=ds,video_id=vid,duration=float(row['duration']),segments=segments,
             windows=fixed_windows(float(row['duration']),8),algorithm=ALGORITHM,model=ALIGN_MODEL,cache_version=CACHE_VERSION,GT_read=False,
-            input_video=str(video),input_asr=f'data/asr_whisper_large_v3/{ds}/timestamped_chunks.jsonl',
+            input_video=str(video),manifest_video_path=row['video_path'],input_asr=f'data/asr_whisper_large_v3/{ds}/timestamped_chunks.jsonl',
             host=socket.gethostname(),date=config['date'],code=config['code'],audio_seconds=len(audio)/16000,
             decode_seconds=decode_seconds,align_seconds=align_seconds,peak_GiB=torch.cuda.max_memory_allocated()/2**30)
         validate_cache(json.loads(json.dumps(r)),row,segments)

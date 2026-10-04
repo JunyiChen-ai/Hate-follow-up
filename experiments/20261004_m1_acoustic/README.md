@@ -131,3 +131,12 @@ raw max/final仍为全部标准覆盖，不能把这个子集分析冒充标准�
 
 独立代码审查PASS（same-family provisional）：`docs/reviews/20261004_m1_acoustic_code.md`。
 三项具体修复已复核，真实8B尚待Slurm smoke；不以CPU验证声称机制/性能成立。
+
+## 真实smoke输入修复
+
+sc474399/Slurm96在两个HMM声学抽取后发现HCS manifest仍指向迁移前idea-stage路径，
+尚未执行Qwen/读GT。原视频实际在~/data/HateClipSeg/videos/，已按原有Explorer同一逻辑
+解析清单path，缺失则依序查~/data/<dataset>/{video,videos}/<video_id>.*。
+记录原manifest路径与实际路径，不改媒体/ASR/评分算法；旧两条已生成HMM缓存仅在实际路径
+与manifest字面一致时兼容无独立manifest_video_path字段。后续解析按ID和实际加载检查。
+这是输入实现修复，不评价idea、不算方法修订。修复独立复核后重跑固定5。
