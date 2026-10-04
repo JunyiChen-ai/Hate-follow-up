@@ -25,7 +25,8 @@ def structural(j,cache,ctx,w,nwindows,verify=False):
     bias=graph_bias(graph,h,t,n)
     kwargs=dict(input_ids=torch.tensor([ids],device=j.device),past_key_values=cache,use_cache=True,
         position_ids=torch.tensor(logical,device=j.device)[None,None,:].expand(3,1,-1),
-        attention_mask=torch.as_tensor(bias,device=j.device)[None,None,:,:])
+        # CUDA SDPA requires additive bias to match the query/embedding dtype.
+        attention_mask=torch.as_tensor(bias,device=j.device,dtype=j.model.dtype)[None,None,:,:])
     j.model.model.rope_deltas=torch.tensor([[logical[-1]+1-(n+len(ids))]],device=j.device)
     try:
         out=j.model.model(**kwargs);hidden=out.last_hidden_state[0,-1];del out

@@ -1,6 +1,6 @@
 {
   "date": "2026-10-04",
-  "role": "CPU-prepared independent backup; no GPU before candidate21 result-based branch",
+  "role": "active candidate22 after Tree21 archive; fixed5 actual GPU verification, no performance result",
   "proposal": "experiments/20261004_m1_lattice/README.md",
   "source_scope": "runs/20261004_m1_ideation/backup_source_reads/word_lattice_source_scope.json",
   "proposal_review": "docs/reviews/20261004_m1_lattice_proposal.md",
@@ -15,5 +15,7 @@
   "audio_fix_review": "docs/reviews/20261005_m1_lattice_audio_overlap_fix.md",
   "actual_audio_cpu_checks": "runs/20261004_m1_lattice/cpu_audio_preflight_fixed/summary.json",
   "cpu_checks": "runs/20261004_m1_lattice/cpu_checks/selfcheck.log",
-  "GPU_run": false
+  "GPU_run": true,
+  "bias_dtype_review": "docs/reviews/20261005_m1_lattice_bias_dtype_fix.md",
+  "status": "Slurm121 all5 beam inputs local, failed first structural bias dtype; independently confirmed API fix, repeat exact5"
 }

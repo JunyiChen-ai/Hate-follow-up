@@ -1,8 +1,8 @@
 # M1 candidate22 backup: frozen temporal speech lattice reader
 
-Declared 2026-10-04 while candidate21's complete run is in progress. Prepared
-independent backup only: CPU implementation prepared, no GPU output or GT analysis. Run
-only after the current candidate's result-based branch permits switching. Formal
+Declared 2026-10-04 while candidate21 was running; its allowed revisions are now
+exhausted and the family archived. Current candidate22: fixed5 GPU plumbing
+verification started on sc474399. No performance result or GT analysis yet. Formal
 method remains r6_bma; development-selected. Not an acoustic-alignment revision:
 newly decoded competing lexical content, lattice reachability and longest-path
 positions replace a single-transcript alignment-support intervention.
@@ -277,3 +277,34 @@ full performance/mechanism validation. Independent narrow fix confirmation PASS
 Its separate per-sample first-wins oracle matches 100 deterministic overlapping
 blocks and verifies the saved actual-media interval bookkeeping. This policy
 does not claim to recover a unique waveform from malformed overlapping timestamps.
+
+### First actual fixed5 GPU attempt: interface repair only
+
+Host sc474399, Slurm121 (2026-10-05). All5 true-audio beam inputs were generated;
+Qwen first structural call failed before a completed score/video with CUDA SDPA
+`invalid dtype for bias - should match query's dtype`. Outputs and inputs returned
+to uoa-lab1 before documentation. Evidence: local `slurm_121.out`,
+`r1_extract_smoke/summary.json` and `r1_extract_smoke/actual_beam_audit.json` under
+`runs/20261004_m1_lattice/`. No GT or metric; not a method-negative observation.
+
+Narrow implementation fix: retain FP32 construction of log-mass/zero/negative-
+infinity mask, convert it to the model's BF16 query dtype only at the SDPA API
+boundary. This necessarily rounds finite log-masses at BF16 precision; zero and
+negative infinity remain exact, graph edges/positions/tokens unchanged. No prompt,
+beam, mass normalization or scientific constant change. Independent narrow
+confirmation required before repeating exactly the same5 and checks.
+
+Bias dtype fix independent narrow PASS, same-family provisional:
+`docs/reviews/20261005_m1_lattice_bias_dtype_fix.md`. Actual36-layer tiny BF16
+Qwen CPU/SDPA checks reach every layer with BF16 query/bias, clone exact, and
+normal/injected-exception cache/delta restoration. Finite logmass fixture max
+rounding .00274181 (not a global bound);0/negative infinity exact. This CPU evidence
+does not replace target8B GPU parity. Repeat exactly the same fixed5.
+
+No-GT descriptive `input_audit.py --smoke` reads actual source beam inputs only,
+records alternative/epsilon/truncation counts and compares casefolded Unicode word
+sequences, never selects a method input or score. Authority
+`runs/20261004_m1_lattice/r1_extract_smoke/input_audit.json`:134 actual windows,
+134 distinct exact-text alternatives,114 with lexical differences ignoring
+punctuation/case;29 of670 beams truncated, all retained by declared448-token cap.
+These are input observations, not ASR accuracy or hateful localization evidence.
