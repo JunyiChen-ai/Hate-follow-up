@@ -658,3 +658,14 @@ checks passed. Two diagnostic-only bugs were fixed and independently confirmed:
 FP32 duplicate mass can sum to1.000000014901 rather than exact Python1, and empty
 unit paths require no terminal key. Production path mass/readout unchanged;
 .01 GPU reference tolerance unchanged. Actual8B fixed5/full333 remains pending.
+
+Actual R3 fixed5 Slurm128 completedsc474399 at07:43:53; both outputs and unchanged
+inputs returned locally immediately. NoGT prepare PASS, authority
+`runs/20261004_m1_lattice/r3_full_smoke_analysis/plumbing_summary.json`: native
+all G/window/curve exact, G/V unchanged,134newS,5clones exact. All5 independently
+constructed unit end-state reference margins are EXACT (difference0), not merely
+within.01. Values−13.705020905/−11.671485901/−8.203338623/−11.155235291/
+−2.231147766 in the declared fixed5 order. Actual282/174paired forwards include
+9/6diagnostics; peaks18.125379/17.311294GiB;18489/5365graph tokens,420/250terminal
+paths. Smoke proves plumbing only; noGT/metric selection. Full333 dispatch uses
+identical R3 code and constants after code sync/current machine check.
