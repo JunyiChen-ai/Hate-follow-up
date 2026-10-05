@@ -11,10 +11,13 @@
   "GPU_run": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Full333input/authorCPU/independent36layer masked-softmax/sourceCPU PASS; code/cost fixPASS, actual8Bfixed5ready",
+  "state": "Actual8B fixed5 Slurm156 queuedonlab2 behind151/155; allCPU/codePASS, noGPUresult",
   "full_input_preflight": "runs/20261005_m1_rote/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
   "cpu_checks": "runs/20261005_m1_rote/cpu_checks/summary.json",
   "cpu_pass": true,
-  "code_review": "docs/reviews/20261005_m1_rote_code.md"
+  "code_review": "docs/reviews/20261005_m1_rote_code.md",
+  "smoke_job": 156,
+  "GPU_submitted": true,
+  "selected_host": "sc474399"
 }
