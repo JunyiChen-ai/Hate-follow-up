@@ -11,7 +11,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Full author input/science CPU and unique independent Rule6 code PASS; actual8Bfixed5 ready, no GPU/GT",
+  "state": "Actual8Bfixed5 queued205 on lab3; source/reader entire cohort samehost, no GT/performance",
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_ordered_slots/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -20,5 +20,8 @@
   "retrieval_cpu": "runs/20261006_m1_ordered_slots/retrieval_cpu_checks/summary.json",
   "reader_cpu": "runs/20261006_m1_ordered_slots/reader_cpu_checks/summary.json",
   "cpu_pass": true,
-  "code_review": "docs/reviews/20261006_m1_ordered_slots_code.md"
+  "code_review": "docs/reviews/20261006_m1_ordered_slots_code.md",
+  "smoke_job": 205,
+  "GPU_submitted": true,
+  "selected_host": "sc474398"
 }

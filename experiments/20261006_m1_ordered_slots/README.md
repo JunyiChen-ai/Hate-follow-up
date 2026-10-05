@@ -87,3 +87,6 @@ Rule9：无任一+.01直接归档；有单项信号先记录真实test error ana
 
 
 唯一独立Rule6审查PASS，来源`docs/reviews/20261006_m1_ordered_slots_code.md`及`runs/20261006_m1_ordered_slots/independent_code_review/`。独立合成10窗video实际PTS→source acquisition→只读验证、两批槽/32embedding/433source forwards计费、NONE/稳定平局/严格前后源归属通过；独立20组真实36层production reader/不同remote speech实际token与margin变化/KV/rope/native所有原始读数/无生成假设进入证据通过，真实tokenizer正文pooling独立完整前向精确。same-family provisional，不是预训练8B/GPU/性能结论。
+
+
+实际8B固定5已在sc474398提交Slurm205，等待现有168/186释放实验室active QOS2预算。派发前四机da6668b一致/clean，既有foreign STRAY逐行未变；lab3实际固定5 raw header解析PASS且完整333原始视频已核验。来源`runs/20261006_m1_ordered_slots/machines_before_smoke{,_note}.txt`与`lab3_smoke_raw_coverage.json`（已回传本机）。source/paired reader固定5同机完整运行，无依赖链。尚未实际GPU/GT/性能。
