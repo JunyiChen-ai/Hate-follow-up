@@ -244,3 +244,5 @@ Slurm151 completed116 whole atomic video inputs, then OOM in source parent full-
 实际8B来源检查sc474397/Slurm166 PASS：HMMH114父节点13395token与HCSbit_0EH父节点14445token，原始完整未分块生成逐值复现已保存token，4096-row版本再逐值复现相同50/48生成token、events与compiledrecord。来源`runs/20261005_m1_interval_witness/prefill_mlp_fix/gpu/summary.json`。没有新GT/标签，sourcecache未改。原失败更大父节点的实际容量待相同full333续跑确认。
 
 Samefull333R1 resumedsc474397/Slurm168 afterallfourlabs a9245b8clean/actualfixedparentGPU PASS/rootidle476Gfree/167soleactiveGPU, exactforeignSTRAY namesunchanged. Evidence `runs/20261005_m1_interval_witness/prefill_mlp_fix/machines_before_resume{,_note}.txt`; original116atomic whole sources replayed, no partial source result accepted, mainmetrics pending.
+
+Slurm168已在18:31:34越过原失败第117视频HMMnon_hate_video_356，完整125叶/124父节点：最大实际父input68908tokens，sourcepeak29.7964GiB，处理300.725s；完整新metadata已严格通过。原始catalog不截断，常数/限制不变。此前CPU/8B小父等价检查支持内存修复，本次只证明此原失败大节点已成功，不是完整性能结果。

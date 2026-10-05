@@ -86,7 +86,9 @@
     "cpu_pass": true,
     "source_cpu": "runs/20261005_m1_program/bound_cpu_checks/sources_summary.json",
     "model_cpu": "runs/20261005_m1_program/bound_cpu_checks/model_summary.json",
-    "code_pass": false,
-    "GPU_run": false
+    "code_pass": true,
+    "GPU_run": false,
+    "code_review": "docs/reviews/20261005_m1_program_source_bound_code.md",
+    "state": "FinalR4 predeclared/authorfull333and36layerCPU/independentnarrowPASS; fixed5 ready"
   }
 }
