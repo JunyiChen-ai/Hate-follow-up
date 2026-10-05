@@ -12,7 +12,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Completeprototype/full333input/actual36layerCPU/controller/token and independentoncecodePASS; actual8Bfixed5 ready, noGPU/GT",
+  "state": "Actual8Bfixed5 queued201; author fullinputs/scientificCPU and uniqueindependentcodePASS, no actualGPU/GT",
   "tracker_core_implemented": true,
   "tracker_cpu_checks": "runs/20261005_m1_text_tracking/tracker_cpu_checks/summary.json",
   "tracker_cpu_pass": true,
@@ -28,5 +28,8 @@
   "model_cpu_max_bf16_difference": 0.003727734088897705,
   "controller_cpu_pass": true,
   "token_cpu_pass": true,
-  "code_review": "docs/reviews/20261006_m1_text_tracking_code.md"
+  "code_review": "docs/reviews/20261006_m1_text_tracking_code.md",
+  "smoke_job": 201,
+  "GPU_submitted": true,
+  "selected_host": "sc474398"
 }

@@ -168,6 +168,8 @@ OTT30完整333/sc474398/Slurm180全部inputs/runs回传、线程等价重放与�
 
 文字跟踪32一次独立Rule6代码审查PASS，来源`docs/reviews/20261006_m1_text_tracking_code.md`及`runs/20261005_m1_text_tracking/independent_code_review/`；12组actual36layer生产read_video/validate_bundle含空/首窗/次窗lookup、4occurrence/5实际图像、所有KV/nativeG/allraw/S、freshfallback/modelcalls/完整source计费通过。真实合成video PTS→跟踪/cut/gap→两次freshrepair→只读pixel/metadata replay、损坏crop拒绝、真实token转义/cap/半截escape UNKNOWN通过。same-family provisional，与作者不同，未CUDA/预训练权重/真实GT/分数。实际8Bfixed5 ready，尚无性能结论。
 
+文字跟踪32实际8B固定5已在完整原视频及fixedopencv均齐全的sc474398提交Slurm201；派发前四实验室8ad6a25一致/clean、既有foreign STRAY逐行未变，来源`runs/20261005_m1_text_tracking/machines_before_smoke{,_note}.txt`。唯一独立代码审查及作者科学CPU/输入均PASS，正常等待168/186用户GPU预算及更早空间搜索192；尚无该候选GPU/GT/性能结果。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。
