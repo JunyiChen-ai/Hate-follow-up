@@ -1,0 +1,13 @@
+{
+  "version": "R1 paper-based TTF multi-image source positions; 2026-10-05",
+  "threshold": 0.7,
+  "radius": 1,
+  "norm_epsilon": 1e-12,
+  "seed": 0,
+  "overview_frames": 20,
+  "window_seconds": 8,
+  "order": "anchor then chronological nonanchors; whole timestamp/image chunks",
+  "positions": "original native visual triples; uncompressed reordered text triples; actual cache length plus logical delta",
+  "input_cache": "none; current native JPEG/ASR and within-video vision features",
+  "GT_in_reader": false
+}

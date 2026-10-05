@@ -59,5 +59,10 @@
     "smoke_pass": true,
     "smoke": "runs/20261005_m1_program/r2_handles_full_smoke_analysis/plumbing_summary.json",
     "main_job": 150
-  }
+  },
+  "main_available_job": 150,
+  "available_main_pass": true,
+  "available_main_metrics": "runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json",
+  "available_main_performance_pass": false,
+  "state": "R2 full333 DONEreturned/noGT/native allraw/all6PASS; within+.015404/+.003635, commonperformanceFAIL; actualerroranalysisdone, remaining2revisions"
 }
