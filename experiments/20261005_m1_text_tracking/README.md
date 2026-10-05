@@ -88,3 +88,6 @@ crop/数量/支持长度而循环错绑时间；保持时间而错绑实际crop�
 的部件须双语料同主指标删除损失>=.01；普通额外文字/像素贡献另列。性能和
 机制共同成立才结束用户任务。规则9无任一+.01归档，有则实际GT error analysis
 后同族最多三修订；没有新数据集、ensemble、按语料流程或输出校准。
+
+
+原型开始：CPU PyrLK/前后向/固定角点/原图整数平移/初始crop外观/cut已实现，OpenCV4.13.0.92仅安装到隔离HateVLM（Torch/HF未改）。8项已知合成像素变换检查PASS，actual[3,2]位移和真实crop逐值相同、40/40角点通过，来源`runs/20261005_m1_text_tracking/tracker_cpu_checks/summary.json`。仅synthetic pixel transforms，未OCR/模型/GT/性能；来源解码、typed文字、发生控制器及新V尚待完成。原图平移以原坐标整数round位移落框、固定OpenCV CPU1thread/seed0；不是常数扫描。

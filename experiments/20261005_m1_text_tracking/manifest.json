@@ -12,5 +12,8 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Frozen proposal/spec before anyscientificrun; OpenCV4.13PyrLK selected, prototype pending"
+  "state": "Frozen spec + actualpixelPyrLK core/8synthetictransformchecksPASS; source decoder/OCR/controller/reader incomplete, no GPU/GT",
+  "tracker_core_implemented": true,
+  "tracker_cpu_checks": "runs/20261005_m1_text_tracking/tracker_cpu_checks/summary.json",
+  "tracker_cpu_pass": true
 }
