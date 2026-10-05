@@ -121,3 +121,5 @@ LocalactualsamebackendnoGT `runs/20261005_m1_ttf/r1_full_smoke_analysis/plumbing
 IndependentnarrowCPUprepare-backendconfirmation `docs/reviews/20261005_m1_ttf_prepare_runtime_fix.md` PASS; exactselectionguardunchanged. No GPUrerun orscientificrevisionneeded forCPUreplayruntimefix.
 
 Full333 sameR1 submitted2026-10-05 onsc474398/Slurm153 afterallfourlabs clean4aa4687 actualcheck, lab3idle/1.4Tfree and151soleactiveQOSjob. Evidence `runs/20261005_m1_ttf/machines_before_main{,_note}.txt`. Actual198/333 at14:54:39, no mainGT/metricsyet; allsourcepositions/retainedfeatures preserved for strictlocalCPUreplay.
+
+Actualfull333 Slurm153 DONE15:01:56, entirepairedruns andprojectorinputs immediatelyreturned via `return_main_runs.log`/`return_main_inputs.log`; localstrictsamebackendprepare andcanonicalr6 evaluation started. MainGT/performance resultnotyetavailable.

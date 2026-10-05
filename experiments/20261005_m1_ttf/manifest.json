@@ -15,7 +15,7 @@
   "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actual fixed5 local noGT PASS; full333 same R1 running onsc474398/Slurm153, no mainGT or metrics yet",
+  "state": "Full333 Slurm153 DONE15:01:56, allruns/projectorinputs returned; local strict replay/canonical evaluation active, no final result yet",
   "smoke_job": 152,
   "smoke_pass": true,
   "smoke": "runs/20261005_m1_ttf/r1_full_smoke_analysis/plumbing_summary.json",

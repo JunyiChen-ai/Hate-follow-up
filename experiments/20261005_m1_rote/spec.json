@@ -1,0 +1,18 @@
+{
+  "version": "R1 interval RoTE speech attention; sources 2026-10-05",
+  "model": "Qwen/Qwen3-VL-8B-Instruct",
+  "gamma": 4.0,
+  "window_seconds": 8.0,
+  "native_frames": 20,
+  "seed": 0,
+  "normalization": "mean sinc over actual native temporal frequency pairs",
+  "radius_mapping": false,
+  "epsilon_clamp": false,
+  "layers": "all 36 language layers",
+  "heads": "all 32 query heads",
+  "query_time": "window midpoint for every token in the independent speech question",
+  "source_time": "original complete ASR segment interval, including copied window body",
+  "intervention": "replace only query-to-ASR-key temporal-channel dot product",
+  "attention_bias_dtype": "native BF16 query dtype",
+  "cpu_reference_tolerance": {"fp32": 0.00001, "bf16": 0.025}
+}

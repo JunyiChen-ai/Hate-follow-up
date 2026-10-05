@@ -64,12 +64,14 @@
   "available_main_pass": true,
   "available_main_metrics": "runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json",
   "available_main_performance_pass": false,
-  "state": "R3 revision2/3 CPU andindependentcode PASS; fixed5 submittedsc474398/Slurm154, queuedbehindTTF153",
+  "state": "R3 fixed5 Slurm154 DONE15:02:27, wholeruns returned; localnoGT/nativeallraw/G/10clone/source/freshfallbackPASS; full333ready",
   "resolved_cpu_checks": "runs/20261005_m1_program/resolved_cpu_checks/summary.json",
   "resolved_cpu_pass": true,
   "resolved_implemented": true,
   "resolved_code_pass": true,
   "resolved_code_review": "docs/reviews/20261005_m1_program_resolved_action_code.md",
   "resolved_smoke_job": 154,
-  "resolved_GPU_submitted": true
+  "resolved_GPU_submitted": true,
+  "resolved_smoke_pass": true,
+  "resolved_smoke": "runs/20261005_m1_program/r3_handles_full_smoke_analysis/plumbing_summary.json"
 }
