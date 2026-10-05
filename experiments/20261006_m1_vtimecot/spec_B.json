@@ -1,0 +1,62 @@
+{
+  "version": "R1 full visual timeline tools functional adaptation; interfaceB explicitwordbounds;sources2026-10-06",
+  "seed": 0,
+  "native_frames": 20,
+  "window_seconds": 8,
+  "source_fps": 1,
+  "query_count": 2,
+  "query_words": 8,
+  "query_tokens": 16,
+  "query_generation_tokens": 96,
+  "relevance_generation_tokens": 16,
+  "retrieval_top_windows": 8,
+  "tool_steps": 3,
+  "planner_words": 16,
+  "planner_tokens": 32,
+  "planner_generation_tokens": 128,
+  "feedback_generation_tokens": 96,
+  "initial_memory_frames": 20,
+  "cut_memory_frames": 8,
+  "current_frames_cap": 8,
+  "history_frames_per_state": 2,
+  "final_source_images_cap": 24,
+  "bitmap_glyph_scale": 2,
+  "bar_height": 64,
+  "bar_margin": 12,
+  "bar_background": [
+    245,
+    245,
+    245
+  ],
+  "bar_remaining": [
+    100,
+    100,
+    100
+  ],
+  "bar_progress": [
+    50,
+    125,
+    230
+  ],
+  "bar_highlight": [
+    255,
+    170,
+    30
+  ],
+  "bar_cursor": [
+    25,
+    200,
+    70
+  ],
+  "bar_current": [
+    220,
+    55,
+    55
+  ],
+  "source_acknowledgement": "Source supplied.",
+  "query_system": "Form up to two short neutral observable event search conditions from the provided video overview and literal ASR. No hate judgment, inferred intent, identity or group membership. Conditions are hypotheses, not observed facts. Use UNKNOWN for unavailable queries. Write each condition in at most 6 words, then immediately close its JSON string. Do not continue explaining. Use the literal UNKNOWN when unavailable.",
+  "relevance_system": "Assess how relevant the supplied actual video clip and literal ASR are to an observable search condition. Return an integer from 0 (unrelated) through 10 (directly relevant), or UNKNOWN. This is input retrieval only, never a hate judgment or proof of an event.",
+  "planner_system": "Inspect the current actual video memory and tool history. Use progress_bar first, then highlight one supplied query, then cut one of its supplied contiguous retrieved intervals if needed. Tools actually update the visual memory. You may TERMINATE or return UNKNOWN at any stage. Never invent a query, source ID, time or observed fact; no hate judgment or inferred intent, identity or group membership. Provide only a short neutral reason and the bounded next action. Write the reason in at most 12 words, then immediately close its JSON string and provide the next bounded action. Do not continue explaining. Use the literal UNKNOWN when unavailable.",
+  "feedback_system": "Inspect the actual updated video memory after the recorded tools. Return a short neutral description of what is observable now, or UNKNOWN. No hate judgment or inferred intent, identity or group membership. This description is an audit observation and does not enter the final reader. Write the description in at most 12 words, then immediately close its JSON string. Do not continue explaining. Use the literal UNKNOWN when unavailable.",
+  "interface": "B explicit query6words/reason12words; original caps unchanged"
+}

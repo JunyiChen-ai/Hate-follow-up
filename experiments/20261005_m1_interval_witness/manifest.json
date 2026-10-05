@@ -15,7 +15,7 @@
   "smoke_pass": true,
   "performance_result": "runs/20261005_m1_interval_witness/r1_full_main_decoded/optimized/metrics.json",
   "constants_declared_before_run": true,
-  "state": "R1 complete/mainFAIL; positive HMM within retained; R2 native G/ownstance/S+fresh source-path V revision1/3 CPU+independent reader/analyzer PASS, launcher narrow confirmation PASS; same fixed5 GPU ready",
+  "state": "R1 complete/mainFAIL, positive HMMwithin; R2 revision1/3 CPU and narrow code/launcher PASS, same fixed5 ROOT208 PENDING QOSMaxGRESPerUser",
   "result_guided_revisions_used": 1,
   "native_runtime_job": 145,
   "native_runtime_pass": true,
@@ -38,5 +38,7 @@
   "r2_cpu_checks": "runs/20261005_m1_interval_witness/r2_cpu_checks/source_binding_summary.json",
   "r2_code_review": "docs/reviews/20261006_m1_interval_native_context_visual_code.md",
   "r2_gpu_run": false,
-  "r2_launcher_pass": true
+  "r2_launcher_pass": true,
+  "r2_smoke_job": 208,
+  "r2_GPU_submitted": true
 }

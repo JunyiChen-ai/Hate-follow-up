@@ -4,10 +4,10 @@ import time
 from pathlib import Path
 import numpy as np
 from PIL import Image
-from timeline import ROOT,SPEC,uniform,draw
+from timeline import ROOT,SPEC,uniform,draw,INTERFACE,OUTPUT_SUFFIX
 from src.actual_video_frames import resolve_video
 from src.video_inputs import load_manifest,fixed_windows,window_text
-DATASETS=('HateMM','HateClipSeg');CACHE=ROOT/'data/temporal_time_tools'
+DATASETS=('HateMM','HateClipSeg');CACHE=ROOT/('data/temporal_time_tools'+OUTPUT_SUFFIX)
 
 
 def selected_rows(smoke=False):

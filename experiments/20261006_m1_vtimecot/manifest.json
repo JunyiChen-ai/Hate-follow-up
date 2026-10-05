@@ -10,7 +10,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actualfixed5 BOTH returned; source/native allraw/G/S replay reached original tools guard FAIL; query fields capped, no actual queries/tools; narrow diagnosis/interface redesign needed, no GT/performance verdict",
+  "state": "A source/native exact, original tool guard FAIL; B explicit word-bound instructions, isolated source/reader/analysis, author A real-source replay+B collector and independent narrow code/launcher PASS; same fixed5 GPU ready",
   "core_implemented": true,
   "cpu_pass": true,
   "full_input_preflight": "runs/20261006_m1_vtimecot/full_input_preflight/summary.json",
@@ -23,5 +23,10 @@
   "GPU_submitted": true,
   "selected_host": "sc474398",
   "smoke_complete": true,
-  "smoke_pass": false
+  "smoke_pass": false,
+  "interface_B_declared": true,
+  "interface_B_cpu_pass": true,
+  "interface_B_code_pass": true,
+  "interface_B_code_review": "docs/reviews/20261006_m1_vtimecot_interface_B_code.md",
+  "interface_B_GPU_run": false
 }

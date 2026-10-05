@@ -269,3 +269,5 @@ Slurm168已在18:31:34越过原失败第117视频HMMnon_hate_video_356，完整1
 原Source全部路径/token/pixel/版本先严格重放，原获取完整成本照样计入；CPU/token/缓存隔离与独立窄code确认后原fixed5，再同机器完整333。R1初版+当前R2修订1/3，其余2次预算不变。不跑controlsGPU直到共同主门通过。R2仅定位阅读路径隔离，不把G/S保留本身当novelty；最终路径/ownership/repair仍须原双语料消融及错误绑定门。
 
 R2 reader/analyzer作者实际fixed5当前source/token/pixel/native-prefix binding PASS，独立窄确认`docs/reviews/20261006_m1_interval_native_context_visual_code.md`：8组actual36layer FP32/BF16×18/20×full/smoke production reader/nativeG/V/S/新V freshfull-forward/原S计费复用/原source成本/重复与篡改拒绝通过；CLI R2委托与R1默认验证保持。Launcher补在`launch/lab1_r2.sbatch`及`run_analysis_r2.sh`，GPU只测R2（缓存源不重新获取、原成本全算），prepare同HateVLM18/5.15再HateVideocanonical，launcher已获同一独立窄确认PASS：bash-n及stub实际成功/prepare失败阻断检查通过，smoke沿用CLI prepare --smoke，main shell先严格prepare。无实际R2GPU/指标。
+
+R2同原fixed5/sc474397提交Slurm208，PENDING(QOSMaxGRESPerUser)，等待186/192当前两GPU预算；原完整source成本保留。派发前四实验室bc26a0b clean一致、既有foreign STRAY逐行未变，证据`runs/20261005_m1_interval_witness/r2_machines_before_smoke{,_note}.txt`。尚无R2实际GPU/指标，不启动机制控制。

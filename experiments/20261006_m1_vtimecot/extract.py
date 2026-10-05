@@ -1,4 +1,5 @@
 """Real retrieval → executed timeline tools → actual current/history views."""
+from timeline import INTERFACE,OUTPUT_SUFFIX
 import argparse
 import copy
 import json
@@ -93,7 +94,7 @@ def validate(j,m,row,segments,folder):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');a=ap.parse_args();out=ROOT/'runs/20261006_m1_vtimecot'/('source_smoke' if a.smoke else 'source_main');out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');a=ap.parse_args();out=ROOT/'runs/20261006_m1_vtimecot'/(('source_smoke' if a.smoke else 'source_main')+OUTPUT_SUFFIX);out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler()]);logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(__import__('os').getpid()))
     import transformers
     (out/'config.json').write_text(json.dumps(dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),model=MODEL,spec=SPEC,GT_read=False,smoke=a.smoke,torch=torch.__version__,transformers=transformers.__version__,code='experiments/20261006_m1_vtimecot/{extract,relevance,timeline,interface,inputs}.py;2026-10-06',command='python -u '+' '.join(__import__('sys').argv)),indent=2)+'\n')

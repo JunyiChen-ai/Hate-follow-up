@@ -8,7 +8,7 @@ import av
 import numpy as np
 import torch
 from PIL import Image
-from timeline import ROOT,SPEC,retrieval,draw
+from timeline import ROOT,SPEC,retrieval,draw,OUTPUT_SUFFIX
 import extract as e
 import relevance as r
 from src.mllm_renderer import cpu_renderer
@@ -16,7 +16,7 @@ from src.structured_source_generation import Stream,image_rope_delta
 
 
 def main():
-    out=ROOT/'runs/20261006_m1_vtimecot/collector_cpu_checks';out.mkdir(parents=True,exist_ok=True);print('host',socket.gethostname(),flush=True);(out/'run.pid').write_text(str(os.getpid()))
+    out=ROOT/('runs/20261006_m1_vtimecot/collector_cpu_checks'+OUTPUT_SUFFIX);out.mkdir(parents=True,exist_ok=True);print('host',socket.gethostname(),flush=True);(out/'run.pid').write_text(str(os.getpid()))
     j=cpu_renderer();torch.set_num_threads(1);torch.cuda.reset_peak_memory_stats=lambda:None;torch.cuda.max_memory_allocated=lambda:0
     class Scripted(Stream):
         def __init__(self,texts,choices,limit,**kw):super().__init__(j,limit,tokens=[],**kw);self.texts=iter(texts);self.choices=iter(choices)
