@@ -1,0 +1,86 @@
+# M1候选34：条件事件槽的有序实际来源选择
+
+2026-10-06，R1在任何实际8B或本候选GT读取前冻结。原九池C8/rank7的一次独立方案裁定PASS：
+`docs/reviews/20261005_m1_ideation_jury.md`。本机sc474397实现，运行主机待派发记录。
+
+## 科学假设与来源
+
+孤立窗口可能缺少前置对象或后续回应，导致本窗可见/可听证据解释错误。
+为当前事件构造中性前置/当前/后续检索条件，按真实时间绑定前后媒体，再读取当前证据，
+有望改善原始V/S/max及最终within排序。生成的条件不是已发生事实，不能进入最终证据。
+
+实际核读[Q2E v1](https://arxiv.org/html/2506.10202v1) §3.1–3.4、A.3/A.4及
+[官方代码](https://github.com/dipta007/Q2E)的query_decomp、frame_caption、frame2video_caption与
+contextualized_frame_caption+ASR、prequel/during/sequel/refine_event_query提示。
+本地读取记录在`runs/20261006_m1_ordered_slots/source_reading/`。
+Q2E以事件分解、顺序描述和多通道融合做视频检索；本方法自研有时间可行域的实际来源绑定，
+只借鉴前后事件条件和顺序描述。原多编码器、五事件扩展、翻译链及熵融合未迁移，
+不称完整Q2E复现，不称首次事件分解/检索。
+
+三槽目标可分离：current固定为当前窗，prequel严格更早，sequel严格更晚。
+实现直接取两侧最优值，与三状态单路径最优化等价；无跨窗口资源耦合，
+不将DP或全局优化复杂性当作贡献，不添加未审的新耦合。
+
+## 冻结算法、常数和缺失规则
+
+所有prompt及数值常数在`spec.json`；两语料相同。Qwen/Qwen3-VL-8B-Instruct冻结，
+贪心、seed0、FP32 Yes/No margin。原native20请求/实际18–20帧、完整ASR、G及其自身hard stance、
+独立8s V/S、max及固定r6全部保持原协议。来源获取为同一视频的真实输入；不读取标签。
+
+每8s窗在1/3、2/3时间点取首个不早于目标的实际帧，去重，尾部目标无帧时用本窗最后真实帧；
+保存原始解码序号、PTS及RGB PNG，半开区间归属，不插值。每窗一次两帧+本窗ASR的caption生成，
+前一窗有效caption作为明确未核验上下文（缺失用UNKNOWN），16words/32tokens/整条96tokens上限。
+按最多8窗的连续批生成三槽，固定窗口ID/顺序，槽8words/16tokens、整批768tokens。
+空、UNKNOWN/NONE开头或字段上限均不可用；整条/整批截断或恰好总token上限均全拒绝。
+不重试，不补猜测，不为执行guard强迫可用条件。
+
+caption及可用三槽用同一个Qwen做短文本prefill embedding，不另加编码器。
+固定embedding_system，按实际native fast tokenizer offset精确选user正文重叠且非special的token，
+last-layer FP32 mean、L2归一化、epsilon1e-12。系统/角色/尾部token不入池，不截断。
+无有效token或零/非有限向量为不可用。cosine用CPU FP32、无跨视频/语料归一化。
+current始终绑定本窗；其可用匹配分数是目标常数，不影响前后选择。
+prequel候选j<i、sequel候选j>i，且caption embedding可用。
+每侧最大cosine严格大于NONE分数0才绑定一窗，否则NONE；平局最早真实窗ID。
+同时间窗按原半开区间序号处理，自己不会成为remote。
+匹配分数只选择输入，不进入最终仇恨分数。
+
+最终V附加当前LOCAL两帧及最多前后各两帧，最多6张新图，以真实window ID/边界/PTS及
+prequel/current/sequel角色标记呈现，只有原始ASR，不传caption、槽条件、embedding或匹配分数。
+不存在的槽明确NONE；缺少当前真实帧则新鲜原生V回退。
+S只在本窗ASR非空时读取，追加真实前后ASR及来源角色/时间；无前后speech时新鲜原生S逐值相同。
+所有remote事件保留自身时间，不作为当前事件发生事实。
+共享`src/source_image_branch.py`使用实际新图编码、DeepStack与3-axis位置，恢复原KV/rope。
+
+## 成本与运行边界
+
+W次caption、ceil(W/8)次三槽生成、最多4W次text embedding prefill，再新V/S独立读取。
+7359窗的生成token上界为96W+768Σceil(W_video/8)，不把批边界合并跨视频。
+原始帧/ASR可复用，来源描述、槽、向量在视频内复用；新视频仍支付所有来源获取成本。
+按原候选粗预算每100窗10–40 GPUmin，完整7359窗约12.3–49.1 GPUhours加普通reader，
+未测量、非实际时间承诺；固定5先测，报告各语料实际decode/caption/slots/embedding/reader秒数、
+语言/视觉forward数及显存。完整原来源成本在缓存续跑时照样计入，不只报CPU选择时间。
+额外配对native、clone及审计开销单列；Slurm墙钟另报。一个实验全部333在同一机器获取并读取。
+
+## 验证、门与可证伪控制
+
+固定5只验证实际源条件/两侧绑定、新V/S进入分数、native所有原始读数、G/stance/KV/rope及clone；
+各语料须真实remote>0、新V>0、新S>0，失败保留UNKNOWN并诊断，不降低guard。
+严格当前raw/pixel/token/ASR/embedding pooling/槽批/时间选择重放通过，才调用唯一评测器
+`src/eval/evaluate.py`与`evaluate_four_datasets.py`和既有固定r6脚本。
+完整215/118视频、within84/99、六项一起报告，以`runs/20260926_twolevel/r6_bma/metrics.json`为正式参照。
+性能门为同一主指标两语料均+.01且其余pooled不下降>.005、within不下降>.01。
+Rule9：无任一+.01直接归档；有单项信号先记录真实test error analysis，再至多三次设计修订。
+全部development-selected，无未揭盲确认声明。
+
+只有完整主门通过才跑全333控制：同源数量但取消时间侧约束；一个current条件替代前后三槽；
+来源相同但删去槽角色标记；前后媒体及ASR交换真实来源/角色；同时间侧、相同帧数及ASR长度匹配错误来源；
+当前LOCAL帧增强但无remote。顺序caption作为来源实现细节，只有删除它也通过双语料至少一主指标下降.01
+才可升级为novelty主张。任何拟主张部件都必须过同样消融门，否则删除或降级。
+原始V/S/max排序与源绑定错误控制必须支持定位机制，不能仅以最终r6涨点归因。
+
+## 进度
+
+方案已放行；R1固定spec/原型实现中。尚无本候选实际GPU、GT或性能数字。
+
+
+完整prototype已实现：真实media顺序caption、按八窗三槽、精确user-token hidden pooling、可分离时间侧源分配、纯真实V/S证据与唯一评测器/固定r6命令。全333 raw/JPEG/ASR/native三轴输入PASS，8组真实36层FP32/BF16×18/20×2/6新图cached/fullreference/KV/clone PASS，embedding pooling2组、已知向量独立可行解枚举/NONE/tie/native-token JSON/cap拒绝PASS，20组生产reader前置/后续/双侧/无remote/缺帧科学CPU PASS。均randomweights/软件输入检查，不是预训练模型性能。来源在manifest列出的runs。唯一独立Rule6审查进行中；无实际GPU/GT/性能数字。

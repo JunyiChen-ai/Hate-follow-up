@@ -1,0 +1,22 @@
+{
+  "version": "R1 ordered conditional source slots; sources2026-10-06",
+  "seed": 0,
+  "native_frames": 20,
+  "window_seconds": 8,
+  "source_frames_per_window": 2,
+  "caption_generation_tokens": 96,
+  "slot_generation_tokens": 768,
+  "caption_words": 16,
+  "caption_tokens": 32,
+  "slot_words": 8,
+  "slot_tokens": 16,
+  "slot_batch_windows": 8,
+  "slot_order": ["prequel", "current", "sequel"],
+  "max_remote_windows": 2,
+  "none_score": 0.0,
+  "embedding_epsilon": 1e-12,
+  "embedding_pool": "mean FP32 lastlayer nonspecial tokens overlapping exactuser-content character offsets; normalize L2",
+  "embedding_system": "Represent the supplied observable video content for semantic retrieval. Do not classify hate or infer unprovided facts.",
+  "caption_system": "Describe only observable current actions, literal speech, objects and scene context in the supplied current frames and ASR. A previous window description is unverified context: do not carry its events into the current window without current support. Return a short neutral caption, UNKNOWN if unavailable. No hate judgment, inferred intent, identity or group membership.",
+  "slot_system": "For each supplied current window, form three short neutral search conditions: prequel for an earlier contextual event, current for the observed event, and sequel for a later contextual response. Conditions are hypotheses for retrieval, never facts. Use supplied caption and literal ASR only; no hate judgment, inferred intent, identity or group membership. Return NONE when a condition is not needed, UNKNOWN when it cannot be formed. Do not output evidence, explanations or source IDs."
+}

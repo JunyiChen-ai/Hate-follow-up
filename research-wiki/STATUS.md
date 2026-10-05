@@ -7,6 +7,7 @@
 - **运行中**：区间见证26，sc474397/Slurm168，完整来源已齐、配对读取进行中；来源图25，sc474399/Slurm186，原B完整来源继续获取，已越过原长LINK显存失败点。
 - **正常排队**：空间搜索31完整333/sc474398/192；事实核验27完整333/sc474397/193；文字发生32固定5/sc474398/201；MERIT33固定5/sc474398/202。
 - 32/33的完整prototype、实际输入/科学CPU与一次独立代码审查PASS只代表实现检查；它们尚未完成实际8B运行或主性能评测。
+- 有序事件槽34已冻结并完成prototype/作者科学CPU检查；唯一独立代码审查进行中，无实际GPU或GT/性能。
 - 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
 
 **2026-10-04 M1 自主迭代继续**：用户确认 Explorer R1 为正向进展，并要求达到性能与机制目标后再停止。
@@ -705,3 +706,6 @@ logit 尺度。
 ## 资料与历史
 
 [试过的做法（方向索引）](DIRECTIONS.md)、[CLAUDE.md](../CLAUDE.md)、[1 fps 协议与 baseline 表（历史）](../docs/protocol_1fps_legacy/)、[基础论文 TRIAGE 与检测时代记录](../archive/README.md)、[2026-08 idea discovery 报告](../archive/idea-stage-2026-08/idea-stage/IDEA_REPORT.md)。
+
+
+候选34有序条件事件槽来源选择：原九池C8/rank7一次方案PASS，实际Q2E v1 §3.1–3.4/A.3/A.4及官方生成入口/模板核读；不是原多模型熵融合复现，三槽目标可分离，不主张DP复杂性。入口`experiments/20261006_m1_ordered_slots/README.md`。完整prototype/全333真实输入/8组实际36层新图cached/fullreference/精确正文pooling/有序可行解枚举及20组生产reader CPU PASS；仅软件输入检查，唯一独立Rule6 code review进行中，无本候选GPU/GT/性能结论。来源`runs/20261006_m1_ordered_slots/`各CPU summary及manifest。
