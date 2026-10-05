@@ -91,3 +91,6 @@ matched控制，以及匹配远程数量/帧数/ASR长度桶的真实错源ID置
 
 
 完整collector/真实ID两轮/source回读新V/S/统一评测接口已实现。完整333真实raw header/JPEG/ASR/native三轴输入PASS，实际36层FP32/BF16×18/20source-image cached/fullreference/KV/clone检查PASS；实际native tokenizer+36层最后hidden user-content pool与独立完整前向逐值相同、rope恢复/不同文本vector变化PASS。生产read_video/validate_bundle8组actual36layerCPU no_remote/remote通过，13actualforward/4vision、双branch clone、G精确、无远程speech freshfallback、原source41秒/23forwards完整计入。都是randomweights/软件输入检查，不是预训练模型性能。来源见manifest所列runs，完整sourcecollector重放及一次独立Rule6审查进行中；无GPU/GT/性能结论。
+
+
+MERIT33一次独立Rule6代码审查PASS，来源`docs/reviews/20261006_m1_merit_code.md`及`runs/20261006_m1_merit/independent_code_review/`。实际合成video PTS→128tokencaption/key→MaxSim/neighbors/insufficient第二轮→sourceID union→当前inputtoken/pixel只读重放通过；真实36层CPU生产reader/current+remote/V+S/clone/KV/模型计数和source成本通过，source不伪造filter文字为事实。same-family provisional，与作者不同，未真实GT/预测分数/指标；实际8Bfixed5 ready，未GPU/性能。

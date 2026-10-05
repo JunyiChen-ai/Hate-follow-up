@@ -6,17 +6,18 @@
   "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
   "proposal_pass": true,
   "implemented": true,
-  "code_pass": false,
+  "code_pass": true,
   "GPU_run": false,
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Completecollector/reader/canonicalorchestration; authorfull333inputs/36layerimage/actualtokenpool/productionreaderCPU PASS, independent onceRule6 source-replay/code reviewpending; noGPU/GT",
+  "state": "Completeprototype/authorinput+scienceCPU/independentoncecodePASS; actual8Bfixed5 ready noGPU/GT",
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_merit/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
   "model_cpu": "runs/20261006_m1_merit/model_cpu_checks/summary.json",
   "embedding_cpu": "runs/20261006_m1_merit/embedding_cpu_checks/summary.json",
   "reader_cpu": "runs/20261006_m1_merit/reader_cpu_checks/summary.json",
-  "cpu_pass": true
+  "cpu_pass": true,
+  "code_review": "docs/reviews/20261006_m1_merit_code.md"
 }
