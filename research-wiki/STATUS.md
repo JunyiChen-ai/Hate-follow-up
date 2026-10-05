@@ -751,3 +751,5 @@ Spatial31 fullsource333与partialpaired137/sc474398/192 FAILED2:45:02/1:0（图�
 34同fixed5 B/207 ROOT严格source/nativeallraw/G/5V+5Sclone/实际有序remote→V/S PASS，权威`runs/20261006_m1_ordered_slots/r1_full_smoke_B_analysis/plumbing_summary.json`；total实际处理189.32s、原caps/guard不变，complete333B ready。35B/209仍原完整toolguard FAIL：query/relevance已执行，5reason wordcap/0实际工具，原数据保留、未GT/性能；具体源记录实验README。36 freshcomplete333/sc474398/214已运行，不混serverpilotinputs/读数。31独立诊断纠正已完成计数137，8/6767crop intrinsic不支持，具体fallback修复CPU/独立确认中，未GT/性能。
 
 31 intrinsicunsupported crop具体fix独立窄PASS，来源`docs/reviews/20261006_m1_spatial_search_crop_interface_fix.md`；8crop沿既有unavailable nativeV路径明确记录、source框/PNG/费用/原137supported读数保持，10组36层fixture旧支持路径逐值同与全6767实际processoreligibility对齐。SameR1 originalhost sc474398 full333 resume ready，版本/预算不变，未GT/性能。
+
+31同R1全333原host/sc474398/215已提交续跑（正常等待214资源），保留原333source与137supported原子读数/成本，8unsupported显式fallback已独立确认，无GT/版本预算重置。34同B完整333source+reader ROOT216正常QOS排队，actualfixed5及原guard PASS、方法/常数统一未变，未GT/主指标。R2/sc448960/213、VideoEvent36/sc474398/214、PV25/sc474399/186仍运行。

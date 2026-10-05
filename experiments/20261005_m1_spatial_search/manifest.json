@@ -11,7 +11,7 @@
   "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Source333+137supported records preserved; intrinsicunsupported8 crop nativeV fallback author/independentnarrow PASS; sameR1 full333 resume ready onoriginal lab3host, noGT",
+  "state": "SameR1 whole333 originalhost resume215 queued normal behind214; original333 sources+137supported readings/cost retained; intrinsicunsupported8 narrowfix PASS; noGT/performance",
   "cpu_pass": true,
   "full_input_preflight": "runs/20261005_m1_spatial_search/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -36,5 +36,7 @@
   "crop_supported_count": 6759,
   "crop_fix_state": "minimalnativeV fallback implemented; authorCPU PASS, independentnarrow confirmation underway",
   "crop_fix_pass": true,
-  "crop_fix_review": "docs/reviews/20261006_m1_spatial_search_crop_interface_fix.md"
+  "crop_fix_review": "docs/reviews/20261006_m1_spatial_search_crop_interface_fix.md",
+  "resume_job": 215,
+  "resume_submitted": true
 }

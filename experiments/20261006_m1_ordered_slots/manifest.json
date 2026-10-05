@@ -11,7 +11,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Samefixed5 B207 completed/ROOT source/native allraw/G/5V+5Sclone/actualordered remote V/S guard PASS; full333B ready, noGT/performance",
+  "state": "SameB fixed5actualPASS; complete333 B source+reader ROOT216 queued normalQOS, unchangedalgorithm/caps/guard/budget0, noGT/performance",
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_ordered_slots/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -35,5 +35,8 @@
   "interface_B_GPU_submitted": true,
   "interface_B_smoke_complete": true,
   "interface_B_smoke_pass": true,
-  "interface_B_smoke_summary": "runs/20261006_m1_ordered_slots/r1_full_smoke_B_analysis/plumbing_summary.json"
+  "interface_B_smoke_summary": "runs/20261006_m1_ordered_slots/r1_full_smoke_B_analysis/plumbing_summary.json",
+  "interface_B_main_job": 216,
+  "interface_B_main_host": "sc474397",
+  "interface_B_main_submitted": true
 }
