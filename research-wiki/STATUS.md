@@ -4,9 +4,9 @@
 
 - 当前正式方法仍为 **r6_bma**；M1自主迭代的共同性能门和机制门均未完成，继续运行，未更新Overleaf。
 - 累计归档 **27** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
-- 区间见证26 R1完整333/sc474397/168已完成本机严格核对与统一评测：HMM within+.016374保留，pooled下降/HCS未过门；R2修订1/3保留native G/ownstance/S并实际重算source-path V，作者CPU/独立窄代码确认PASS，启动脚本窄确认PASS。完整六项及权威路径见下方最新更新。
+- 区间见证26 R1完整333/sc474397/168已完成本机严格核对与统一评测：HMM within+.016374保留，pooled下降/HCS未过门；R2修订1/3保留native G/ownstance/S并实际重算source-path V，同5/sc448960/211实际读取与ROOT严格核对PASS，完整333同机213运行。完整六项及权威路径见下方最新更新。
 - **运行中**：来源图25，sc474399/186，HMM全215 source已齐、HCS来源继续获取。
-- MERIT33实际固定5/sc474398/202完成并BOTH回传，本机源/原生全读数/G/双branch clone/真实remote进入V/S守门PASS；完整333 ready，尚无GT/性能。
+- MERIT33实际固定5/sc474398/202完成并BOTH回传，原执行守门PASS，完整333 ready。VideoEvent36同5/sc448960/212完成/BOTH回传，本机actualevents/BG/nativeallraw/G/V/Sclone守门PASS，完整333 ready；两者未GT/性能。
 - 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B独立确认PASS，同固定5已提交ROOT Slurm207，PENDING(QOSMaxGRESPerUser)。
 - **运行中**：空间搜索31原完整333/sc474398/192已释放own lab hold；按smoke实测较低处理成本先恢复，source及reader同机完整运行。
 - **主agent调度持有**：事实核验27完整333/sc474397/193仍未启动，优先较低成本完整候选；方法版本/修订预算不变。
@@ -743,3 +743,5 @@ logit 尺度。
 sc448960 Slurm210实际native5在08:28:55 DONE/COMPLETED19s/0:0，全部原生G/stance/V/S精确，已回传本机`runs/_setup_lab_server_hatevlm/native_smoke/summary.json`。优先保留正向信号的26R2：整333原source cache已复制且server fixed5 currentraw/pixel/token及Yes/No路径CPU binding PASS并回传`runs/20261005_m1_interval_witness/r2_lab_server_input_check/summary.json`。ROOT208零执行ownlabhold避免重复，相同R2将在server完整读，不重取source/不拼旧margins/原source成本保留。GPU前binding CPU秒计费遗漏两行修复、独立窄确认PASS，无分数或预算变化。36相同fixed5科学ready、随后调度，无科学GPU/GT。
 
 26R2同原fixed5/sc448960/Slurm211于08:52:10 DONE/3:32/0:0并回传，本机samebackend noGT/source/global/nativeallraw/Sexact/158freshV/5repeat PASS；权威`runs/20261005_m1_interval_witness/r2_full_smoke_analysis/plumbing_summary.json`。原source成本全计，ROOT208零执行取消避免重复，同R2修订1/3 complete333 server ready，未mainGT/指标/机制。候选36科学同5/sc448960/212运行，原方法与guard不变；source实际event/background进入后仍需BOTHreturn/current/native读数核对，无GT/性能结论。
+
+26R2完整333/sc448960/213已运行（同原R2/code/常数/修订1/3；全部source原获取成本保留），未mainGT/指标。36同5/sc448960/212于08:55:50 DONE并BOTH回传，本机noGT/source/nativeallraw/G/5V+5Sclone/真实eventBG→V/S guard PASS，权威`runs/20261006_m1_videoevent/r1_full_smoke_analysis/plumbing_summary.json`，完整333 samehost ready；实际F5总处理167.63s包括146.58s来源成本，仅执行证据不作性能/机制。

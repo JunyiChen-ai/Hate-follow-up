@@ -15,7 +15,7 @@
   "smoke_pass": true,
   "performance_result": "runs/20261005_m1_interval_witness/r1_full_main_decoded/optimized/metrics.json",
   "constants_declared_before_run": true,
-  "state": "R2 identical server fixed5 actual8B/native allraw/G/S/source+5repeat PASS and returned ROOT; complete333 ready; no mainGT/performance",
+  "state": "R2 samefixed5 server211 strictROOTPASS; whole333 sameR2 server213 RUNNING, cachedsource fulloriginalcost retained; no mainGT/performance",
   "result_guided_revisions_used": 1,
   "native_runtime_job": 145,
   "native_runtime_pass": true,
@@ -53,5 +53,8 @@
   "r2_smoke_complete": true,
   "r2_smoke_pass": true,
   "r2_smoke_summary": "runs/20261005_m1_interval_witness/r2_full_smoke_analysis/plumbing_summary.json",
-  "r2_root_smoke_job": 208
+  "r2_root_smoke_job": 208,
+  "r2_main_job": 213,
+  "r2_main_host": "sc448960",
+  "r2_main_submitted": true
 }

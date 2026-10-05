@@ -10,7 +10,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Scientific samefixed5 source+reader server212 running after matching native5; sources actualevents/BG acquired sofar, guard pending; no GT/performance",
+  "state": "Actualsamefixed5 server212 complete/BOTHreturned/current source/native allraw/G/5V+5Sclones/real event-background V/S guard PASS; complete333 samehost ready; noGT/performance",
   "cpu_pass": true,
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_videoevent/full_input_preflight/summary.json",
@@ -26,5 +26,8 @@
   "lab_server_native_summary": "runs/_setup_lab_server_hatevlm/native_smoke/summary.json",
   "smoke_job": 212,
   "selected_host": "sc448960",
-  "GPU_submitted": true
+  "GPU_submitted": true,
+  "smoke_complete": true,
+  "smoke_pass": true,
+  "smoke_summary": "runs/20261006_m1_videoevent/r1_full_smoke_analysis/plumbing_summary.json"
 }
