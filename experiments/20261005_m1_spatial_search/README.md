@@ -88,3 +88,6 @@ Rule6 code review；实际fixed5检查完整native读数/G/S、解析/坐标链/
 
 
 2026-10-06：尚未启动的Slurm192由主agent暂持有，先取得201/202/205/206固定5实际8B反馈；运行中的168/186不受影响。仅调度顺序，未GPU分配、不改科学版本/预算/来源成本；稍后由主agent释放本次实验室hold。来源`runs/20261005_m1_spatial_search/scheduling/hold_before_start.json`。
+
+
+短201/202/205/206反馈全部回传后，原Slurm192的own实验室hold已释放并在sc474398完整333运行，source获取及paired reader同机。source/方法/缓存/修订次数未改；本机机器检查`runs/20261005_m1_spatial_search/machines_before_release{,_note}.txt`通过。195.46s/158窗smoke新处理低于MERIT334.08s，故先恢复本候选完整主轮，非性能优劣裁定。来源`scheduling/released_original_job.json`。
