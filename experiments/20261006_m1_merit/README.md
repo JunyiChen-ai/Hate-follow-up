@@ -88,3 +88,6 @@ matched控制，以及匹配远程数量/帧数/ASR长度桶的真实错源ID置
 
 
 原型开始：单视频MaxSim/稳定平局/邻域优先及cap4 union、同模型text-only exactuser-token pooling wrapper、source-ID filter有界接口已实现。已知向量/空键/UNKNOWN/tie/neighborhood/cap fixtures及真实native tokenizer user-content offset/转义与IDsubset JSON检查通过，仅软件/输入检查，没有模型embedding或性能结论。源caption、两轮collector、V/S和完整sciencechecks尚待接入。
+
+
+完整collector/真实ID两轮/source回读新V/S/统一评测接口已实现。完整333真实raw header/JPEG/ASR/native三轴输入PASS，实际36层FP32/BF16×18/20source-image cached/fullreference/KV/clone检查PASS；实际native tokenizer+36层最后hidden user-content pool与独立完整前向逐值相同、rope恢复/不同文本vector变化PASS。生产read_video/validate_bundle8组actual36layerCPU no_remote/remote通过，13actualforward/4vision、双branch clone、G精确、无远程speech freshfallback、原source41秒/23forwards完整计入。都是randomweights/软件输入检查，不是预训练模型性能。来源见manifest所列runs，完整sourcecollector重放及一次独立Rule6审查进行中；无GPU/GT/性能结论。

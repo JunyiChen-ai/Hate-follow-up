@@ -172,6 +172,8 @@ OTT30完整333/sc474398/Slurm180全部inputs/runs回传、线程等价重放与�
 
 候选33 MERIT沿原九池C7/rank6一次proposal PASS，已实际读论文/官方MaxSim、邻域过滤、agent、embedding源码；单Qwen功能迁移的wrapper/content pooling/empty/两轮/真实ID filter/媒体预算已事前冻结，入口`experiments/20261006_m1_merit/README.md`。保守完整预算24.5–73.6GPU小时未测，低调用已排队候选优先；原型未实现、未GT/GPU，无性能结论。
 
+MERIT33完整source collector/两轮真实ID过滤/V+S/统一评测prototype已实现，authorfull333input/actual36layersourceimage/真实token-contentpool/生产reader CPU PASS；一次独立Rule6代码审查进行中，未GPU/GT。权威软件证据在`runs/20261006_m1_merit/{full_input_preflight,model_cpu_checks,embedding_cpu_checks,reader_cpu_checks}/summary.json`，不作性能结论。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。
