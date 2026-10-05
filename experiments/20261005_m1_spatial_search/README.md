@@ -79,3 +79,6 @@ Rule6 code review；实际fixed5检查完整native读数/G/S、解析/坐标链/
 唯一独立Rule6审查`docs/reviews/20261005_m1_spatial_search_code.md` PASS，来源`runs/20261005_m1_spatial_search/independent_code_review/`。独立实际36层生产reader/vision和模型计数/成本/全部缓存/像素扰动、真实processor接缝、合成视频实际PTS解码→cue队列→第二节点FOUND/UNKNOWN/预算耗尽及生产input/token/metadata重放通过；篡改crop像素被拒绝。独立BF16 fullreference差.011458/.002761，保留原.025容差；没有CUDA/预训练权重/真实GT/预测/指标，实例与作者不同。实际8Bfixed5待派发，无性能结论。
 
 实际8B固定5已在sc474399提交Slurm184。lab2完整333原视频逐项实际resolve检查通过；新增launch仅换目标分区和该机已有HateVLM激活路径，科研代码/spec不变。派发前四实验室代码一致/clean、旧foreign STRAY逐行未变，lab2空闲/568Gfree，来源`runs/20261005_m1_spatial_search/machines_before_smoke{,_note}.txt`；正常等待Slurm168/181占用的用户GPU预算。尚无本变体实际GPU或GT/性能结果。
+
+
+空间搜索31固定5/sc474399/Slurm184于22:15:48 DONE，runs及sourcecache均已立即回传，本机samebackend noGT prepare PASS：native allraw/G/S/source pixels/coords及5clone精确，HMM/HCS真实FOUND和变化V为78/54；来源`runs/20261005_m1_spatial_search/r1_full_smoke_analysis/plumbing_summary.json`。计划在空闲sc474398完整重算333全部来源与读取，不复用lab2五视频source以保证本轮整体同机；172缺失原视频正由本机补齐，原帧/spec不变。原核验185仍PENDING/0秒，因较低调用空间搜索优先而取消待重新排入，不是idea裁定或目标暂停。

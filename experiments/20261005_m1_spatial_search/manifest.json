@@ -8,10 +8,10 @@
   "implemented": true,
   "code_pass": true,
   "GT_read": false,
-  "GPU_run": false,
+  "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Slurm184 actual8B fixed5 queued; author full333inputs/actual36layerCPU and independentcodePASS",
+  "state": "Actualfixed5 Slurm184DONE/local strictnoGT currentpixels/token/5clones/nativeallrawPASS; complete333 prepared onlab3 after missingrawtransfer, allsource fresh there",
   "cpu_pass": true,
   "full_input_preflight": "runs/20261005_m1_spatial_search/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -19,5 +19,9 @@
   "model_cpu": "runs/20261005_m1_spatial_search/model_cpu_checks/summary.json",
   "code_review": "docs/reviews/20261005_m1_spatial_search_code.md",
   "smoke_job": 184,
-  "selected_host": "sc474399"
+  "selected_host": "sc474399",
+  "smoke_pass": true,
+  "smoke_returned": true,
+  "smoke_summary": "runs/20261005_m1_spatial_search/r1_full_smoke_analysis/plumbing_summary.json",
+  "native_allraw_exact": true
 }

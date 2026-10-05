@@ -154,6 +154,8 @@ OTT完整333同R1在sc474398/Slurm180于21:50:39 DONE，runs和新增源特征�
 
 Program23最终R4完整333/sc474398/Slurm181已完成回传与统一评测，原生allraw/六项精确。HMM ROC/PR/within .897327/.696904/.744547（84），HCS .717330/.672824/.632911（99）；within−.006236/−.004438，无任一+.01，按规则9归档第26项，不跑R5/控制GPU；R1/R2/R3正向结果保留。来源`runs/20261005_m1_program/r4_handles_full_main_decoded/optimized/metrics.json`；实际新处理228.48min/native24.95倍，全部development-selected、无机制证据，明细`archive/experiments/20261005_m1_program/README.md`。
 
+空间搜索31固定5/sc474399/Slurm184于22:15:48 DONE，runs及sourcecache均已立即回传，本机samebackend noGT prepare PASS：native allraw/G/S/source pixels/coords及5clone精确，HMM/HCS真实FOUND和变化V为78/54；来源`runs/20261005_m1_spatial_search/r1_full_smoke_analysis/plumbing_summary.json`。计划在空闲sc474398完整重算333全部来源与读取，不复用lab2五视频source以保证本轮整体同机；172缺失原视频正由本机补齐，原帧/spec不变。原核验185仍PENDING/0秒，因较低调用空间搜索优先而取消待重新排入，不是idea裁定或目标暂停。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。

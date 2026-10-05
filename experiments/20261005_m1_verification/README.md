@@ -231,3 +231,6 @@ synchronization/current machine check; no GT/main metrics or mechanism controls.
 
 
 独立事实核验27已在原fixed5运行主机sc474397排入完整333 Slurm185；派发前四实验室64b65f9一致/clean和既有foreign STRAY逐行未变，完整输入/spec/读取路径不变，正常等待根机168结束与用户GPU预算，来源`runs/20261005_m1_verification/machines_before_main{,_note}.txt`。当前零标签性能与机制目标仍未完成。 同完整333来源获取和读取均在原root/sc474397完成；完整原获取成本计入新视频处理，不因已缓存固定5而免除。
+
+
+空间搜索31固定5/sc474399/Slurm184于22:15:48 DONE，runs及sourcecache均已立即回传，本机samebackend noGT prepare PASS：native allraw/G/S/source pixels/coords及5clone精确，HMM/HCS真实FOUND和变化V为78/54；来源`runs/20261005_m1_spatial_search/r1_full_smoke_analysis/plumbing_summary.json`。计划在空闲sc474398完整重算333全部来源与读取，不复用lab2五视频source以保证本轮整体同机；172缺失原视频正由本机补齐，原帧/spec不变。原核验185仍PENDING/0秒，因较低调用空间搜索优先而取消待重新排入，不是idea裁定或目标暂停。
