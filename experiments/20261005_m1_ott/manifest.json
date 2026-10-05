@@ -11,7 +11,7 @@
   "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Slurm170 fixed5 returned/source/native/5clonePASS; full333 ready",
+  "state": "Slurm180 full333 DONE; both runs and source inputs returning before strict local replay/canonical metrics",
   "cpu_pass": true,
   "cpu_checks": "runs/20261005_m1_ott/cpu_checks/summary.json",
   "full_input_preflight": "runs/20261005_m1_ott/full_input_preflight/summary.json",
@@ -22,5 +22,9 @@
   "GPU_submitted": true,
   "selected_host": "sc474398",
   "smoke_pass": true,
-  "smoke": "runs/20261005_m1_ott/r1_full_smoke_analysis/plumbing_summary.json"
+  "smoke": "runs/20261005_m1_ott/r1_full_smoke_analysis/plumbing_summary.json",
+  "main_job": 180,
+  "main_running": false,
+  "main_completed": true,
+  "main_returned": false
 }

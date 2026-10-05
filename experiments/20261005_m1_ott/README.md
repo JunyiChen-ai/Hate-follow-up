@@ -83,3 +83,5 @@ token数均匀时空删减；原完整未压缩。错绑定保持原特征/salie
 OTT fixed5已在sc474398提交Slurm170，167/168占用实际userGPU预算所以正常排队，不绕过调度；allfourlabs ca26ac8 clean/lab3idle1.4Tfree/literalforeignSTRAYunchanged。来源`runs/20261005_m1_ott/machines_before_smoke{,_note}.txt`，提交前两项authorCPU/唯一必要独立code均PASS，无本变体GPU结果。
 
 Actual8B fixed5 Slurm170 DONE并立即回传；输入缓存有新增则同样回传，samebackend/source/noGT/fullnative allraw/clone检查PASS，权威`runs/20261005_m1_ott/r1_full_smoke_analysis/plumbing_summary.json`。完整333ready；无性能结果。
+
+相同R1完整333在sc474398/Slurm180于2026-10-05 21:50:39 DONE；派发前四实验室代码一致/clean及旧foreign STRAY逐行未变，来源`runs/20261005_m1_ott/machines_before_main{,_note}.txt`。完整runs和新的审计源特征立即回传本机，回传完成后严格来源重放/统一评测；当前没有主性能或机制结论。

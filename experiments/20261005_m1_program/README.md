@@ -651,3 +651,5 @@ R4作者actual36layer FP32/BF16×18/20frame科学CPU PASS：`runs/20261005_m1_pr
 ProgramR4 fixed5已在sc474398提交Slurm171，167/168占用实际userGPU预算所以正常排队，不绕过调度；allfourlabs ca26ac8 clean/lab3idle1.4Tfree/literalforeignSTRAYunchanged。来源`runs/20261005_m1_ott/machines_before_smoke{,_note}.txt`，提交前两项authorCPU/唯一必要独立code均PASS，无本变体GPU结果。
 
 Actual8B fixed5 Slurm171 DONE并立即回传；输入缓存有新增则同样回传，samebackend/source/noGT/fullnative allraw/clone检查PASS，权威`runs/20261005_m1_program/r4_handles_full_smoke_analysis/plumbing_summary.json`。完整333ready；无性能结果。
+
+最后修订R4的相同完整333在sc474398/Slurm181运行（OTT180之后由主agent独立提交，无job chaining）。派发前四实验室代码一致/clean及旧foreign STRAY逐行未变，来源`runs/20261005_m1_ott/machines_before_main{,_note}.txt`。原B来源完整成本保留；没有R4主性能/机制结论。完整结果未过门则按原预算归档，不新增R5。

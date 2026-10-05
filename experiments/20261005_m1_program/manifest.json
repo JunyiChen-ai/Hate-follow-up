@@ -64,7 +64,7 @@
   "available_main_pass": true,
   "available_main_metrics": "runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json",
   "available_main_performance_pass": false,
-  "state": "R4 final source-binding revision predeclared afteractualR3 GTerror; prototype/CPU/code/GPU pending",
+  "state": "Final revision3/3 R4 full333 running Slurm181; fixed5 strictPASS; no R4 mainGT/performance yet",
   "resolved_cpu_checks": "runs/20261005_m1_program/resolved_cpu_checks/summary.json",
   "resolved_cpu_pass": true,
   "resolved_implemented": true,
@@ -95,5 +95,7 @@
     "selected_host": "sc474398",
     "smoke_pass": true,
     "smoke": "runs/20261005_m1_program/r4_handles_full_smoke_analysis/plumbing_summary.json"
-  }
+  },
+  "r4_main_job": 181,
+  "r4_main_running": true
 }

@@ -145,7 +145,8 @@ OTT固定5/Program最终R4固定5已在sc474398分别提交Slurm170/171，等待
 候选31空间目标搜索沿原九池rank4一次proposal PASS，实际V*论文/官方搜索实现已读，冻结单Qwen的两节点/实际ROI/时间和位置记忆功能适配已事前声明；入口`experiments/20261005_m1_spatial_search/README.md`，原型未实现/未GPU/未GT。
 候选31完整空间搜索/实际ROI/source-image reader原型与统一评测接口已实现；完整333实际原视频/JPEG/ASR输入预检、实际processor/36层FP32BF16科学CPU及唯一独立代码审查PASS。来源`docs/reviews/20261005_m1_spatial_search_code.md`，实际8Bfixed5待派发、未GPU/GT；目标性能与机制未完成。
 OTT Slurm170固定5/Program R4 Slurm171固定5均DONE并立即回传：严格noGT/source/currentinput/native allraw/clone PASS，完整333待提交；无性能结论。来源`runs/20261005_m1_ott/r1_full_smoke_analysis/plumbing_summary.json`与`runs/20261005_m1_program/r4_handles_full_smoke_analysis/plumbing_summary.json`。Provenance167长LINK prefill OOM，116完整HMM/原partialcache与runs已回传；4096 tokenwiseMLP/allocator内存修复和独立窄集成确认PASS（`docs/reviews/20261005_m1_provenance_link_memory_fix.md`），实际LINK8B重放待执行，无主GT/性能裁定。
-当前零标签性能与机制目标仍未完成。
+OTT完整333同R1在sc474398/Slurm180于21:50:39 DONE，runs和新增源特征正在立即回传，统一评测尚未完成；Program最终R4完整333在同机Slurm181运行。两项均从实际fixed5严格PASS后启动，原生输入和固定r6不变，没有主性能/机制裁定。
+空间搜索31固定5已在完整原视频均齐全的sc474399提交Slurm184；来源图25实际LINK内存修复重放在同机Slurm183排队，重放通过后才恢复原B完整333。派发前四实验室代码14477a8一致/clean，既有foreign STRAY逐行未变，lab2空闲/568Gfree；正常等待用户GPU QOS预算。区间26 Slurm168来源获取已完成，配对读取进行中。当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
