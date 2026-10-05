@@ -604,3 +604,8 @@ Actual standalone205.905423sHMM+102.261208sHCS includes all original source
 acquisition, not historical score reuse. Complete R2 paired333 ready, no GT/main
 performance yet. New video retains the complete acquisition cost, so this reduces
 unsupported record injection, not the source generation workload.
+
+Complete333 R2 dispatched2026-10-05 onsc474398/Slurm150 after current allfourlabs
+clean synced check, lab3idle1.4Tfree and146 sole activeQOSjob. Evidence
+`machines_before_available_main{,_note}.txt`. SourcecacheB/sourcegeneration costs
+unchanged, every native/new output is a fresh current-model call; no new GT in reader.

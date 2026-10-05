@@ -48,7 +48,7 @@
   "result_guided_revisions_used": 1,
   "R2": {
     "revision": 1,
-    "state": "Actual8B fixed5 Slurm149 DONE, returned; local noGT native/allraw/10clone/fallback exact PASS, full333 ready",
+    "state": "Actual fixed5 PASS; same complete333 R2 freshly paired running onsc474398/Slurm150; no R2 metrics yet",
     "error_analysis": "runs/20261005_m1_program/r1_error_analysis/program_diagnostics.json",
     "source_cache": "data/temporal_evidence_program_handles",
     "cpu_checks": "runs/20261005_m1_program/available_cpu_checks/summary.json",
@@ -57,6 +57,7 @@
     "smoke_job": 149,
     "GPU_submitted": true,
     "smoke_pass": true,
-    "smoke": "runs/20261005_m1_program/r2_handles_full_smoke_analysis/plumbing_summary.json"
+    "smoke": "runs/20261005_m1_program/r2_handles_full_smoke_analysis/plumbing_summary.json",
+    "main_job": 150
   }
 }

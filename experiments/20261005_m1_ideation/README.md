@@ -32,3 +32,13 @@ same-family provisional，rule4只有四项 STOP，最终机制取决于真实�
 派发记录：visual_time_2和temporal_rep_2为fresh同模型readonly shard；第三次spawn因agent thread limit失败，复用闲置latents_proposal作cheap_binding_2生成镜头，明确不让它排名或裁定。最终jury已成功创建fresh独立实例，完整读全部产物，不伪称第三镜头fresh。
 
 九项全部生成完毕，原始JSON从各只读镜头的实际assistant最终消息逐字解析保存，未让镜头写共享文件；全部写入CANDIDATES.json。按完全相同dedup_key机械去重没有重复，未预筛删除任何项。尚未独立jury裁定或选择新实验。
+
+一次fresh独立jury完成：九项全部rule4 PASS、STOP0，same-family provisional；
+冻结报告 `docs/reviews/20261005_m1_ideation_jury.md`，全9逐项JSON/真实读取在
+`runs/20261005_m1_ideation/jury_evidence/`。排序为TTF、RoTE、OTT、空间搜索、
+文字发生跟踪、MERIT、有序事件槽、VTimeCoT、VideoEvent。选择TTF作下一备用
+具体化，不重开同一方案泛化review；先核官方实现并冻结坐标/DeepStack/cache规格，
+独立代码审查与真实完整结果仍必需。TTF身份替代与相同集合删除可能等价，
+不伪装机制消融；三槽分配目前可分解不主张DP创新；MAESTRO全文访问缺口保留。
+九项通过deterministic upsert_idea写入wiki，stage proposed/outcome pending；
+已有页skip-on-exist不覆盖历史，辅助索引不是完整实验事实入口。
