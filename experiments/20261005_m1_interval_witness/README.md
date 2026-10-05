@@ -230,3 +230,7 @@ alone681.00s includes178.21s source. Smoke rough full378.38min excludes the long
 H114 extrapolation and is only a rough input-size estimate; actual full333 cost
 must be reported. No GT/main metrics or mechanism controls yet. Full tree
 capacity beyond these5 is unverified; retain all actual sources/UNKNOWN/costs.
+
+## Full333 launch2026-10-05
+
+Runhostsc474397; `sbatch --export=ALL,SCOPE=main experiments/20261005_m1_interval_witness/launch/lab1.sbatch` submittedSlurm151 afteractualall4clean/samecode andexactunchangedforeignSTRAY comparison. Localauthority `runs/20261005_m1_interval_witness/machines_before_main_clean.txt` andmatchingnote. InitiallyPENDING QOSMaxGRESPerUser with146/150running; no schedulerbypass. SameR1/sourceguard/constants asactualfive147, all333 andbothcorpora ononehost. Scientificmainmetrics/GT notread; largestfulltreecapacityunmeasured andactualfailurewillberetained.
