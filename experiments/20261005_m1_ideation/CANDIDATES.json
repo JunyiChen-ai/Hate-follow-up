@@ -1,0 +1,372 @@
+{
+  "scope": "unranked generation; exact dedup_key string dedup only; no quality/novelty filtering",
+  "source_shards": [
+    "runs/20261005_m1_ideation/shards/visual_time_2.json",
+    "runs/20261005_m1_ideation/shards/temporal_rep_2.json",
+    "runs/20261005_m1_ideation/shards/cheap_binding_2.json"
+  ],
+  "generated": 9,
+  "duplicates": [],
+  "candidates": [
+    {
+      "shard_id": "visual_time_2",
+      "dedup_key": "interactive_visual_timeline_retrieval_and_cut_memory",
+      "name": "完整视觉时间工具交互与动态视频记忆",
+      "origin": "VTimeCoT 功能迁移；单 Qwen 检索器为明确适配。",
+      "method": [
+        "复用 native20、完整 ASR、原 G/ownstance。另将真实视频按既定 8 秒窗形成 1 fps 片段。Qwen 从原材料生成最多两个具体可观察事件查询；同一 Qwen 对每段执行查询相关性读取，相关性只用于检索实际媒体，不进入最终仇恨分数。",
+        "实现三个真实工具：progress_bar 按解码 PTS 给帧附时间条；highlight 将查询检索出的连续区间标在时间条；cut 从原视频取回指定区间真实帧。最多三轮动作，执行结果更新视觉记忆，后续动作必须依据更新后的媒体。禁止把仅生成动作文本当作执行。",
+        "每窗最终视觉读取保留原全局前缀，同时接收时间条中明确标出当前窗的局部材料、检索来源及实际切片；只输出一个新 V margin。原 S/G 和 r6 M2–4 固定，不组合检索分数、历史回答或多个最终判断。"
+      ],
+      "sources": [
+        {
+          "url": "https://arxiv.org/html/2510.14672v1",
+          "read_scope": "方法 3.1–3.3、Algorithm 1、4 节实现细节；实际读到动态视频记忆、progress bar/highlight/cut、VideoCLIP-XL 检索、1 fps、8 帧片段、top-8、最多三步。"
+        },
+        {
+          "url": "https://jianlang.org/papers/MATCH.html",
+          "read_scope": "作者页面摘要；目标任务已有时空证据检索与核验，不声称首次检索或首次工具推理。"
+        }
+      ],
+      "transfer_and_difference": "保留源方法完整的时间可视化、语义检索、高亮、真实切片、动作反馈及动态视觉记忆功能。源检索使用 VideoCLIP-XL 的余弦相似度；这里明确改为同一冻结 Qwen 的片段查询相关性，不能宣称数值复现源方法。源最终输出时间区间或 QA 答案；这里最后独立测量每窗 V，检索结果不直接变成标签。若实际只实现 overlay，则不是本候选。",
+      "local_ordering_hypothesis": "当前窗的时间身份与跨片段事件位置同时出现在实际视觉记忆里，可能减少把整片出现过的动作错误归给当前窗，并允许局部缺失证据通过实际切片补齐。此为来源驱动假设，未读取本轮 GT 或预测。",
+      "cost": {
+        "notation": "W 为 8 秒窗数，Q≤2 为实际查询数，K≤3 为工具交互轮数。",
+        "additional_model_calls_per_video": "QW 次短相关性读取 + 最多 K+1 次规划/交互生成。最终 W 次增强 V 替换原 V；配对实验另保留 W 次原 V。片段视觉编码可按片段共享给两个查询，不能把共享宣称为零成本。",
+        "gpu_time_estimate": "5090 单卡约额外 12–35 秒/典型视频，完整 333 视频约 65–195 GPU 分钟；长视频线性增加。这是工程预估，需 fixed5 实测。",
+        "cache": "复用 ASR/native 帧；新增约每秒一帧、PTS 映射、片段 KV 或按需重建记录、工具轨迹和渲染帧。部署新视频仍承担片段编码与检索成本。"
+      },
+      "novelty_components_and_ablations": [
+        "完整动态视觉记忆：与工具选出的完全相同媒体、相同 token/调用预算作静态一次性输入对照。",
+        "时间图形与媒体绑定：去时间图形但保留相同切片、时间文字和检索结果；只有通过双语料共同主指标下降 ≥.01 才单列为贡献。",
+        "语义检索驱动切片：等媒体数量、等预算的均匀片段获取对照。"
+      ],
+      "wrong_binding_control": "保持帧、查询、区间长度及调用数不变，在视频内循环错配时间条高亮与真实切片来源；另置换 cut 请求到相同长度错误区间。完整方法若不显著优于错误绑定，不能声称时间工具支持定位。",
+      "difference_from_tried_families": "Explorer 18 是熵/帧支持触发、注意力距离采帧；本项核心是查询检索→可视时间操作→实际媒体更新的闭环。Highlighter 15 操作内部视觉值，本项不改注意力。Tree 21 不被重启：没有语义聚类树。Program 23 的来源/话语程序与本项播放器式视觉状态交互存在工具使用交集，但执行对象和机制控制不同。",
+      "operational_limits": [
+        "同一 Qwen 的相关性不是专门训练的嵌入距离，检索准确率与成本都需实际验证。",
+        "全过程同一模型和统一常数；动作解析失败保留失败记录，不能偷偷改为纯 overlay。",
+        "相关性 top-k 必然给出候选，不代表事件存在；最终 reader 必须看到原材料并可否定候选。",
+        "通用 agent/tool retrieval 的目标任务先例已存在，novelty 只能落在完整时间视觉交互机制。"
+      ]
+    },
+    {
+      "shard_id": "visual_time_2",
+      "dedup_key": "target_conditioned_spatial_search_with_temporal_crop_memory",
+      "name": "目标条件化空间搜索与时间绑定裁剪记忆",
+      "origin": "迁移 V* 的目标提出、分层搜索和视觉工作记忆功能；不迁移其训练过程与专用定位解码器。",
+      "method": [
+        "对每个 8 秒窗的原材料及最多两张真实局部帧，同一 Qwen 识别影响判断但看不清的可观察目标，例如牌子上的文字、手势或被指向对象；最多一个搜索目标，无缺失目标则执行原生 V。",
+        "建立真实像素区域优先队列。Qwen 首先尝试给出目标框；未找到时输出目标线索或场景线索对应的四分区域次序。解释器实际裁剪优先区域，再让同一 Qwen观察并细分，最多两个搜索节点；区域坐标逐层映射回原图，越界及未找到保留 UNKNOWN。",
+        "将实际找到的裁剪、原图中的位置框、解码 PTS 和原图组成视觉工作记忆，再独立读取一次 V。跨窗不传播目标裁决；S/G/ownstance 与 r6 固定，搜索置信度只决定搜索动作，不加到最终分数。"
+      ],
+      "sources": [
+        {
+          "url": "https://arxiv.org/html/2312.14135v2",
+          "read_scope": "3.1、Algorithm 1、3.2、3.3.1–3.3.3、Algorithm 2；实际确认目标缺失发现、VWM、专用定位/线索解码器、四分递归优先搜索和训练需求。"
+        },
+        {
+          "url": "https://github.com/penghao-wu/vstar",
+          "read_scope": "官方 README 的模型与训练范围；源包含不同 VQA/search 模型，不能直接作为本项目单模型无训练实现。"
+        },
+        {
+          "url": "https://jianlang.org/papers/MATCH.html",
+          "read_scope": "作者摘要的时空证据检索核验；通用视觉证据 grounding 已是目标任务近邻。"
+        }
+      ],
+      "transfer_and_difference": "完整迁移需要目标提出、实际递归区域搜索、目标位置回映和视觉工作记忆共同执行。源方法的学习型 LOC/heatmap 解码器与额外训练不符合本约束，改为冻结 Qwen 的框及离散区域顺序输出，是新的实现假设；因此不是原论文全模型复现。只做一次固定中心裁剪或提高分辨率不属于此候选。",
+      "local_ordering_hypothesis": "小面积文字、手势和被指对象可能决定某窗是否存在具体攻击行为；按缺失目标实施空间搜索，并将裁剪绑定到当前时间和原图位置，可能使不同窗口依据真实局部细节而非重复的全局话题排序。",
+      "cost": {
+        "notation": "W 为窗数，A≤W 为实际搜索窗数。",
+        "additional_model_calls_per_video": "W 次简短缺失目标检测 + 至多 2A 次搜索读取；增强最终 V 替换 A 个原 V。无第二视觉模型、无独立 OCR 模型。",
+        "gpu_time_estimate": "5090 单卡约额外 8–25 秒/典型视频；333 视频约 45–140 GPU 分钟，全部窗口触发时可能超过范围，须预先记录最坏预算。",
+        "cache": "新增最多 2W 张局部原帧、2A 个搜索裁剪及坐标/PTS；图像裁剪为 CPU 操作，但所有裁剪重新编码成本计入新视频推理。"
+      },
+      "novelty_components_and_ablations": [
+        "目标指导搜索：与相同裁剪数量、相同分辨率和 token 预算的固定空间网格对照。",
+        "观察后重新决定下一节点：与根据首帧一次性规划相同数量区域对照。",
+        "原图位置和时间绑定工作记忆：保留完全相同裁剪，仅去掉原图位置关系；未过机制门则不能把绑定单列为贡献。"
+      ],
+      "wrong_binding_control": "将裁剪附到同视频其他窗，并保持裁剪像素、大小、数量、输出格式不变；另把框位置循环映射到错误位置。正确绑定需同时优于这两种控制，而非仅靠更多高分辨率像素。",
+      "difference_from_tried_families": "Explorer 18 搜索的是时间上的新帧；这里搜索当前已观察时刻的空间目标，并执行递归像素裁剪。Grounder/Highlighter 是已有 token 的内部控制，不执行目标空间搜索。Program 23 主要操作来源及时间/话语事实，本项具体检验观测反馈驱动的空间优先队列，不能仅复用其程序文字包装。",
+      "operational_limits": [
+        "冻结 Qwen 未接受源方法 LOC 训练，框定位和缺失目标发现可能不可靠。",
+        "搜索上限意味着未找到不能写成目标不存在。",
+        "相同像素预算控制不可省，否则无法排除纯分辨率收益。",
+        "通用 grounding 和多步 reasoning 不能作为 novelty；候选仅主张执行型目标搜索机制。"
+      ]
+    },
+    {
+      "shard_id": "visual_time_2",
+      "dedup_key": "pixel_tracked_text_occurrence_memory_with_support_bound_reading",
+      "name": "像素跟踪的屏幕文字发生记忆与支撑区间读取",
+      "origin": "受 VideoAgent 物体发生记忆启发的自研机制；不是完整 VideoAgent 迁移，也不以新增 OCR 本身作贡献。",
+      "method": [
+        "每窗用同一 Qwen 对两张实际局部帧提出屏幕文字区域及逐字内容，不生成仇恨结论。对这些区域在真实 4 fps 像素上执行 CPU 光流/模板跟踪，使用前后向一致性与外观残差识别失配；镜头切换终止轨迹，不以语言推断跨镜头身份。",
+        "实际失配产生新观测请求：取失配处真实裁剪，由同一 Qwen 确认文字是否改变。建立 occurrence_id、实际 PTS 集合、逐字内容、裁剪来源；同一文字在消失后重现仍是不同发生记录。每窗最多两个改变核验，失败处保持支撑未知，不跨缺口插值。",
+        "执行 interval_lookup(window) 从像素支撑中返回该窗真正出现的文字事件及进入/离开证据裁剪；在原生前缀下只改变 V 的观察包并直接读取一个 margin。不会把 OCR 分数与原 V 相加，也不依据跟踪持续时间平滑分数；原 S/G 和 r6 固定。"
+      ],
+      "sources": [
+        {
+          "url": "https://arxiv.org/html/2403.11481v2",
+          "read_scope": "VideoAgent 2.1–2.4、Algorithm 1/2；实际读到 temporal/object memory、RT-DETR+ByteTrack、CLIP/DINOv2 re-ID ensemble、SQL 发生查询及工具推理。"
+        },
+        {
+          "url": "https://arxiv.org/html/2602.09637v1",
+          "read_scope": "LELA 3.2–3.4；明确已有 EasyOCR、逐帧模态文本、speech composition 与模态最大分数，不能主张首次 OCR 仇恨定位。"
+        },
+        {
+          "url": "https://doi.org/10.1145/3774905.3796488",
+          "read_scope": "官方摘要：目标任务已有屏幕文字/对象检测及共享证据结构；未声称读到全文机制。"
+        }
+      ],
+      "transfer_and_difference": "借鉴 VideoAgent 的真实发生记忆和可执行查询思想；不用其多模型、CLIP/DINOv2 ensemble、跨镜头 re-ID 或全部四工具，明确不是完整复现。本项的新算法假设是用连续像素对应关系决定文字事实的时间支撑，并由实际跟踪失配触发语义重观察。文字读取仅是其输入部件。",
+      "local_ordering_hypothesis": "全局帧中醒目的文字可能被误当作持续存在，或改变后的文字仍继承旧含义。以实际像素跟踪到的发生区间约束局部事实，可在相同话题的视频内部区分文字攻击、普通背景文字及文字消失后的窗口。",
+      "cost": {
+        "notation": "W 为窗数，C≤2W 为实际文字改变核验数。",
+        "additional_model_calls_per_video": "W 次双帧区域/文字抽取 + C 次实际失配裁剪核验；最终 W 次增强 V 替换原 V。所有模型调用仍用同一 Qwen。",
+        "gpu_time_estimate": "5090 单卡约额外 8–30 秒/典型视频，333 视频约 45–170 GPU 分钟；另有 4 fps 解码/CPU 跟踪成本，应单独报告 CPU 秒和墙钟时间。",
+        "cache": "复用原视频/native/ASR；新增区域框、轨迹数值、逐字记录、PTS 和关键失配裁剪。4 fps 解码可流式执行，不必永久存所有帧；记录实际缓存字节，不使用任何内容摘要。"
+      },
+      "novelty_components_and_ablations": [
+        "像素连续性决定文字支撑：对照相同 Qwen OCR 内容和相同裁剪，但仅按最近抽样帧传播。",
+        "失配触发重观察：以同次数均匀时刻文字核验控制获取成本。",
+        "发生记忆的执行式局部查询：对照向每窗提供同视频全部相同 OCR 内容，隔离时间支撑的作用。",
+        "所有作为贡献的部件必须分别满足双语料共同主指标 ≥.01 的消融要求。"
+      ],
+      "wrong_binding_control": "保持逐字内容、事件数量和每个支撑区间长度不变，在视频内循环置换 occurrence 的时间支撑；另保持时间不变但交换真实裁剪来源。正确方法若只优于没有 OCR 而不优于这些控制，就不能主张发生绑定机制。",
+      "difference_from_tried_families": "QuoteGraph 24 的时间范围来自文本话语关系；Provenance 25 依赖语义实体/话语边及远程媒体端点，本项不生成这类图，而用实际像素对应、失配与重观察建立可见性支撑。Explorer 18 没有持久区域身份和文字发生查询。不是对已归档家族追加更密采帧。",
+      "operational_limits": [
+        "滚动字幕、模糊、遮挡和运动会使简单像素跟踪失效；失败必须成为未知支撑，不允许凭内容补全。",
+        "同一画面文字重复不等于持续同一行为；最终 reader 保留全局解释语境。",
+        "轨迹只能证明可见性，不能证明 Qwen OCR 内容正确；需保留原裁剪供读出核验。",
+        "LELA 已覆盖 OCR 仇恨定位；可讨论的差异仅是像素对应驱动的时间事实支撑与事件触发观测，不能扩张为普通 OCR/证据记忆创新。"
+      ]
+    },
+    {
+      "shard_id": "temporal_rep_2",
+      "dedup_key": "anchor_identity_temporal_token_fusion",
+      "name": "锚帧身份替代与变化残留表示",
+      "mechanism_hypothesis": "重复静态画面占据大量前缀表示，而短暂变化只占少数token。把可替代的重复token折叠成真实锚帧token、保留不相似token及其原时间坐标，可能改善变化发生窗与仅保留共同背景窗的排序。这里检验的是表示构成，不把压缩率或加速本身当作定位贡献。",
+      "steps": [
+        "复用原native20帧、ASR、单Qwen3-VL-8B；独立保留native G、ownstance和speech读数。对同一批图像的最终projector输出执行完整TTF：用帧均值与全局均值的余弦关系选锚帧，在3×3邻域匹配源token。",
+        "固定源论文阈值0.70；相似度超过阈值者由锚帧身份替代，不做特征平均；保留全部锚帧token和其余源token。同步处理Qwen3 DeepStack对应行、原位置坐标、文本位置及decode cache索引，保留可读的原帧/token到保留token映射。",
+        "用压缩后的同源视觉表示及原ASR重建局部读取前缀，接入native自己的全局回答；逐8秒窗独立产生一个visual margin，与native speech按原规则组合，直接进入固定r6 M2–4。"
+      ],
+      "primary_sources": [
+        "https://arxiv.org/html/2605.07355v1",
+        "https://github.com/Cominder/ttf",
+        "https://arxiv.org/html/2604.01569v1"
+      ],
+      "actual_read_scope": "实际阅读TTF HTML §3.1的锚选择、邻域匹配、阈值身份替代、位置对齐、cache-aware decode，以及引言和相关方法比较；官方仓库仅核到论文给出的链接，未读实现。VideoZeroBench实际读摘要和引言，仅作为答案正确不等于来源定位正确的背景。",
+      "source_function_and_target_difference": "TTF完整功能是匹配、身份压缩及位置/cache对齐；原论文包含Qwen3-VL-8B，但目标是效率与QA保持。这里迁移完整算子，测试同一输入的局部排序。原生多独立图像与论文视频token布局不同，DeepStack处理和特殊图像边界需显式适配，不能冒充作者实现复现。",
+      "novelty_claim_to_test": "时间变化残留与静态身份压缩能否提高仇恨来源的局部可区分性；不是首次视频压缩或首次token筛选。",
+      "local_ranking_prediction": "在共享背景持续而人物动作、字幕或符号改变的窗口中，真实变化窗相对背景窗上移；预计主目标为within-video macro ROC-AUC双语料各增加至少0.01，另外两项不超既定噪声退化。结果未知。",
+      "new_video_cost": {
+        "extra_model_calls": "零caption、零新视觉模型；为保持native G/S，最多新增一次完整局部前缀链，按现有三阶段接口约3次forward/video；每窗最终V仍只读一次。",
+        "estimated_total_gpu_minutes_333": [
+          12,
+          25
+        ],
+        "estimate_status": "5090排期估计，未实测；需计入两次前缀、匹配、DeepStack gather和实际decode。",
+        "cache": "复用原JPEG/ASR/权重；额外缓存仅压缩索引、来源映射和可选Qwen视觉表示。新视频仍需真实视觉编码，不把缓存视为免费。"
+      },
+      "ablations": [
+        "完整TTF对无压缩同接口前缀；native G/S和r6固定。",
+        "等保留token数的每帧均匀保留，区分一般稀疏化与变化残留；保留数由主臂产生，仅作独立控制。",
+        "固定首帧锚替代语义锚选择；若锚选择不能达到双语料同metric的0.01消融门，则不主张其为novelty。",
+        "取消身份替代，仅做相同token数量的相似度删除，明确区分压缩流程中的实际不同算子；若实现证明与主臂代数等价，标为等价检查，不伪装成机制消融。"
+      ],
+      "wrong_source_falsifier": "在保留token、数量、文本和G完全相同时，把保留源token的时间坐标按视频内半圈循环错绑；另将匹配源帧顺序错置后重新执行匹配。正确源绑定必须优于错绑控制，且检查实际改变了哪些窗口的来源关系。",
+      "difference_from_prior_pool_and_archives": "不是Explorer的熵触发新帧获取，不是Tree的聚类/caption/层次阅读，也不是Grounder/Selector的query attention mask。它在语言模型之前改变视觉token的冗余身份表示。与其他token压缩候选有近邻关系，应由jury保留比较，不能宣称检索未见即全新。",
+      "risks": [
+        "源方法主要保持既有QA能力，没有证据保证提高定位。",
+        "稀疏20帧跨帧间隔较大，3×3匹配可能不适用。",
+        "重复画面也可能是持续证据，压缩可能损失持续出现的信息。",
+        "全局锚放在源序列前会改变因果编码次序；需与位置错绑和等预算控制共同解释。"
+      ]
+    },
+    {
+      "shard_id": "temporal_rep_2",
+      "dedup_key": "importance_mass_temporal_transport_representation",
+      "name": "重要性质量约束的跨帧传输表示",
+      "mechanism_hypothesis": "单纯相似度难以区别可重复背景与少数不能替代的局部证据。由帧内不可替代性决定传输质量，再用相邻帧传输难度分配压缩，可以形成保留局部变化的序列表示，避免所有时间位置受到同等压缩。",
+      "steps": [
+        "在原native帧的同Qwen视觉编码中执行源方法的saliency-weighted coverage选择；由去掉某保留token后的覆盖损失计算leave-one-out重要性，再以负softmax赋传输质量，重要token对应较小可压缩质量。",
+        "对相邻帧执行完整OTT-Vid：语义距离加自适应空间距离、Sinkhorn耦合、以总传输成本分配压缩预算；按耦合选择源到目的关系，低成本合并、高成本删除，再按完整有向关系解决多帧链并聚合。",
+        "固定总体保留率0.50作为单次声明的目标适配，源γ、质量温度、预算温度、成本阈值均0.3；其余数值从官方实现核定后事前冻结。保存每个根token的全部源帧成员，同步Qwen3 DeepStack与原坐标。",
+        "保留native G、ownstance及S，重建视觉局部前缀并独立读取各8秒窗一个V，原组合及固定r6 M2–4不变。"
+      ],
+      "primary_sources": [
+        "https://arxiv.org/html/2605.11803v1",
+        "https://github.com/minseokii/OTT-Vid",
+        "https://arxiv.org/html/2604.01569v1"
+      ],
+      "actual_read_scope": "实际阅读OTT-Vid HTML §3.1–3.4完整方法、§4实现常数和QA/VTG任务设置；读到相邻匹配、预算、阈值分流、union-find链合并细节。官方代码链接已核到，代码及附录数值尚未读，不宣称已完成实现规格。",
+      "source_function_and_target_difference": "源功能包括空间选择、非均匀质量、空间语义成本、传输预算和最终合并/删除，不能只取OT距离当新分数。本提案全部保留。源骨干为Qwen2.5-VL等，目标为冻结Qwen3-VL的多图前缀；0.50保留率和固定native全局分支是目标适配。源结果不证明高于未压缩基线。",
+      "novelty_claim_to_test": "重要性约束的传输能否保护来源特异证据并改变视频内排序；效率、OT本身和普通相似度聚类均非新贡献。",
+      "local_ranking_prediction": "变化大但局部关键内容少的相邻窗，应较静态背景窗保留更多不可替代表示；主要预测within双语料共同增益，不能只凭pooled视频偏移支持此机制。",
+      "new_video_cost": {
+        "extra_model_calls": "零caption、零额外模型；约3次额外前缀阶段forward/video以保留native G/S；不新增每窗生成链。",
+        "estimated_total_gpu_minutes_333": [
+          15,
+          35
+        ],
+        "estimate_status": "未测的5090估计；需计入vision attention捕获、每帧coverage选择和所有Sinkhorn计算，不能只统计外层forward。",
+        "cache": "可复用原帧/ASR；每视频保存空间索引、质量、相邻传输及源成员。逐对处理避免常驻所有K×K矩阵；缓存不跨视频拟合。"
+      },
+      "ablations": [
+        "均匀质量，保持相同空间选择、总预算及OT算法，检验不可替代性。",
+        "均匀时间预算，保留非均匀质量与完整传输，检验传输难度分配。",
+        "去空间成本的语义OT，检验来源位置约束。",
+        "相同最终token数的均匀时间/空间删减，以及原完整未压缩输入。每个被主张部件必须单独满足两语料同metric的0.01消融要求。"
+      ],
+      "wrong_source_falsifier": "保持各帧内容、saliency和总保留预算，但把用于相邻传输的目的帧循环错绑；最终仍按真实时间展示其根token。另保留正确传输表示但错绑根token来源时间，分别测试对应关系和时间归属。",
+      "difference_from_prior_pool_and_archives": "区别于TTF的全局锚身份替代：这里有非均匀质量、相邻时序传输、难度预算和链聚合。区别于Selector的语言注意力选择、Recycler的sink质量重分配和Tree的语义树caption；没有调用旧方法输出或复活Explorer获取策略。它与TTF同属预语言视觉压缩大类，精确机制不同，保留给jury判定。",
+      "risks": [
+        "保留率与压缩目标原本服务效率，可能删除稀疏仇恨线索。",
+        "源方法高成本匹配会直接删除源token，这一点不能被隐藏成全部安全合并。",
+        "Qwen3视觉attention和DeepStack接口需真实验证。",
+        "跨多帧链的均值表示可能损害证据发生时间，错误来源控制尤其必要。"
+      ]
+    },
+    {
+      "shard_id": "temporal_rep_2",
+      "dedup_key": "duration_normalized_interval_rotary_source_binding",
+      "name": "时长归一化的区间旋转来源绑定",
+      "mechanism_hypothesis": "现有文本token位置表达语言顺序，不表达一句话实际覆盖的时间区间。把ASR来源区间编码成完整的区间旋转表示，使窗口查询与词语来源发生连续时间关系，可能减少邻窗话题污染，同时避免把每句语音当作一个精确时间点。",
+      "steps": [
+        "沿用现有ASR原segment区间和token到segment映射，不新增对齐器、不生成词时间、不读取标签；保留native前缀、G、ownstance和visual分支。",
+        "在speech查询的所有层，对ASR来源key的Qwen原生时间旋转通道执行完整RoTE算子：中心旋转乘sinc频率衰减，并除以来源定义的时长归一化项；query时间取固定8秒窗中心。仅替换speech query到有时间来源的ASR key的时间通道点积，其他通道、非媒体key和原因果可见性保留。",
+        "对查询body中复制的原词使用同一segment来源ID，避免复制文本绕过时间编码；采用源时间比例γ=4，固定全层全头，不调层和频率。区间半径为零使用RoPE极限；归一化项必须先作无GT数值域检查，不能静默夹值改掉来源算子。",
+        "每窗只产生一个新speech margin，原native V与其按原规则组合，直接进入固定r6 M2–4；无分数校准、无平滑、无跨窗决策链。"
+      ],
+      "primary_sources": [
+        "https://arxiv.org/html/2605.10543v1",
+        "https://matrixteam-ai.github.io/pages/TIE/",
+        "https://arxiv.org/html/2604.01569v1"
+      ],
+      "actual_read_scope": "实际阅读TIE HTML §3.1–3.3、Eq4–13、边界DoTE消融及归一化非退化条件；作者项目页的生成任务和训练背景。未读实现，项目页写code coming soon。VideoZeroBench仅背景。",
+      "source_function_and_target_difference": "来源完整RoTE包含区间积分、中心相位、sinc和时长归一化；不能只换中心时间或省略归一化。原文用于经训练的扩散视频生成，本任务冻结Qwen3；这里只迁移完整时间算子，不声称迁移了作者生成训练系统。把其点query/区间key应用到Qwen时间子空间是新适配，效用完全未证实。",
+      "novelty_claim_to_test": "来源持续区间的内部编码是否为局部语义测量提供必要信息；不是一般RoPE替换，也不是已有ASR时间戳的文字重排。",
+      "local_ranking_prediction": "跨窗长语句及相邻不同语句的窗口中，正确来源时段相对仅共享话题的时段上移；预计改善within，必须检查原始speech/max排序以及固定r6最终共同增益。",
+      "new_video_cost": {
+        "extra_model_calls": "部署外层forward次数与native相同；speech query内部额外重建时间通道点积。配对基线才额外读取一次S，不算部署。",
+        "estimated_total_gpu_minutes_333": [
+          10,
+          18
+        ],
+        "estimate_status": "未测5090估计；额外代价主要是all-layer speech attention实现可能失去融合kernel。",
+        "cache": "复用原ASR、native媒体及权重；缓存原ASR来源区间和必要的pre-RoPE key时间通道，不需新视频预处理模型。"
+      },
+      "ablations": [
+        "同物理时间映射但区间半径设零，检验完整区间而非单点时间。",
+        "来源DoTE边界编码，检验区间内部积分。",
+        "去时长归一化，检验增益是否只是区间长度导致的attention尺度变化。",
+        "保持每段半径但将中心全部放在视频中点，区分来源时间绑定与一般频率低通。主张的每个部件仍须满足双语料同metric的0.01删除门。"
+      ],
+      "wrong_source_falsifier": "保留ASR原词、段长度、token数量及全部native上下文，把整段区间在视频内循环错绑；采用不拆分语句的固定段级置换并报告时间重叠变化。若正确绑定不优于错绑，不能把收益归因于来源定位。",
+      "difference_from_prior_pool_and_archives": "Stabilizer/PAS改变图像query按头的常数相位，本方案根据每个ASR来源区间改变key频谱及与窗口的时间相位；不是该族换offset。Acoustic20通过Whisper字符路径后验向attention加入log支持，本方案不调用Whisper、不估声学后验、不限制key集合，测试完整区间旋转表示。二者同属时间绑定近邻，必须让jury审查科学家族边界，不能自动视作预算重置。",
+      "risks": [
+        "来源算子在生成模型训练中验证，冻结理解模型可能完全不适配。",
+        "Qwen时间子空间和语言语义并非可分离，替换可能伤害原内容判断。",
+        "ASR segment区间不等于每个词的真实区间，无法修复转写错误。",
+        "RoTE归一化可能接近零，源鲁棒性界有明确非退化条件；不满足时需如实报告接口不可用，不能隐性新增数值规则。",
+        "完整算子是否构成相对Acoustic/PAS足够独立的研究机制尚未裁定。"
+      ]
+    },
+    {
+      "shard_id": "cheap_binding_2",
+      "dedup_key": "multikey_episodic_retrieval_with_neighbor_filtering",
+      "payload": {
+        "status": "仅生成，未排名、未作 novelty 或 STOP 裁定。",
+        "method": [
+          "按原 8 秒窗口建立单视频记忆。每窗用同一冻结 Qwen3-VL-8B 读取两张实际 PTS 帧和本窗 ASR，一次生成短描述及 event/action、dialogue/mention、object/state、summary 四个键；记录原始窗口和帧坐标。键只供检索，不包含仇恨判断。",
+          "用同一 Qwen 的固定 text-only wrapper 对键及查询取末层文本 token 均值并归一化，不增加 embedding 模型。初始查询来自当前窗口的实际 ASR 和短描述；窗口相似度取四键余弦相似度的最大值，检索两个非本窗锚点。展开每个锚点前后一个窗口，按时间去重，最多保留四个远程窗口。",
+          "同一 Qwen 对候选邻域执行一次相关信息过滤，同时输出 supported、insufficient 或 UNKNOWN；仅 insufficient 可生成一次新查询并再检索、过滤一次。过滤必须给出实际 source ID，不能生成证据内容；最终 packet 重新读取这些 ID 对应的原 ASR 和实际帧。",
+          "当前窗口原始证据始终保留，远程 packet 加入普通独立 V/S 读取；native global、stance、max、r6 和 canonical 4 fps 评测保持不变。不把检索相似度或过滤判断变成仇恨分数。"
+        ],
+        "source": {
+          "url": "https://arxiv.org/html/2608.07663v1",
+          "actual_read_scope": "MERIT 3.1–3.4、4.2、4.4：四键记忆、最大键相似度、迭代查询、邻域过滤及消融。",
+          "source_function_vs_adaptation": "保留多键索引、检索—邻域过滤—不足时再查询、实际来源回读的完整功能链。原文不同 captioner、embedding、solver 改为同一冻结 Qwen；caption 和键合并生成，30 秒单元改为原生 8 秒窗口，检索上限固定为两轮。这是单模型功能适配，不声称复现原模型配置或性能。"
+        },
+        "raw_local_order_hypothesis": "对本窗省略对象、跨窗指代或对白承接，补入实际相关来源可能改变原始本窗 V/S 排序；预期收益不能只由最终 r6 或视频级排序体现。",
+        "new_video_cost": {
+          "calls": "W 个窗口：W 次 caption+keys；W 至 2W 次过滤/续查生成；约 4W 个键及 W 至 2W 个查询的短文本 embedding prefill；最后 2W 次普通 V/S 读取。新增生成输出分别限制为 128、96 tokens。",
+          "cache": "可复用 native 20 帧、原 ASR 和 prefix；实际 PTS 帧、四键、embedding、邻域过滤均计入新视频成本。跨查询只复用同视频的来源和键，不把已有研究缓存计为免费。",
+          "gpu_time": "新增部分粗预算每 100 窗 20–60 GPU 分钟，另计原生读取；未测量，需报告实际墙钟、prefill tokens 和生成 tokens。第二轮比例直接决定上界。"
+        },
+        "novelty_component_and_falsifier": {
+          "component": "四键检索和查询条件邻域过滤共同决定实际跨窗输入，不是只更换最终 prompt。",
+          "ablations": "同预算单 summary 键；四键但无邻域过滤；只允许一轮。各控制保留当前窗口输入及最终 reader。",
+          "wrong_binding": "在同视频内置换检索 ID，匹配远程窗口数量、帧数及 ASR 长度分桶，仍加载置换后的真实来源。若错误绑定不弱于正确绑定，则不能支持来源绑定机制。"
+        },
+        "difference_from_old_families": "没有持久实体/话语图和跨窗边，不重复 Provenance25；没有语义聚类树或 breadth/depth caption acquisition，不重复 Tree21；不使用熵触发补帧，不重开 Explorer18；没有证书组合或事实答案修订，不重复 26/27。",
+        "scope_and_remaining_definition": "需要冻结 wrapper、pooling、来源 ID 校验及 insufficient 字面 schema；Qwen hidden-state embedding 是否适合检索是待检验适配风险。实际目标域查询包含 MERIT+hateful video；检索未构成完整目标域查新，不能据此声称首次。"
+      }
+    },
+    {
+      "shard_id": "cheap_binding_2",
+      "dedup_key": "ordered_event_slot_retrieval_with_monotone_source_assignment",
+      "payload": {
+        "status": "仅生成，未排名、未作 novelty 或 STOP 裁定。",
+        "method": [
+          "同一冻结 Qwen 为每个原生窗口生成短的上下文描述，输入为两张实际 PTS 帧、本窗 ASR 和前一窗短描述。随后按每批八窗生成各窗的 prequel/current/sequel 三个中性检索槽；槽是待查条件，不是事实，也不包含候选仇恨答案。",
+          "用同一 Qwen 的固定短文本 embedding 对槽和窗口描述计算相似度。执行确定性单路径动态规划：current 固定为当前窗，prequel 只能绑定更早窗口，sequel 只能绑定更晚窗口；每侧最多一个来源，允许 NONE。最大化三槽匹配总和，平局按时间和窗口 ID 裁定，不平均多个路径。",
+          "将选定前后窗口的实际帧和 ASR 放入有时间、槽位、来源 ID 的 packet。生成的假设性槽描述不进入最终证据正文；不存在的槽明确为 NONE。",
+          "保留当前窗原始输入，以 packet 做一次普通独立 V/S 读取；native global、stance、max/r6 及评测器固定。路径分数仅用于选输入，不进入输出分数。"
+        ],
+        "source": {
+          "url": "https://arxiv.org/html/2506.10202v1",
+          "actual_read_scope": "Q2E 3.1–3.4：prequel/current/sequel 查询分解、条件细化、顺序上下文 caption、视觉/语音检索和 entropy fusion。",
+          "source_function_vs_adaptation": "借鉴事件分解和上下文描述，但不是 Q2E 完整复现。原文多编码器、多个检索通道及逆熵融合不迁移；改为同一 Qwen embedding、显式时间约束下的一条来源分配路径和普通 reader。完整新方法是自研的有序来源绑定，不以删去原 fusion 后剩余 prompt 宣称完整原方法迁移。"
+        },
+        "raw_local_order_hypothesis": "前置铺垫和后续回应可能解释当前发言的对象与语境；显式前后顺序有望优于同数量无序相关窗口，改善原始本窗 V/S 排序，而不是扩散邻窗仇恨分数。",
+        "new_video_cost": {
+          "calls": "W 次短上下文 caption，ceil(W/8) 次槽生成；W 个描述及 3W 个槽的 text-only embedding prefill；2W 次最终普通 V/S。caption 上限 96 tokens，八窗槽输出上限 768 tokens；没有每候选来源的额外验证调用。",
+          "cache": "来源图像、ASR 和描述在视频内复用；单视频矩阵和动态规划在 CPU 上完成。新视频仍支付 caption、槽生成及 embedding 成本。",
+          "gpu_time": "新增部分粗预算每 100 窗 10–40 GPU 分钟，另计普通 reader，未测量。应同时报告顺序 caption 的串行开销；不能只报 CPU 动态规划时间。"
+        },
+        "novelty_component_and_falsifier": {
+          "component": "将生成的事件槽编译成受时间约束、允许缺失的实际来源分配，而不是多路分数融合。",
+          "ablations": "取消前后时间约束但保持相同来源数量；用单个当前事件查询替代三槽；保持来源不变但去掉槽位标记，以区分选择与呈现收益。",
+          "wrong_binding": "交换 prequel 和 sequel 的实际端点，保留帧数及文本长度；另用同时间侧、长度匹配的错误来源。若正确有序绑定没有优势，不能支持时间关系机制。"
+        },
+        "difference_from_old_families": "没有永久实体、same_entity 或 discourse 边，不重复 25；没有树和证书，不重复 21/26；没有生成问题后独立作答及字段修订，不重复 27；没有 typed tool program，不重复 23。与第一候选的区别是一次全局有序分配，没有四键、邻域过滤或查询循环。",
+        "scope_and_remaining_definition": "需在实现前冻结 NONE 分数、相似度归一化、相同时间处理和上下文描述长度。Q2E+hateful video 的实际搜索没有完成 exhaustive novelty adjudication。原源的 retrieval fusion 与本方案不同，必须持续保留这一声明。"
+      }
+    },
+    {
+      "shard_id": "cheap_binding_2",
+      "dedup_key": "query_relevant_event_segmentation_with_background_acquisition",
+      "payload": {
+        "status": "仅生成，未排名、未作 novelty 或 STOP 裁定。",
+        "method": [
+          "同一冻结 Qwen 从每窗两张实际 PTS 帧及本窗 ASR 生成中性短描述。对当前窗，从本窗描述构造关于动作、对象和场景的事实检索请求；在固定前后四窗的候选区间内，一次生成各描述的相关度 1–10，不能输出仇恨概率或最终答案。",
+          "只对证据相关度采用固定宽度三窗移动平均，并按候选区间均值选取相关窗口；把连续选中窗口组合成事件。按事件最大相关度选择一个事件，平局固定按时间；若没有有效相关度则 UNKNOWN，不补猜测。",
+          "从所选事件最高相关度窗口读取一张实际来源帧，让同一 Qwen 描述背景、物体布局和可见动作；保留该帧本身。最终 packet 包含所选事件的实际 ASR、短描述、背景帧和来源坐标，最多四窗，超长按与当前窗的时间距离确定性截取。",
+          "当前窗原始输入始终保留，执行普通独立 V/S 读取。native global、stance 和 max/r6 固定；移动平均仅参与输入选择，绝不平滑或校准输出仇恨分数。"
+        ],
+        "source": {
+          "url": "https://aclanthology.org/2026.lrec-1.395.pdf",
+          "actual_read_scope": "VideoEvent 3.1–3.5、4.1：caption、相关度、平滑和阈值分段、代表背景帧以及最终回答；同时阅读相关度提示图。",
+          "source_function_vs_adaptation": "保留相关事件分段—代表背景来源获取—最终阅读的功能链。原文 LaViLa、GPT 系列组件统一为冻结 Qwen；原文对多个候选答案求相关度并求和，改为单一中性事实查询，取消答案选项、答案置信度和多模型配置。这是面向定位的功能适配，不声称原 MCQA 算法字面复现。"
+        },
+        "raw_local_order_hypothesis": "在当前窗缺少对象或背景识别线索时，连续相关事件和实际背景帧可减少孤立 caption 的语义歧义。有效机制应体现为原始本窗 V/S 排序改善，不能仅由最终跨窗分数传播解释。",
+        "new_video_cost": {
+          "calls": "W 次 caption；W 次候选区间相关度生成；B 次背景描述，其中按实际背景帧 ID 复用且 B≤W；最后 2W 次普通 V/S。caption 96 tokens、相关度 64 tokens、背景描述 64 tokens。总新增生成为 2W+B，没有无限循环。",
+          "cache": "背景描述只在实际相同帧且相同中性背景任务时复用；来源帧、ASR 和短描述可在本视频复用。相关度是查询条件结果，不能跨查询当作通用免费缓存。",
+          "gpu_time": "新增部分粗预算每 100 窗 15–50 GPU 分钟，另计最终 reader；未测量。需分别报告 B/W、caption、相关度和背景调用时间。"
+        },
+        "novelty_component_and_falsifier": {
+          "component": "相关度驱动的连续事件划分与事件代表实际背景来源获取共同控制输入；背景 prompt 单独不作为 novelty。",
+          "ablations": "相同数量独立 top-k 窗口替代连续事件；保留事件但删除新增背景来源；以当前窗背景帧替代事件代表帧，匹配总图像数量。",
+          "wrong_binding": "保持事件描述和 ASR，但换为同视频错误事件的背景帧及其真实背景描述；另置换整个事件 packet。若错误视觉绑定不造成损失，不能声称背景来源获取起作用。"
+        },
+        "difference_from_old_families": "没有预测熵、逐轮补帧或失败后重读，不重开 Explorer18；没有全视频语义聚类树，不重复 Tree21；没有持久图、来源边或 witness 证书，不重复 25/26。与第一候选不同，此处以时间连续性分段并获取代表背景，不使用多键迭代检索；与第二候选不同，不生成前后事件槽或执行有序路径匹配。",
+        "scope_and_remaining_definition": "需冻结相关度 JSON、无效行处理、四窗截取和代表帧选择。实际搜索包括 VideoEvent+hateful；搜索出现 MAESTRO 等邻近方向，不能据此声称首次语义分段或首次按需背景获取。本镜头未对这些邻居作完整排除。"
+      }
+    }
+  ]
+}

@@ -13,12 +13,13 @@
   "input_cache": "data/temporal_factual_verification",
   "GT_read": false,
   "GPU_run": true,
-  "smoke_pass": false,
+  "smoke_pass": true,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Actualfixed5 Slurm148 RUNNING onsc474397; first2 source complete with12/5 independent verification calls, noGT/performance",
+  "state": "Actualfixed5 Slurm148 DONE; local noGT/native allraw/10repeat/source execution PASS; full333 ready, noGT/performance",
   "result_guided_revisions_used": 0,
   "smoke_job": 148,
   "GPU_submitted": true,
-  "selected_host": "sc474397"
+  "selected_host": "sc474397",
+  "smoke": "runs/20261005_m1_verification/r1_full_smoke_analysis/plumbing_summary.json"
 }

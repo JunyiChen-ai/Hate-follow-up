@@ -217,3 +217,14 @@ foreign-home STRAY names unchanged, current outputs remain repository-only.
 148 queued behind147 under shared twoGPU QOS while146/137 run. Queueing is not
 scientific execution; noGT/performance claim. Source acquisition and paired
 native/new complete fixed5 on thishost; full333 requires actual noGT guard PASS.
+
+Scientific fixed5 Slurm148 completed13:56:29 onsc474397. Local noGT prepare PASS,
+`runs/20261005_m1_verification/r1_full_smoke_analysis/plumbing_summary.json`:
+native allraw/G exact,158newV/134newS changed,10actual repeated reads exact.
+Actual draft/planner/verification calls96/96/96HMM and62/62/62HCS; every window
+verified one field, not two. Token caps/planner errors0; source missing frames0.
+Literal changes83/60, final known fields258/192, UNKNOWN126/56; string changes
+and known flags do not establish factual correctness or successful correction.
+Actual standalone624.008684sHMM+361.092150sHCS includes source and new reading;
+full333 cost beyond these5 remains estimated. Complete same R1 ready only after
+synchronization/current machine check; no GT/main metrics or mechanism controls.

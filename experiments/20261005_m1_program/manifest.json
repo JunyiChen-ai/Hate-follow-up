@@ -48,11 +48,15 @@
   "result_guided_revisions_used": 1,
   "R2": {
     "revision": 1,
-    "state": "Implemented; author all333 source/token PASS and independent narrow code PASS; actual8B smoke pending",
+    "state": "Actual8B fixed5 Slurm149 DONE, returned; local noGT native/allraw/10clone/fallback exact PASS, full333 ready",
     "error_analysis": "runs/20261005_m1_program/r1_error_analysis/program_diagnostics.json",
     "source_cache": "data/temporal_evidence_program_handles",
     "cpu_checks": "runs/20261005_m1_program/available_cpu_checks/summary.json",
     "code_review": "docs/reviews/20261005_m1_program_available_facts_code.md",
-    "code_pass": true
+    "code_pass": true,
+    "smoke_job": 149,
+    "GPU_submitted": true,
+    "smoke_pass": true,
+    "smoke": "runs/20261005_m1_program/r2_handles_full_smoke_analysis/plumbing_summary.json"
   }
 }

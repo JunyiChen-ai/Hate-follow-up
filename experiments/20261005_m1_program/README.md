@@ -585,3 +585,22 @@ Independent narrow confirmation PASS:
 `docs/reviews/20261005_m1_program_available_facts_code.md`; real36layerBF16 CPU
 fresh fallback/current prefix+stance, clone/crop/rope/calls,14predicate cases,
 5corruption rejections and fixed5 actualsource/token binding. 8B GPU R2 pending.
+
+R2 identicalfixed5 submitted2026-10-05 13:44:07 onsc474398/Slurm149 after allfourlabs
+synchronized clean, lab3idle/1.4Tfree, exact foreign-home STRAY names unchanged.
+Evidence `machines_before_available_smoke{,_note}.txt`;148/146 occupy sharedQOS2,
+149 mayqueue without bypass. Original B source/costs reused only after strict
+current source/grammar/token replay. No R2 performance claim.
+
+Additional actual rank check uses scipy rankdata on original/new window max, not only equal AUC: HMM7/84 exact-order videos contribute .012617615131276334 of final within gain; HCS0/99. Exact case lists are in the same error artifact. H329 is one constant raw8s window, while fixed r6 has two cell-level final values whose order reverses; its +.6 video-within gain is not new M1 temporal ordering. Existing evaluator and r6 remain fixed.
+
+Actual R2 fixed5 Slurm149 completed13:57:01, runs returned immediately; no new
+source cache was generated (same full333 immutable B). Local noGT prepare PASS,
+`runs/20261005_m1_program/r2_handles_full_smoke_analysis/plumbing_summary.json`:
+native allraw/G exact,10actual clones exact,70newV/2newS changed. All fallback
+queries were freshly measured and exactly native by production assertions and
+source/token validation;70V/88V fallback,2S/132S fallback match source preflight.
+Actual standalone205.905423sHMM+102.261208sHCS includes all original source
+acquisition, not historical score reuse. Complete R2 paired333 ready, no GT/main
+performance yet. New video retains the complete acquisition cost, so this reduces
+unsupported record injection, not the source generation workload.
