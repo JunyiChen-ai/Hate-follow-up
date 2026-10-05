@@ -24,7 +24,7 @@ def read(path):
 def metrics(path):return {r['dataset']:r for r in json.loads(path.read_text())['per_dataset']}
 
 
-def prepare(root,out,smoke):
+def prepare(root,out,smoke,expected_smoke_repeats=None,global_exact=False):
     rows=selected_rows(smoke);expected={(r['dataset'],r['video_id']):r for r in rows}
     cfg=json.loads((root/'config.json').read_text());assert cfg['GT_read'] is False and cfg['smoke']==smoke
     records={name:read(root/name/'predictions.jsonl') for name in ('base','optimized')}
@@ -44,7 +44,7 @@ def prepare(root,out,smoke):
             changed_visual+=a['z_visual']!=b['z_visual'];changed_speech+=a.get('z_speech')!=b.get('z_speech')
         repeated+=sum(t['branches'][kind].get('repeat_exact',False) for t in bundle['traces'] for kind in ('visual','speech'))
         bundles[key]=bundle;inputs[key]=m
-    result=dict(coverage=len(rows),native_exact=True,GT_read=False,global_exact=False,changed_visual_windows=changed_visual,
+    result=dict(coverage=len(rows),native_exact=True,GT_read=False,global_exact=global_exact,changed_visual_windows=changed_visual,
         changed_speech_windows=changed_speech,actual_repeat_checks=repeated,cost={},source={},mechanism_supported=False)
     for ds in DATASETS:
         keys=[k for k in expected if k[0]==ds];bb=[bundles[k] for k in keys];mm=[inputs[k] for k in keys]
@@ -67,7 +67,9 @@ def prepare(root,out,smoke):
         if smoke:
             sample=[b for b in bb if b['base']['video_id']!='hate_video_114']
             result['cost'][ds]['rough_full_seconds']=(215 if ds=='HateMM' else 118)*np.mean([b['optimized']['extra']['standalone_seconds'] for b in sample])
-    if smoke:assert repeated==sum(1+int(any(w['body'].strip() for w in inputs[k]['windows'])) for k in expected)
+    if smoke:
+        required=sum(1+int(any(w['body'].strip() for w in inputs[k]['windows'])) for k in expected) if expected_smoke_repeats is None else expected_smoke_repeats
+        assert repeated==required
     (out/('plumbing_summary.json' if smoke else 'alignment.json')).write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result,indent=2),flush=True)
 

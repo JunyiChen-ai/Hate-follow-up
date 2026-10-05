@@ -4,10 +4,10 @@
 
 - 当前正式方法仍为 **r6_bma**；M1自主迭代的共同性能门和机制门均未完成，继续运行，未更新Overleaf。
 - 累计归档 **27** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
-- 区间见证26完整333/sc474397/168已DONE，本机prepare原av17与生成av18在6文件origin差异严格失败；仅prepare runtime窄修复独立PASS，匹配环境完整核对重跑中，尚无主指标。
+- 区间见证26 R1完整333/sc474397/168已完成本机严格核对与统一评测：HMM within+.016374保留，pooled下降/HCS未过门；R2修订1/3保留native G/ownstance/S并实际重算source-path V，作者CPU/独立窄代码确认PASS，启动脚本窄确认PASS。完整六项及权威路径见下方最新更新。
 - **运行中**：来源图25，sc474399/186，HMM全215 source已齐、HCS来源继续获取。
 - MERIT33实际固定5/sc474398/202完成并BOTH回传，本机源/原生全读数/G/双branch clone/真实remote进入V/S守门PASS；完整333 ready，尚无GT/性能。
-- 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。各实验README记录实际原因及来源。
+- 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B独立确认PASS，同固定5已提交ROOT Slurm207，PENDING(QOSMaxGRESPerUser)。
 - **运行中**：空间搜索31原完整333/sc474398/192已释放own lab hold；按smoke实测较低处理成本先恢复，source及reader同机完整运行。
 - **主agent调度持有**：事实核验27完整333/sc474397/193仍未启动，优先较低成本完整候选；方法版本/修订预算不变。
 - 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
@@ -730,3 +730,6 @@ logit 尺度。
 空间搜索31原完整333作业192已释放并RUNNING/sc474398，短fixed5反馈已经BOTH回传；按smoke实测新处理成本选为下一完整候选，不评价尚未生成的主指标。33完整ready，27/193保留ownlabhold。来源实验README与本机释放机器检查/调度记录。
 
 有序事件槽34接口A实际caption全部不可用，独立窄诊断无实现偏离（153wordcap/4tokencap/1UNKNOWN）。显式B只增加模型可见12/6words结束指令，原caps/guard/科学计算不变，独立缓存/输出，默认A及原失败保留；作者CPU/独立窄确认PASS，来源`docs/reviews/20261006_m1_ordered_slots_interface_B_code.md`。同固定5 B actual8B ready，未GT/性能/预算重置。35窄diagnosis也无实现bug、全部query/reason触wordcap；来源对应review，尚未改guard/数据。
+
+
+2026-10-06 区间26 R1完整333统一评测结束：HMM ROC/PR/within .877271805179/.645888527462/.767156028967（84），HCS .691475741779/.655757374847/.628760810771（99）。权威`runs/20261005_m1_interval_witness/r1_full_main_decoded/optimized/metrics.json`，native allraw/六项精确；HMM within+.016374（CI跨0）为正向信号，但pooled−.019847/−.048346、HCS−.025349/−.015315/−.008588，共同主门/噪声门FAIL。实际新视频处理591.48min含全部269.19min来源获取，无机制结论。实际GT/error文件及设计关联已记录实验README和`r1_error_analysis/summary.json`，全部development-selected。R2修订1/3保留原native G/ownstance/S并在该conversation实际重新计算source-path V，不复用旧R1 margins；CPU/独立窄reader/analyzer确认PASS，来源`docs/reviews/20261006_m1_interval_native_context_visual_code.md`，新增launcher窄确认PASS，同固定5 GPU待提交。累计归档仍27、性能与机制目标均未完成。

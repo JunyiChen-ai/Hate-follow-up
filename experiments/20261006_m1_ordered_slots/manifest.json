@@ -11,7 +11,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "A actualinterfaceguard FAIL/noGT; explicitwordbounded B isolated/cache+outputs+defaultA, authorCPU/independentnarrow confirmation PASS; samefixed5 B GPU ready",
+  "state": "A original guard FAIL/noGT; B explicit word instructions/code PASS, same fixed5 ROOT207 PENDING QOSMaxGRESPerUser",
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_ordered_slots/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -29,5 +29,8 @@
   "interface_B_declared": true,
   "interface_B_cpu_pass": true,
   "interface_B_code_pass": true,
-  "interface_B_code_review": "docs/reviews/20261006_m1_ordered_slots_interface_B_code.md"
+  "interface_B_code_review": "docs/reviews/20261006_m1_ordered_slots_interface_B_code.md",
+  "interface_B_smoke_job": 207,
+  "interface_B_host": "sc474397",
+  "interface_B_GPU_submitted": true
 }

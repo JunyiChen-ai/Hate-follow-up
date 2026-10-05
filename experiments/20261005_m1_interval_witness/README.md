@@ -252,3 +252,20 @@ Slurm168已在18:31:34越过原失败第117视频HMMnon_hate_video_356，完整1
 
 
 完整333 source+paired在本机sc474397/Slurm168于2026-10-06 04:20:55 DONE，Slurm COMPLETED9:58:58/0:0。旧HateVideo(av17.0.0) CPU prepare在6个HCS原始container origin=-.007（saved0）处严格失败，尚未GT/eval，原log保留`runs/20261005_m1_interval_witness/audit_runtime_fix/`。生成/推断HateVLM av18.1.0全333 header origin精确匹配；仅launcher prepare切换同生成runtime，evaluate/fixedr6/report仍原HateVideo，不改方法/缓存/预测/GT/评测器/对齐tolerance/成本/修订。独立窄确认PASS `docs/reviews/20261006_m1_interval_audit_runtime_fix.md`：6真实视频40,083帧metadata/383源pixels全部原严格validate PASS、旧runtime复现FAIL、prepare失败阻断GT评测保留。整轮prepare已按正确runtime重启；尚无main指标。
+
+
+## R1完整六项与实际error analysis：development-selected
+
+权威 `runs/20261005_m1_interval_witness/r1_full_main_decoded/optimized/metrics.json`：HMM ROC/PR/within .877271805178758/.6458885274621576/.7671560289673688（84），HCS .6914757417786734/.655757374846682/.6287608107712183（99）。HMM within+.016374保留（pairedCI跨0），pooledROC/PR−.019847/−.048346；HCS −.025349/−.015315/−.008588，主门FAIL。原生全部raw/六项精确，原4fps评测/r6未改。实际新处理18766.61/16722.18秒合计591.48min，包含原source269.19min及全部newG/V/S图像处理；不是只报cached推断。源repair4/7、状态改变3/7真实保留，无机制声明。
+
+原始V within+.016359/+.036839（CI均跨0），rawmax−.032333/+.004466，HMM rawmax CI全负；S共享帧−.008697/+.004967。不是主门的替代指标。
+
+本轮GT error analysis实际读取：`data/gt_4fps/{HateMM,HateClipSeg}.npz`、本轮base/optimized raw predictions、decoded optimized metrics和`r1_full_main_analysis/per_video.json`，全部文件清单/发现写在`runs/20261005_m1_interval_witness/r1_error_analysis/summary.json`。HCS全局符号从正确到错误25、反向6；HMM反向37、变差3。不能仅从联合pooled下降断言G单独致因；视觉/语音/全局作用需实际分开跑。观察用于下一设计，不进入任何方法计算/拟合/阈值/常数，不称blind confirmation。
+
+## R2事前设计：修订1/3
+
+保留原native20/fullASR G、其自身hard YesNo stance及原独立S；新V只读取同一R1完整source cache的reconciled leaf-to-root路径及真实LOCAL两帧，原visual问句/policy/8s/4fps/max/r6不变。不把整树重新注入global，不改S问句或源路径事实、词句/字段/新数据获取规则。每窗V按实际nativeG/stance conversation重新前向，禁止拿R1 tree-conditioned margins与旧G/S拼接当新结果。
+
+原Source全部路径/token/pixel/版本先严格重放，原获取完整成本照样计入；CPU/token/缓存隔离与独立窄code确认后原fixed5，再同机器完整333。R1初版+当前R2修订1/3，其余2次预算不变。不跑controlsGPU直到共同主门通过。R2仅定位阅读路径隔离，不把G/S保留本身当novelty；最终路径/ownership/repair仍须原双语料消融及错误绑定门。
+
+R2 reader/analyzer作者实际fixed5当前source/token/pixel/native-prefix binding PASS，独立窄确认`docs/reviews/20261006_m1_interval_native_context_visual_code.md`：8组actual36layer FP32/BF16×18/20×full/smoke production reader/nativeG/V/S/新V freshfull-forward/原S计费复用/原source成本/重复与篡改拒绝通过；CLI R2委托与R1默认验证保持。Launcher补在`launch/lab1_r2.sbatch`及`run_analysis_r2.sh`，GPU只测R2（缓存源不重新获取、原成本全算），prepare同HateVLM18/5.15再HateVideocanonical，launcher已获同一独立窄确认PASS：bash-n及stub实际成功/prepare失败阻断检查通过，smoke沿用CLI prepare --smoke，main shell先严格prepare。无实际R2GPU/指标。

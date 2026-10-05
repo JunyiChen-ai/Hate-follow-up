@@ -104,3 +104,5 @@ B只把原模型可见生成指令明确限制为caption最多12词、每个条�
 B `spec_B.json`，通过`SOURCE_INTERFACE=B`选择；默认A仍精确读取原spec/cache。B独立`data/temporal_ordered_slots_B`及`source_smoke_B`/`r1_full_smoke_B`，杜绝替换A缓存。先作者源码/原A重放隔离检查和独立窄确认，再同一固定5 GPU。若仍不能真实执行，继续保留失败，不评价idea/不降低guard。
 
 B独立窄代码确认PASS，来源`docs/reviews/20261006_m1_ordered_slots_interface_B_code.md`：A全5真实source/currenttokens/pixels只读重放保持，B actualsynthetic80s video acquire/validate与真实tokenizer/processor/来源memory归属、A/B×smoke/main×extract/measure/analyze cache/raw/decoded/analysis路径隔离通过。不是新proposal或性能版本，不是B真实8B执行成功；同固定5 B GPU ready。
+
+同原固定5接口B在sc474397提交Slurm207，当前PENDING(QOSMaxGRESPerUser)，等待186/192占用的实际2GPU用户预算；不绕过调度。派发前四实验室50ea174 clean一致、既有foreign STRAY逐行未变，证据`runs/20261006_m1_ordered_slots/machines_before_B_smoke{,_note}.txt`。B来源获取及配对读取均同一ROOT机器，无实际B执行/GT/性能结论。
