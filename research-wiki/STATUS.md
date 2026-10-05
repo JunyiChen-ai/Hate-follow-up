@@ -162,6 +162,8 @@ OTT180完整333的源重放线程问题已完成作者和独立窄确认：同�
 
 OTT30完整333/sc474398/Slurm180全部inputs/runs回传、线程等价重放与统一评测完成，原生allraw/六项精确。HMM ROC/PR/within .898340/.698636/.756590（84），HCS .713885/.669485/.634652（99）；within+.005808/−.002697，无任一+.01，按规则9归档第27项，不跑R2/控制GPU。来源`runs/20261005_m1_ott/r1_full_main_decoded/optimized/metrics.json`；实际新阶段10.64min/native1.17倍，全部development-selected、无机制证据，明细`archive/experiments/20261005_m1_ott/README.md`。
 
+候选32像素跟踪的文字发生记忆沿九池C3/rank5一次proposal PASS，已实际读VideoAgent/LELA/官方OpenCV；PyrLK/前后向/外观/失配重观察/发生查询及全部常数已事前冻结，入口`experiments/20261005_m1_text_tracking/README.md`。原型待实现，未CPU/GPU/GT，无性能结论；目标仍未完成。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。

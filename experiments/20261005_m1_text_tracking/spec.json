@@ -1,0 +1,50 @@
+{
+  "version": "R1 pixel-supported text occurrence memory; sources2026-10-05",
+  "seed": 0,
+  "native_requested_frames": 20,
+  "window_seconds": 8,
+  "tracking_fps": 4,
+  "tracking_long_side": 640,
+  "max_gap_seconds": 0.5,
+  "initial_max_tokens": 384,
+  "repair_max_tokens": 256,
+  "text_words": 32,
+  "text_tokens": 64,
+  "coordinate_scale": 1000,
+  "max_regions_per_anchor_frame": 1,
+  "max_repairs_per_window": 2,
+  "max_active_tracks": 4,
+  "max_lookup_events": 4,
+  "max_lookup_crop_images": 8,
+  "corner_max": 40,
+  "corner_quality": 0.01,
+  "corner_distance": 3,
+  "corner_block": 3,
+  "lk_window": [
+    21,
+    21
+  ],
+  "lk_max_level": 3,
+  "lk_iterations": 30,
+  "lk_epsilon": 0.01,
+  "lk_min_eigen": 0.0001,
+  "minimum_valid_points": 4,
+  "minimum_valid_fraction": 0.6,
+  "fb_max_pixels": 1.5,
+  "appearance_shape": [
+    128,
+    32
+  ],
+  "ncc_minimum": 0.85,
+  "appearance_mae_max": 0.12,
+  "variance_epsilon": 1e-06,
+  "cut_shape": [
+    64,
+    64
+  ],
+  "cut_mae_threshold": 0.3,
+  "same_region_iou": 0.5,
+  "opencv_version": "4.13.0.92",
+  "initial_system": "Read only literal visible on-screen text in the supplied image frame. Do not classify hate, infer intent, identity, authorship, membership, or use unshown speech. Return a supported text region or NONE/UNKNOWN through the bounded interface.",
+  "repair_system": "Observe the supplied current full frame and candidate crop. Read only currently visible literal on-screen text and its current box. Do not infer from earlier text or previous identity, and do not classify hate or intent. Return TEXT/NONE/UNKNOWN through the bounded interface."
+}
