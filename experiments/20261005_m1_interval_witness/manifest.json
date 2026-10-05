@@ -40,5 +40,8 @@
   "r2_gpu_run": false,
   "r2_launcher_pass": true,
   "r2_smoke_job": 208,
-  "r2_GPU_submitted": true
+  "r2_GPU_submitted": true,
+  "r2_lab_server_launcher_pass": true,
+  "r2_lab_server_launcher_review": "docs/reviews/20261006_m1_interval_lab_server_launch.md",
+  "r2_lab_server_source_copy": "entire original333/cost retained; portability check required before dispatch"
 }
