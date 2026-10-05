@@ -10,7 +10,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Full author input/scienceCPU and unique independentRule6 PASS; actual8Bfixed5 ready, no GPU/GT",
+  "state": "Actual8Bfixed5 queued206 on lab3, entire source+reader samehost; no GT/performance",
   "core_implemented": true,
   "cpu_pass": true,
   "full_input_preflight": "runs/20261006_m1_vtimecot/full_input_preflight/summary.json",
@@ -18,5 +18,8 @@
   "collector_cpu": "runs/20261006_m1_vtimecot/collector_cpu_checks/summary.json",
   "relevance_cpu": "runs/20261006_m1_vtimecot/relevance_cpu_checks/summary.json",
   "reader_cpu": "runs/20261006_m1_vtimecot/reader_cpu_checks/summary.json",
-  "code_review": "docs/reviews/20261006_m1_vtimecot_code.md"
+  "code_review": "docs/reviews/20261006_m1_vtimecot_code.md",
+  "smoke_job": 206,
+  "GPU_submitted": true,
+  "selected_host": "sc474398"
 }

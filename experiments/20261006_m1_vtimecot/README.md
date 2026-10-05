@@ -93,3 +93,6 @@ native allraw/G/S及clone精确，完整input/pixel/token/PTS/检索/工具/成�
 
 
 唯一独立Rule6代码审查PASS，来源`docs/reviews/20261006_m1_vtimecot_code.md`及`runs/20261006_m1_vtimecot/independent_code_review/`：独立合成10窗实际1fps/video collector与TERMINATE/UNKNOWN/三工具真正执行、CUT24–48秒实际来源和只读pixel/token/工具重放通过；actual36layer两query clip prefix共享/allprefixKV每步逐值不变/两次均从n开始/1vision15language/完整三轴positions等式与独立全uncached每个生成state通过（FP32最大1.55e-6，BF16hidden .03125）；12组productionreader14language/5或1vision、24图历史/原S复用/全部KV/rope/nativeG allraw和计费通过。same-family provisional，无生产改动，未读真实GT/预测/metrics/真实权重/CUDA；actual8Bfixed5 ready，不是科学性能。
+
+
+实际8B固定5在sc474398提交Slurm206，source/paired reader整个固定5同机运行，正常等待168/186释放activeQOS2。派发前四机8db32c6一致/clean，原foreign STRAY逐行未变，lab3 idle/1.4T/固定5 raw header CPU实际解析PASS；完整333 raw此前在lab3已核验。来源`runs/20261006_m1_vtimecot/machines_before_smoke{,_note}.txt`及已回传本机的`lab3_smoke_raw_coverage.json`。尚未GPU/GT/性能。
