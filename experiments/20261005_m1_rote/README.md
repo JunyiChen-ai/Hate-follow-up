@@ -85,3 +85,5 @@ clone全部KV/margin精确、非ASR bias为0且原因果可见性保留，新mar
 为复用原SDPA mask函数；boolean mask断言及随机fixture rotary cast问题也已修。
 全部初始失败日志保留，未放松科学数值门槛；尚未8B GPU执行。
 唯一独立规则6代码审查已交给与作者不同的原jury实例，不重开proposal审查。
+
+独立审查发现复制body的branch_ids/tokenization/offset来源绑定未计入standalone时间，已单列source_mapping并计入new_seconds及对应校验，base不包含该增量；审查正在窄确认。shared_prefix计时包含原ASR pre-RoPE key捕获和prefix来源绑定，部署需支付；native配对时间含此仪器开销，不能作为无仪器原生绝对延迟。actualSlurm墙钟另报，不计审计序列化为模型阶段秒数。

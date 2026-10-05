@@ -57,7 +57,7 @@ def read_video(j, row, segments, smoke):
     controller=IntervalAttention(j)
     try:
         with controller.native_prefix(segments):cache,ctx=build(j,frame_paths(row['dataset'],row['video_id'],20),segments)
-        times=dict(shared_prefix=tick()-start,native_visual=0.,native_speech=0.,new_speech=0.,diagnostic=0.)
+        times=dict(shared_prefix=tick()-start,native_visual=0.,native_speech=0.,source_mapping=0.,new_speech=0.,diagnostic=0.)
         native_v=[];native_s=[];new_s=[];traces=[];diagnostic_calls=0
         wins=fixed_windows(float(row['duration']),8)
         for i,(a,b) in enumerate(wins):
@@ -69,9 +69,11 @@ def read_video(j, row, segments, smoke):
             if not body.strip():
                 native_s.append(None);new_s.append(None);traces.append(trace);continue
             q=yesno_question(i,len(wins),a,b,body,'speech')
+            start=tick()
             ids,suffix=j.branch_ids(ctx['msgs'],q,ctx['history'],head_text=ctx['head'])
             mapping=question_sources(j,suffix,ids,segments,a,b,body)
             assert mapping
+            times['source_mapping']+=tick()-start
             start=tick();old=margin(j,cache,ctx,q);times['native_speech']+=tick()-start
             n=cache.get_seq_length();start=tick()
             with controller.speech(n,mapping,segments,a,b):z=margin(j,cache,ctx,q)
@@ -93,7 +95,7 @@ def read_video(j, row, segments, smoke):
                 trace['speech']['repeat_native_exact']=trace['speech']['repeat_new_exact']=True
             native_s.append(old);new_s.append(z);traces.append(trace)
         base_seconds=times['shared_prefix']+times['native_visual']+times['native_speech']
-        new_seconds=times['shared_prefix']+times['native_visual']+times['new_speech']
+        new_seconds=times['shared_prefix']+times['native_visual']+times['source_mapping']+times['new_speech']
         base=prediction(row,ctx,native_v,native_s,base_seconds,'m1_native')
         new=prediction(row,ctx,native_v,new_s,new_seconds,'m1_interval_rote')
         actual=j.language_calls-before
@@ -155,7 +157,7 @@ def validate_bundle(row,b,segments,j,smoke):
     times=b['checks']['times']
     assert all(math.isfinite(v) and v>=0 for v in times.values())
     assert abs(base['extra']['standalone_seconds']-sum(times[k] for k in ('shared_prefix','native_visual','native_speech')))<1e-6
-    assert abs(new['extra']['standalone_seconds']-sum(times[k] for k in ('shared_prefix','native_visual','new_speech')))<1e-6
+    assert abs(new['extra']['standalone_seconds']-sum(times[k] for k in ('shared_prefix','native_visual','source_mapping','new_speech')))<1e-6
     repeats=sum(bool(t.get('speech',{}).get('repeat_new_exact')) for t in b['traces'])
     assert repeats==(1 if smoke else 0) and b['checks']['diagnostic_forwards']==2*repeats
     calls=3+len(wins)+sum(bool(window_text(segments,a,z).strip()) for a,z in wins)
