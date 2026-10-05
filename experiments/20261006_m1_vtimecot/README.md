@@ -108,3 +108,5 @@ A固定5严格source/native验证后原工具执行门失败，全部查询触8w
 B只向query/plan/feedback system增加显式短字段结束指令：每个query最多6词，每个reason/description最多12词，立即闭合字段或用UNKNOWN。原8/16words、16/32content tokens及96/128whole generation caps完全保留，relevance接口/真实工具/图像/检索/最终reader/G/S/max/r6不变。不是性能修订、贡献或新候选，预算不重置；不强迫生成有效查询/动作。独立spec_B、data/temporal_time_tools_B、source_smoke_B/r1_full_smoke_B等缓存/输出，默认A不变。先实际A只读重放及B软件接口/工具/路径隔离检查、独立窄确认，再同固定5 GPU；原执行guard不得降低。新增调用上界与原A相同，实际有效query/工具可能增加并如实计费。
 
 B作者A全5实际source/currenttokens/pixels只读重放PASS（`interface_B_cpu_checks/A_summary.json`），B真实synthetic80s视频collector/token/工具状态/输入pixels/篡改拒绝PASS（`collector_cpu_checks_B/summary.json`）；唯一独立窄确认`docs/reviews/20261006_m1_vtimecot_interface_B_code.md` PASS，独立A重放/B三工具与TERMINATE/UNKNOWN、A/B全CLI路径隔离、shell成功/失败阻断及环境资源均检查。随机/脚本化CPU提供者不是实际8B观察或性能；同原fixed5 B GPU ready，原预算0/3和caps/guard保留。
+
+同原fixed5接口B在sc474397提交Slurm209，PENDING(QOSMaxGRESPerUser)，等待186/192及207/208；来源获取/配对同ROOT，代码9d78838四实验室clean一致、foreign STRAY精确未变，证据`runs/20261006_m1_vtimecot/machines_before_B_smoke{,_note}.txt`。仍未B实际GPU/GT/指标。

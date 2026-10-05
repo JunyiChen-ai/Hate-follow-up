@@ -10,7 +10,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "A source/native exact, original tool guard FAIL; B explicit word-bound instructions, isolated source/reader/analysis, author A real-source replay+B collector and independent narrow code/launcher PASS; same fixed5 GPU ready",
+  "state": "Original A guardFAIL/noGT preserved; B narrow code/launcher PASS, samefixed5 ROOT209 PENDING QOSMaxGRESPerUser",
   "core_implemented": true,
   "cpu_pass": true,
   "full_input_preflight": "runs/20261006_m1_vtimecot/full_input_preflight/summary.json",
@@ -28,5 +28,8 @@
   "interface_B_cpu_pass": true,
   "interface_B_code_pass": true,
   "interface_B_code_review": "docs/reviews/20261006_m1_vtimecot_interface_B_code.md",
-  "interface_B_GPU_run": false
+  "interface_B_GPU_run": false,
+  "interface_B_smoke_job": 209,
+  "interface_B_host": "sc474397",
+  "interface_B_GPU_submitted": true
 }

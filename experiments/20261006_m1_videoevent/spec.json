@@ -1,0 +1,20 @@
+{
+  "version": "R1 query-relevant contiguous events with representative background;2026-10-06",
+  "seed": 0,
+  "native_frames": 20,
+  "window_seconds": 8,
+  "candidate_radius": 4,
+  "smoothing_width": 3,
+  "max_event_windows": 4,
+  "local_frames": 2,
+  "max_reader_images": 11,
+  "description_words": 16,
+  "description_tokens": 64,
+  "caption_generation_tokens": 96,
+  "relevance_generation_tokens": 128,
+  "background_generation_tokens": 96,
+  "caption_system": "Describe only neutral observable actions, objects and scene in the supplied actual frames and literal ASR. No hate judgment, inferred intent, identity or group membership. Write at most 12 words, then immediately close the JSON caption string. Use UNKNOWN when not observable.",
+  "relevance_system": "Score the relevance of each supplied available caption to the neutral current-context request, 1 through 10 or UNKNOWN. Captions and request are unverified interpretations, not established facts. This selects input context only, never a hate judgment, answer confidence or current occurrence. Unknown captions must remain UNKNOWN.",
+  "background_system": "Describe only the neutral scene, object layout and visibly observable action in this actual single frame. Do not infer intent, identity, group membership or hate. Write at most 12 words, then immediately close the JSON background string. Use UNKNOWN for unobservable content.",
+  "request_prefix": "Retrieve observable action, object and scene context relevant to the following current-window literal sources. Interpretations are hypotheses, not facts; no hate answer requested."
+}
