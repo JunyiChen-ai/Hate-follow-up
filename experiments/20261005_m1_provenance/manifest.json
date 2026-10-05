@@ -16,7 +16,7 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Slurm167 OOM after116HMM; allpartialruns/inputs returned; LINK4096 memory-only integration independentPASS, actual8B replay queued183",
+  "state": "ActualLINK8B replay183PASS locally returned; originalwhole333B resumed SAME lab2 queued186, caches/sourcecost/specunchanged",
   "smoke_job": 138,
   "selected_host": "sc474399",
   "A_smoke_job": 138,
@@ -41,8 +41,10 @@
   "main_running": false,
   "main_checkpoint": true,
   "complete_local_source_metadata": 64,
-  "resume_job": 167,
+  "resume_job": 186,
   "main_memory_fix": "src/qwen3_mlp_memory.py onlylinkprefill4096 + expandable_segments allocator",
   "memory_fix_code_pass": true,
-  "memory_fix_gpu_job": 183
+  "memory_fix_gpu_job": 183,
+  "memory_fix_gpu_pass": true,
+  "memory_fix_gpu_summary": "runs/20261005_m1_provenance/link_mlp_memory_fix/gpu/summary.json"
 }

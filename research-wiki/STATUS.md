@@ -150,13 +150,17 @@ OTT完整333同R1在sc474398/Slurm180于21:50:39 DONE，runs和新增源特征�
 
 独立事实核验27已在原fixed5运行主机sc474397排入完整333 Slurm185；派发前四实验室64b65f9一致/clean和既有foreign STRAY逐行未变，完整输入/spec/读取路径不变，正常等待根机168结束与用户GPU预算，来源`runs/20261005_m1_verification/machines_before_main{,_note}.txt`。当前零标签性能与机制目标仍未完成。
 
+来源图25实际8B LINK重放Slurm183 PASS且完整runs已回传本机：15630/15270token输入，原生与4096分块生成tokens/events/compiledlinks均与原保存来源相同。权威`runs/20261005_m1_provenance/link_mlp_memory_fix/gpu/summary.json`；相同原B完整333以sc474399/Slurm186续跑，正常排队，116HMM和原HCS检查点严格复用、原获取成本保留。派发前四实验室代码a070c00一致/clean、旧foreign STRAY逐行未变，来源`link_mlp_memory_fix/machines_before_resume{,_note}.txt`。无主GT或性能裁定。
+
+Program23最终R4完整333/sc474398/Slurm181已完成回传与统一评测，原生allraw/六项精确。HMM ROC/PR/within .897327/.696904/.744547（84），HCS .717330/.672824/.632911（99）；within−.006236/−.004438，无任一+.01，按规则9归档第26项，不跑R5/控制GPU；R1/R2/R3正向结果保留。来源`runs/20261005_m1_program/r4_handles_full_main_decoded/optimized/metrics.json`；实际新处理228.48min/native24.95倍，全部development-selected、无机制证据，明细`archive/experiments/20261005_m1_program/README.md`。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档25个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph、TTF、RoTE性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档26个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph、TTF、RoTE、Program性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。

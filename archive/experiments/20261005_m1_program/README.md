@@ -1,3 +1,5 @@
+归档原因：Program初版及三次修订完整333均未达共同性能目标，最终R4无任一+.01；保留R1/R2/R3正向结果，不跑R5。
+
 # M1 candidate23 deferred proposal: executable temporal evidence program
 
 Declared 2026-10-05, before implementation/GPU/GT analysis. Original unfiltered
@@ -653,3 +655,10 @@ ProgramR4 fixed5已在sc474398提交Slurm171，167/168占用实际userGPU预算�
 Actual8B fixed5 Slurm171 DONE并立即回传；输入缓存有新增则同样回传，samebackend/source/noGT/fullnative allraw/clone检查PASS，权威`runs/20261005_m1_program/r4_handles_full_smoke_analysis/plumbing_summary.json`。完整333ready；无性能结果。
 
 最后修订R4的相同完整333在sc474398/Slurm181运行（OTT180之后由主agent独立提交，无job chaining）。派发前四实验室代码一致/clean及旧foreign STRAY逐行未变，来源`runs/20261005_m1_ott/machines_before_main{,_note}.txt`。原B来源完整成本保留；没有R4主性能/机制结论。完整结果未过门则按原预算归档，不新增R5。
+
+
+## R4完整333最终结果与归档2026-10-05
+
+sc474398/Slurm181于22:09:07 DONE，全部runs立即回传（return_bound_main.log），无新增来源。严格source/currentinputs/native allraw/G PASS，完整配对原生六指标精确复现。权威`runs/20261005_m1_program/r4_handles_full_main_decoded/optimized/metrics.json`：HMM ROC/PR/within .8973269179027786/.6969035624053785/.7445465414009673（84），HCS .7173303904650402/.672823659468051/.6329106433384813（99）。within−.0062355025649996065/−.004438470465617406，损失在既定噪声内，但无任一主指标+.01，performance FAIL。原始max within−.001011576598674431/−.0037213597318114895；原始visual within−.040986971727767295/−.010860830062296184，HMM配对区间全负。source-key干预实际进入读数：3463新V、4新S变化，不能视为机制成功。
+
+本轮实际新视频处理228.47667037min/native24.95342957倍，包含原B完整来源获取；缓存并非免费。完整成本与所有六项/配对区间见`runs/20261005_m1_program/r4_handles_full_main_analysis/{alignment,summary}.json`。报告读取本轮完整base/optimized原始及固定r6预测、两语料data/gt_4fps数组作评测与配对分析，没有据此新增设计：修订3/3已用尽，按规则9归档第26项，不跑R5或控制GPU。全部development-selected，无机制结论。R1/R2/R3 HMMwithin+.019006/+.015404/+.013145和完整两语料六数字保留在上述各节；这些正向信号均未通过共同双语料门。

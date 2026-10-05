@@ -432,3 +432,6 @@ Slurm167 failedafter116fullHMM atnextvideo non_hate_video_356 link-prefill MLP; 
 独立LINK内存集成窄确认`docs/reviews/20261005_m1_provenance_link_memory_fix.md` PASS，只LINK使用4096/正常及异常恢复，完整inputs/模型计数/callcaps/cost/launch allocator继承通过。实际8B当前已保存15630-token HMM与15270-token HCSLINK的新鲜未分块/分块token/events/compiledlinks重放已准备，待Slurm执行；不把内存失败当idea负结果。
 
 同sc474399实际LINK重放已提交Slurm183，正常等待168/181的用户GPU预算；通过后由主agent独立提交原B完整333续跑。派发前四实验室代码一致/clean、旧foreign STRAY逐行未变，lab2空闲/568Gfree，来源`runs/20261005_m1_spatial_search/machines_before_smoke{,_note}.txt`；没有GT/性能裁定。
+
+
+来源图25实际8B LINK重放Slurm183 PASS且完整runs已回传本机：15630/15270token输入，原生与4096分块生成tokens/events/compiledlinks均与原保存来源相同。权威`runs/20261005_m1_provenance/link_mlp_memory_fix/gpu/summary.json`；相同原B完整333以sc474399/Slurm186续跑，正常排队，116HMM和原HCS检查点严格复用、原获取成本保留。派发前四实验室代码a070c00一致/clean、旧foreign STRAY逐行未变，来源`link_mlp_memory_fix/machines_before_resume{,_note}.txt`。无主GT或性能裁定。
