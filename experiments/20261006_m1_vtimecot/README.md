@@ -112,3 +112,7 @@ B作者A全5实际source/currenttokens/pixels只读重放PASS（`interface_B_cpu
 同原fixed5接口B在sc474397提交Slurm209，PENDING(QOSMaxGRESPerUser)，等待186/192及207/208；来源获取/配对同ROOT，代码9d78838四实验室clean一致、foreign STRAY精确未变，证据`runs/20261006_m1_vtimecot/machines_before_B_smoke{,_note}.txt`。仍未B实际GPU/GT/指标。
 
 B同fixed5/sc474397/209 DONE09:15:03；ROOT匹配runtime currentsource/nativeallraw/G/S/clone核对到原toolguard FAIL。真实10query均model_quote可用、158actual clip prefixes/316relevance calls；5planner reason仍wordcap，rawaction4PROGRESS_BAR/1TERMINATE编译为UNKNOWN，actualtools0。源记录`runs/20261006_m1_vtimecot/source_interface_B_diagnosis/summary.json`。不降guard/不salvage/不判idea/不进mainGT；需要具体接口诊断，B数据及budget0/3保持。
+
+B独立窄诊断：`docs/reviews/20261006_m1_vtimecot_interface_B_diagnosis.md`，真实5当前source/token/pixel/原grammar只读重放PASS，12wordreason指令实际已传入，仍五个16wordcap，whole30–41tokens未触128，无实现偏离。不从没有的logits猜原因。准备只读`closing_diagnostic.py`/ROOTSlurmlaunch，重算同fixed5首planner原B生成，现成logits观察rawtop/quoteleadingterminal/barequote rank/实际选择，不加forward或改choice/cap/guard；原token/events/input/grid/positions/selection必须exact，源bytes/mtime保持。只诊断，没有新的interface或revision，不salvage旧B。5planner调用预计<5GPUmin(未测)，cost另记；独立窄确认后再普通Slurm提交，不进入主实验/GT。
+
+只读closing observer独立窄确认PASS：`docs/reviews/20261006_m1_vtimecot_closing_diagnostic_code.md`。实际全部5原B首planner CPU输入/语法重放、原head/选择/forward/tokens/events不变、九种记录差异拒绝、源bytes/mtime只读/缓存释放/模块恢复/ROOTlaunch通过。只软件/绑定确认，未GPU/GT/实际截断原因证据。原失败/caps/完整工具执行guard/预算0/3保持，diagnostic可正常调度。

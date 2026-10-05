@@ -753,3 +753,5 @@ Spatial31 fullsource333与partialpaired137/sc474398/192 FAILED2:45:02/1:0（图�
 31 intrinsicunsupported crop具体fix独立窄PASS，来源`docs/reviews/20261006_m1_spatial_search_crop_interface_fix.md`；8crop沿既有unavailable nativeV路径明确记录、source框/PNG/费用/原137supported读数保持，10组36层fixture旧支持路径逐值同与全6767实际processoreligibility对齐。SameR1 originalhost sc474398 full333 resume ready，版本/预算不变，未GT/性能。
 
 31同R1全333原host/sc474398/215已提交续跑（正常等待214资源），保留原333source与137supported原子读数/成本，8unsupported显式fallback已独立确认，无GT/版本预算重置。34同B完整333source+reader ROOT216正常QOS排队，actualfixed5及原guard PASS、方法/常数统一未变，未GT/主指标。R2/sc448960/213、VideoEvent36/sc474398/214、PV25/sc474399/186仍运行。
+
+35B独立真实输入诊断PASS（没有实现偏离、五个reason16wordcap/whole30–41tokens未到128），原guard仍FAIL、无GT/性能。原选择不变的首planner logits观察器和ROOTlauncher独立窄PASS，来源`docs/reviews/20261006_m1_vtimecot_closing_diagnostic_code.md`，准备actual诊断，不从synthetic判断原因，不改B/caps/guard/预算。
