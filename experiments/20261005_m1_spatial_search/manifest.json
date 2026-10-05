@@ -11,7 +11,7 @@
   "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Execution crop-image support bug; narrow diagnosis underway, not idea/performance result",
+  "state": "Source333+137supported records preserved; intrinsicunsupported8 crop nativeV fallback author/independentnarrow PASS; sameR1 full333 resume ready onoriginal lab3host, noGT",
   "cpu_pass": true,
   "full_input_preflight": "runs/20261005_m1_spatial_search/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -28,7 +28,13 @@
   "main_submitted": true,
   "main_running": false,
   "main_selected_host": "sc474398",
-  "main_job_state": "FAILED 2:45:02/1:0 after all333source+125wholepaired, model aspect366 limit200",
+  "main_job_state": "FAILED 2:45:02/1:0 after all333source+137wholepaired, model aspect366 limit200",
   "full_source_returned": true,
-  "partial_runs_returned": true
+  "partial_runs_returned": true,
+  "crop_diagnosis": "docs/reviews/20261006_m1_spatial_search_crop_interface_diagnosis.md",
+  "crop_unsupported_count": 8,
+  "crop_supported_count": 6759,
+  "crop_fix_state": "minimalnativeV fallback implemented; authorCPU PASS, independentnarrow confirmation underway",
+  "crop_fix_pass": true,
+  "crop_fix_review": "docs/reviews/20261006_m1_spatial_search_crop_interface_fix.md"
 }

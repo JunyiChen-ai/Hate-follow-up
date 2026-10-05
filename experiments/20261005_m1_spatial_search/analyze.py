@@ -45,8 +45,8 @@ def prepare(root,out,smoke):
     for ds in DATASETS:
         bb=[b for key,b in bundles.items() if key[0]==ds];cc=[b['checks'] for b in bb]
         result['source'][ds]=dict(detection_calls=sum(c['detection_calls'] for c in cc),search_calls=sum(c['search_calls'] for c in cc),search_windows=sum(c['search_windows'] for c in cc),
-            found_windows=sum(c['found_windows'] for c in cc),changed_visual_windows=sum(t['native_visual']!=t['new_visual'] for b in bb for t in b['traces']),clones=sum(t.get('clone_exact',False) for b in bb for t in b['traces']))
-        assert result['source'][ds]['search_calls']>0 and result['source'][ds]['found_windows']>0 and result['source'][ds]['changed_visual_windows']>0,'actual search/crop mechanism not exercised; preserve UNKNOWN/interface diagnosis'
+            found_windows=sum(c['found_windows'] for c in cc),used_crop_windows=sum(c.get('used_crop_windows',c['found_windows']) for c in cc),unsupported_crop_windows=sum(c.get('unsupported_crop_windows',0) for c in cc),changed_visual_windows=sum(t['native_visual']!=t['new_visual'] for b in bb for t in b['traces']),clones=sum(t.get('clone_exact',False) for b in bb for t in b['traces']))
+        assert result['source'][ds]['search_calls']>0 and result['source'][ds]['used_crop_windows']>0 and result['source'][ds]['changed_visual_windows']>0,'actual search/crop mechanism not exercised; preserve UNKNOWN/interface diagnosis'
         result['cost'][ds]=dict(standalone_seconds={name:sum(b[name]['extra']['standalone_seconds'] for b in bb) for name in rr},peak_GiB=max(c['peak_GiB'] for c in cc),
             source_forwards=sum(c['source_forwards'] for c in cc),source_vision=sum(c['source_vision'] for c in cc),reader_forwards=sum(c['actual_forwards'] for c in cc),reader_vision=sum(c['actual_vision'] for c in cc),
             source_seconds=sum(c['source_seconds'] for c in cc),times={k:sum(c['times'][k] for c in cc) for k in cc[0]['times']})

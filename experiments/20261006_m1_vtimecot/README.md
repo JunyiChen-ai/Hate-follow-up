@@ -110,3 +110,5 @@ B只向query/plan/feedback system增加显式短字段结束指令：每个query
 B作者A全5实际source/currenttokens/pixels只读重放PASS（`interface_B_cpu_checks/A_summary.json`），B真实synthetic80s视频collector/token/工具状态/输入pixels/篡改拒绝PASS（`collector_cpu_checks_B/summary.json`）；唯一独立窄确认`docs/reviews/20261006_m1_vtimecot_interface_B_code.md` PASS，独立A重放/B三工具与TERMINATE/UNKNOWN、A/B全CLI路径隔离、shell成功/失败阻断及环境资源均检查。随机/脚本化CPU提供者不是实际8B观察或性能；同原fixed5 B GPU ready，原预算0/3和caps/guard保留。
 
 同原fixed5接口B在sc474397提交Slurm209，PENDING(QOSMaxGRESPerUser)，等待186/192及207/208；来源获取/配对同ROOT，代码9d78838四实验室clean一致、foreign STRAY精确未变，证据`runs/20261006_m1_vtimecot/machines_before_B_smoke{,_note}.txt`。仍未B实际GPU/GT/指标。
+
+B同fixed5/sc474397/209 DONE09:15:03；ROOT匹配runtime currentsource/nativeallraw/G/S/clone核对到原toolguard FAIL。真实10query均model_quote可用、158actual clip prefixes/316relevance calls；5planner reason仍wordcap，rawaction4PROGRESS_BAR/1TERMINATE编译为UNKNOWN，actualtools0。源记录`runs/20261006_m1_vtimecot/source_interface_B_diagnosis/summary.json`。不降guard/不salvage/不判idea/不进mainGT；需要具体接口诊断，B数据及budget0/3保持。

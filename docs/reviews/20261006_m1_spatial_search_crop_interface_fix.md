@@ -1,0 +1,19 @@
+# Spatial-search intrinsic crop support fix — narrow confirmation PASS
+
+2026-10-06. Independent GPT-6-astra reviewer; same-family provisional. Scope is the demonstrated processor aspect-ratio execution bug and its minimal reader/accounting/validation fix. No new proposal or broader scientific review; no production edits by the reviewer.
+
+Evidence: `runs/20261005_m1_spatial_search/crop_interface_fix/confirmation/{check.py,summary.json,run.log,inventory_check.py,inventory_summary.json,inventory.log}`. Both independent scripts ran with local HateVLM Python and `CUDA_VISIBLE_DEVICES=''`.
+
+The helper uses actual recorded integer crop dimensions and rejects strictly `max(width,height)/min(width,height)>200`. Its results match the earlier actual-processor inventory for all **6,767 FOUND crops**, identifying exactly the same **8 unsupported crops**. The earlier diagnosis verified their PNG geometry/pixel ownership and actual processor behavior, including both orientations at ratios 199/200/201. Source records and FOUND status remain unchanged.
+
+Executed production `read_video` and `validate_bundle` on the actual Qwen3-VL 36-layer implementation with small random-weight dimensions, in FP32 and BF16. Ten cases cover an ordinary supported crop, exactly-200 crop, 201 crop, the actual failing 366×1 source entry from `hate_video_299` window 4, and no source. Model-fixture image encoding uses small patch tensors and normalizes odd-sized fixture images; it is not a substitute for the separate real-processor boundary check. Neither model weights nor GPU inference were used.
+
+- For ordinary supported, exactly-200 and no-source cases, executed the preceding production implementation against the same model/head, image adapter, inputs and deterministic timing. Every old output field equals the new output after removing only the two added usage-count fields. AST comparison separately confirms `memory` and `prediction` unchanged. This verifies supported content, source branch, native G/stance/V/S, calls and cost paths remain exact in these fixtures.
+- Unsupported 201 and actual 366×1 cases use native-V exactly and no image-source branch. Trace records the intrinsic unsupported reason, dimensions and limit. Source time remains 37 synthetic seconds and all 31 synthetic source forwards stay charged. No source acquisition or mutation occurs.
+- Each one-window fixture has seven reader forwards including its existing diagnostic clone. Supported cases have three vision forwards (native + new-source + clone); unavailable/no-source cases have one. FOUND/used/unsupported counts match the actual branches, and source metadata remains equal before/after execution.
+- Validator rejects hiding the unsupported reason, inventing an image-source branch, reporting unsupported as used, removing the new schema fields from an unsupported record, and altering the fallback visual value. Tested independently in both dtypes.
+- Removing the two new usage fields is accepted for supported/no-source records and produces outputs exactly matching the preceding implementation; the same omission is rejected when actual source eligibility includes an unsupported crop. This confirms the intended old-supported-record compatibility without rewriting any real completed record.
+
+Inspected analysis aggregation: FOUND, used and unsupported are reported separately. The execution guard requires actual used crops while retaining search-call and changed-visual requirements. Reader vision assertions and validation use recomputed actual used count. Canonical evaluator and scientific source-selection rules are unchanged.
+
+PASS confirms the specific execution fix, not a pretrained mechanism or performance result. Existing 137 completed supported records and original source generation must remain preserved. No GT, real prediction values, metrics, CUDA workload or source cache writes were used in this confirmation.

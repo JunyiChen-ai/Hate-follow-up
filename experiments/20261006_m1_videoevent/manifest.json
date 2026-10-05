@@ -10,7 +10,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actualsamefixed5 PASS; complete333 fullsource+reader fresh on now-idle lab3 selected, wait normalLab QOS; no mainGT/metrics",
+  "state": "Complete333 sameR1 freshsource+reader whollysc474398/214 RUNNING; no source/predsplice frompilot; noGT/performance",
   "cpu_pass": true,
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_videoevent/full_input_preflight/summary.json",
@@ -31,5 +31,8 @@
   "smoke_pass": true,
   "smoke_summary": "runs/20261006_m1_videoevent/r1_full_smoke_analysis/plumbing_summary.json",
   "main_selected_host": "sc474398",
-  "main_source_cache": "fresh all333; no pilotcache copied"
+  "main_source_cache": "fresh all333; no pilotcache copied",
+  "main_job": 214,
+  "main_submitted": true,
+  "main_running": true
 }

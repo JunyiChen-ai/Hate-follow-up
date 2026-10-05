@@ -19,6 +19,16 @@ from src.source_generation import clock
 from src.video_inputs import frame_paths,load_asr,fixed_windows,window_text
 
 
+def unavailable_crop(found):
+    if found is None:return None
+    x0,y0,x1,y1=found['original_pixel_box'];width=x1-x0;height=y1-y0
+    assert width>0 and height>0
+    # Frozen Qwen2VLImageProcessor.smart_resize support, not a tuned threshold.
+    if max(width,height)/min(width,height)>200:
+        return dict(reason='intrinsic_processor_aspect_unsupported',width=width,height=height,max_aspect=200)
+    return None
+
+
 def memory(w,found):
     frame=next(f for f in w['window']['frames'] if f['id']==found['frame']);content=[]
     content.append(dict(type='text',text=json.dumps(dict(actual_window=w['window']['i'],actual_PTS=found['time'],original_shape=found['original_shape'],original_pixel_box=found['original_pixel_box'],search_request=w['decision']['target']),separators=(',',':'))+'\nSearch request is a condition, not a witnessed fact. Original source frame:\n'))
@@ -54,7 +64,8 @@ def read_video(j,row,segments,m,smoke):
         else:s=None
         native_speech.append(s)
         start=clock(j)
-        if w['found'] is not None:
+        unavailable=unavailable_crop(w['found'])
+        if w['found'] is not None and unavailable is None:
             content,paths=memory(w,w['found']);z,evidence=image_margin(j,cache,ctx,q,content,paths)
         else:
             content=paths=None;z=margin(j,cache,ctx,q);evidence=None;assert z==v
@@ -62,6 +73,7 @@ def read_video(j,row,segments,m,smoke):
         trace=dict(i=i,start=a,end=b,body=body,question=q,native_visual=v,native_speech=s,new_visual=z,source_branch=evidence,
             cache_restored=cache.get_seq_length()==ctx['stance_cache_tokens'],rope_restored=torch.equal(j.model.model.rope_deltas,ctx['rope']))
         assert trace['cache_restored'] and trace['rope_restored']
+        if unavailable is not None:trace['source_unavailable']=unavailable
         if smoke and diagnostic_calls==0:
             start=clock(j);clone=copy.deepcopy(cache)
             try:
@@ -76,13 +88,13 @@ def read_video(j,row,segments,m,smoke):
     optimized_seconds=m['standalone_seconds']+sum(times[k] for k in ('prefix','native_speech','new_visual'))
     base=prediction(row,ctx,native_visual,native_speech,native_seconds,'m1_native')
     new=prediction(row,ctx,new_visual,native_speech,optimized_seconds,'m1_spatial_search',m['actual_forwards'])
-    found=sum(w['found'] is not None for w in m['windows'])
+    found=sum(w['found'] is not None for w in m['windows']);unsupported=sum(unavailable_crop(w['found']) is not None for w in m['windows']);used=found-unsupported
     checks=dict(host=socket.gethostname(),GT_read=False,times=times,source_seconds=m['standalone_seconds'],source_forwards=m['actual_forwards'],source_vision=m['actual_vision_forwards'],
         actual_forwards=j.forward_calls-before,actual_vision=j.vision_calls-before_vision,diagnostic_forwards=diagnostic_calls,diagnostic_vision=diagnostic_vision,
         peak_GiB=max(torch.cuda.max_memory_allocated()/2**30,m['peak_GiB']),detection_calls=sum(w['detector'] is not None for w in m['windows']),
-        search_calls=sum(len(w['steps']) for w in m['windows']),search_windows=sum(w['decision']['kind']=='SEARCH' for w in m['windows']),found_windows=found)
+        search_calls=sum(len(w['steps']) for w in m['windows']),search_windows=sum(w['decision']['kind']=='SEARCH' for w in m['windows']),found_windows=found,used_crop_windows=used,unsupported_crop_windows=unsupported)
     assert checks['actual_forwards']==base['calls']+len(m['windows'])+diagnostic_calls
-    assert checks['actual_vision']==1+found+diagnostic_vision
+    assert checks['actual_vision']==1+used+diagnostic_vision
     result=dict(base=base,optimized=new,checks=checks,traces=traces,segments=[list(s) for s in segments],
         native_ctx={k:v for k,v in ctx.items() if k not in ('positions','rope','files')},native_rope=ctx['rope'].tolist())
     del cache;return result
@@ -95,7 +107,9 @@ def validate_bundle(row,b,segments,m,j,smoke):
     for key in ('z_video','stance','prefix_tokens','stance_cache_tokens','stance_cache_logical_start'):assert base['extra'][key]==new['extra'][key]
     assert b['checks']['actual_forwards']==base['calls']+len(wins)+b['checks']['diagnostic_forwards']
     assert b['checks']['diagnostic_forwards']==int(smoke)
-    assert b['checks']['actual_vision']==1+b['checks']['found_windows']+b['checks']['diagnostic_vision']
+    found=sum(w['found'] is not None for w in m['windows']);unsupported=sum(unavailable_crop(w['found']) is not None for w in m['windows']);used=found-unsupported
+    assert b['checks']['found_windows']==found and b['checks'].get('used_crop_windows',found)==used and b['checks'].get('unsupported_crop_windows',0)==unsupported
+    assert b['checks']['actual_vision']==1+used+b['checks']['diagnostic_vision']
     assert base['calls']==3+len(wins)+sum(bool(window_text(segments,a,z).strip()) for a,z in wins)
     assert new['calls']==base['calls']+m['actual_forwards']
     t=b['checks']['times'];assert abs(base['extra']['standalone_seconds']-sum(t[k] for k in ('prefix','native_visual','native_speech')))<1e-6
@@ -104,7 +118,8 @@ def validate_bundle(row,b,segments,m,j,smoke):
         i=trace['i'];body=window_text(segments,a,z);assert (trace['start'],trace['end'],trace['body'])==(a,z,body)
         assert trace['question']==yesno_question(i,len(wins),a,z,body,'visual')
         assert trace['native_visual']==bw['z_visual'] and trace['new_visual']==nw['z_visual'] and trace['cache_restored'] and trace['rope_restored']
-        if source['found'] is None:assert trace['source_branch'] is None and bw['z_visual']==nw['z_visual']
+        unavailable=unavailable_crop(source['found']);assert trace.get('source_unavailable')==unavailable
+        if source['found'] is None or unavailable is not None:assert trace['source_branch'] is None and bw['z_visual']==nw['z_visual']
         else:
             content,paths=memory(source,source['found']);_,_,expected=encode_branch(j,b['native_ctx'],trace['question'],content,paths)
             assert expected==trace['source_branch']

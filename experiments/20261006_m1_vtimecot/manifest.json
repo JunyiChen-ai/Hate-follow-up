@@ -10,7 +10,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Original A guardFAIL/noGT preserved; B narrow code/launcher PASS, samefixed5 ROOT209 PENDING QOSMaxGRESPerUser",
+  "state": "B actualsamefixed5 completed209; currentsource/native allraw/G/S/clone validated to originaltoolguard FAIL; query/relevance executed but allplanner reason wordcap/zeroactualtools; noGT/performance",
   "core_implemented": true,
   "cpu_pass": true,
   "full_input_preflight": "runs/20261006_m1_vtimecot/full_input_preflight/summary.json",
@@ -31,5 +31,8 @@
   "interface_B_GPU_run": false,
   "interface_B_smoke_job": 209,
   "interface_B_host": "sc474397",
-  "interface_B_GPU_submitted": true
+  "interface_B_GPU_submitted": true,
+  "interface_B_smoke_complete": true,
+  "interface_B_smoke_pass": false,
+  "interface_B_source_diagnosis": "runs/20261006_m1_vtimecot/source_interface_B_diagnosis/summary.json"
 }
