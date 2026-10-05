@@ -61,6 +61,9 @@ def replay_layout(j,row,b,segments):
 
 
 def prepare(root,out,smoke):
+    # The production reader explicitly uses four CPU threads for FP32 selection.
+    # MKL_NUM_THREADS=1 otherwise overrides OMP_NUM_THREADS during audit startup.
+    torch.set_num_threads(4)
     cfg=json.loads((root/'config.json').read_text());assert cfg['spec']==SPEC and cfg['GT_read'] is False and cfg['smoke']==smoke
     rows=selected_rows(smoke);expected={(r['dataset'],r['video_id']):r for r in rows}
     rr={name:read(root/name/'predictions.jsonl') for name in ('base','optimized')};assert all(r.keys()==expected.keys() for r in rr.values())
