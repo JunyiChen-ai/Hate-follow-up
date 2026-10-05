@@ -5,11 +5,17 @@
   "proposal": "experiments/20261005_m1_spatial_search/README.md",
   "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
   "proposal_pass": true,
-  "implemented": false,
-  "code_pass": false,
+  "implemented": true,
+  "code_pass": true,
   "GT_read": false,
   "GPU_run": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actualpaper/officialsearchcode read; functionaladaptation and constants frozen; prototypepending"
+  "state": "Prototype/full333input/actual36layerCPU/independentcodePASS; actual8Bfixed5 ready, noGPU/GT",
+  "cpu_pass": true,
+  "full_input_preflight": "runs/20261005_m1_spatial_search/full_input_preflight/summary.json",
+  "full_input_preflight_pass": true,
+  "input_cpu": "runs/20261005_m1_spatial_search/input_cpu_checks/summary.json",
+  "model_cpu": "runs/20261005_m1_spatial_search/model_cpu_checks/summary.json",
+  "code_review": "docs/reviews/20261005_m1_spatial_search_code.md"
 }

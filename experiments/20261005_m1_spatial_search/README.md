@@ -69,3 +69,11 @@ Rule6 code review；实际fixed5检查完整native读数/G/S、解析/坐标链/
 不读取GT/预测提出本项；未来所有结果development-selected。规则9无任一主
 指标+.01归档，有则真实error analysis后最多三次修订；性能与机制共同过门
 才结束用户目标。当前原型、独立代码审查及真实运行都仍待完成。
+
+原型已开始：geometry/有界target与FOUND/cue生成/真实搜索控制器及新图像suffix接口已写，尚未训练或GPU。执行前同两语料声明空文本及左去空白、大小写无关leading UNKNOWN word为不可用target/cue，记录UNKNOWN；不是事实正确保证，也不强迫搜索成功。来源抽取和完整输入/生成/像素链重放已实现，reader/科学CPU/唯一独立代码审查待完成。
+
+## Prototype and required checks2026-10-05
+
+完整source/reader/统一评测orchestration已实现；共享source_image_branch显式绑定newimage suffix的实际grid/DeepStack/三轴逻辑继续位置，并保持nativeG/ownstance/S。真实processor fulltoken seam/位置及实际PNG像素/奇数和极端比例分割检查PASS：`runs/20261005_m1_spatial_search/input_cpu_checks/summary.json`。完整333 rawvideoheader/原JPEG/ASR/原生prefix输入预检PASS：`full_input_preflight/summary.json`。真实36层FP32/BF16×18/20帧CPU source-image执行/clone/全部KV/native replay/像素变化进入分数PASS：`model_cpu_checks/summary.json`；fulluncached参考FP32差4.17e-7/5.96e-8，BF16 .005228/.006696，在事前1e-4/.025容差内，位置与缓存clone要求逐值相同。该数值检查没有预训练权重或真实GT，不是科学性能证据。
+
+唯一独立Rule6审查`docs/reviews/20261005_m1_spatial_search_code.md` PASS，来源`runs/20261005_m1_spatial_search/independent_code_review/`。独立实际36层生产reader/vision和模型计数/成本/全部缓存/像素扰动、真实processor接缝、合成视频实际PTS解码→cue队列→第二节点FOUND/UNKNOWN/预算耗尽及生产input/token/metadata重放通过；篡改crop像素被拒绝。独立BF16 fullreference差.011458/.002761，保留原.025容差；没有CUDA/预训练权重/真实GT/预测/指标，实例与作者不同。实际8Bfixed5待派发，无性能结论。

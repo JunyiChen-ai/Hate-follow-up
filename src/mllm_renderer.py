@@ -13,3 +13,15 @@ def cpu_renderer(model_id=MODEL):
     j.same_turn=False;j.loose_stance_seam=False;j.device=torch.device('cpu');j.dtype=torch.bfloat16
     j.image_token_id=getattr(config,'image_token_id',None)
     return j
+
+
+def cpu_position_renderer(model_id=MODEL):
+    """Native tokenizer/processor plus positional geometry, without model weights."""
+    from types import SimpleNamespace,MethodType
+    from transformers import AutoConfig
+    from transformers.models.qwen3_vl.modeling_qwen3_vl import Qwen3VLModel
+    j=cpu_renderer(model_id);model=SimpleNamespace(config=AutoConfig.from_pretrained(model_id,local_files_only=True))
+    model.get_rope_index=MethodType(Qwen3VLModel.get_rope_index,model)
+    if hasattr(Qwen3VLModel,'get_vision_position_ids'):model.get_vision_position_ids=MethodType(Qwen3VLModel.get_vision_position_ids,model)
+    j.model=SimpleNamespace(model=model)
+    return j
