@@ -88,3 +88,6 @@ Actual8B fixed5 Slurm170 DONE并立即回传；输入缓存有新增则同样回
 
 
 完整OTT sourcecache/runs已全部回传后，noGT prepare在HMMnon_hate_video_137的浮点计划记录逐值重放处失败，未进入评测/GT。保存`runs/20261005_m1_ott/r1_full_main_analysis/initial_source_replay_failure.log`和`replay_thread_fix/diagnosis.json`。原GPU production measure明确CPU4threads，审计启动因MKL_NUM_THREADS=1实际为1，差异字段为masses/contributions/transport_cost/marginal_residual，实际全部结构选择相同；改回4后整个已保存plan逐值相同。唯一修复是在prepare显式设置原production4threads，不改算法/缓存/数值容差/predictions/spec。完整333作者重放和独立窄确认进行中，确认前不读主GT或评价性能。
+
+
+OTT180完整333的源重放线程问题已完成作者和独立窄确认：同原production4线程下全部333份实际保存特征重算的完整plan逐值相同，不放宽任何guard。独立来源`docs/reviews/20261005_m1_ott_replay_thread_fix.md`；全部inputs/runs已回传，noGT fullprepare/currentinputs/native allraw PASS，canonical全六项/固定r6评测恢复运行。无性能或机制结论。

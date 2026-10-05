@@ -11,7 +11,7 @@
   "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Slurm180 full333 DONE; both runs and source inputs returning before strict local replay/canonical metrics",
+  "state": "Slurm180 complete333 allinputs/runs returned; strict author/independent4thread fullsourceexactPASS; canonicalmetrics running",
   "cpu_pass": true,
   "cpu_checks": "runs/20261005_m1_ott/cpu_checks/summary.json",
   "full_input_preflight": "runs/20261005_m1_ott/full_input_preflight/summary.json",
@@ -26,5 +26,9 @@
   "main_job": 180,
   "main_running": false,
   "main_completed": true,
-  "main_returned": false
+  "main_returned": true,
+  "main_input_returned": true,
+  "main_prepare_pass": true,
+  "replay_thread_fix_review": "docs/reviews/20261005_m1_ott_replay_thread_fix.md",
+  "replay_thread_fix_pass": true
 }
