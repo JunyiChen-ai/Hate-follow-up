@@ -1,3 +1,5 @@
+已归档：完整333无任一主指标+.01，HMM PR/within与HCS三指标退化，规则9不跑R2/控制GPU；累计归档25项。
+
 # 候选29：区间 RoTE 语音来源绑定
 
 运行主机待实际派发；当前无 GPU 或 GT 读数。该项是完整九候选池的第二顺位，
@@ -97,3 +99,11 @@ Slurm156于15:28:27完成fixed5，全部runs已回传本机。samebackend noGT p
 Whole333 sameR1 dispatched onsc474399/Slurm157 after allfourlabs f966a2e clean, literalforeignSTRAY namesunchanged andlab2 idle569Gfree. Evidence `runs/20261005_m1_rote/machines_before_main{,_note}.txt`. No mainresult yet.
 
 Slurm157完整333于15:52:37 DONE，全runs已回传本机 `return_main.log`，新缓存无。18:14本机samebackend严格来源/allraw prepare及统一评测已启动，主结果待定。
+
+## Full333 actualresult and disposition2026-10-05
+
+sc474399/Slurm157 DONE15:52:37; whole runs returned before localSTATUS/results, strictsamebackend source/nativeallraw/G/V andcanonicalall6native exact. Authority `runs/20261005_m1_rote/r1_full_main_decoded/optimized/metrics.json`: HMM ROC/PR/within .8946070242490072/.6662851194599225/.7381288075204788 (84), HCS .6936216342641122/.6590367905925567/.590674837008504 (99). Deltas -.0025116371651026093/-.027949483886288484/-.012653236445488103 and -.02320322965054744/-.012035293807630243/-.04667427679559477. Noany+.01, noiseFAIL/performanceFAIL, archive25 perRule9, noR2/controlGPU. Source binding entered all6580 speech scores but no mechanism claim.
+
+Rawmax within .6327115145441288/.5573755228674219 versusnative .6800114254792947/.6101299806484098, authority `runs/20261005_m1_rote/r1_full_main/{base,optimized}/metrics.json`; raw temporal order also worsens. No outcome-specificGT errorselection beyondcanonicalfinalreport; everything development-selected.
+
+Actual optimizedstage 595.7876882232085s=9.929794803720142min, nativepaired 549.0365200857341s, ratio 1.085151290355283; sharedprefix includes capture instrumentation, not uninstrumented absolute native latency. HMM/HCS peak18.3294/17.8806GiB; maximum source key buffers79,736,832/43,352,064bytes, no extra vision/LLM generation. FullSlurm approximately13:57 includingpairnative/IO; Slurm wall separatelyfromdeploy stages. OriginalASR/JPEG input reused, no new sourceacquisition model.

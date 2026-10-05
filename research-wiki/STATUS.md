@@ -128,6 +128,17 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 候选23 R3完整333已回传并统一评测，native allraw/六项精确；HMM .897462/.695865/.763927（84），HCS .716868/.672507/.635003（99），within+.013145/−.002346，共同门FAIL/损失在噪声内。来源`runs/20261005_m1_program/r3_handles_full_main_decoded/optimized/metrics.json`；保留正向进展，实际误差分析后还剩一次修订，无机制结论。
 候选29完整333相同R1已在sc474399/Slurm157运行；候选26 Slurm151因大文本父节点prefill OOM退出，116完整检查点保留，未读主GT/无性能裁定；4096-row tokenwise MLP内存修复待科学等价和独立窄确认后续跑。
 候选29 Slurm157完整333于15:52:37 DONE，全部runs已回传，本机严格prepare/统一评测进行中。候选26内存修复作者CPU与独立窄确认PASS（FP32微小舍入差异明报），实际8B来源重放待跑；候选30原型/完整输入/36层作者CPU PASS，独立审查服务usage-limit中断尚未PASS，partial成本漏项已修并待独立继续确认。
+候选29 RoTE本机完整统一评测完成/native all6exact：HMM .894607/.666285/.738129（84），HCS .693622/.659037/.590675（99），within−.012653/−.046674，无任一+.01、损失超噪声；按规则9归档第25项，不跑R2/控制GPU。权威来源`runs/20261005_m1_rote/r1_full_main_decoded/optimized/metrics.json`，明细`archive/experiments/20261005_m1_rote/README.md`；实际新阶段9.93min/native仪器配对1.09倍，全部development-selected，无机制证据。
+来源图25以原B/sc474399/Slurm167续跑完整333（64atomic source缓存保留）；区间26实际8B父节点内存等价检查在sc474397/Slurm166运行，来源时间/参数未改。
+
+**累计二十五个归档小结（规则11，不超过10行）**：
+- 最近五项为Tree、Lattice、QuoteGraph、TTF、RoTE；全部完整主结果与原生六指标已核对，归档不等于目标完成。
+- Tree R1 within+.028910/+.012940，但HMM PR−.014905；Lattice R2 HMM within+.051628，HCS仅+.001896，两项正向进展保留。
+- QuoteGraph R2/TTF R1无任一主指标+.01，RoTE完整双语料退化；不为负结果继续调参或跑控制GPU。
+- Program R3保留HMM within+.013145，还剩一次修订；Provenance/Interval继续完整测量，OTT完成一次独立代码审查后运行。
+- 当前固定r6与评测器未改；性能与机制目标都未完成，继续自主迭代。
+
+候选26实际8B内存修复Slurm166 PASS，13395/14445token实际父节点原生与分块的生成tokens/events/compiledrecord逐值相同，来源`runs/20261005_m1_interval_witness/prefill_mlp_fix/gpu/summary.json`；相同完整333待续跑确认原失败更大节点容量。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
@@ -136,7 +147,7 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档24个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph、TTF性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档25个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph、TTF、RoTE性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。

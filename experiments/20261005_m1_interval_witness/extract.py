@@ -58,7 +58,7 @@ def main():
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(__import__('os').getpid()))
     import transformers
     cfg=dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),model=MODEL,version=VERSION,constants=CONSTANTS,spec=SPEC,GT_read=False,smoke=a.smoke,
-        torch=torch.__version__,transformers=transformers.__version__,code='experiments/20261005_m1_interval_witness/{interface,inputs,extract}.py + stable src; sources2026-10-05',command='python -u '+' '.join(sys.argv))
+        torch=torch.__version__,transformers=transformers.__version__,parent_mlp_chunk_tokens=4096,code='experiments/20261005_m1_interval_witness/{interface,inputs,extract}.py + stable src; sources2026-10-05',command='python -u '+' '.join(sys.argv))
     (out/'config.json').write_text(json.dumps(cfg,indent=2)+'\n');torch.manual_seed(0);j=Judge(MODEL);j.forward_calls=j.vision_calls=0
     hooks=[j.model.model.register_forward_pre_hook(lambda *_:setattr(j,'forward_calls',j.forward_calls+1)),j.model.model.visual.register_forward_pre_hook(lambda *_:setattr(j,'vision_calls',j.vision_calls+1))]
     asr={ds:load_asr(ds) for ds in DATASETS};rows=selected_rows(a.smoke)

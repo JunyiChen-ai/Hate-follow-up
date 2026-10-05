@@ -15,7 +15,7 @@
   "smoke_pass": true,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Slurm151 source-prefill OOM after116 full inputs; memory-only MLP chunk fix CPU/independent PASS, actualGPU parent replay pending",
+  "state": "Execution-only parentMLP chunkCPU/independent/actual8BsourcePASS; originalfull333 resume pending, longcapacity not yet verified",
   "result_guided_revisions_used": 0,
   "native_runtime_job": 145,
   "native_runtime_pass": true,
@@ -27,5 +27,8 @@
   "main_job": 151,
   "main_submitted": true,
   "memory_fix_review": "docs/reviews/20261005_m1_interval_mlp_memory_fix.md",
-  "memory_fix_cpu": "runs/20261005_m1_interval_witness/prefill_mlp_fix/author/summary.json"
+  "memory_fix_cpu": "runs/20261005_m1_interval_witness/prefill_mlp_fix/author/summary.json",
+  "memory_gpu_job": 166,
+  "memory_gpu_pass": true,
+  "memory_gpu_summary": "runs/20261005_m1_interval_witness/prefill_mlp_fix/gpu/summary.json"
 }
