@@ -13,6 +13,7 @@ from src.actual_video_frames import acquire_window_frames
 from src.structured_source_generation import generate
 from src.source_generation import clock
 from src.mllm_judge import Judge,MODEL
+from src.qwen3_mlp_memory import chunked_mlp
 from src.video_inputs import load_asr
 
 
@@ -31,7 +32,11 @@ def acquire(j,row,segments,folder):
         if hi-lo==1:records[node['id']]=dict(**node,start=windows[lo]['start'],end=windows[lo]['end'],**leaves[lo]['record']);continue
         children=[records[c] for c in node['children']];sources={h:r for w in windows[lo:hi] for h,r in catalog(w).items()}
         content=parent_content(node,children,windows)
-        g=generate(j,ROOT,SPEC['parent_system'],content,[],512,lambda s:write_record(s,sources));p=compile_record(g,sources,coverage(windows[lo:hi]))
+        # Parent source catalogs can exceed 50k tokens. Only tokenwise MLP row
+        # batches change; attention, complete input, KV and greedy grammar stay.
+        with chunked_mlp(j.model.model,4096):
+            g=generate(j,ROOT,SPEC['parent_system'],content,[],512,lambda s:write_record(s,sources))
+        p=compile_record(g,sources,coverage(windows[lo:hi]))
         parents[node['id']]=dict(generation=g,record=p);records[node['id']]=parent_record(node,p,children,windows)
     original=[l['record'] for l in leaves];plan=repair_plan(windows,original,parents);repaired=list(original);repairs=[]
     for target in plan:

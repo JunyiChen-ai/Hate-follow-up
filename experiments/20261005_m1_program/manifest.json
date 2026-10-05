@@ -64,7 +64,7 @@
   "available_main_pass": true,
   "available_main_metrics": "runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json",
   "available_main_performance_pass": false,
-  "state": "R3 fixed5 localPASS; samefull333 running onsc474398/Slurm155, no mainresult yet",
+  "state": "R3 full333 evaluated/native6exact; positiveHMMwithin .013145, dualcommonFAIL; actualGT/source erroranalysis complete, oneR4budget remains",
   "resolved_cpu_checks": "runs/20261005_m1_program/resolved_cpu_checks/summary.json",
   "resolved_cpu_pass": true,
   "resolved_implemented": true,
@@ -74,5 +74,7 @@
   "resolved_GPU_submitted": true,
   "resolved_smoke_pass": true,
   "resolved_smoke": "runs/20261005_m1_program/r3_handles_full_smoke_analysis/plumbing_summary.json",
-  "resolved_main_job": 155
+  "resolved_main_job": 155,
+  "resolved_main_metrics": "runs/20261005_m1_program/r3_handles_full_main_decoded/optimized/metrics.json",
+  "resolved_error_analysis": "runs/20261005_m1_program/r3_error_analysis/source_diagnostics.json"
 }

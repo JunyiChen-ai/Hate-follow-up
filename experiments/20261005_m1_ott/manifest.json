@@ -5,11 +5,15 @@
   "proposal": "experiments/20261005_m1_ott/README.md",
   "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
   "proposal_pass": true,
-  "implemented": false,
+  "implemented": true,
   "code_pass": false,
   "GT_read": false,
   "GPU_run": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Full paper/official implementation read; constants and Qwen3/DeepStack adaptation declared; prototype pending"
+  "state": "Prototype/authorCPU/full333inputPASS; independentreview interrupted by serviceusage before completion, costfinding fixed; same-model continuation pending",
+  "cpu_pass": true,
+  "cpu_checks": "runs/20261005_m1_ott/cpu_checks/summary.json",
+  "full_input_preflight": "runs/20261005_m1_ott/full_input_preflight/summary.json",
+  "full_input_preflight_pass": true
 }

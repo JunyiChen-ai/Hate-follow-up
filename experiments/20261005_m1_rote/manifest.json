@@ -11,7 +11,7 @@
   "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Slurm156 fixed5 DONE/returned; noGT prepare/native allraw/source/5clone PASS; full333 pending",
+  "state": "Slurm157 complete333 DONE/returned; local strictprepare/canonicaleval running",
   "full_input_preflight": "runs/20261005_m1_rote/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
   "cpu_checks": "runs/20261005_m1_rote/cpu_checks/summary.json",
@@ -20,5 +20,7 @@
   "smoke_job": 156,
   "GPU_submitted": true,
   "selected_host": "sc474399",
-  "smoke_pass": true
+  "smoke_pass": true,
+  "main_job": 157,
+  "main_returned": true
 }

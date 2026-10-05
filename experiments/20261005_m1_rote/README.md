@@ -93,3 +93,7 @@ clone全部KV/margin精确、非ASR bias为0且原因果可见性保留，新mar
 真实8B fixed5在sc474399提交Slurm156；allfourlabs09913cfclean，外国STRAY原名未变未动，lab2idle569Gfree，151/155占QOS2所以正常排队。来源 `runs/20261005_m1_rote/machines_before_smoke{,_note}.txt`。尚未GPU结果/GT。
 
 Slurm156于15:28:27完成fixed5，全部runs已回传本机。samebackend noGT prepare PASS：原生allraw/G/V逐值一致、134S变化、五次clone精确、全部来源映射重放通过。HMM/HCS新阶段9.9503/4.3633s，配对原生8.3985/4.0556s；peak18.33/17.36GiB，来源key最大73,986,048/19,049,472bytes。来源`runs/20261005_m1_rote/r1_full_smoke_analysis/plumbing_summary.json`。完整333待提交，无性能/机制结论。
+
+Whole333 sameR1 dispatched onsc474399/Slurm157 after allfourlabs f966a2e clean, literalforeignSTRAY namesunchanged andlab2 idle569Gfree. Evidence `runs/20261005_m1_rote/machines_before_main{,_note}.txt`. No mainresult yet.
+
+Slurm157完整333于15:52:37 DONE，全runs已回传本机 `return_main.log`，新缓存无。18:14本机samebackend严格来源/allraw prepare及统一评测已启动，主结果待定。

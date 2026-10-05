@@ -125,6 +125,9 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 候选29 RoTE沿用九项jury的一次方案PASS，原论文/已发布官方sinc代码实际读取；原型与事前常数在`experiments/20261005_m1_rote/README.md`。完整333纯输入offset/复制body/归一数值域预检PASS，最小C_r .610283、6580 speech窗、最长原生prefix5829/最长speech suffix756；来源`runs/20261005_m1_rote/full_input_preflight/summary.json`。科学真实36层FP32/BF16/18–20frame CPU检查PASS，独立code审查/36层masked-softmax/来源oracle PASS，成本漏计已窄修确认；来源`docs/reviews/20261005_m1_rote_code.md`，实际8Bfixed5已在sc474399提交Slurm156，等待151/155的QOS预算，尚无GPU结果/GT。
 候选29 Slurm156于15:28:27完成并回传：noGT/native allraw/G/V/source/5clone PASS，134S改变；完整333待提交，无性能结论。来源`runs/20261005_m1_rote/r1_full_smoke_analysis/plumbing_summary.json`。
 候选30 OTT沿用九池rank3的一次proposal PASS，实际论文/官方源码已读取，常数与Qwen3多图/DeepStack完整适配已事前声明；入口`experiments/20261005_m1_ott/README.md`，实现待完成、未读GT。
+候选23 R3完整333已回传并统一评测，native allraw/六项精确；HMM .897462/.695865/.763927（84），HCS .716868/.672507/.635003（99），within+.013145/−.002346，共同门FAIL/损失在噪声内。来源`runs/20261005_m1_program/r3_handles_full_main_decoded/optimized/metrics.json`；保留正向进展，实际误差分析后还剩一次修订，无机制结论。
+候选29完整333相同R1已在sc474399/Slurm157运行；候选26 Slurm151因大文本父节点prefill OOM退出，116完整检查点保留，未读主GT/无性能裁定；4096-row tokenwise MLP内存修复待科学等价和独立窄确认后续跑。
+候选29 Slurm157完整333于15:52:37 DONE，全部runs已回传，本机严格prepare/统一评测进行中。候选26内存修复作者CPU与独立窄确认PASS（FP32微小舍入差异明报），实际8B来源重放待跑；候选30原型/完整输入/36层作者CPU PASS，独立审查服务usage-limit中断尚未PASS，partial成本漏项已修并待独立继续确认。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，

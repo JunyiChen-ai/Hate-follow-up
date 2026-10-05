@@ -15,7 +15,7 @@
   "smoke_pass": true,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Actualfixed5 localnoGT PASS; full333 R1 submittedsc474397 Slurm151, pendingQOS while146/150active; performanceunknown",
+  "state": "Slurm151 source-prefill OOM after116 full inputs; memory-only MLP chunk fix CPU/independent PASS, actualGPU parent replay pending",
   "result_guided_revisions_used": 0,
   "native_runtime_job": 145,
   "native_runtime_pass": true,
@@ -25,5 +25,7 @@
   "GPU_submitted": true,
   "smoke": "runs/20261005_m1_interval_witness/r1_full_smoke_analysis/plumbing_summary.json",
   "main_job": 151,
-  "main_submitted": true
+  "main_submitted": true,
+  "memory_fix_review": "docs/reviews/20261005_m1_interval_mlp_memory_fix.md",
+  "memory_fix_cpu": "runs/20261005_m1_interval_witness/prefill_mlp_fix/author/summary.json"
 }

@@ -3,6 +3,7 @@ from contextlib import contextmanager
 import json
 from pathlib import Path
 import sys
+import time
 import torch
 
 ROOT=next(p for p in Path(__file__).resolve().parents if (p/'CLAUDE.md').is_file())
@@ -64,6 +65,7 @@ def budgets(cost,total,cap):
 
 def matching(plan,budget):
     # Raw coupling; flatten order is destination then source. Destination may repeat.
+    if budget<=0:return []
     order=torch.argsort(plan.flatten(),descending=True,stable=True).tolist()
     used=set(); matches=[]; k=plan.shape[1]
     for flat in order:
@@ -152,6 +154,8 @@ def capture(j):
         assert state['cu'] is not None and state['pos'] is not None
     def qkv(module,args,out):
         assert 'saliency' not in state
+        if out.device.type=='cuda':torch.cuda.synchronize()
+        saliency_start=time.perf_counter()
         q,k,_=out.reshape(len(out),3,attn.num_heads,-1).permute(1,0,2,3).unbind(0)
         q,k=apply_rotary_pos_emb_vision(q,k,*state['pos'])
         raw=[]
@@ -163,12 +167,15 @@ def capture(j):
         raw=torch.cat(raw); merge=j.model.config.vision_config.spatial_merge_size
         assert len(raw)%merge**2==0
         state['saliency']=raw.reshape(-1,merge**2).sum(1).detach()
+        if out.device.type=='cuda':torch.cuda.synchronize()
+        state['saliency_seconds']=time.perf_counter()-saliency_start
     hooks=[attn.register_forward_pre_hook(before,with_kwargs=True),attn.qkv.register_forward_hook(qkv)]
     try:
         with capture_native(j) as result:
             yield result
             assert 'saliency' in state
             result['saliency']=state['saliency']
+            result['saliency_seconds']=state['saliency_seconds']
             assert len(result['saliency'])==len(result['features'])
     finally:
         for hook in hooks: hook.remove()

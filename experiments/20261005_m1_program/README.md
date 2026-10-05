@@ -627,3 +627,9 @@ R3 identicalfixed5 submitted2026-10-05 onsc474398/Slurm154, queuedbehindTTF153 a
 ActualR3 fixed5 Slurm154 DONE15:02:27, wholeruns immediatelyreturned via `return_resolved_smoke.log`; no newsourcecache. LocalstrictnoGT source/nativeallraw/G/10clone/freshfallback PASS, authority `r3_handles_full_smoke_analysis/plumbing_summary.json`. Samewhole333R3ready; no R3mainGT/metricsyet.
 
 Samewhole333R3 submittedsc474398/Slurm155 afterallfourlabs e873b40clean, foreignSTRAYexactunchanged,151soleactiveQOSGPU andlab3idle1.4Tfree. Evidence `machines_before_resolved_main{,_note}.txt`; everyqueryfresh, completeoriginalBcost charged, no R3mainmetricsyet.
+
+## R3 complete333 result2026-10-05
+
+sc474398/Slurm155 DONE15:28:03; complete runs returned immediately, no new source. LocalnoGT replay/native allraw/G and canonical allsix native exact. Authority `runs/20261005_m1_program/r3_handles_full_main_decoded/optimized/metrics.json`: HMM .8974622502269198/.6958647085565158/.7639269572196852 (84), HCS .7168676725250076/.6725074519610397/.635003220795161 (99). Within+.013144913253718249/-.0023458930089377272, all losses withinnoise, commonmetric gateFAIL. HMMrawmax+.0019883/HCS-.0062143, rawV-.0137046/+.0074555, pairedfinal intervals contain0; no mechanismclaim. Originalacquisition fullycharged, optimized13742.573792915762s=229.04289654859604min/native25.022037118509623 ratio. Rule9 keeps HMMpositive and permits one final R4 revision after actualGT/source erroranalysis; no controlGPUbefore gate. All development-selected.
+
+R3实际错误/来源诊断已完成，读取本轮fullbase/newraw、finalpervideo、全部B原source和两语料4fpsGT；精确文件路径/病例见`runs/20261005_m1_program/r3_error_analysis/source_diagnostics.json`。可用action但actor/target不完整848/987窗，完整三元组940/688窗，完整字段仍不保证正确语义：HMMH317/H349/H337和HCSyt_SUwb、bit_Nazw明显损失，多个真实正窗在加入日常动作描述后V从正/弱负降为强负。此观察说明描述注入未保留图像中的原有证据，不以tuple completeness当事实保证。尚未声明或运行最终R4设计；剩余一次修订。
