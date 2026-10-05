@@ -85,3 +85,6 @@ matched控制，以及匹配远程数量/帧数/ASR长度桶的真实错源ID置
 和falsifiable source干预共同解释涨点，不以source执行次数当机制成立。
 规则9无任一+.01直接归档，有则真实test error analysis后最多三修订。
 所有结果development-selected；性能和机制同时成立才结束当前用户目标。
+
+
+原型开始：单视频MaxSim/稳定平局/邻域优先及cap4 union、同模型text-only exactuser-token pooling wrapper、source-ID filter有界接口已实现。已知向量/空键/UNKNOWN/tie/neighborhood/cap fixtures及真实native tokenizer user-content offset/转义与IDsubset JSON检查通过，仅软件/输入检查，没有模型embedding或性能结论。源caption、两轮collector、V/S和完整sciencechecks尚待接入。

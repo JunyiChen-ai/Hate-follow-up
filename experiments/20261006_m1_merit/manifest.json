@@ -11,5 +11,6 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actualpaper/officialkey/index/filter/agent/embeddingread; frozen singlemodel wrapper/MaxSim/source-ID filter/two-round spec, prototype pending"
+  "state": "FrozenR1 + MaxSim/neighbor/union core and actualtoken pooling/filter interface prototyped; collector/reader/sciencechecks/code review pending; noGPU/GT",
+  "core_implemented": true
 }
