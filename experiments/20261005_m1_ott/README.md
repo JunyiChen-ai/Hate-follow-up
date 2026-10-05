@@ -77,3 +77,5 @@ token数均匀时空删减；原完整未压缩。错绑定保持原特征/salie
 实现前复读官方预算路径确认：目标为round(F*N*.50)，实际删除预算等于已取K*F减目标，单相邻对容量K-1；已在首个GPU或CPU算法运行前修正spec，不使用近似乘法预算。
 
 作者真实36层CPU FP32/BF16/18–20图像全部KV/dense-native/clone/组件均值/来源坐标检查PASS，完整333实际JPEG/ASR/grid预检PASS，来源`runs/20261005_m1_ott/{cpu_checks,full_input_preflight}/summary.json`。首次独立Rule6实例在完成前遭遇服务usage-limit退出，不能记为PASS；保留partial发现，作者已单列CUDA同步saliency计时，配对base扣除这个OTT专用阶段、OTT完整保留。独立同模型继续审查待完成；未GPU/GT。
+
+同一次独立Rule6审查由另一同模型实例接续并完成PASS：`docs/reviews/20261005_m1_ott_code.md`，前usage中断记录保留。独立实际vision float64 saliency oracle最大差7.45e-9、捕获不改变native全KV；四组36层FP32/BF16/18–20图dense-native/实际稀疏组件进入DeepStack/clone、官方实际各阶段与独立图/预算oracle PASS，成本归属修复通过。没有权重/CUDA/真实GT或预测，实际8Bfixed5尚未跑。

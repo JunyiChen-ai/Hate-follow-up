@@ -45,7 +45,7 @@
     "main_job": 137,
     "main_pass": false
   },
-  "result_guided_revisions_used": 2,
+  "result_guided_revisions_used": 3,
   "R2": {
     "revision": 1,
     "state": "Actual fixed5/full333 local PASS; performance FAIL, HMMwithin+.015404 retained",
@@ -64,7 +64,7 @@
   "available_main_pass": true,
   "available_main_metrics": "runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json",
   "available_main_performance_pass": false,
-  "state": "R3 full333 evaluated/native6exact; positiveHMMwithin .013145, dualcommonFAIL; actualGT/source erroranalysis complete, oneR4budget remains",
+  "state": "R4 final source-binding revision predeclared afteractualR3 GTerror; prototype/CPU/code/GPU pending",
   "resolved_cpu_checks": "runs/20261005_m1_program/resolved_cpu_checks/summary.json",
   "resolved_cpu_pass": true,
   "resolved_implemented": true,
@@ -76,5 +76,17 @@
   "resolved_smoke": "runs/20261005_m1_program/r3_handles_full_smoke_analysis/plumbing_summary.json",
   "resolved_main_job": 155,
   "resolved_main_metrics": "runs/20261005_m1_program/r3_handles_full_main_decoded/optimized/metrics.json",
-  "resolved_error_analysis": "runs/20261005_m1_program/r3_error_analysis/source_diagnostics.json"
+  "resolved_error_analysis": "runs/20261005_m1_program/r3_error_analysis/source_diagnostics.json",
+  "R4": {
+    "revision": 3,
+    "error_analysis": "runs/20261005_m1_program/r3_error_analysis/source_diagnostics.json",
+    "source_cache": "data/temporal_evidence_program_handles",
+    "scientific_constants": "native20/8s/all36layers/allheads; boolmask and literalUNKNOWN semantics sameboth",
+    "implemented": true,
+    "cpu_pass": true,
+    "source_cpu": "runs/20261005_m1_program/bound_cpu_checks/sources_summary.json",
+    "model_cpu": "runs/20261005_m1_program/bound_cpu_checks/model_summary.json",
+    "code_pass": false,
+    "GPU_run": false
+  }
 }

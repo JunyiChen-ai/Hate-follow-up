@@ -15,7 +15,7 @@
   "smoke_pass": true,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Execution-only parentMLP chunkCPU/independent/actual8BsourcePASS; originalfull333 resume pending, longcapacity not yet verified",
+  "state": "Samefull333 resumedSlurm168 onroot after8Bsourceequal check; 116oldwhole sourcecaches retained",
   "result_guided_revisions_used": 0,
   "native_runtime_job": 145,
   "native_runtime_pass": true,
@@ -30,5 +30,6 @@
   "memory_fix_cpu": "runs/20261005_m1_interval_witness/prefill_mlp_fix/author/summary.json",
   "memory_gpu_job": 166,
   "memory_gpu_pass": true,
-  "memory_gpu_summary": "runs/20261005_m1_interval_witness/prefill_mlp_fix/gpu/summary.json"
+  "memory_gpu_summary": "runs/20261005_m1_interval_witness/prefill_mlp_fix/gpu/summary.json",
+  "resume_job": 168
 }

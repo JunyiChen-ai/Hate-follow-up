@@ -242,3 +242,5 @@ Slurm151 completed116 whole atomic video inputs, then OOM in source parent full-
 内存修复作者检查PASS：`runs/20261005_m1_interval_witness/prefill_mlp_fix/author/summary.json`，真实36层FP32/BF16完整hidden/KV逐值相同，实际4097-row BF16逐值同、FP32最大7.45e-9/容差1e-6。原始FP32严格逐值断言失败日志保留，未改来源/数值分数门。唯一独立窄确认`docs/reviews/20261005_m1_interval_mlp_memory_fix.md` PASS，独立full-model FP32舍入差异已明报，BF16 exact。实际8B parent<=16000跨4096源生成与原保存token逐值重放脚本已准备；GPU结果与原失败大父节点容量未证明。
 
 实际8B来源检查sc474397/Slurm166 PASS：HMMH114父节点13395token与HCSbit_0EH父节点14445token，原始完整未分块生成逐值复现已保存token，4096-row版本再逐值复现相同50/48生成token、events与compiledrecord。来源`runs/20261005_m1_interval_witness/prefill_mlp_fix/gpu/summary.json`。没有新GT/标签，sourcecache未改。原失败更大父节点的实际容量待相同full333续跑确认。
+
+Samefull333R1 resumedsc474397/Slurm168 afterallfourlabs a9245b8clean/actualfixedparentGPU PASS/rootidle476Gfree/167soleactiveGPU, exactforeignSTRAY namesunchanged. Evidence `runs/20261005_m1_interval_witness/prefill_mlp_fix/machines_before_resume{,_note}.txt`; original116atomic whole sources replayed, no partial source result accepted, mainmetrics pending.

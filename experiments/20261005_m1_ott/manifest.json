@@ -6,14 +6,16 @@
   "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
   "proposal_pass": true,
   "implemented": true,
-  "code_pass": false,
+  "code_pass": true,
   "GT_read": false,
   "GPU_run": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Prototype/authorCPU/full333inputPASS; independentreview interrupted by serviceusage before completion, costfinding fixed; same-model continuation pending",
+  "state": "AuthorCPU/full333input/independentcompletedPASS, actual8Bfixed5 ready, noGPU/GT",
   "cpu_pass": true,
   "cpu_checks": "runs/20261005_m1_ott/cpu_checks/summary.json",
   "full_input_preflight": "runs/20261005_m1_ott/full_input_preflight/summary.json",
-  "full_input_preflight_pass": true
+  "full_input_preflight_pass": true,
+  "code_review": "docs/reviews/20261005_m1_ott_code.md",
+  "independent_evidence": "runs/20261005_m1_ott/independent_code_review/summary.json"
 }

@@ -22,6 +22,7 @@ from handle_inputs import CACHE,DATASETS,selected_rows,validate
 from handle_extract import validate_generations
 from handle_interface import CACHE_VERSION,CONSTANTS
 from program import canonical,branch_record,EVIDENCE_HEADER
+from src.source_key_mask import observe_prefix,binding,margin as bound_margin
 
 
 def tick():torch.cuda.synchronize();return time.perf_counter()
@@ -34,8 +35,23 @@ def available_field(value):
     return not re.match(UNKNOWN_MARKER_PATTERN,value.lstrip(),flags=re.IGNORECASE)
 
 
+def visual_frame_sources(rec):
+    frames=[]
+    for entry in rec['evidence']:
+        v=entry['value']
+        if v['kind']=='action' and available_field(v['action']):
+            candidates=[s['value'] for s in v['sources']]
+        elif v['kind']=='join':candidates=[v['frame']]
+        else:continue
+        for source in candidates:
+            if source['kind']=='frame' and source.get('local') and source.get('local_window')==rec['window']:
+                frames.append(source['ref']['frame'])
+    return sorted(set(frames))
+
+
 def usable_record(rec,kind,revision=2):
     """Source-field availability, never a score or corpus gate."""
+    if revision==4 and kind=='visual':return bool(visual_frame_sources(rec))
     for entry in rec['evidence']:
         v=entry['value'];k=v['kind']
         if kind=='visual' and (k=='join' or k=='action' and (available_field(v['action']) if revision==3 else any(v[f]!='UNKNOWN' for f in ('actor','action','target')))):return True
@@ -44,15 +60,16 @@ def usable_record(rec,kind,revision=2):
 
 
 def question(executed,i,n,a,b,body,kind,revision=1):
-    assert revision in (1,2,3)
+    assert revision in (1,2,3,4)
     rec=branch_record(executed,kind)
-    if revision==3 and kind=='visual':
+    if revision in (3,4) and kind=='visual':
         for entry in rec['evidence']:
             if entry['value']['kind']=='action':
                 entry['value']=copy.deepcopy(entry['value'])
                 for field in ('actor','action','target'):
                     if not available_field(entry['value'][field]):entry['value'][field]='UNKNOWN'
-    if revision in (2,3) and not usable_record(rec,kind,revision):return yesno_question(i,n,a,b,body,kind),rec
+    if revision==4 and kind=='visual':return yesno_question(i,n,a,b,body,kind),rec
+    if revision in (2,3,4) and not usable_record(rec,kind,revision):return yesno_question(i,n,a,b,body,kind),rec
     return EVIDENCE_HEADER+canonical(rec)+'\n'+yesno_question(i,n,a,b,body,kind),rec
 
 
@@ -74,7 +91,10 @@ def record(row,ctx,visual,speech,seconds,method):
 @torch.no_grad()
 def read_video(j,row,segments,metadata,smoke,revision=1):
     frames=frame_paths(row['dataset'],row['video_id'],20);wins=fixed_windows(float(row['duration']),8)
-    first=j.forward_calls;torch.cuda.reset_peak_memory_stats();start=tick();cache,ctx=build(j,frames,segments)
+    first=j.forward_calls;torch.cuda.reset_peak_memory_stats();start=tick()
+    if revision==4:
+        with observe_prefix(j) as prefix:cache,ctx=build(j,frames,segments)
+    else:cache,ctx=build(j,frames,segments)
     prefix_seconds=tick()-start;native={'visual':[],'speech':[]};new={'visual':[],'speech':[]}
     times=dict(native_visual=0.,native_speech=0.,new_visual=0.,new_speech=0.,diagnostic=0.)
     traces=[];checked=set();diagnostics=0
@@ -85,24 +105,41 @@ def read_video(j,row,segments,metadata,smoke,revision=1):
                 native[kind].append(None);new[kind].append(None);trace['branches'][kind]=dict(available=False,reason='native_no_speech');continue
             start=tick();native[kind].append(margin(j,cache,ctx,yesno_question(i,len(wins),a,b,body,kind)))
             times['native_'+kind]+=tick()-start
+            dense_exact=False
+            if revision==4 and smoke and kind=='visual' and 'dense' not in checked:
+                start=tick()
+                dense=binding(prefix['input_ids'],j.image_token_id,prefix['image_counts'],list(range(len(prefix['image_counts']))))
+                dense_z=bound_margin(j,cache,ctx,yesno_question(i,len(wins),a,b,body,kind),dense)
+                assert dense_z==native[kind][-1]
+                times['diagnostic']+=tick()-start;diagnostics+=1;checked.add('dense');dense_exact=True
+            if revision==4:start=tick()
             query,rec=question(w['execution'],i,len(wins),a,b,body,kind,revision)
             ids,suffix=j.branch_ids(ctx['msgs'],query,ctx['history'],head_text=ctx['head'])
-            start=tick();z=margin(j,cache,ctx,query);times['new_'+kind]+=tick()-start;new[kind].append(z)
+            source=None
+            if revision==4 and kind=='visual' and usable_record(rec,kind,revision):
+                source=binding(prefix['input_ids'],j.image_token_id,prefix['image_counts'],visual_frame_sources(rec))
+            if revision!=4:start=tick()
+            z=bound_margin(j,cache,ctx,query,source) if source is not None else margin(j,cache,ctx,query)
+            times['new_'+kind]+=tick()-start;new[kind].append(z)
             t=dict(available=True,record=rec,question=query,suffix_text=suffix,suffix_ids=ids,margin=z,
                 cache_tokens_restored=cache.get_seq_length()==ctx['stance_cache_tokens'],rope_restored=torch.equal(j.model.model.rope_deltas,ctx['rope']))
-            if revision in (2,3):
+            if revision in (2,3,4):
                 t['program_applied']=usable_record(rec,kind,revision)
                 if not t['program_applied']:assert z==native[kind][-1]
+            if revision==4 and kind=='visual':t['source_binding']=source
+            if dense_exact:t['dense_native_mask_exact']=True
             assert t['cache_tokens_restored'] and t['rope_restored']
             if smoke and kind not in checked:
                 start=tick();clone=copy.deepcopy(cache)
-                try:replay=margin(j,clone,ctx,query);assert replay==z and clone.get_seq_length()==ctx['stance_cache_tokens']
+                try:
+                    replay=bound_margin(j,clone,ctx,query,source) if source is not None else margin(j,clone,ctx,query)
+                    assert replay==z and clone.get_seq_length()==ctx['stance_cache_tokens']
                 finally:del clone
                 times['diagnostic']+=tick()-start;diagnostics+=1;checked.add(kind);t['clone_exact']=True
             trace['branches'][kind]=t
         traces.append(trace)
     base=record(row,ctx,native['visual'],native['speech'],prefix_seconds+times['native_visual']+times['native_speech'],'m1_native')
-    method={1:'m1_program_handles',2:'m1_program_handles_available_facts',3:'m1_program_handles_resolved_action'}[revision]
+    method={1:'m1_program_handles',2:'m1_program_handles_available_facts',3:'m1_program_handles_resolved_action',4:'m1_program_handles_source_bound'}[revision]
     optimized=record(row,ctx,new['visual'],new['speech'],metadata['standalone_seconds']+prefix_seconds+times['new_visual']+times['new_speech'],method)
     forwards=j.forward_calls-first;expected=base['calls']+optimized['calls']-3+diagnostics;assert forwards==expected
     checks=dict(dataset=row['dataset'],video_id=row['video_id'],GT_read=False,actual_forwards=forwards,
@@ -119,13 +156,18 @@ def read_video(j,row,segments,metadata,smoke,revision=1):
         peak_GiB=max(torch.cuda.max_memory_allocated()/2**30,metadata['peak_GiB']))
     detail=dict(dataset=row['dataset'],video_id=row['video_id'],segments=[list(s) for s in segments],cache_version=CACHE_VERSION,
         traces=traces,native_conversation=dict(msgs=ctx['msgs'],history=ctx['history'],head=ctx['head']))
-    if revision in (2,3):detail['reader_revision']=revision
+    if revision in (2,3,4):detail['reader_revision']=revision
+    if revision==4:detail['prefix_observation']=prefix
     del cache
     return base,optimized,checks,detail
 
 
 def validate_records(row,base,new,check,detail,metadata,renderer):
-    revision=detail.get('reader_revision',1);assert revision in (1,2,3)
+    revision=detail.get('reader_revision',1);assert revision in (1,2,3,4)
+    if revision==4:
+        msgs,files=renderer.prefix_messages(frame_paths(row['dataset'],row['video_id'],20),detail['segments'])
+        _,encoded=renderer.encode_prefix(msgs,files)
+        assert detail['prefix_observation']==dict(input_ids=encoded['input_ids'][0].tolist(),image_counts=list(renderer.img_tokens))
     wins=fixed_windows(float(row['duration']),8)
     for r in (base,new):
         assert (r['dataset'],r['video_id'])==(row['dataset'],row['video_id'])
@@ -149,12 +191,17 @@ def validate_records(row,base,new,check,detail,metadata,renderer):
             if available:
                 query,rec=question(m['execution'],i,len(wins),a,e,body,kind,revision)
                 assert branch['record']==rec and branch['question']==query and branch['margin']==n['z_'+kind]
-                if revision in (2,3):
+                if revision in (2,3,4):
                     assert branch['program_applied']==usable_record(rec,kind,revision)
                     if not branch['program_applied']:assert n['z_'+kind]==b['z_'+kind]
+                if revision==4 and kind=='visual':
+                    po=detail['prefix_observation']
+                    expected=binding(po['input_ids'],renderer.image_token_id,po['image_counts'],visual_frame_sources(rec)) if usable_record(rec,kind,revision) else None
+                    assert branch['source_binding']==expected
                 ids,text=renderer.branch_ids(c['msgs'],query,c['history'],head_text=c['head'])
                 assert branch['suffix_ids']==ids and branch['suffix_text']==text and branch['cache_tokens_restored'] and branch['rope_restored']
                 diagnostics+=branch.get('clone_exact',False)
+                diagnostics+=branch.get('dense_native_mask_exact',False)
             else:assert branch['reason']=='native_no_speech'
     assert check['diagnostic_forwards']==diagnostics and check['actual_forwards']==base['calls']+new['calls']-3+diagnostics
     assert check['module_calls']==sum(len(w['execution']['calls']) for w in metadata['windows'])
@@ -181,7 +228,7 @@ def existing(path,expected):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--revision',type=int,choices=(1,2,3),default=1);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--revision',type=int,choices=(1,2,3,4),default=1);a=ap.parse_args()
     out=ROOT/'runs/20261005_m1_program'/(f'r{a.revision}_handles_full_'+('smoke' if a.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
@@ -192,6 +239,7 @@ def main():
         command='python -u '+' '.join(sys.argv))
     if a.revision==2:cfg.update(reader_revision=2,readout='only available factual program evidence; otherwise fresh unchanged native question')
     if a.revision==3:cfg.update(reader_revision=3,readout='normalize leading UNKNOWN marker; visual requires resolved action or join, otherwise fresh native question',unknown_marker_pattern=UNKNOWN_MARKER_PATTERN)
+    if a.revision==4:cfg.update(reader_revision=4,readout='executed LOCAL frame bindings restrict direct visual query keys; native visual question without descriptions; speechR3',unknown_marker_pattern=UNKNOWN_MARKER_PATTERN,source_key_mask='all36layers/allheads; actualcurrent imagekey indices, causal boolmask; text/stance preserved')
     cp=out/'config.json'
     if cp.exists():
         old=json.loads(cp.read_text());assert {k:v for k,v in old.items() if k!='date'}=={k:v for k,v in cfg.items() if k!='date'}

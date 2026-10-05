@@ -38,7 +38,7 @@ def native_conversation(j,row,segments,stance):
 def prepare(root,out,smoke):
     j=cpu_renderer();rows=selected_rows(smoke);expected={(r['dataset'],r['video_id']):r for r in rows}
     cfg=json.loads((root/'config.json').read_text());assert cfg['GT_in_reader'] is False and cfg['smoke']==smoke
-    revision=cfg.get('reader_revision',1);assert revision in (1,2,3)
+    revision=cfg.get('reader_revision',1);assert revision in (1,2,3,4)
     records={name:existing(root/name/'predictions.jsonl',expected) for name in ('base','optimized')}
     checks=existing(root/'checks.jsonl',expected);assert all(r.keys()==expected.keys() for r in [*records.values(),checks])
     old=read(ROOT/'runs/20260926_glr/base_gridA/predictions.jsonl');asr={ds:load_asr(ds) for ds in DATASETS}
@@ -137,7 +137,7 @@ def report(root,decoded,out):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True)
-    ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base','optimized'));ap.add_argument('--revision',type=int,choices=(1,2,3),default=1);a=ap.parse_args()
+    ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base','optimized'));ap.add_argument('--revision',type=int,choices=(1,2,3,4),default=1);a=ap.parse_args()
     stem=f'r{a.revision}_handles_full_'+('smoke' if a.smoke else 'main');root=ROOT/'runs/20261005_m1_program'/stem
     out=root.parent/(stem+'_analysis');out.mkdir(parents=True,exist_ok=True);decoded=root.parent/(stem+'_decoded')
     if a.stage=='prepare':prepare(root,out,a.smoke)

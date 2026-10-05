@@ -139,6 +139,7 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 - 当前固定r6与评测器未改；性能与机制目标都未完成，继续自主迭代。
 
 候选26实际8B内存修复Slurm166 PASS，13395/14445token实际父节点原生与分块的生成tokens/events/compiledrecord逐值相同，来源`runs/20261005_m1_interval_witness/prefill_mlp_fix/gpu/summary.json`；相同完整333待续跑确认原失败更大节点容量。
+候选26已以原R1/sc474397/Slurm168续跑完整333，116atomic来源严格重放；候选30完整独立代码续审PASS，来源`docs/reviews/20261005_m1_ott_code.md`，实际8Bfixed5待提交。Program R4为最后修订3/3，程序直接绑定原图key的统一方案已事前声明/完整源41817前版本token兼容/36层CPU PASS，独立窄确认进行中，无实际GPU/R4结果。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
