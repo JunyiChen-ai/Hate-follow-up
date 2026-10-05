@@ -8,7 +8,7 @@
 - **运行中**：来源图25，sc474399/186，HMM全215 source已齐、HCS来源继续获取。
 - MERIT33实际固定5/sc474398/202完成并BOTH回传，原执行守门PASS，完整333 ready。VideoEvent36完整333/sc474398/214已DONE/BOTH回传，原pilot源保留；本机严格核对/统一评测进行中。两者尚无主指标结论。
 - 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B固定5/207严格PASS，完整333 ROOT216排队；35B固定5/209仍原guardFAIL，只读logits诊断217排队。
-- 空间搜索31完整source333已齐，sc474398/192 paired137后因model crop aspect366拒绝FAILED；BOTH已回传，旧smoke源保留，8个unsupported crop沿原unavailable nativeV路径修复/独立确认PASS，原source/137读数保留，同R1/215续跑中，未GT/性能。
+- 空间搜索31完整source333已齐，sc474398/192 paired137后因model crop aspect366拒绝FAILED；BOTH已回传，旧smoke源保留，8个unsupported crop沿原unavailable nativeV路径修复/独立确认PASS，原source/137读数保留，同R1/215已DONE/BOTH回传，本机严格核对/评测进行中，未性能结论。
 - **主agent调度持有**：事实核验27完整333/sc474397/193仍未启动，优先较低成本完整候选；方法版本/修订预算不变。
 - 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
 
@@ -759,3 +759,5 @@ Spatial31 fullsource333与partialpaired137/sc474398/192 FAILED2:45:02/1:0（图�
 35只读原B首planner logits诊断ROOT217已提交，正常QOS排队，不改原source/choices/caps/guard/预算、不GT，无实际原因结论。
 
 26R2/213完整333 COMPLETED2:22:24/0:0，全部新runs已返回本机；36/214完整333 COMPLETED2:34:07/0:0，BOTH freshsourcecache和runs已返回本机、原pilot源snapshot保留。本机matchingruntime严格prepare→唯一评测器all6/fixedr6报告正在运行，无主指标/机制新结论。31/215同版本原host续跑超过320/333，34/216、35diagnostic217正常等待预算，PV25/186 source获取继续；目标未完成。
+
+31同R1/sc474398/215完整333 DONE40:07/0:0，原source/137supported读数保持，BOTH已回传；严格prepare/canonicalall6/fixedr6进行中。MERIT33实际server333输入预检PASS已回传，本机权威lab_server_input_preflight/summary.json；新launcher独立窄PASS后完整333/sc448960/218提交，freshsource+reader同机无pilotsplice/GT。34/216已RUNNING ROOT、25/186继续来源获取，217正常排队，当前目标未完成。
