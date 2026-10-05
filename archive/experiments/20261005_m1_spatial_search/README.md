@@ -1,3 +1,5 @@
+**归档第29项：完整333 R1六项均改善，但无任一提升≥.01；按规则9归档，正向趋势与原输入故障/修复保留，不跑性能修订/控制GPU。**
+
 # 候选31：目标条件化空间搜索与时间绑定裁剪记忆
 
 当前仅完成来源阅读及事前声明，代码/GPU/GT未开始。原九候选池rank4，
@@ -101,3 +103,9 @@ Intrinsic crop-support diagnosisPASS: `docs/reviews/20261006_m1_spatial_search_c
 SameR1 originalhost sc474398 full333 resumed submission215, currentlyPENDING normalresources behind214. Committedbc4ef8b all4match, unrelateduserwork/foreignSTRAYpreserved,1.3Tfree, evidence`crop_interface_fix/machines_before_resume{,_note}.txt`. Existinglauncher replays original333 atomiccache without source regeneration/cost removal; reads original137supported records unchanged plus remaining196 fresh, actualunsupported8 handledexplicitly. NoGT/metrics/iterationreset.
 
 SameR1 full333 originalsc474398 resume215 COMPLETED2026-10-06 12:30:55/40:07/0:0. Original333source and137supported atomic records/costs preserved; only196 remaining readers completed with reviewed8unsupported nativeV fallback. BOTH wholecache/runs immediately returned ROOT before STATUS/results. Matchingruntime strictallsource/native check followed by canonicalall6/fixedr6 report running; no GT/performance/idea conclusion yet. Originalfailed192 elapsed2:45:02 remains separate wallclock, not discardednewvideo sourcecost.
+
+## Final complete R1 outcome and destination
+
+Original333source/sc474398/192 plus samehost sameR1 reader215 after minimal unsupportedcrop fix, allinputs/runs BOTH returned ROOT. Matchingruntime strict currentraw/PTS/pixels/source/search/input/nativeallraw/G/S PASS; original137supported records unchanged, all8unsupported explicit nativeVfallback verified. Pairednative canonicalall6 exactly equal currentr6. Authority `runs/20261005_m1_spatial_search/r1_full_main_decoded/optimized/metrics.json`: HMM ROC/PR/within .898964074498/.695923033038/.757743844751 (84/215); HCS .719958061390/.680264499826/.642826457290 (99/118). Deltas HMM +.001845413/+.001688430/+.006961801; HCS +.003133197/+.009192415/+.005477343. Allsix positive trends retained, all development-selected. None individually+.01, so rule9 archive29 withoutR2 or fullcontrols; no boundary rounding into a pass or mechanism claim. Source/input fix was not a scientific revision.
+
+Actual new-video processing HMM73.350483/HCS70.231995minutes, total143.582478, includes fulloriginalsource65.034664/62.924563minutes. Pairednative9.134571minutes; newprocessing15.719fold. Costs retain original192 acquisition and137completed readers plus196remaining; failed192 elapsed2:45:02 and resumed215 elapsed40:07 are wallclock records, not summed as deployment GPUtime. Actualallsource/search execution kept6767FOUND,6759used crops and8unsupported; nativeG/S unchanged. Source cost/input/usage authority `r1_full_main_analysis/alignment.json`, rawauthority metrics asabove. All sharedconstants/evaluator/GT/split/4fps/r6 unchanged. Only canonical evaluation/report readtestGT/metrics; no GT-driven redesign after this noqualifyinggain result. Structural support is not semantic target/box truth or causal mechanism evidence. Complete pipeline/negative outcome retained; formalmethod and autonomousgoal unchanged.

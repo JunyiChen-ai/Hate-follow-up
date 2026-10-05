@@ -3,12 +3,12 @@
 截至 **2026-10-06**。当前入口如下；下方按日期保留历史更新。
 
 - 当前正式方法仍为 **r6_bma**；M1自主迭代的共同性能门和机制门均未完成，继续运行，未更新Overleaf。
-- 累计归档 **28** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
+- 累计归档 **29** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
 - 区间见证26 R1完整333/sc474397/168已完成本机严格核对与统一评测：HMM within+.016374保留，pooled下降/HCS未过门；R2修订1/3保留native G/ownstance/S并实际重算source-path V，同5/sc448960/211实际读取与ROOT严格核对PASS，完整333同机213已DONE并回传，本机严格核对/统一评测进行中。完整六项及权威路径见下方最新更新。
 - **运行中**：来源图25，sc474399/186，HMM全215 source已齐、HCS来源继续获取。
 - MERIT33实际固定5/sc474398/202完成并BOTH回传，原执行守门PASS，完整333 ready。VideoEvent36完整333/sc474398/214已BOTH回传/核对/评测，六项无任一+.01，按规则9归档第28项；权威路径见最新记录。
 - 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B固定5/207严格PASS，完整333 ROOT216排队；35B固定5/209仍原guardFAIL，只读logits诊断217排队。
-- 空间搜索31完整source333已齐，sc474398/192 paired137后因model crop aspect366拒绝FAILED；BOTH已回传，旧smoke源保留，8个unsupported crop沿原unavailable nativeV路径修复/独立确认PASS，原source/137读数保留，同R1/215已DONE/BOTH回传，本机严格核对/评测进行中，未性能结论。
+- 空间搜索31完整333/192+215已BOTH回传/严格核对/统一评测：六项均改善，但无任一+.01，按规则9归档第29项；原8unsupported crop输入故障/修复与正向趋势保留。
 - **主agent调度持有**：事实核验27完整333/sc474397/193仍未启动，优先较低成本完整候选；方法版本/修订预算不变。
 - 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
 
@@ -763,3 +763,5 @@ Spatial31 fullsource333与partialpaired137/sc474398/192 FAILED2:45:02/1:0（图�
 31同R1/sc474398/215完整333 DONE40:07/0:0，原source/137supported读数保持，BOTH已回传；严格prepare/canonicalall6/fixedr6进行中。MERIT33实际server333输入预检PASS已回传，本机权威lab_server_input_preflight/summary.json；新launcher独立窄PASS后完整333/sc448960/218提交，freshsource+reader同机无pilotsplice/GT。34/216已RUNNING ROOT、25/186继续来源获取，217正常排队，当前目标未完成。
 
 VideoEvent36完整333/sc474398/214统一评测结束/native allraw与六项精确：HMM ROC/PR/within .895782/.679467/.749919（84），HCS .722114/.670560/.633512（99）。权威`runs/20261006_m1_videoevent/r1_full_main_decoded/optimized/metrics.json`；无任一+.01，HMM PR−.014767，按规则9归档第28项，不跑R2/控制GPU。实际新视频处理121.34min含104.76min来源获取，development-selected，无机制结论。完整机制/成本/去向唯一明细`archive/experiments/20261006_m1_videoevent/README.md`；区间R2/空间搜索评测仍进行中，目标未完成。
+
+空间搜索31完整333/原sc474398/192+215统一评测完成，native allraw/六项精确。HMM ROC/PR/within .898964/.695923/.757744（84），HCS .719958/.680264/.642826（99）；六项均正向，within+.006962/+.005477、HCS PR+.009192，但无任一+.01，按规则9归档第29项，不跑R2/控制GPU。权威`runs/20261005_m1_spatial_search/r1_full_main_decoded/optimized/metrics.json`；实际新视频143.58min含127.96min完整来源获取，全部development-selected，无机制结论。完整方法/正向趋势/原故障修复/成本唯一明细`archive/experiments/20261005_m1_spatial_search/README.md`。目标仍未完成，区间R2核对继续。
