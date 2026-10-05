@@ -1,0 +1,22 @@
+{
+  "candidate_number": 35,
+  "rank": 8,
+  "date": "2026-10-06",
+  "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
+  "proposal_pass": true,
+  "implemented": true,
+  "code_pass": false,
+  "GPU_run": false,
+  "GT_read": false,
+  "performance_result": null,
+  "result_guided_revisions_used": 0,
+  "state": "Complete full tools/source/reader prototype and author scientificCPU PASS; unique independent Rule6 review running, no GPU/GT/performance",
+  "core_implemented": true,
+  "cpu_pass": true,
+  "full_input_preflight": "runs/20261006_m1_vtimecot/full_input_preflight/summary.json",
+  "model_cpu": "runs/20261006_m1_vtimecot/model_cpu_checks/summary.json",
+  "collector_cpu": "runs/20261006_m1_vtimecot/collector_cpu_checks/summary.json",
+  "relevance_cpu": "runs/20261006_m1_vtimecot/relevance_cpu_checks/summary.json",
+  "reader_cpu": "runs/20261006_m1_vtimecot/reader_cpu_checks/summary.json",
+  "code_review": "docs/reviews/20261006_m1_vtimecot_code.md"
+}
