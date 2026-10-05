@@ -87,3 +87,5 @@ clone全部KV/margin精确、非ASR bias为0且原因果可见性保留，新mar
 唯一独立规则6代码审查已交给与作者不同的原jury实例，不重开proposal审查。
 
 独立审查发现复制body的branch_ids/tokenization/offset来源绑定未计入standalone时间，已单列source_mapping并计入new_seconds及对应校验，base不包含该增量；审查正在窄确认。shared_prefix计时包含原ASR pre-RoPE key捕获和prefix来源绑定，部署需支付；native配对时间含此仪器开销，不能作为无仪器原生绝对延迟。actualSlurm墙钟另报，不计审计序列化为模型阶段秒数。
+
+唯一独立规则6审查 `docs/reviews/20261005_m1_rote_code.md` PASS，source_mapping计时漏项已窄确认修复。独立实际36层CPU FP32/18帧和BF16/20帧，SDPA对手工masked-softmax最大差4.77e-7/.002061，bias对独立双精度算子4.31e-7/.003889；全KV/native恢复精确、新S变化、原因果保持。全333原ASR/7359窗复制body检查通过、6580speech；未GT/预测/metrics/CUDA/权重。证据 `runs/20261005_m1_rote/independent_code_review/`，真实8Bfixed5待派发。

@@ -6,14 +6,15 @@
   "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
   "proposal_pass": true,
   "implemented": true,
-  "code_pass": false,
+  "code_pass": true,
   "GT_read": false,
   "GPU_run": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Scientificprototype/full333preflight/actual36layerCPU PASS; independentcode reviewactive, noGPU/GT",
+  "state": "Full333input/authorCPU/independent36layer masked-softmax/sourceCPU PASS; code/cost fixPASS, actual8Bfixed5ready",
   "full_input_preflight": "runs/20261005_m1_rote/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
   "cpu_checks": "runs/20261005_m1_rote/cpu_checks/summary.json",
-  "cpu_pass": true
+  "cpu_pass": true,
+  "code_review": "docs/reviews/20261005_m1_rote_code.md"
 }
