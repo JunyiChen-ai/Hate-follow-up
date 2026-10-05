@@ -246,3 +246,6 @@ Slurm151 completed116 whole atomic video inputs, then OOM in source parent full-
 Samefull333R1 resumedsc474397/Slurm168 afterallfourlabs a9245b8clean/actualfixedparentGPU PASS/rootidle476Gfree/167soleactiveGPU, exactforeignSTRAY namesunchanged. Evidence `runs/20261005_m1_interval_witness/prefill_mlp_fix/machines_before_resume{,_note}.txt`; original116atomic whole sources replayed, no partial source result accepted, mainmetrics pending.
 
 Slurm168已在18:31:34越过原失败第117视频HMMnon_hate_video_356，完整125叶/124父节点：最大实际父input68908tokens，sourcepeak29.7964GiB，处理300.725s；完整新metadata已严格通过。原始catalog不截断，常数/限制不变。此前CPU/8B小父等价检查支持内存修复，本次只证明此原失败大节点已成功，不是完整性能结果。
+
+
+2026-10-06完整333来源的独立成本汇总已从本机每video metadata直接解析，不读GT/预测/metrics：`runs/20261005_m1_interval_witness/source_cost_audit/summary.json`。HMM215 source137.9096020220294min、3768leaf/3553parent/4repair；HCS118 source131.28529595768583min、3591leaf/3473parent/7repair，总269.1948979797152min。实际source forwards373788/355371、vision3772/3598、peak29.7964/22.2036GiB。此处只是完整来源获取，原缓存获取成本全部保留；配对reader尚未完成，不是完整部署成本/性能/机制证据。完整Slurm墙钟另包含输入重放/审计/配对及IO，不以冻结/缓存掩盖新视频成本。
