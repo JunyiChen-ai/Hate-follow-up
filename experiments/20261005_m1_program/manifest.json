@@ -87,11 +87,13 @@
     "source_cpu": "runs/20261005_m1_program/bound_cpu_checks/sources_summary.json",
     "model_cpu": "runs/20261005_m1_program/bound_cpu_checks/model_summary.json",
     "code_pass": true,
-    "GPU_run": false,
+    "GPU_run": true,
     "code_review": "docs/reviews/20261005_m1_program_source_bound_code.md",
-    "state": "FinalR4 CPU/narrowreviewPASS; actual8Bfixed5 Slurm171 queuedunderQOS167/168",
+    "state": "Slurm171 fixed5 returned/source/native/10clone/5dense-maskPASS; full333ready",
     "smoke_job": 171,
     "GPU_submitted": true,
-    "selected_host": "sc474398"
+    "selected_host": "sc474398",
+    "smoke_pass": true,
+    "smoke": "runs/20261005_m1_program/r4_handles_full_smoke_analysis/plumbing_summary.json"
   }
 }

@@ -8,10 +8,10 @@
   "implemented": true,
   "code_pass": true,
   "GT_read": false,
-  "GPU_run": false,
+  "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Code/CPU/inputPASS; actual8Bfixed5 Slurm170 queuedunderQOS167/168, noGPUresult/GT",
+  "state": "Slurm170 fixed5 returned/source/native/5clonePASS; full333 ready",
   "cpu_pass": true,
   "cpu_checks": "runs/20261005_m1_ott/cpu_checks/summary.json",
   "full_input_preflight": "runs/20261005_m1_ott/full_input_preflight/summary.json",
@@ -20,5 +20,7 @@
   "independent_evidence": "runs/20261005_m1_ott/independent_code_review/summary.json",
   "smoke_job": 170,
   "GPU_submitted": true,
-  "selected_host": "sc474398"
+  "selected_host": "sc474398",
+  "smoke_pass": true,
+  "smoke": "runs/20261005_m1_ott/r1_full_smoke_analysis/plumbing_summary.json"
 }

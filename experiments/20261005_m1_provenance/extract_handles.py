@@ -15,6 +15,7 @@ from src.actual_video_frames import acquire_window_frames
 from src.structured_source_generation import generate
 from src.source_generation import clock
 from src.mllm_judge import Judge,MODEL
+from src.qwen3_mlp_memory import chunked_mlp
 from src.video_inputs import load_asr
 
 
@@ -34,7 +35,8 @@ def acquire(j,row,segments,folder):
         # prefill. Save it; never truncate or modify the scientific table to fit.
         rendered=j.render([j.turn('system',LINK_SYSTEM),dict(role='user',content=content)],True)
         actual_size=len(j.tok.encode(rendered,add_special_tokens=False))
-        g=generate(j,ROOT,LINK_SYSTEM,content,[],2048,lambda stream:write_links(stream,local,anchors))
+        with chunked_mlp(j.model.model,4096):
+            g=generate(j,ROOT,LINK_SYSTEM,content,[],2048,lambda stream:write_links(stream,local,anchors))
         assert len(g['input_tokens'])==actual_size
         links.append(dict(anchors=anchors,input_size_before_prefill=actual_size,generation=g,
             parsed=compiled_links(g,local['nodes'],anchors)))
@@ -56,7 +58,7 @@ def main():
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(__import__('os').getpid()))
     import transformers
     cfg=dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),model=MODEL,version=VERSION,constants=CONSTANTS,
-        GT_read=False,smoke=a.smoke,torch=torch.__version__,transformers=transformers.__version__,
+        GT_read=False,smoke=a.smoke,torch=torch.__version__,transformers=transformers.__version__,link_mlp_chunk_tokens=4096,
         code='experiments/20261005_m1_provenance/{graph,handle_interface,inputs_handles,extract_handles}.py + src/{actual_video_frames,structured_source_generation}.py; sources2026-10-05',
         command='python -u '+' '.join(sys.argv))
     (out/'config.json').write_text(json.dumps(cfg,indent=2)+'\n');torch.manual_seed(0);j=Judge(MODEL);j.forward_calls=j.vision_calls=0

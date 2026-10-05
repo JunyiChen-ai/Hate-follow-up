@@ -649,3 +649,5 @@ R4作者actual36layer FP32/BF16×18/20frame科学CPU PASS：`runs/20261005_m1_pr
 唯一独立R4窄确认`docs/reviews/20261005_m1_program_source_bound_code.md` PASS：实际36层FP32/BF16×18/20帧，显式query位置与native/dense hidden/margin精确，所有causal mask逐值、任意修改全部dropped-image KV后输出精确不变、selected KV修改实际改变输出；native replay/KV原样，生产reader混合action/join/fallback/no speech及计费/模型次数通过，旧R1–R3函数返回精确。未GT/指标/CUDA/权重，实例与作者不同。实际8Bfixed5 ready，科学效果未知。
 
 ProgramR4 fixed5已在sc474398提交Slurm171，167/168占用实际userGPU预算所以正常排队，不绕过调度；allfourlabs ca26ac8 clean/lab3idle1.4Tfree/literalforeignSTRAYunchanged。来源`runs/20261005_m1_ott/machines_before_smoke{,_note}.txt`，提交前两项authorCPU/唯一必要独立code均PASS，无本变体GPU结果。
+
+Actual8B fixed5 Slurm171 DONE并立即回传；输入缓存有新增则同样回传，samebackend/source/noGT/fullnative allraw/clone检查PASS，权威`runs/20261005_m1_program/r4_handles_full_smoke_analysis/plumbing_summary.json`。完整333ready；无性能结果。

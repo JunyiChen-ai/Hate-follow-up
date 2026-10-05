@@ -81,3 +81,5 @@ token数均匀时空删减；原完整未压缩。错绑定保持原特征/salie
 同一次独立Rule6审查由另一同模型实例接续并完成PASS：`docs/reviews/20261005_m1_ott_code.md`，前usage中断记录保留。独立实际vision float64 saliency oracle最大差7.45e-9、捕获不改变native全KV；四组36层FP32/BF16/18–20图dense-native/实际稀疏组件进入DeepStack/clone、官方实际各阶段与独立图/预算oracle PASS，成本归属修复通过。没有权重/CUDA/真实GT或预测，实际8Bfixed5尚未跑。
 
 OTT fixed5已在sc474398提交Slurm170，167/168占用实际userGPU预算所以正常排队，不绕过调度；allfourlabs ca26ac8 clean/lab3idle1.4Tfree/literalforeignSTRAYunchanged。来源`runs/20261005_m1_ott/machines_before_smoke{,_note}.txt`，提交前两项authorCPU/唯一必要独立code均PASS，无本变体GPU结果。
+
+Actual8B fixed5 Slurm170 DONE并立即回传；输入缓存有新增则同样回传，samebackend/source/noGT/fullnative allraw/clone检查PASS，权威`runs/20261005_m1_ott/r1_full_smoke_analysis/plumbing_summary.json`。完整333ready；无性能结果。

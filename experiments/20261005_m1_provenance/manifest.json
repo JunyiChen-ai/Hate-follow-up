@@ -16,7 +16,7 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "R1B main146 schedulingcheckpoint CANCELLEDbyagent2:56:43; completeatomicinputs/runsreturned, originalmainresumeafterlowercostM1measurements; noGT/performance",
+  "state": "Slurm167 OOM linkprefill after116HMM, allpartialruns/caches returned; memory-only4096MLP/allocator fix implemented pendingnarrowreview/linkGPUreplay",
   "smoke_job": 138,
   "selected_host": "sc474399",
   "A_smoke_job": 138,
@@ -40,5 +40,7 @@
   "main_checkpoint_job": 146,
   "main_running": false,
   "main_checkpoint": true,
-  "complete_local_source_metadata": 64
+  "complete_local_source_metadata": 64,
+  "resume_job": 167,
+  "main_memory_fix": "src/qwen3_mlp_memory.py onlylinkprefill4096 + expandable_segments allocator"
 }
