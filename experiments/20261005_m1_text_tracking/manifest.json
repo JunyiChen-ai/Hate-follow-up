@@ -6,13 +6,13 @@
   "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
   "proposal_pass": true,
   "implemented": true,
-  "code_pass": false,
+  "code_pass": true,
   "cpu_pass": true,
   "GPU_run": false,
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Complete prototype/canonical orchestration/full333input/36layer sourceimageCPU/knownpixel-controller/token checks PASS; independent onceRule6 review pending, noGPU/GT",
+  "state": "Completeprototype/full333input/actual36layerCPU/controller/token and independentoncecodePASS; actual8Bfixed5 ready, noGPU/GT",
   "tracker_core_implemented": true,
   "tracker_cpu_checks": "runs/20261005_m1_text_tracking/tracker_cpu_checks/summary.json",
   "tracker_cpu_pass": true,
@@ -27,5 +27,6 @@
   ],
   "model_cpu_max_bf16_difference": 0.003727734088897705,
   "controller_cpu_pass": true,
-  "token_cpu_pass": true
+  "token_cpu_pass": true,
+  "code_review": "docs/reviews/20261006_m1_text_tracking_code.md"
 }

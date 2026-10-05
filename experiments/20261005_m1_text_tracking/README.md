@@ -97,3 +97,6 @@ crop/数量/支持长度而循环错绑时间；保持时间而错绑实际crop�
 
 
 2026-10-06同一实际36层CPU科学检查扩展至来源图像2和10（本方法最大suffix），FP32/BF16×native18/20共8组全部PASS，最大cached-vs-fulluncached差FP32 6.56e-7/BF16 .003728，维持原1e-4/.025容差；完整native replay/全部KV/clone逐值相同、改变实际源像素改变margin。已将实际controller/token检查保存为可复运行脚本，未新增语料或GT/分数。
+
+
+文字跟踪32一次独立Rule6代码审查PASS，来源`docs/reviews/20261006_m1_text_tracking_code.md`及`runs/20261005_m1_text_tracking/independent_code_review/`；12组actual36layer生产read_video/validate_bundle含空/首窗/次窗lookup、4occurrence/5实际图像、所有KV/nativeG/allraw/S、freshfallback/modelcalls/完整source计费通过。真实合成video PTS→跟踪/cut/gap→两次freshrepair→只读pixel/metadata replay、损坏crop拒绝、真实token转义/cap/半截escape UNKNOWN通过。same-family provisional，与作者不同，未CUDA/预训练权重/真实GT/分数。实际8Bfixed5 ready，尚无性能结论。
