@@ -11,7 +11,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Completeprototype/authorinput+scienceCPU/independentoncecodePASS; actual8Bfixed5 ready noGPU/GT",
+  "state": "Actual8Bfixed5 queued202 afterlowercall192/201; fullprototype/authorCPU+uniqueindependentcodePASS, no actualGPU/GT",
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_merit/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -19,5 +19,8 @@
   "embedding_cpu": "runs/20261006_m1_merit/embedding_cpu_checks/summary.json",
   "reader_cpu": "runs/20261006_m1_merit/reader_cpu_checks/summary.json",
   "cpu_pass": true,
-  "code_review": "docs/reviews/20261006_m1_merit_code.md"
+  "code_review": "docs/reviews/20261006_m1_merit_code.md",
+  "smoke_job": 202,
+  "GPU_submitted": true,
+  "selected_host": "sc474398"
 }

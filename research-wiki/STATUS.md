@@ -176,6 +176,8 @@ MERIT33完整source collector/两轮真实ID过滤/V+S/统一评测prototype已�
 
 MERIT33一次独立Rule6代码审查PASS，来源`docs/reviews/20261006_m1_merit_code.md`及`runs/20261006_m1_merit/independent_code_review/`。实际合成video PTS→128tokencaption/key→MaxSim/neighbors/insufficient第二轮→sourceID union→当前inputtoken/pixel只读重放通过；真实36层CPU生产reader/current+remote/V+S/clone/KV/模型计数和source成本通过，source不伪造filter文字为事实。same-family provisional，与作者不同，未真实GT/预测分数/指标；实际8Bfixed5 ready，未GPU/性能。
 
+MERIT33 actual8B固定5已在sc474398提交Slurm202，正常排在较低调用192/201之后等待168/186预算；派发前四实验室e611276一致/clean、既有foreign STRAY逐行未变，来源`runs/20261006_m1_merit/machines_before_smoke{,_note}.txt`。唯一独立code与作者输入/科学CPU均PASS；无该候选实际GPU或GT/性能结果。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。

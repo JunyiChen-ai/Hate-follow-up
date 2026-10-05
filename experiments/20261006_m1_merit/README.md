@@ -94,3 +94,6 @@ matched控制，以及匹配远程数量/帧数/ASR长度桶的真实错源ID置
 
 
 MERIT33一次独立Rule6代码审查PASS，来源`docs/reviews/20261006_m1_merit_code.md`及`runs/20261006_m1_merit/independent_code_review/`。实际合成video PTS→128tokencaption/key→MaxSim/neighbors/insufficient第二轮→sourceID union→当前inputtoken/pixel只读重放通过；真实36层CPU生产reader/current+remote/V+S/clone/KV/模型计数和source成本通过，source不伪造filter文字为事实。same-family provisional，与作者不同，未真实GT/预测分数/指标；实际8Bfixed5 ready，未GPU/性能。
+
+
+MERIT33 actual8B固定5已在sc474398提交Slurm202，正常排在较低调用192/201之后等待168/186预算；派发前四实验室e611276一致/clean、既有foreign STRAY逐行未变，来源`runs/20261006_m1_merit/machines_before_smoke{,_note}.txt`。唯一独立code与作者输入/科学CPU均PASS；无该候选实际GPU或GT/性能结果。
