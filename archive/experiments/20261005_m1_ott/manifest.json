@@ -7,11 +7,16 @@
   "proposal_pass": true,
   "implemented": true,
   "code_pass": true,
-  "GT_read": false,
+  "GT_read": true,
   "GPU_run": true,
-  "performance_result": null,
+  "performance_result": {
+    "common_gain_metrics": [],
+    "no_losses_beyond_noise": true,
+    "performance_pass": false,
+    "any_qualifying_gain": false
+  },
   "result_guided_revisions_used": 0,
-  "state": "Slurm180 complete333 allinputs/runs returned; strict author/independent4thread fullsourceexactPASS; canonicalmetrics running",
+  "state": "ARCHIVED27: complete333 exact native sixmetrics; noany.01 gain; noR2/controlGPU",
   "cpu_pass": true,
   "cpu_checks": "runs/20261005_m1_ott/cpu_checks/summary.json",
   "full_input_preflight": "runs/20261005_m1_ott/full_input_preflight/summary.json",
@@ -30,5 +35,9 @@
   "main_input_returned": true,
   "main_prepare_pass": true,
   "replay_thread_fix_review": "docs/reviews/20261005_m1_ott_replay_thread_fix.md",
-  "replay_thread_fix_pass": true
+  "replay_thread_fix_pass": true,
+  "main_performance_pass": false,
+  "main_summary": "runs/20261005_m1_ott/r1_full_main_analysis/summary.json",
+  "archived": true,
+  "archive_number": 27
 }

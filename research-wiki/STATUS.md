@@ -160,13 +160,15 @@ OTT180完整333的源重放线程问题已完成作者和独立窄确认：同�
 
 空间搜索31完整333已在sc474398提交Slurm192：172缺失HMM原视频已从本机补齐，全部333实际resolve/PyAV首帧PTS与shape验证PASS，不复用lab2固定5来源、完整来源与读取本轮同lab3。来源`runs/20261005_m1_spatial_search/{lab3_raw_coverage.json,machines_before_main.txt,machines_before_main_note.txt}`，四实验室0b6d7c5 clean/synced、旧foreign STRAY逐行未变。原独立核验27已在sc474397重新提交完整333 Slurm193，192优先入队；之前185取消时实际0秒，未改数据/spec或科研版本。两项正常等待168/186预算。
 
+OTT30完整333/sc474398/Slurm180全部inputs/runs回传、线程等价重放与统一评测完成，原生allraw/六项精确。HMM ROC/PR/within .898340/.698636/.756590（84），HCS .713885/.669485/.634652（99）；within+.005808/−.002697，无任一+.01，按规则9归档第27项，不跑R2/控制GPU。来源`runs/20261005_m1_ott/r1_full_main_decoded/optimized/metrics.json`；实际新阶段10.64min/native1.17倍，全部development-selected、无机制证据，明细`archive/experiments/20261005_m1_ott/README.md`。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档26个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph、TTF、RoTE、Program性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档27个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph、TTF、RoTE、Program、OTT性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。

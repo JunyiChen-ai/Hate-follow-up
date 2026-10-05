@@ -1,3 +1,5 @@
+归档原因：完整333统一六指标没有任一+.01提升，固定共同性能门未过；不跑R2或控制GPU。
+
 # 候选30：重要性质量约束的跨帧传输表示
 
 尚未运行GPU或读取GT。完整九候选池第三顺位，一次独立proposal PASS：
@@ -91,3 +93,10 @@ Actual8B fixed5 Slurm170 DONE并立即回传；输入缓存有新增则同样回
 
 
 OTT180完整333的源重放线程问题已完成作者和独立窄确认：同原production4线程下全部333份实际保存特征重算的完整plan逐值相同，不放宽任何guard。独立来源`docs/reviews/20261005_m1_ott_replay_thread_fix.md`；全部inputs/runs已回传，noGT fullprepare/currentinputs/native allraw PASS，canonical全六项/固定r6评测恢复运行。无性能或机制结论。
+
+
+## 完整333结果与归档2026-10-05
+
+sc474398/Slurm180全333完成，全部runs和20GB左右完整原projector/DeepStack/saliency源缓存回传本机。production4thread来源逐值重放、当前输入/全部source位置/原生allraw/G/S PASS，统一评测全部原生六项精确复现。权威`runs/20261005_m1_ott/r1_full_main_decoded/optimized/metrics.json`：HMM ROC/PR/within .8983402047989129/.6986361201938487/.7565903113063817（84），HCS .713884503408459/.6694852928098559/.6346518382876711（99）。within+.00580826734041473/−.002697275516427622，无任一主指标+.01，损失在既定噪声内，共同性能门FAIL。按规则9归档第27项，不跑R2或控制GPU；全部development-selected，无机制结论。
+
+全333确实产生多成员均值/压缩，HMM384560→192280、HCS212198→106099原视觉token，7359新V改变，G/S保留；执行不代表方法有效。实际新阶段10.64006692min/native1.17416274倍，CPU传输/选择/聚合/新prefill均计入；完整Slurm墙钟另含审计cache序列化及原/新配对读数。完整成本来源`runs/20261005_m1_ott/r1_full_main_analysis/alignment.json`，全部六项来源与决定`summary.json`。实际评测报告读取本轮fullbase/new原始及固定r6预测和两个data/gt_4fps数组用于评测/逐视频排序分析；没有据此新增设计，规则9本轮直接归档。线程修复完整失败与等价证据保留，不以舍入差异判idea成败。
