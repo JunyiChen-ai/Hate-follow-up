@@ -15,7 +15,7 @@
   "smoke_pass": true,
   "performance_result": "runs/20261005_m1_interval_witness/r1_full_main_decoded/optimized/metrics.json",
   "constants_declared_before_run": true,
-  "state": "R1 complete/mainFAIL, positive HMMwithin; R2 revision1/3 CPU and narrow code/launcher PASS, same fixed5 ROOT208 PENDING QOSMaxGRESPerUser",
+  "state": "R1 mainFAIL/positive HMMwithin retained; identical R2 all333cache portable, server native5/source5 PASS, cost-only narrow fix PASS; ROOT208 ownedpendinghold; server samefixed5 ready",
   "result_guided_revisions_used": 1,
   "native_runtime_job": 145,
   "native_runtime_pass": true,
@@ -43,5 +43,10 @@
   "r2_GPU_submitted": true,
   "r2_lab_server_launcher_pass": true,
   "r2_lab_server_launcher_review": "docs/reviews/20261006_m1_interval_lab_server_launch.md",
-  "r2_lab_server_source_copy": "entire original333/cost retained; portability check required before dispatch"
+  "r2_lab_server_source_copy": "entire original333/cost retained; portability check required before dispatch",
+  "r2_root_smoke_state": "own lab scheduling hold, zeroexecution",
+  "r2_lab_server_input_check": "runs/20261005_m1_interval_witness/r2_lab_server_input_check/summary.json",
+  "r2_lab_server_input_pass": true,
+  "r2_cost_fix_pass": true,
+  "r2_cost_fix_review": "docs/reviews/20261006_m1_interval_r2_cost_fix.md"
 }

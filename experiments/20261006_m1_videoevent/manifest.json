@@ -10,7 +10,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Complete prototype/author CPU PASS and unique independent code review closed PASS; lab-server idle matchingruntime and returned whole333 input preflight PASS; actual native5 must precede samefixed5 science",
+  "state": "Uniquecode/launch/input/native5 PASS; scientific samefixed5 ready, verified idle lane prioritizes positive IntervalR2 first; no candidate36 GPU/GT",
   "cpu_pass": true,
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_videoevent/full_input_preflight/summary.json",
@@ -21,5 +21,7 @@
   "code_review": "docs/reviews/20261006_m1_videoevent_code.md",
   "lab_server_input_preflight": "runs/_setup_lab_server_hatevlm/input_preflight/summary.json",
   "lab_server_launch_review": "docs/reviews/20261006_lab_server_runtime_launch.md",
-  "lab_server_native_pass": false
+  "lab_server_native_pass": true,
+  "lab_server_native_job": 210,
+  "lab_server_native_summary": "runs/_setup_lab_server_hatevlm/native_smoke/summary.json"
 }

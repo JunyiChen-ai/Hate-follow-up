@@ -44,7 +44,7 @@ def read_video(j,row,segments,m,smoke):
             trace.update(repeat_margin=replay,repeat_exact=True,repeat_seconds=clock(j)-start);times['diagnostic']+=trace['repeat_seconds'];diagnostics+=1
         trace['available']=True;traces.append(dict(window=w['i'],branches=dict(visual=trace,speech=dict(available=bool(w['body'].strip()),source='fresh_original_native_S')),native_seconds=native_times[w['i']]))
     base=prediction(row,ctx,native_visual,native_speech,prefix_seconds+times['native_visual']+times['native_speech'],'m1_native')
-    optimized=prediction(row,ctx,new_visual,native_speech,m['standalone_seconds']+prefix_seconds+times['new_visual']+times['native_speech'],'m1_interval_witness_r2')
+    optimized=prediction(row,ctx,new_visual,native_speech,m['standalone_seconds']+prefix_seconds+input_binding_seconds+times['new_visual']+times['native_speech'],'m1_interval_witness_r2')
     optimized['calls']+=m['actual_forwards'];actual=j.forward_calls-first;assert actual==base['calls']+len(m['windows'])+diagnostics
     checks=dict(actual_forwards=actual,actual_vision_forwards=j.vision_calls-vision,prefix_seconds=prefix_seconds,new_prefix_seconds=0.,input_binding_seconds=input_binding_seconds,**times,diagnostic_forwards=diagnostics,
         preprocessing_seconds=m['standalone_seconds'],input_actual_forwards=m['actual_forwards'],peak_GiB=max(torch.cuda.max_memory_allocated()/2**30,m['peak_GiB']))
@@ -82,7 +82,7 @@ def validate_bundle(row,b,m,segments,j,smoke):
     assert abs(c['diagnostic']-sum(t['branches']['visual'].get('repeat_seconds',0.) for t in b['traces']))<1e-6
     assert all(np.isfinite(v) and v>=0 for v in c.values())
     assert abs(base['extra']['standalone_seconds']-c['prefix_seconds']-c['native_visual']-c['native_speech'])<1e-6
-    assert abs(new['extra']['standalone_seconds']-m['standalone_seconds']-c['prefix_seconds']-c['new_visual']-c['native_speech'])<1e-6
+    assert abs(new['extra']['standalone_seconds']-m['standalone_seconds']-c['prefix_seconds']-c['input_binding_seconds']-c['new_visual']-c['native_speech'])<1e-6
 
 
 def main():
