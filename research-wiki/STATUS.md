@@ -4,11 +4,11 @@
 
 - 当前正式方法仍为 **r6_bma**；M1自主迭代的共同性能门和机制门均未完成，继续运行，未更新Overleaf。
 - 累计归档 **27** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
-- 区间见证26 R1完整333/sc474397/168已完成本机严格核对与统一评测：HMM within+.016374保留，pooled下降/HCS未过门；R2修订1/3保留native G/ownstance/S并实际重算source-path V，同5/sc448960/211实际读取与ROOT严格核对PASS，完整333同机213运行。完整六项及权威路径见下方最新更新。
+- 区间见证26 R1完整333/sc474397/168已完成本机严格核对与统一评测：HMM within+.016374保留，pooled下降/HCS未过门；R2修订1/3保留native G/ownstance/S并实际重算source-path V，同5/sc448960/211实际读取与ROOT严格核对PASS，完整333同机213已DONE并回传，本机严格核对/统一评测进行中。完整六项及权威路径见下方最新更新。
 - **运行中**：来源图25，sc474399/186，HMM全215 source已齐、HCS来源继续获取。
-- MERIT33实际固定5/sc474398/202完成并BOTH回传，原执行守门PASS，完整333 ready。VideoEvent36同5/sc448960/212完成/BOTH回传，本机actualevents/BG/nativeallraw/G/V/Sclone守门PASS，完整333 ready；两者未GT/性能。
-- 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B独立确认PASS，同固定5已提交ROOT Slurm207，PENDING(QOSMaxGRESPerUser)。
-- 空间搜索31完整source333已齐，sc474398/192 paired137后因model crop aspect366拒绝FAILED；BOTH已回传，旧smoke源保留，具体输入支持故障窄诊断中，未GT/性能。
+- MERIT33实际固定5/sc474398/202完成并BOTH回传，原执行守门PASS，完整333 ready。VideoEvent36完整333/sc474398/214已DONE/BOTH回传，原pilot源保留；本机严格核对/统一评测进行中。两者尚无主指标结论。
+- 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B固定5/207严格PASS，完整333 ROOT216排队；35B固定5/209仍原guardFAIL，只读logits诊断217排队。
+- 空间搜索31完整source333已齐，sc474398/192 paired137后因model crop aspect366拒绝FAILED；BOTH已回传，旧smoke源保留，8个unsupported crop沿原unavailable nativeV路径修复/独立确认PASS，原source/137读数保留，同R1/215续跑中，未GT/性能。
 - **主agent调度持有**：事实核验27完整333/sc474397/193仍未启动，优先较低成本完整候选；方法版本/修订预算不变。
 - 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
 
@@ -757,3 +757,5 @@ Spatial31 fullsource333与partialpaired137/sc474398/192 FAILED2:45:02/1:0（图�
 35B独立真实输入诊断PASS（没有实现偏离、五个reason16wordcap/whole30–41tokens未到128），原guard仍FAIL、无GT/性能。原选择不变的首planner logits观察器和ROOTlauncher独立窄PASS，来源`docs/reviews/20261006_m1_vtimecot_closing_diagnostic_code.md`，准备actual诊断，不从synthetic判断原因，不改B/caps/guard/预算。
 
 35只读原B首planner logits诊断ROOT217已提交，正常QOS排队，不改原source/choices/caps/guard/预算、不GT，无实际原因结论。
+
+26R2/213完整333 COMPLETED2:22:24/0:0，全部新runs已返回本机；36/214完整333 COMPLETED2:34:07/0:0，BOTH freshsourcecache和runs已返回本机、原pilot源snapshot保留。本机matchingruntime严格prepare→唯一评测器all6/fixedr6报告正在运行，无主指标/机制新结论。31/215同版本原host续跑超过320/333，34/216、35diagnostic217正常等待预算，PV25/186 source获取继续；目标未完成。

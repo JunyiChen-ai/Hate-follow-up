@@ -1,0 +1,15 @@
+# MERIT lab-server launcher — narrow independent confirmation PASS
+
+2026-10-06. Independent GPT-6-astra reviewer; same-family provisional. Scope is `experiments/20261006_m1_merit/launch/lab_server.sbatch` and its routing into the existing entrypoints. No proposal or general scientific review was repeated; no scientific code or foreign experiment files were modified.
+
+Evidence: `runs/20261006_m1_merit/lab_server_launch_check/independent/{check.py,summary.json,run.log,remote_observation.json}`. Executed `.cache/envs/HateVLM/bin/python runs/20261006_m1_merit/lab_server_launch_check/independent/check.py`; result `MERIT_SERVER_LAUNCH_PASS`.
+
+The new launcher exactly matches lab3 after replacing only `local-sc474398` with `local-sc448960` and `/home/jehc223/` with `/home/junyi/`. `bash -n` passes. Resource/output checks confirm one GPU, four CPUs, 32G, and `runs/20261006_m1_merit/slurm_%j.out`. Cwd is `/home/junyi/Hate-follow-up`; activation is `/home/junyi/miniconda3/bin/activate HateVLM`; offline HF/Triton/CUDA cache paths and numerical environment settings remain project-local and unchanged apart from home path.
+
+Stub execution of the unchanged shell body confirms extraction runs before reader on the same host. Default and explicit `SCOPE=smoke` supply `--smoke` to both; **the intended full run must set `SCOPE=main`**, which supplies no smoke flag to either. The actual metadata-manifest selection yields 333 rows for main and the existing five for smoke. Cwd, activation or GPU-inspection failures stop before Python; extraction failure exits 23 without launching reader; reader failure exits 24. `set -euo pipefail` remains active.
+
+Inspected the real input wiring and executed its ROOT expression against an isolated relocated fixture. ROOT derives from the entrypoint's file ancestors and the project `CLAUDE.md` marker, not the original user's home. Both entrypoints use the same derived ROOT and `data/temporal_multikey_memory`; full extraction traverses the entire selected cohort and the reader follows it in the same job. Existing cached metadata, if present, would be reused, so freshness depends on remote state rather than a launcher force-delete.
+
+A read-only SSH shell check during this review observed hostname `sc448960`, user `junyi`, with both `/home/junyi/Hate-follow-up/data/temporal_multikey_memory` and `runs/20261006_m1_merit/r1_full_main` absent. Thus the planned main starts with no existing MERIT source cache or main paired records at that observation time. No source cache was deleted or created by this check. Slurm's parent log directory must already exist before submission, as in the existing launch procedure.
+
+Limits: author-reported native-five, full-input/runtime and lab3 pilot success were not rerun or independently reinterpreted here. Empty-cache state is a point-in-time observation, not enforced by the script. This PASS confirms only launch configuration, cohort routing and failure propagation; no GPU task, GT, real prediction values or metrics were accessed. The foreign `experiments/20260926_twolevel` README and gaussian-check files were untouched.
