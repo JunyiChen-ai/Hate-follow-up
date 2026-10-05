@@ -15,8 +15,10 @@
   "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actual8Bfixed5 DONElab3/152 andBOTHreturned; samebackend localnoGT/allraw/G/S/position/5clonePASS;158Vchanged; whole333ready",
+  "state": "Actual fixed5 local noGT PASS; full333 same R1 running onsc474398/Slurm153, no mainGT or metrics yet",
   "smoke_job": 152,
   "smoke_pass": true,
-  "smoke": "runs/20261005_m1_ttf/r1_full_smoke_analysis/plumbing_summary.json"
+  "smoke": "runs/20261005_m1_ttf/r1_full_smoke_analysis/plumbing_summary.json",
+  "main_job": 153,
+  "selected_host": "sc474398"
 }

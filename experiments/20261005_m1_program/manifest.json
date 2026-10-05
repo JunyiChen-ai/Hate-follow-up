@@ -31,7 +31,7 @@
     "GPU_run": true,
     "smoke_pass": true,
     "smoke_job": 134,
-    "state": "R1 main completed, returned and evaluated; R2 declared, no R2 GPU execution yet",
+    "state": "R1 full333 returned and evaluated; R2 full333 also returned/evaluated; R3 fixed5 queued onsamehost",
     "allocator": "expandable_segments:True",
     "allocator_review": "docs/reviews/20261005_m1_program_handle_allocator_fix.md",
     "failed_attempt_seconds": 175,
@@ -48,7 +48,7 @@
   "result_guided_revisions_used": 2,
   "R2": {
     "revision": 1,
-    "state": "Actual fixed5 PASS; same complete333 R2 freshly paired running onsc474398/Slurm150; no R2 metrics yet",
+    "state": "Actual fixed5/full333 local PASS; performance FAIL, HMMwithin+.015404 retained",
     "error_analysis": "runs/20261005_m1_program/r1_error_analysis/program_diagnostics.json",
     "source_cache": "data/temporal_evidence_program_handles",
     "cpu_checks": "runs/20261005_m1_program/available_cpu_checks/summary.json",
@@ -64,10 +64,12 @@
   "available_main_pass": true,
   "available_main_metrics": "runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json",
   "available_main_performance_pass": false,
-  "state": "R3 revision2/3 predeclared/full333source-token CPU andindependent36layer/sourceoracle PASS; actual8Bfixed5 pending",
+  "state": "R3 revision2/3 CPU andindependentcode PASS; fixed5 submittedsc474398/Slurm154, queuedbehindTTF153",
   "resolved_cpu_checks": "runs/20261005_m1_program/resolved_cpu_checks/summary.json",
   "resolved_cpu_pass": true,
   "resolved_implemented": true,
   "resolved_code_pass": true,
-  "resolved_code_review": "docs/reviews/20261005_m1_program_resolved_action_code.md"
+  "resolved_code_review": "docs/reviews/20261005_m1_program_resolved_action_code.md",
+  "resolved_smoke_job": 154,
+  "resolved_GPU_submitted": true
 }
