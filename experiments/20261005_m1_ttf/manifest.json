@@ -12,8 +12,11 @@
   "cpu_checks": "runs/20261005_m1_ttf/cpu_checks/summary.json",
   "full_input_preflight": "runs/20261005_m1_ttf/full_input_preflight/summary.json",
   "GT_read": false,
-  "GPU_run": false,
+  "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Full333 realinputs andindependentcode/CPU PASS; actual8B fixed5 pending"
+  "state": "Actual8Bfixed5 DONElab3/152 andBOTHreturned; samebackend localnoGT/allraw/G/S/position/5clonePASS;158Vchanged; whole333ready",
+  "smoke_job": 152,
+  "smoke_pass": true,
+  "smoke": "runs/20261005_m1_ttf/r1_full_smoke_analysis/plumbing_summary.json"
 }

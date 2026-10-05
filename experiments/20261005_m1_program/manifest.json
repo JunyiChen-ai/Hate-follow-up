@@ -45,7 +45,7 @@
     "main_job": 137,
     "main_pass": false
   },
-  "result_guided_revisions_used": 1,
+  "result_guided_revisions_used": 2,
   "R2": {
     "revision": 1,
     "state": "Actual fixed5 PASS; same complete333 R2 freshly paired running onsc474398/Slurm150; no R2 metrics yet",
@@ -64,5 +64,10 @@
   "available_main_pass": true,
   "available_main_metrics": "runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json",
   "available_main_performance_pass": false,
-  "state": "R2 full333 DONEreturned/noGT/native allraw/all6PASS; within+.015404/+.003635, commonperformanceFAIL; actualerroranalysisdone, remaining2revisions"
+  "state": "R3 revision2/3 predeclared/full333source-token CPU andindependent36layer/sourceoracle PASS; actual8Bfixed5 pending",
+  "resolved_cpu_checks": "runs/20261005_m1_program/resolved_cpu_checks/summary.json",
+  "resolved_cpu_pass": true,
+  "resolved_implemented": true,
+  "resolved_code_pass": true,
+  "resolved_code_review": "docs/reviews/20261005_m1_program_resolved_action_code.md"
 }

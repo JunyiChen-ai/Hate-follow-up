@@ -16,7 +16,7 @@
   "smoke_pass": false,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "B fixed5 Slurm142 DONE/BOTH returned/local noGT PASS; full333 Slurm146 running sc474399",
+  "state": "R1B main146 schedulingcheckpoint CANCELLEDbyagent2:56:43; completeatomicinputs/runsreturned, originalmainresumeafterlowercostM1measurements; noGT/performance",
   "smoke_job": 138,
   "selected_host": "sc474399",
   "A_smoke_job": 138,
@@ -36,5 +36,9 @@
   "B_source_exercise_pass": true,
   "B_smoke_summary": "runs/20261005_m1_provenance/r1_handles_full_smoke_analysis/plumbing_summary.json",
   "B_main_job": 146,
-  "B_main_dispatched": true
+  "B_main_dispatched": true,
+  "main_checkpoint_job": 146,
+  "main_running": false,
+  "main_checkpoint": true,
+  "complete_local_source_metadata": 64
 }

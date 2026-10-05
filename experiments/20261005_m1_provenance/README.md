@@ -418,3 +418,7 @@ remains pending. Same complete333 onlab2 next; no shard/corpus-specific changes.
 ## Current dispatch2026-10-05
 
 After the declared B fixed5 source/native/repeat guard PASS and actual machine check, full333 B submitted onsc474399/Slurm146, same committed native/graph code. It acquires then reads complete videos on one host; all partial/final costs preserved. NoGT/performance conclusion yet. Machine evidence `runs/20261005_m1_provenance/machines_before_handles_main.txt` and `_note.txt`.
+
+## Scheduling checkpoint2026-10-05
+
+SourceR1B job146 onsc474399 cancelledbytheagent at14:32:51 afteractual2:56:43 allocation to prioritizealreadyreviewed lower-newcall TTF andpositive Program revisions underglobalQOS2. This is a schedulingcheckpoint, not a sourceinterface/performanceFAIL orideaarchive. Atomic per-video metadata makes completedinputs reusable through originalextract_handles.py exists+completevalidation path. BOTH partialinputs/runs immediatelyreturnedlocally, authority `runs/20261005_m1_provenance/{checkpoint_146.txt,return_checkpoint_inputs_146.log,return_checkpoint_runs_146.log}`. Locally64 completecachemetadata; latestsource/runlog retained. In-progress uncachedvideo mustrecompute onresume; noGT/mainperformance. OriginalB/source/version/constants/full333onlab2 unchanged; resume originalmain sbatch aftercheapermeasurements. 146actualallocatedwall2:56:43 separatelyrecorded, not hiddenascompletecost.
