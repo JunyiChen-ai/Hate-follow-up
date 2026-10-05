@@ -158,6 +158,8 @@ Program23最终R4完整333/sc474398/Slurm181已完成回传与统一评测，原
 
 OTT180完整333的源重放线程问题已完成作者和独立窄确认：同原production4线程下全部333份实际保存特征重算的完整plan逐值相同，不放宽任何guard。独立来源`docs/reviews/20261005_m1_ott_replay_thread_fix.md`；全部inputs/runs已回传，noGT fullprepare/currentinputs/native allraw PASS，canonical全六项/固定r6评测恢复运行。无性能或机制结论。
 
+空间搜索31完整333已在sc474398提交Slurm192：172缺失HMM原视频已从本机补齐，全部333实际resolve/PyAV首帧PTS与shape验证PASS，不复用lab2固定5来源、完整来源与读取本轮同lab3。来源`runs/20261005_m1_spatial_search/{lab3_raw_coverage.json,machines_before_main.txt,machines_before_main_note.txt}`，四实验室0b6d7c5 clean/synced、旧foreign STRAY逐行未变。原独立核验27已在sc474397重新提交完整333 Slurm193，192优先入队；之前185取消时实际0秒，未改数据/spec或科研版本。两项正常等待168/186预算。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。

@@ -11,7 +11,7 @@
   "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actualfixed5 Slurm184DONE/local strictnoGT currentpixels/token/5clones/nativeallrawPASS; complete333 prepared onlab3 after missingrawtransfer, allsource fresh there",
+  "state": "Fixed5actual source/reader/currentpixels/nativeallraw/5clonePASS; fresh all333 source+reader on SAME lab3 queued192 after actual rawcoveragePASS",
   "cpu_pass": true,
   "full_input_preflight": "runs/20261005_m1_spatial_search/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -23,5 +23,9 @@
   "smoke_pass": true,
   "smoke_returned": true,
   "smoke_summary": "runs/20261005_m1_spatial_search/r1_full_smoke_analysis/plumbing_summary.json",
-  "native_allraw_exact": true
+  "native_allraw_exact": true,
+  "main_job": 192,
+  "main_submitted": true,
+  "main_running": false,
+  "main_selected_host": "sc474398"
 }

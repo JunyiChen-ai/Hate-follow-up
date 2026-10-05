@@ -234,3 +234,6 @@ synchronization/current machine check; no GT/main metrics or mechanism controls.
 
 
 空间搜索31固定5/sc474399/Slurm184于22:15:48 DONE，runs及sourcecache均已立即回传，本机samebackend noGT prepare PASS：native allraw/G/S/source pixels/coords及5clone精确，HMM/HCS真实FOUND和变化V为78/54；来源`runs/20261005_m1_spatial_search/r1_full_smoke_analysis/plumbing_summary.json`。计划在空闲sc474398完整重算333全部来源与读取，不复用lab2五视频source以保证本轮整体同机；172缺失原视频正由本机补齐，原帧/spec不变。原核验185仍PENDING/0秒，因较低调用空间搜索优先而取消待重新排入，不是idea裁定或目标暂停。
+
+
+空间搜索31完整333已在sc474398提交Slurm192：172缺失HMM原视频已从本机补齐，全部333实际resolve/PyAV首帧PTS与shape验证PASS，不复用lab2固定5来源、完整来源与读取本轮同lab3。来源`runs/20261005_m1_spatial_search/{lab3_raw_coverage.json,machines_before_main.txt,machines_before_main_note.txt}`，四实验室0b6d7c5 clean/synced、旧foreign STRAY逐行未变。原独立核验27已在sc474397重新提交完整333 Slurm193，192优先入队；之前185取消时实际0秒，未改数据/spec或科研版本。两项正常等待168/186预算。
