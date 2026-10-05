@@ -1,0 +1,15 @@
+{
+  "candidate_number": 33,
+  "rank": 6,
+  "date": "2026-10-06",
+  "proposal": "experiments/20261006_m1_merit/README.md",
+  "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
+  "proposal_pass": true,
+  "implemented": false,
+  "code_pass": false,
+  "GPU_run": false,
+  "GT_read": false,
+  "performance_result": null,
+  "result_guided_revisions_used": 0,
+  "state": "Actualpaper/officialkey/index/filter/agent/embeddingread; frozen singlemodel wrapper/MaxSim/source-ID filter/two-round spec, prototype pending"
+}

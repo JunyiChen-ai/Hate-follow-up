@@ -1,0 +1,32 @@
+{
+  "version": "R1 completeMERIT functional singleQwen adaptation; sources2026-10-06",
+  "seed": 0,
+  "native_frames": 20,
+  "window_seconds": 8,
+  "source_frames_per_window": 2,
+  "caption_key_generation_tokens": 128,
+  "filter_generation_tokens": 96,
+  "caption_words": 16,
+  "caption_tokens": 32,
+  "key_words": 8,
+  "key_tokens": 16,
+  "query_words": 12,
+  "query_tokens": 24,
+  "key_order": [
+    "event",
+    "dialogue",
+    "object",
+    "summary"
+  ],
+  "retrieval_anchors": 2,
+  "neighbor_radius": 1,
+  "candidates_per_round": 4,
+  "max_remote_windows": 4,
+  "max_rounds": 2,
+  "embedding_epsilon": 1e-12,
+  "embedding_pool": "mean FP32 lastlayer nonspecial tokens overlapping exactuser-content character offsets; normalize L2",
+  "embedding_system": "Represent the supplied observable video content for semantic retrieval. Do not classify hate or infer unprovided facts.",
+  "query_prefix": "Observable context of this window:",
+  "caption_system": "Read only observable actions, literal speech, objects/states and coarse scene context in the provided current frames and ASR. Produce a short caption and four retrieval keys; no hate judgment, inferred intent, identity or group membership.",
+  "filter_system": "Select only supplied actual source IDs whose observed captions or literal speech can clarify the current observable context. Do not invent or output evidence content. Return SUPPORTED, INSUFFICIENT or UNKNOWN, source IDs and only if INSUFFICIENT a new query. Remote events are context at their own times, not current events."
+}
