@@ -1,3 +1,5 @@
+**归档第28项：完整333 R1无任一主指标提升≥.01，HMM PR退化超过噪声；按规则9不跑修订/控制GPU。**
+
 # Candidate36: query-relevant events and representative background sources
 
 Original unchanged nine-candidate pool C9/rank9, once-only independent proposal
@@ -105,3 +107,9 @@ Full333 scheduling declaration: aftersamefixed5PASS, select now-idle sc474398,1.
 Freshcomplete333/sc474398 submitted214 afterall4 committed3016995 match/unchanged foreignwork/STRAY/emptycandidatecache/1.3Tfree, evidence`machines_before_main{,_note}.txt`. NormalQOS waiting thenRUNNING after209; whole source+reader all333 samehost, sameoriginalR1 version/spec/guard. No mainGT/metrics.
 
 Complete333/sc474398/Slurm214 COMPLETED2026-10-06 11:50:47, elapsed2:34:07/0:0; BOTH wholefreshsourcecache andruns returned ROOT before result/status claims. Originalfive/sc448960 source saved at data/temporal_query_events_smoke_sc448960 before overwriting standardcache with freshwholemain; main does not splice pilot inputs/margins. CachePROVENANCE records generating host/date/commands/readable paths. ROOT matchingruntime strictprepare then canonicalall6/fixedr6 running; no mainperformance/GT claim yet.
+
+## Final complete R1 outcome and destination
+
+Full333/sc474398/214 BOTH returned; matchingruntime strict currentraw/PTS/pixels/source-selection/caption/background/input/nativeallraw/G PASS, paired native canonical six metrics exactly equal currentr6. Authority `runs/20261006_m1_videoevent/r1_full_main_decoded/optimized/metrics.json`: HateMM ROC/PR/within .895782100769/.679467477326/.749919032928 (84/215); HateClipSeg .722113988793/.670560196809/.633512239814 (99/118). Deltas HMM −.001336561/−.014767126/−.000863011; HCS +.005289125/−.000511888/−.003836874. All development-selected. No same-primary dualgain and no individual+.01; HMM PR exceeds allowableloss. Rule9 archive28 directly, noR2/no fullmechanism controls or salvage.
+
+Real acquisition/read execution was verified (1471/1762 eventpackets andchangedV, 1146/1361changedS), but neither source selection nor representative background receives a mechanism claim from this negative main result. Actual new-video processing HMM59.225217/HCS62.111983minutes, total121.337200; includes source50.749848/54.012187minutes, all actualcaption/relevance/background/media/reader cost retained. Paired native9.149947minutes, new processing13.261fold; Slurm2:34:07 wallclock includes paired checking/source replay/I/O, not sole deployment estimate. Costauthority `r1_full_main_analysis/alignment.json`; all outputs/source origins remain locally readable. Canonical evaluator, GT/split/4fps/r6/commonconstants unchanged. Only canonical evaluation/report read test GT/metrics; no GT-driven redesign after this noqualifyinggain outcome. Currentmethod and autonomous goal unchanged.
