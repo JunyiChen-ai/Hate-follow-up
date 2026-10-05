@@ -249,3 +249,6 @@ Slurm168已在18:31:34越过原失败第117视频HMMnon_hate_video_356，完整1
 
 
 2026-10-06完整333来源的独立成本汇总已从本机每video metadata直接解析，不读GT/预测/metrics：`runs/20261005_m1_interval_witness/source_cost_audit/summary.json`。HMM215 source137.9096020220294min、3768leaf/3553parent/4repair；HCS118 source131.28529595768583min、3591leaf/3473parent/7repair，总269.1948979797152min。实际source forwards373788/355371、vision3772/3598、peak29.7964/22.2036GiB。此处只是完整来源获取，原缓存获取成本全部保留；配对reader尚未完成，不是完整部署成本/性能/机制证据。完整Slurm墙钟另包含输入重放/审计/配对及IO，不以冻结/缓存掩盖新视频成本。
+
+
+完整333 source+paired在本机sc474397/Slurm168于2026-10-06 04:20:55 DONE，Slurm COMPLETED9:58:58/0:0。旧HateVideo(av17.0.0) CPU prepare在6个HCS原始container origin=-.007（saved0）处严格失败，尚未GT/eval，原log保留`runs/20261005_m1_interval_witness/audit_runtime_fix/`。生成/推断HateVLM av18.1.0全333 header origin精确匹配；仅launcher prepare切换同生成runtime，evaluate/fixedr6/report仍原HateVideo，不改方法/缓存/预测/GT/评测器/对齐tolerance/成本/修订。独立窄确认PASS `docs/reviews/20261006_m1_interval_audit_runtime_fix.md`：6真实视频40,083帧metadata/383源pixels全部原严格validate PASS、旧runtime复现FAIL、prepare失败阻断GT评测保留。整轮prepare已按正确runtime重启；尚无main指标。

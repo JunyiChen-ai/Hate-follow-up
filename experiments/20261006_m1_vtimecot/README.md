@@ -96,3 +96,6 @@ native allraw/G/S及clone精确，完整input/pixel/token/PTS/检索/工具/成�
 
 
 实际8B固定5在sc474398提交Slurm206，source/paired reader整个固定5同机运行，正常等待168/186释放activeQOS2。派发前四机8db32c6一致/clean，原foreign STRAY逐行未变，lab3 idle/1.4T/固定5 raw header CPU实际解析PASS；完整333 raw此前在lab3已核验。来源`runs/20261006_m1_vtimecot/machines_before_smoke{,_note}.txt`及已回传本机的`lab3_smoke_raw_coverage.json`。尚未GPU/GT/性能。
+
+
+2026-10-06实际Slurm206固定5完成，source及runs均回传本机后才核对。Actualfixed5 BOTH returned; source/native allraw/G/S replay reached original tools guard FAIL; query fields capped, no actual queries/tools; narrow diagnosis/interface redesign needed, no GT/performance verdict。来源`runs/20261006_m1_vtimecot/r1_full_smoke_analysis/`，原失败/UNKNOWN/cap未改。此轮未GT/指标，不能裁定idea优劣或算性能修订。

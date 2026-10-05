@@ -103,3 +103,7 @@ crop/数量/支持长度而循环错绑时间；保持时间而错绑实际crop�
 
 
 文字跟踪32实际8B固定5已在完整原视频及fixedopencv均齐全的sc474398提交Slurm201；派发前四实验室8ad6a25一致/clean、既有foreign STRAY逐行未变，来源`runs/20261005_m1_text_tracking/machines_before_smoke{,_note}.txt`。唯一独立代码审查及作者科学CPU/输入均PASS，正常等待168/186用户GPU预算及更早空间搜索192；尚无该候选GPU/GT/性能结果。
+
+
+2026-10-06实际Slurm201固定5完成，source及runs均回传本机后才核对。Actualfixed5 BOTH returned; noGT strict source/native allraw replay reached original pixel-track execution guard FAIL; independent narrow diagnosis no observed implementation bug; interface not yet reliable, no performance verdict。来源`runs/20261005_m1_text_tracking/r1_full_smoke_analysis/`，原失败/UNKNOWN/cap未改。此轮未GT/指标，不能裁定idea优劣或算性能修订。
+独立窄接口诊断`docs/reviews/20261006_m1_text_tracking_gpu_interface_diagnosis.md`：全5当前输入/原生读数/源像素只读重放通过，14个raw TEXT的13个cap被正确拒绝（4个32words、9个64tokens）；唯一有效$600框实际在地面而非字形，映射正确、下一帧0/30角点拒绝正确。没有观察到实现bug，无法把cap都归因于newline或证明combined closure logits首选。保留原guard/UNKNOWN，不salvage/换cohort/强迫TEXT；接口设计需另行明确。

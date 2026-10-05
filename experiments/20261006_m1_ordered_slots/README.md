@@ -90,3 +90,6 @@ Rule9：无任一+.01直接归档；有单项信号先记录真实test error ana
 
 
 实际8B固定5已在sc474398提交Slurm205，等待现有168/186释放实验室active QOS2预算。派发前四机da6668b一致/clean，既有foreign STRAY逐行未变；lab3实际固定5 raw header解析PASS且完整333原始视频已核验。来源`runs/20261006_m1_ordered_slots/machines_before_smoke{,_note}.txt`与`lab3_smoke_raw_coverage.json`（已回传本机）。source/paired reader固定5同机完整运行，无依赖链。尚未实际GPU/GT/性能。
+
+
+2026-10-06实际Slurm205固定5完成，source及runs均回传本机后才核对。Actualfixed5 BOTH returned; source/native allraw replay reached original remote-source guard FAIL; all caption embeddings unavailable, no remote; narrow diagnosis/interface redesign needed, no GT/performance verdict。来源`runs/20261006_m1_ordered_slots/r1_full_smoke_analysis/`，原失败/UNKNOWN/cap未改。此轮未GT/指标，不能裁定idea优劣或算性能修订。

@@ -8,11 +8,11 @@
   "implemented": true,
   "code_pass": true,
   "cpu_pass": true,
-  "GPU_run": false,
+  "GPU_run": true,
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actual8Bfixed5 queued201; author fullinputs/scientificCPU and uniqueindependentcodePASS, no actualGPU/GT",
+  "state": "Actualfixed5 BOTH returned; noGT strict source/native allraw replay reached original pixel-track execution guard FAIL; independent narrow diagnosis no observed implementation bug; interface not yet reliable, no performance verdict",
   "tracker_core_implemented": true,
   "tracker_cpu_checks": "runs/20261005_m1_text_tracking/tracker_cpu_checks/summary.json",
   "tracker_cpu_pass": true,
@@ -31,5 +31,7 @@
   "code_review": "docs/reviews/20261006_m1_text_tracking_code.md",
   "smoke_job": 201,
   "GPU_submitted": true,
-  "selected_host": "sc474398"
+  "selected_host": "sc474398",
+  "smoke_complete": true,
+  "smoke_pass": false
 }

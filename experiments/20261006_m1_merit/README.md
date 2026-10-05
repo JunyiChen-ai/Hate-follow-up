@@ -97,3 +97,7 @@ MERIT33一次独立Rule6代码审查PASS，来源`docs/reviews/20261006_m1_merit
 
 
 MERIT33 actual8B固定5已在sc474398提交Slurm202，正常排在较低调用192/201之后等待168/186预算；派发前四实验室e611276一致/clean、既有foreign STRAY逐行未变，来源`runs/20261006_m1_merit/machines_before_smoke{,_note}.txt`。唯一独立code与作者输入/科学CPU均PASS；无该候选实际GPU或GT/性能结果。
+
+
+2026-10-06实际Slurm202固定5完成，source及runs均回传本机后才核对。Actualfixed5 BOTH returned; samebackend fullsource/native allraw/G/10clones/real remoteV+S execution guard PASS; main ready, no GT/performance。来源`runs/20261006_m1_merit/r1_full_smoke_analysis/`，原失败/UNKNOWN/cap未改。此轮未GT/指标，不能裁定idea优劣或算性能修订。
+实际smoke HMM/HCS remote窗84/50、新V96/62、新S83/50、V/S clones3/2各精确；新处理210.02/124.06s，共334.08s包含完整source178.51/107.80s。原20native/allraw/G精确。按7359/158窗比例主轮约4.32GPUhours为开发期线性估计，不是实测；原24.5–73.6h粗估保留，不抄作实际成本。唯一数字出处`runs/20261006_m1_merit/r1_full_smoke_analysis/plumbing_summary.json`。

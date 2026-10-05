@@ -6,11 +6,11 @@
   "proposal_pass": true,
   "implemented": true,
   "code_pass": true,
-  "GPU_run": false,
+  "GPU_run": true,
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actual8Bfixed5 queued206 on lab3, entire source+reader samehost; no GT/performance",
+  "state": "Actualfixed5 BOTH returned; source/native allraw/G/S replay reached original tools guard FAIL; query fields capped, no actual queries/tools; narrow diagnosis/interface redesign needed, no GT/performance verdict",
   "core_implemented": true,
   "cpu_pass": true,
   "full_input_preflight": "runs/20261006_m1_vtimecot/full_input_preflight/summary.json",
@@ -21,5 +21,7 @@
   "code_review": "docs/reviews/20261006_m1_vtimecot_code.md",
   "smoke_job": 206,
   "GPU_submitted": true,
-  "selected_host": "sc474398"
+  "selected_host": "sc474398",
+  "smoke_complete": true,
+  "smoke_pass": false
 }

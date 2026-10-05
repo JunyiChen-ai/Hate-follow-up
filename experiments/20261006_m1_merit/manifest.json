@@ -7,11 +7,11 @@
   "proposal_pass": true,
   "implemented": true,
   "code_pass": true,
-  "GPU_run": false,
+  "GPU_run": true,
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actual8Bfixed5 queued202 afterlowercall192/201; fullprototype/authorCPU+uniqueindependentcodePASS, no actualGPU/GT",
+  "state": "Actualfixed5 BOTH returned; samebackend fullsource/native allraw/G/10clones/real remoteV+S execution guard PASS; main ready, no GT/performance",
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_merit/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -22,5 +22,7 @@
   "code_review": "docs/reviews/20261006_m1_merit_code.md",
   "smoke_job": 202,
   "GPU_submitted": true,
-  "selected_host": "sc474398"
+  "selected_host": "sc474398",
+  "smoke_complete": true,
+  "smoke_pass": true
 }
