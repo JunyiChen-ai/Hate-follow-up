@@ -5,15 +5,20 @@
   "proposal": "experiments/20261005_m1_text_tracking/README.md",
   "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
   "proposal_pass": true,
-  "implemented": false,
+  "implemented": true,
   "code_pass": false,
   "cpu_pass": false,
   "GPU_run": false,
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Frozen spec + actualpixelPyrLK core/8synthetictransformchecksPASS; source decoder/OCR/controller/reader incomplete, no GPU/GT",
+  "state": "Complete prototype/canonical orchestration/full333input/36layer sourceimageCPU/knownpixel-controller/token checks PASS; independent onceRule6 review pending, noGPU/GT",
   "tracker_core_implemented": true,
   "tracker_cpu_checks": "runs/20261005_m1_text_tracking/tracker_cpu_checks/summary.json",
-  "tracker_cpu_pass": true
+  "tracker_cpu_pass": true,
+  "full_input_preflight_pass": true,
+  "full_input_preflight": "runs/20261005_m1_text_tracking/full_input_preflight/summary.json",
+  "model_cpu": "runs/20261005_m1_text_tracking/model_cpu_checks/summary.json",
+  "controller_cpu": "runs/20261005_m1_text_tracking/controller_cpu_checks/summary.json",
+  "token_cpu": "runs/20261005_m1_text_tracking/token_cpu_checks/summary.json"
 }

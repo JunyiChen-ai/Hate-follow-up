@@ -164,6 +164,8 @@ OTT30完整333/sc474398/Slurm180全部inputs/runs回传、线程等价重放与�
 
 候选32像素跟踪的文字发生记忆沿九池C3/rank5一次proposal PASS，已实际读VideoAgent/LELA/官方OpenCV；PyrLK/前后向/外观/失配重观察/发生查询及全部常数已事前冻结，入口`experiments/20261005_m1_text_tracking/README.md`。原型待实现，未CPU/GPU/GT，无性能结论；目标仍未完成。
 
+2026-10-06文字发生记忆32完整prototype/actual333input/36层source-image CPU与pixel/controller/token grammar检查PASS；一次必要独立代码审查正在进行，未GPU/GT。来源图25原失败长视频non_hate_video_356的完整source已成功并回传本机，最大LINK62303tokens/1987输出，容量证据`runs/20261005_m1_provenance/link_mlp_memory_fix/actual_long_source_capacity.json`；原B完整333 Slurm186继续获取，尚无主性能裁定。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。

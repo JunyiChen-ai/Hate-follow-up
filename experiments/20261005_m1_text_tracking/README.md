@@ -91,3 +91,6 @@ crop/数量/支持长度而循环错绑时间；保持时间而错绑实际crop�
 
 
 原型开始：CPU PyrLK/前后向/固定角点/原图整数平移/初始crop外观/cut已实现，OpenCV4.13.0.92仅安装到隔离HateVLM（Torch/HF未改）。8项已知合成像素变换检查PASS，actual[3,2]位移和真实crop逐值相同、40/40角点通过，来源`runs/20261005_m1_text_tracking/tracker_cpu_checks/summary.json`。仅synthetic pixel transforms，未OCR/模型/GT/性能；来源解码、typed文字、发生控制器及新V尚待完成。原图平移以原坐标整数round位移落框、固定OpenCV CPU1thread/seed0；不是常数扫描。
+
+
+2026-10-06完整source/typed文字/发生控制器/newV及canonical orchestration原型已接好。整次或单字段达cap均UNKNOWN，未完成JSONescape只关闭语法、该字段始终UNKNOWN，不作为观测；不忽略标点/引号。实际tokenizer引号/反斜杠/换行/中文/wordcap/wholecap及完整grammar replay检查PASS；已知像素/外部recognition fixture的变化不改过去支撑、cut结束、重现新ID、两次预算、真实endpoint crop检查PASS，范围明示不是OCR准确率/模型分数。完整333当前raw header/JPEG/ASR/native processor三轴输入检查PASS；实际36层FP32/BF16×18/20frame source-image cached/uncached reference/clone/所有KV/native replay和像素变化进入分数PASS，沿既有shared helper事前1e-4/.025容差，最大BF16 .006696。全部权威文件在manifest所列runs路径。独立一次Rule6审查待进行，尚未GPU/GT。
