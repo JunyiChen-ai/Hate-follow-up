@@ -1,6 +1,6 @@
 {
   "date": "2026-10-05",
-  "role": "Interface A actualfixed5 noGT guard FAIL retained; interface B actualfixed5 noGT PASS; memory-only fix independently confirmed, source-only capacity check next; no GT/performance",
+  "role": "R1 B full333 completed and returned; positive HMM within .019006, common dual metric FAIL; R2 source-availability fallback declared before execution",
   "proposal": "experiments/20261005_m1_program/README.md",
   "proposal_review": "docs/reviews/20261005_m1_program_proposal.md",
   "proposal_pass": true,
@@ -10,9 +10,9 @@
   "actual_source_checks": "runs/20261005_m1_program/cpu_source_preflight/summary.json",
   "code_review": "docs/reviews/20261005_m1_program_code.md",
   "code_pass": true,
-  "GT_read": false,
+  "GT_read": true,
   "GPU_run": true,
-  "performance_result": null,
+  "performance_result": "runs/20261005_m1_program/r1_handles_full_main_analysis/summary.json",
   "constants_declared_before_run": true,
   "selected_host": "sc474398",
   "smoke_host": "sc474398",
@@ -31,7 +31,7 @@
     "GPU_run": true,
     "smoke_pass": true,
     "smoke_job": 134,
-    "state": "Full333 same B acquisition and paired native/new scoring running onsc474398/Slurm137; fixed5 and whole longest source noGT PASS; no performance yet",
+    "state": "R1 main completed, returned and evaluated; R2 declared, no R2 GPU execution yet",
     "allocator": "expandable_segments:True",
     "allocator_review": "docs/reviews/20261005_m1_program_handle_allocator_fix.md",
     "failed_attempt_seconds": 175,
@@ -42,6 +42,17 @@
     "factual_source_audit": "runs/20261005_m1_program/handle_smoke_input_audit/summary.json",
     "capacity_job": 136,
     "capacity_validation": "runs/20261005_m1_program/handle_capacity_validation/summary.json",
-    "main_job": 137
+    "main_job": 137,
+    "main_pass": false
+  },
+  "result_guided_revisions_used": 1,
+  "R2": {
+    "revision": 1,
+    "state": "Implemented; author all333 source/token PASS and independent narrow code PASS; actual8B smoke pending",
+    "error_analysis": "runs/20261005_m1_program/r1_error_analysis/program_diagnostics.json",
+    "source_cache": "data/temporal_evidence_program_handles",
+    "cpu_checks": "runs/20261005_m1_program/available_cpu_checks/summary.json",
+    "code_review": "docs/reviews/20261005_m1_program_available_facts_code.md",
+    "code_pass": true
   }
 }

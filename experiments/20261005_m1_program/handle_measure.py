@@ -26,8 +26,19 @@ from program import canonical,branch_record,EVIDENCE_HEADER
 def tick():torch.cuda.synchronize();return time.perf_counter()
 
 
-def question(executed,i,n,a,b,body,kind):
+def usable_record(rec,kind):
+    """Source-field availability, never a score or corpus gate."""
+    for entry in rec['evidence']:
+        v=entry['value'];k=v['kind']
+        if kind=='visual' and (k=='join' or k=='action' and any(v[f]!='UNKNOWN' for f in ('actor','action','target'))):return True
+        if kind=='speech' and (k=='context' or k=='scope' and (v['speaker']!='UNKNOWN' or v['mode']!='UNKNOWN')):return True
+    return False
+
+
+def question(executed,i,n,a,b,body,kind,revision=1):
+    assert revision in (1,2)
     rec=branch_record(executed,kind)
+    if revision==2 and not usable_record(rec,kind):return yesno_question(i,n,a,b,body,kind),rec
     return EVIDENCE_HEADER+canonical(rec)+'\n'+yesno_question(i,n,a,b,body,kind),rec
 
 
@@ -47,7 +58,7 @@ def record(row,ctx,visual,speech,seconds,method):
 
 
 @torch.no_grad()
-def read_video(j,row,segments,metadata,smoke):
+def read_video(j,row,segments,metadata,smoke,revision=1):
     frames=frame_paths(row['dataset'],row['video_id'],20);wins=fixed_windows(float(row['duration']),8)
     first=j.forward_calls;torch.cuda.reset_peak_memory_stats();start=tick();cache,ctx=build(j,frames,segments)
     prefix_seconds=tick()-start;native={'visual':[],'speech':[]};new={'visual':[],'speech':[]}
@@ -60,11 +71,14 @@ def read_video(j,row,segments,metadata,smoke):
                 native[kind].append(None);new[kind].append(None);trace['branches'][kind]=dict(available=False,reason='native_no_speech');continue
             start=tick();native[kind].append(margin(j,cache,ctx,yesno_question(i,len(wins),a,b,body,kind)))
             times['native_'+kind]+=tick()-start
-            query,rec=question(w['execution'],i,len(wins),a,b,body,kind)
+            query,rec=question(w['execution'],i,len(wins),a,b,body,kind,revision)
             ids,suffix=j.branch_ids(ctx['msgs'],query,ctx['history'],head_text=ctx['head'])
             start=tick();z=margin(j,cache,ctx,query);times['new_'+kind]+=tick()-start;new[kind].append(z)
             t=dict(available=True,record=rec,question=query,suffix_text=suffix,suffix_ids=ids,margin=z,
                 cache_tokens_restored=cache.get_seq_length()==ctx['stance_cache_tokens'],rope_restored=torch.equal(j.model.model.rope_deltas,ctx['rope']))
+            if revision==2:
+                t['program_applied']=usable_record(rec,kind)
+                if not t['program_applied']:assert z==native[kind][-1]
             assert t['cache_tokens_restored'] and t['rope_restored']
             if smoke and kind not in checked:
                 start=tick();clone=copy.deepcopy(cache)
@@ -74,7 +88,7 @@ def read_video(j,row,segments,metadata,smoke):
             trace['branches'][kind]=t
         traces.append(trace)
     base=record(row,ctx,native['visual'],native['speech'],prefix_seconds+times['native_visual']+times['native_speech'],'m1_native')
-    optimized=record(row,ctx,new['visual'],new['speech'],metadata['standalone_seconds']+prefix_seconds+times['new_visual']+times['new_speech'],'m1_program_handles')
+    optimized=record(row,ctx,new['visual'],new['speech'],metadata['standalone_seconds']+prefix_seconds+times['new_visual']+times['new_speech'],'m1_program_handles' if revision==1 else 'm1_program_handles_available_facts')
     forwards=j.forward_calls-first;expected=base['calls']+optimized['calls']-3+diagnostics;assert forwards==expected
     checks=dict(dataset=row['dataset'],video_id=row['video_id'],GT_read=False,actual_forwards=forwards,
         diagnostic_forwards=diagnostics,diagnostic_seconds=times['diagnostic'],prefix_seconds=prefix_seconds,
@@ -90,11 +104,13 @@ def read_video(j,row,segments,metadata,smoke):
         peak_GiB=max(torch.cuda.max_memory_allocated()/2**30,metadata['peak_GiB']))
     detail=dict(dataset=row['dataset'],video_id=row['video_id'],segments=[list(s) for s in segments],cache_version=CACHE_VERSION,
         traces=traces,native_conversation=dict(msgs=ctx['msgs'],history=ctx['history'],head=ctx['head']))
+    if revision==2:detail['reader_revision']=revision
     del cache
     return base,optimized,checks,detail
 
 
 def validate_records(row,base,new,check,detail,metadata,renderer):
+    revision=detail.get('reader_revision',1);assert revision in (1,2)
     wins=fixed_windows(float(row['duration']),8)
     for r in (base,new):
         assert (r['dataset'],r['video_id'])==(row['dataset'],row['video_id'])
@@ -116,8 +132,11 @@ def validate_records(row,base,new,check,detail,metadata,renderer):
             branch=t['branches'][kind];available=kind=='visual' or bool(body.strip())
             assert branch['available']==available and ('z_'+kind in n)==available and ('z_'+kind in b)==available
             if available:
-                query,rec=question(m['execution'],i,len(wins),a,e,body,kind)
+                query,rec=question(m['execution'],i,len(wins),a,e,body,kind,revision)
                 assert branch['record']==rec and branch['question']==query and branch['margin']==n['z_'+kind]
+                if revision==2:
+                    assert branch['program_applied']==usable_record(rec,kind)
+                    if not branch['program_applied']:assert n['z_'+kind]==b['z_'+kind]
                 ids,text=renderer.branch_ids(c['msgs'],query,c['history'],head_text=c['head'])
                 assert branch['suffix_ids']==ids and branch['suffix_text']==text and branch['cache_tokens_restored'] and branch['rope_restored']
                 diagnostics+=branch.get('clone_exact',False)
@@ -147,8 +166,8 @@ def existing(path,expected):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
-    out=ROOT/'runs/20261005_m1_program'/('r1_handles_full_'+('smoke' if a.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--revision',type=int,choices=(1,2),default=1);a=ap.parse_args()
+    out=ROOT/'runs/20261005_m1_program'/(f'r{a.revision}_handles_full_'+('smoke' if a.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
     import transformers
@@ -156,6 +175,7 @@ def main():
         GT_in_reader=False,smoke=a.smoke,torch=torch.__version__,transformers=transformers.__version__,
         code='experiments/20261005_m1_program/handle_{interface,inputs,decoder,extract,measure}.py + original program.py + src/{stance_cache,mllm_judge,video_inputs}.py; sources2026-10-05',
         command='python -u '+' '.join(sys.argv))
+    if a.revision==2:cfg.update(reader_revision=2,readout='only available factual program evidence; otherwise fresh unchanged native question')
     cp=out/'config.json'
     if cp.exists():
         old=json.loads(cp.read_text());assert {k:v for k,v in old.items() if k!='date'}=={k:v for k,v in cfg.items() if k!='date'}
@@ -178,7 +198,7 @@ def main():
             assert detail['segments']==[list(s) for s in segments]
             validate_records(row,done['base'][key],done['optimized'][key],checks[key],detail,metadata,j)
             logging.info('%d/%d reuse %s/%s',i,len(rows),*key);continue
-        base,new,check,detail=read_video(j,row,segments,metadata,a.smoke)
+        base,new,check,detail=read_video(j,row,segments,metadata,a.smoke,a.revision)
         validate_records(row,base,new,check,detail,metadata,j)
         dd=out/'details'/key[0];dd.mkdir(parents=True,exist_ok=True);(dd/(key[1]+'.json')).write_text(json.dumps(detail)+'\n')
         for name,r in (('base',base),('optimized',new)):handles[name].write(json.dumps(r)+'\n')

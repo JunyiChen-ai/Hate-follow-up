@@ -11,16 +11,17 @@
   "cpu_checks": "runs/20261005_m1_interval_witness/cpu_checks/summary.json",
   "input_cache": "data/temporal_interval_witness",
   "GT_read": false,
-  "GPU_run": false,
-  "smoke_pass": false,
+  "GPU_run": true,
+  "smoke_pass": true,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "CPU/proposal/code PASS and actual native145 PASS; scientific fixed5 Slurm147 queued under QOSMaxGRESPerUser",
+  "state": "Actualfixed5 Slurm147 DONE; local noGT source/allraw/10repeat PASS; repairs0 retained, full333 pending",
   "result_guided_revisions_used": 0,
   "native_runtime_job": 145,
   "native_runtime_pass": true,
   "native_runtime_summary": "runs/_setup_local_hatevlm/native_smoke/summary.json",
   "source_guard_equivalence_review": "docs/reviews/20261005_structured_choice_prefix_guard.md",
   "smoke_job": 147,
-  "GPU_submitted": true
+  "GPU_submitted": true,
+  "smoke": "runs/20261005_m1_interval_witness/r1_full_smoke_analysis/plumbing_summary.json"
 }

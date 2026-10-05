@@ -217,3 +217,16 @@ bound is not an old-loop GPU/CPU timing measurement.
 ## Current dispatch2026-10-05
 
 Actual root native runtime145 PASS precedes scientific fixed5 submission147 onsc474397. Slurm147 is PENDING(QOSMaxGRESPerUser) behind running137/146; no scientific execution or semantic result inferred. Machine evidence `runs/20261005_m1_interval_witness/machines_before_smoke.txt` and `_note.txt`.
+
+Scientific fixed5 Slurm147 completed13:37:39 onsc474397. Root noGT prepare PASS,
+`runs/20261005_m1_interval_witness/r1_full_smoke_analysis/plumbing_summary.json`:
+all5/native allraw exact, all158V/134S changed,10actual repeated reads exact.
+Actual leaves96HMM/62HCS, parents93/60, repairs0/0, token caps0. Present leaves
+14/2, UNKNOWN79/52; no unresolved parents. These actual5 did not exercise repair;
+no forced disagreements or lowered guard, and no semantic truth/repair benefit
+claim. Global read changes in the declared new-tree method; native remains exact.
+Standalone739.085634sHMM+278.959479sHCS;25.24/21.07GiB peak. Actual long H114
+alone681.00s includes178.21s source. Smoke rough full378.38min excludes the long
+H114 extrapolation and is only a rough input-size estimate; actual full333 cost
+must be reported. No GT/main metrics or mechanism controls yet. Full tree
+capacity beyond these5 is unverified; retain all actual sources/UNKNOWN/costs.

@@ -517,3 +517,71 @@ whole source acquisition and paired native/new scoring stay onlab3. No labels
 in reader/acquisition, no performance conclusion until all333 return and the
 local canonical evaluator runs. Longest capacity/fixed5 caches reused only after
 current source/grammar/token execution replay; their actual incurred costs retained.
+
+
+Complete R1 B results (development-selected, 2026-10-05)
+
+Host sc474398/Slurm137 completed source333 at12:54:58 and paired333 at13:18:34;
+whole runs and source333 returned to sc474397 before canonical evaluation.
+Authority `runs/20261005_m1_program/r1_handles_full_main_decoded/optimized/metrics.json`:
+HateMM ROC/PR/within .8972189729166409/.6912739651813877/.7697881662815763 (84),
+HateClipSeg .7193770662555653/.6724209479708321/.6395515623972258 (99).
+Relative to current r6: HMM +.000100/−.002961/+.019006; HCS +.002552/+.001349/+.002202.
+No loss beyond declared noise, but no common dual-corpus +.01: performance FAIL.
+Preserve HMM within positive progress under rule9; zero result-guided revisions used.
+Native all raw reads and all six canonical metrics exact. Full source interpreter
+replay PASS, `complete_source_audit/summary.json`;7359 valid programs,11807 actual
+module calls,context/join0. Scope speaker/mode resolved only1HMM/3HCS; source
+existence and constrained fields are not semantic accuracy or mechanism evidence.
+Paired final within bootstrap CI includes0 in both; rawmax within decreases
+−.013625/−.013037, HMM rawvisual −.030462. No full mechanism controls yet.
+Cost authority `r1_handles_full_main_analysis/alignment.json`: new processing
+7474.809361sHMM +6554.825201sHCS =233.827243min, including219.254124min source
+acquisition, native550.047034s;25.50624x native. Source cached reads retain their
+actual acquisition time; no new local pixel samples beyond native frames20.
+
+Actual post-score error analysis and R2 declaration (before R2 execution)
+
+Read `runs/20261005_m1_program/r1_handles_full_main_analysis/per_video.json`,
+`r1_handles_full_main/{base,optimized}/predictions.jsonl`, all333
+`data/temporal_evidence_program_handles/<dataset>/*.json`, and
+`data/gt_4fps/{HateMM,HateClipSeg}.npz`. Exact case/window details and source
+counts in `runs/20261005_m1_program/r1_error_analysis/program_diagnostics.json`.
+HMM .012979 of the .019006 final within gain comes from videos whose rawmax
+within score did not change; this scalar diagnostic alone does not prove all
+ranks identical. Worst HMM H215/H295/H206 and HCS yt_SUwb0mNbqLk/bit_ckVu3UOtuy7O/
+bit_r7Am2yJu0HpG lose final .2195/.1620/.1568 and .3732/.2921/.1887 respectively.
+Actual window GT fractions and original/new V/S are retained for these cases.
+Many emitted scopes have UNKNOWN ownership/mode despite supplied target spans;
+actions can be all literal UNKNOWN or longer UNKNOWN-prefixed generation.
+Full333 has3768/3591 windows;2651/2351 visual windows contain an action with at
+least one field other than literal UNKNOWN, and only1/3 scopes resolve speaker
+or mode. This motivates removing unsupported record injection, not numeric
+calibration or labels in the new-video computation.
+
+R2 is source-availability fallback, revision1/3. Reuse exact immutable B source
+cache and execution, charge its complete original costs. For each branch:
+visual adds the original executed record iff it contains an action with at
+least one actor/action/target field not literal UNKNOWN or a valid actual join;
+speech adds it iff it contains a scope with speaker or mode not UNKNOWN, or a
+real context. Otherwise invoke a FRESH unchanged native question on the current
+native prefix+own stance. No historical score splicing, averaging, score gates,
+label access or corpus routing. This predicate does not treat UNKNOWN-prefixed
+nonliteral descriptions as UNKNOWN and does not certify factual truth.
+No additional numerical constants, prompts, model, source choices or M2–4 changes.
+All333 are freshly paired in the final R2 run. Smoke requires original allraw,
+clone/execution/factual guards and exact native margin on fallback queries;
+retaining zero resolved speech scopes is honest, not a reason to force activity.
+Expected fresh local reading cost approx25min plus complete219.25min acquisition
+cost for new333 (cached acquisition remains charged); source processing call
+counts unchanged. Actual cost and all six results determine rule9 disposition.
+
+R2 author full-source/current-token check PASS (333videos,7359windows,
+13939 original R1 branch queries/IDs exact):
+`runs/20261005_m1_program/available_cpu_checks/summary.json`.
+Visual application2651/2351, fallback1117/1240; speech application1/3,
+fallback3438/3138. Source-only counts, not scores or semantic correctness.
+Independent narrow confirmation PASS:
+`docs/reviews/20261005_m1_program_available_facts_code.md`; real36layerBF16 CPU
+fresh fallback/current prefix+stance, clone/crop/rope/calls,14predicate cases,
+5corruption rejections and fixed5 actualsource/token binding. 8B GPU R2 pending.

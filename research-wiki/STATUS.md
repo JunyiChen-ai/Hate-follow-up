@@ -90,6 +90,13 @@ B noGT prepare PASS，native allraw/G及10clone精确，实际126/91个结构有
 纯输入完整333大小审计发现plain最大的三个chunk展开约53k，超过fixed5；prefill内存生命周期修复及独立等价窄确认PASS，
 来源`docs/reviews/20261005_m1_program_handle_prefill_memory_fix.md`。Slurm136最长完整视频于09:17:59成功并回传，53,137实际tokens/29.03GiB；本机source/token重放PASS。
 来源`runs/20261005_m1_program/handle_capacity_validation/summary.json`；相同完整333 B已在sc474398/Slurm137启动；输入获取与配对native/new读取同机，无性能结论。
+候选23 R1 B完整333在sc474398/Slurm137于13:18:34完成，inputs/runs均已回传本机，native allraw/六项精确。
+HateMM ROC/PR/within .897219/.691274/.769788（84）、HCS .719377/.672421/.639552（99）；
+within+.019006/+.002202，其他损失在既定容差内，保留HMM正向进展；无同指标双语料+.01，performance FAIL。
+权威来源`runs/20261005_m1_program/r1_handles_full_main_decoded/optimized/metrics.json`；实际新处理233.83min/native25.51倍。
+程序/来源完整重放PASS但context/join均0，话语角色仅1/3窗解析；原始max within两语料下降，尚无机制结论。
+实际GT误差分析已记录，R2事前声明只有可用程序事实才加入证据，缺事实则重新调用原生分支；修订1/3，全333来源/token CPU和独立窄代码确认PASS，实际R2 GPU尚未执行。
+全部development-selected；事实/算法/成本/来源唯一明细为实验README。
 候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
 22已归档、23接口未可靠执行；24固定5在sc474399/Slurm131完成并回传本机，noGT prepare PASS。
 原生allraw精确、G/V不变、134新S变化、5clone/contextless检查通过；来源
@@ -110,8 +117,8 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 来源`runs/20261005_m1_provenance/source_interface_diagnosis/summary.json`；本机完整source/native验证及10repeat精确，随后声明guard失败；独立窄接口诊断确认未发现实际GPU实现bug；A源接口未可靠执行。事前声明独立B结构约束来源接口；实际fixed5 CPU来源/grammar replay与完整333 span输入预检PASS，独立窄代码确认PASS，最大实际source22image7701tokens/6550全部span保留；相同fixed5在sc474399/Slurm142于11:16:41完成，BOTH已回传本机；本机noGT native allraw/10repeat精确，原source guard PASS：HMM96有效ledger/51remote窗、HCS60/57（2wholecap拒绝保留），相同完整333 B已在sc474399/Slurm146运行，未读GT/无性能结论。来源`runs/20261005_m1_provenance/r1_handles_full_smoke_analysis/plumbing_summary.json`。
 来源`docs/reviews/20261005_m1_provenance_gpu_interface_diagnosis.md`；无机制结论。
 备用候选26区间来源见证组合/分歧触发重读，独立方案审查PASS；入口`experiments/20261005_m1_interval_witness/README.md`，科学代码及29项CPU检查/独立代码审查PASS，科学GPU尚未跑；来源`docs/reviews/20261005_m1_interval_witness_code.md`。
-本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，项目离线缓存缺口已通过现有完整本地模型symlink修复；Slurm145于11:24:58完成，原生fixed5全部G/stance/V/S逐值精确，来源`runs/_setup_local_hatevlm/native_smoke/summary.json`；科学fixed5已提交sc474397/Slurm147，PENDING(QOSMaxGRESPerUser)，科学代码尚未执行，无性能结论。
-备用候选27独立事实重观察/typed修订：原9池rank9最后一项，一次独立方案审查PASS；来源`docs/reviews/20261005_m1_verification_proposal.md`。完整factored CoVe四阶段功能迁移的target差异、来源归属与成本已事前声明；`experiments/20261005_m1_verification/README.md`及`spec.json`为入口，原型/33项CPU检查/唯一独立代码审查PASS，科学fixed5已提交sc474397/Slurm148，在147之后排队；尚未实际科学执行/未读GT。来源`docs/reviews/20261005_m1_verification_code.md`。
+本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，项目离线缓存缺口已通过现有完整本地模型symlink修复；Slurm145于11:24:58完成，原生fixed5全部G/stance/V/S逐值精确，来源`runs/_setup_local_hatevlm/native_smoke/summary.json`；科学fixed5在sc474397/Slurm147于13:37:39完成，本机noGT source/native allraw/10repeat PASS，158V/134S变化，修复次数0保留；完整333尚未跑/无性能结论。来源`runs/20261005_m1_interval_witness/r1_full_smoke_analysis/plumbing_summary.json`。
+备用候选27独立事实重观察/typed修订：原9池rank9最后一项，一次独立方案审查PASS；来源`docs/reviews/20261005_m1_verification_proposal.md`。完整factored CoVe四阶段功能迁移的target差异、来源归属与成本已事前声明；`experiments/20261005_m1_verification/README.md`及`spec.json`为入口，原型/33项CPU检查/唯一独立代码审查PASS，科学fixed5在sc474397/Slurm148实际运行，前两视频执行12/5次独立核验；尚未完整noGT验证/未读GT。来源`docs/reviews/20261005_m1_verification_code.md`。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，

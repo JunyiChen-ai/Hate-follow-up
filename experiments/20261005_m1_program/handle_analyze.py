@@ -38,6 +38,7 @@ def native_conversation(j,row,segments,stance):
 def prepare(root,out,smoke):
     j=cpu_renderer();rows=selected_rows(smoke);expected={(r['dataset'],r['video_id']):r for r in rows}
     cfg=json.loads((root/'config.json').read_text());assert cfg['GT_in_reader'] is False and cfg['smoke']==smoke
+    revision=cfg.get('reader_revision',1);assert revision in (1,2)
     records={name:existing(root/name/'predictions.jsonl',expected) for name in ('base','optimized')}
     checks=existing(root/'checks.jsonl',expected);assert all(r.keys()==expected.keys() for r in [*records.values(),checks])
     old=read(ROOT/'runs/20260926_glr/base_gridA/predictions.jsonl');asr={ds:load_asr(ds) for ds in DATASETS}
@@ -46,6 +47,7 @@ def prepare(root,out,smoke):
         segments=asr[key[0]].get(key[1],[]);metadata=json.loads((CACHE/key[0]/(key[1]+'.json')).read_text())
         validate(metadata,row,segments);validate_generations(j,metadata)
         detail=json.loads((root/'details'/key[0]/(key[1]+'.json')).read_text());base,new=records['base'][key],records['optimized'][key]
+        assert detail.get('reader_revision',1)==revision
         validate_records(row,base,new,checks[key],detail,metadata,j);assert detail['segments']==[list(s) for s in segments]
         conv,prefix,stance_suffix=native_conversation(j,row,segments,base['extra']['stance'])
         assert conv==detail['native_conversation'] and prefix==base['extra']['prefix_tokens']
@@ -135,8 +137,8 @@ def report(root,decoded,out):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True)
-    ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base','optimized'));a=ap.parse_args()
-    stem='r1_handles_full_'+('smoke' if a.smoke else 'main');root=ROOT/'runs/20261005_m1_program'/stem
+    ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base','optimized'));ap.add_argument('--revision',type=int,choices=(1,2),default=1);a=ap.parse_args()
+    stem=f'r{a.revision}_handles_full_'+('smoke' if a.smoke else 'main');root=ROOT/'runs/20261005_m1_program'/stem
     out=root.parent/(stem+'_analysis');out.mkdir(parents=True,exist_ok=True);decoded=root.parent/(stem+'_decoded')
     if a.stage=='prepare':prepare(root,out,a.smoke)
     elif a.stage=='evaluate':assert not a.smoke and a.name;evaluate(root,decoded,a.name)
