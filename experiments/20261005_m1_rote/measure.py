@@ -12,7 +12,7 @@ import time
 import numpy as np
 import torch
 from rote import ROOT, SPEC, IntervalAttention, prefix_sources, question_sources, source_intervals, coefficients, temporal_pairs
-from src.mllm_judge import Judge, MODEL, yesno_question
+from src.mllm_judge import Judge, MODEL, VIDEO_QUESTION, yesno_question
 from src.stance_cache import build, margin
 from src.video_inputs import load_manifest, load_asr, frame_paths, fixed_windows, window_text
 
@@ -118,6 +118,12 @@ def validate_bundle(row,b,segments,j,smoke):
     msgs,files=j.prefix_messages(frame_paths(row['dataset'],row['video_id'],20),segments)
     text,enc=j.encode_prefix(msgs,files)
     assert ctx['msgs']==msgs and prefix_sources(j,text,enc,segments)==b['prefix_sources']
+    qids,qtext=j.branch_ids(msgs,VIDEO_QUESTION,head_text=text)
+    aids,atext=j.answer_ids(msgs,VIDEO_QUESTION,ctx['stance'])
+    assert ctx['head']==text+qtext+atext
+    assert ctx['history']==[{'role':'user','content':[{'type':'text','text':VIDEO_QUESTION}]},j.turn('assistant',ctx['stance'])]
+    assert ctx['prefix_tokens']==enc['input_ids'].shape[1]
+    assert ctx['stance_cache_tokens']==ctx['prefix_tokens']+len(qids)+len(aids)
     assert source_intervals(b['prefix_sources'],segments)==b['prefix_source_intervals']
     from transformers import AutoConfig
     pairs,freq=temporal_pairs(AutoConfig.from_pretrained(MODEL,local_files_only=True).text_config)

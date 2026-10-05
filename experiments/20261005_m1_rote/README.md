@@ -70,3 +70,18 @@ token、所有36层随机缩小真实Qwen模型的独立full-forward数值参考
 
 规则9：无任一主指标+.01则归档；有则做实际test error analysis后最多三次
 修订。当前没有读取GT或预测来提出这个候选，后续全部结果标development-selected。
+
+## 作者检查2026-10-05
+
+完整333纯输入预检PASS：`runs/20261005_m1_rote/full_input_preflight/summary.json`。
+6580 speech窗、最长原生prefix5829/最长speech query756，最小C_r .6102832631696301。
+只读真实原ASR/JPEG/offset，没有模型权重/GPU/GT。原时间频率24对已逐值记录。
+真实36层、32/8头、FP32/BF16和18/20图像的作者CPU检查PASS：
+`runs/20261005_m1_rote/cpu_checks/summary.json`。闭式与数值积分误差<1e-6，
+四种fixture均72次独立scalar bias oracle、最大bias差0、native全部KV/margin精确、
+clone全部KV/margin精确、非ASR bias为0且原因果可见性保留，新margin实际改变。
+随机fixture BF16外除原生FP32 rotary频率buffer；这恢复HF默认显式FP32频率，
+不更改生产算法。初始custom attention未注册SDPA mask导致native缓存失败，已修复
+为复用原SDPA mask函数；boolean mask断言及随机fixture rotary cast问题也已修。
+全部初始失败日志保留，未放松科学数值门槛；尚未8B GPU执行。
+唯一独立规则6代码审查已交给与作者不同的原jury实例，不重开proposal审查。

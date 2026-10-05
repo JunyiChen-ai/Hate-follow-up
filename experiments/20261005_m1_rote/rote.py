@@ -131,6 +131,7 @@ class IntervalAttention:
     def __init__(self, j):
         from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
         from transformers.integrations.sdpa_attention import sdpa_attention_forward
+        from transformers.masking_utils import ALL_MASK_ATTENTION_FUNCTIONS
         self.j = j
         self.native_attention = sdpa_attention_forward
         self.config = j.model.config.text_config
@@ -148,6 +149,7 @@ class IntervalAttention:
         self.original_implementation = self.config._attn_implementation
         assert self.original_implementation == 'sdpa'
         ALL_ATTENTION_FUNCTIONS.register('interval_rote', self.dispatch)
+        ALL_MASK_ATTENTION_FUNCTIONS.register('interval_rote', ALL_MASK_ATTENTION_FUNCTIONS['sdpa'])
         self.config._attn_implementation = 'interval_rote'
         for number, layer in enumerate(self.layers):
             self.hooks.append(layer.self_attn.q_norm.register_forward_hook(

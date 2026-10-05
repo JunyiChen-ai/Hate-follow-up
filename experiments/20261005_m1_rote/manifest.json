@@ -5,13 +5,15 @@
   "proposal": "experiments/20261005_m1_rote/README.md",
   "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
   "proposal_pass": true,
-  "implemented": false,
+  "implemented": true,
   "code_pass": false,
   "GT_read": false,
   "GPU_run": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Prototype andwhole333source/offset/normalization preflightPASS; scientificCPUchecks/code reviewpending, noGPU/GT",
+  "state": "Scientificprototype/full333preflight/actual36layerCPU PASS; independentcode reviewactive, noGPU/GT",
   "full_input_preflight": "runs/20261005_m1_rote/full_input_preflight/summary.json",
-  "full_input_preflight_pass": true
+  "full_input_preflight_pass": true,
+  "cpu_checks": "runs/20261005_m1_rote/cpu_checks/summary.json",
+  "cpu_pass": true
 }
