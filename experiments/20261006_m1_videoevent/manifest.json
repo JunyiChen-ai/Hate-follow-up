@@ -6,11 +6,11 @@
   "proposal_pass": true,
   "implemented": true,
   "code_pass": true,
-  "GPU_run": false,
+  "GPU_run": true,
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Uniquecode/launch/input/native5 PASS; scientific samefixed5 ready, verified idle lane prioritizes positive IntervalR2 first; no candidate36 GPU/GT",
+  "state": "Scientific samefixed5 source+reader server212 running after matching native5; sources actualevents/BG acquired sofar, guard pending; no GT/performance",
   "cpu_pass": true,
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_videoevent/full_input_preflight/summary.json",
@@ -23,5 +23,8 @@
   "lab_server_launch_review": "docs/reviews/20261006_lab_server_runtime_launch.md",
   "lab_server_native_pass": true,
   "lab_server_native_job": 210,
-  "lab_server_native_summary": "runs/_setup_lab_server_hatevlm/native_smoke/summary.json"
+  "lab_server_native_summary": "runs/_setup_lab_server_hatevlm/native_smoke/summary.json",
+  "smoke_job": 212,
+  "selected_host": "sc448960",
+  "GPU_submitted": true
 }
