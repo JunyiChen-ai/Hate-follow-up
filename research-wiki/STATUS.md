@@ -728,3 +728,5 @@ logit 尺度。
 2026-10-06 actual反馈：26完整333 DONE、来源全部本机；时间原点差异为av17/18生成与审计runtime差异，仅prepare切换后原精确帧/像素条件保留、独立PASS，全轮核对重跑中。33固定5本机严格PASS；32/34/35固定5原执行guard FAIL，真实cap/UNKNOWN保留，未GT/指标/idea裁定。原192/193 own lab hold将按较低成本完整候选恢复；细节与权威路径在各实验README。
 
 空间搜索31原完整333作业192已释放并RUNNING/sc474398，短fixed5反馈已经BOTH回传；按smoke实测新处理成本选为下一完整候选，不评价尚未生成的主指标。33完整ready，27/193保留ownlabhold。来源实验README与本机释放机器检查/调度记录。
+
+有序事件槽34接口A实际caption全部不可用，独立窄诊断无实现偏离（153wordcap/4tokencap/1UNKNOWN）。显式B只增加模型可见12/6words结束指令，原caps/guard/科学计算不变，独立缓存/输出，默认A及原失败保留；作者CPU/独立窄确认PASS，来源`docs/reviews/20261006_m1_ordered_slots_interface_B_code.md`。同固定5 B actual8B ready，未GT/性能/预算重置。35窄diagnosis也无实现bug、全部query/reason触wordcap；来源对应review，尚未改guard/数据。

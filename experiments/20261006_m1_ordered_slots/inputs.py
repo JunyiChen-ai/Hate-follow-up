@@ -1,9 +1,9 @@
 """Original native and actual timed source observations, no labels."""
 import json
-from retrieval import ROOT,SPEC
+from retrieval import ROOT,SPEC,INTERFACE
 from src.video_inputs import load_manifest,fixed_windows,window_text
 DATASETS=('HateMM','HateClipSeg')
-CACHE=ROOT/'data/temporal_ordered_slots'
+CACHE=ROOT/('data/temporal_ordered_slots' if INTERFACE=='A' else 'data/temporal_ordered_slots_B')
 
 
 def selected_rows(smoke=False):

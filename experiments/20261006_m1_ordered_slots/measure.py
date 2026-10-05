@@ -151,7 +151,7 @@ def validate_bundle(row,b,segments,m,j,smoke):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
-    out=ROOT/'runs/20261006_m1_ordered_slots'/('r1_full_smoke' if a.smoke else 'r1_full_main');out.mkdir(parents=True,exist_ok=True)
+    out=ROOT/'runs/20261006_m1_ordered_slots'/('r1_full_smoke'+('_B' if SPEC.get('interface')=='B' else '') if a.smoke else 'r1_full_main'+('_B' if SPEC.get('interface')=='B' else ''));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler()])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
     import transformers

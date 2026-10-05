@@ -93,3 +93,14 @@ Rule9：无任一+.01直接归档；有单项信号先记录真实test error ana
 
 
 2026-10-06实际Slurm205固定5完成，source及runs均回传本机后才核对。Actualfixed5 BOTH returned; source/native allraw replay reached original remote-source guard FAIL; all caption embeddings unavailable, no remote; narrow diagnosis/interface redesign needed, no GT/performance verdict。来源`runs/20261006_m1_ordered_slots/r1_full_smoke_analysis/`，原失败/UNKNOWN/cap未改。此轮未GT/指标，不能裁定idea优劣或算性能修订。
+
+
+## R1来源接口B：事前声明，不是性能修订
+
+A完整固定5严格重放到原remote执行门失败：158 captions中153达到16word cap、4达到32token cap、1明确UNKNOWN，0可用caption索引；有效slot127但没有真实可检索caption源。独立窄诊断无实现偏离，不能宣称combined closing token是logits首选，原结果/失败日志/UNKNOWN不变。来源`docs/reviews/20261006_m1_ordered_slots_gpu_interface_diagnosis.md`。
+
+B只把原模型可见生成指令明确限制为caption最多12词、每个条件最多6词，要求立即结束JSON字段；原16/8word caps、32/16token caps、96/768whole caps、cap-to-UNKNOWN、所有source/当前input/remote执行守门全部不变。不salvage旧A，不换固定5，不强迫可用字段，不扩大模型调用/输入或改变有序选择/embedding/最终V/S/G/r6。明确字数指令是执行接口修复，不作科研贡献，也不重置方法预算；没有读GT/性能。
+
+B `spec_B.json`，通过`SOURCE_INTERFACE=B`选择；默认A仍精确读取原spec/cache。B独立`data/temporal_ordered_slots_B`及`source_smoke_B`/`r1_full_smoke_B`，杜绝替换A缓存。先作者源码/原A重放隔离检查和独立窄确认，再同一固定5 GPU。若仍不能真实执行，继续保留失败，不评价idea/不降低guard。
+
+B独立窄代码确认PASS，来源`docs/reviews/20261006_m1_ordered_slots_interface_B_code.md`：A全5真实source/currenttokens/pixels只读重放保持，B actualsynthetic80s video acquire/validate与真实tokenizer/processor/来源memory归属、A/B×smoke/main×extract/measure/analyze cache/raw/decoded/analysis路径隔离通过。不是新proposal或性能版本，不是B真实8B执行成功；同固定5 B GPU ready。

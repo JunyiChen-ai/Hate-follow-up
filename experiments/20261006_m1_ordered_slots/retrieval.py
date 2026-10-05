@@ -2,10 +2,12 @@
 import json
 from pathlib import Path
 import sys
+import os
 import numpy as np
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
-SPEC=json.loads((Path(__file__).parent/'spec.json').read_text())
+INTERFACE=os.environ.get('SOURCE_INTERFACE','A');assert INTERFACE in ('A','B')
+SPEC=json.loads((Path(__file__).parent/('spec.json' if INTERFACE=='A' else 'spec_B.json')).read_text())
 
 
 def assign(vectors,available,queries,current):

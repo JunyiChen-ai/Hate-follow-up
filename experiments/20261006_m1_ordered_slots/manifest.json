@@ -11,7 +11,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actualfixed5 BOTH returned; source/native allraw replay reached original remote-source guard FAIL; all caption embeddings unavailable, no remote; narrow diagnosis/interface redesign needed, no GT/performance verdict",
+  "state": "A actualinterfaceguard FAIL/noGT; explicitwordbounded B isolated/cache+outputs+defaultA, authorCPU/independentnarrow confirmation PASS; samefixed5 B GPU ready",
   "core_implemented": true,
   "full_input_preflight": "runs/20261006_m1_ordered_slots/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
@@ -25,5 +25,9 @@
   "GPU_submitted": true,
   "selected_host": "sc474398",
   "smoke_complete": true,
-  "smoke_pass": false
+  "smoke_pass": false,
+  "interface_B_declared": true,
+  "interface_B_cpu_pass": true,
+  "interface_B_code_pass": true,
+  "interface_B_code_review": "docs/reviews/20261006_m1_ordered_slots_interface_B_code.md"
 }

@@ -92,7 +92,7 @@ def validate(j,m,row,segments,folder):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
-    out=ROOT/'runs/20261006_m1_ordered_slots'/('source_smoke' if a.smoke else 'source_main');out.mkdir(parents=True,exist_ok=True)
+    out=ROOT/'runs/20261006_m1_ordered_slots'/('source_smoke'+('_B' if SPEC.get('interface')=='B' else '') if a.smoke else 'source_main'+('_B' if SPEC.get('interface')=='B' else ''));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler()])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(__import__('os').getpid()))
     import transformers
