@@ -8,7 +8,7 @@
 - **运行中**：来源图25，sc474399/186，HMM全215 source已齐、HCS来源继续获取。
 - MERIT33实际固定5/sc474398/202完成并BOTH回传，原执行守门PASS，完整333 ready。VideoEvent36同5/sc448960/212完成/BOTH回传，本机actualevents/BG/nativeallraw/G/V/Sclone守门PASS，完整333 ready；两者未GT/性能。
 - 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B独立确认PASS，同固定5已提交ROOT Slurm207，PENDING(QOSMaxGRESPerUser)。
-- **运行中**：空间搜索31原完整333/sc474398/192已释放own lab hold；按smoke实测较低处理成本先恢复，source及reader同机完整运行。
+- 空间搜索31完整source333已齐，sc474398/192 paired125后因model crop aspect366拒绝FAILED；BOTH已回传，旧smoke源保留，具体输入支持故障窄诊断中，未GT/性能。
 - **主agent调度持有**：事实核验27完整333/sc474397/193仍未启动，优先较低成本完整候选；方法版本/修订预算不变。
 - 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
 
@@ -745,3 +745,5 @@ sc448960 Slurm210实际native5在08:28:55 DONE/COMPLETED19s/0:0，全部原生G/
 26R2同原fixed5/sc448960/Slurm211于08:52:10 DONE/3:32/0:0并回传，本机samebackend noGT/source/global/nativeallraw/Sexact/158freshV/5repeat PASS；权威`runs/20261005_m1_interval_witness/r2_full_smoke_analysis/plumbing_summary.json`。原source成本全计，ROOT208零执行取消避免重复，同R2修订1/3 complete333 server ready，未mainGT/指标/机制。候选36科学同5/sc448960/212运行，原方法与guard不变；source实际event/background进入后仍需BOTHreturn/current/native读数核对，无GT/性能结论。
 
 26R2完整333/sc448960/213已运行（同原R2/code/常数/修订1/3；全部source原获取成本保留），未mainGT/指标。36同5/sc448960/212于08:55:50 DONE并BOTH回传，本机noGT/source/nativeallraw/G/5V+5Sclone/真实eventBG→V/S guard PASS，权威`runs/20261006_m1_videoevent/r1_full_smoke_analysis/plumbing_summary.json`，完整333 samehost ready；实际F5总处理167.63s包括146.58s来源成本，仅执行证据不作性能/机制。
+
+Spatial31 fullsource333与partialpaired125/sc474398/192 FAILED2:45:02/1:0（图像processor intrinsic aspect>200，actualcrop366），BOTH回传ROOT，旧lab2pilot源snapshot保留，原框/图像/来源/成本不改，窄diagnosis中，未GT/性能/idea裁定。现空闲lab3选作36完整333 freshsource+reader host，不混serverpilotcache/读数；同原算法/常数，167.63s实际F5成本低于MERIT334.08s，正常等待207/209预算。R2/sc448960/213继续完整运行。

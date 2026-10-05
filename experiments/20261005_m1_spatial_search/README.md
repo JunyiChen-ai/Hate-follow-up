@@ -91,3 +91,5 @@ Rule6 code review；实际fixed5检查完整native读数/G/S、解析/坐标链/
 
 
 短201/202/205/206反馈全部回传后，原Slurm192的own实验室hold已释放并在sc474398完整333运行，source获取及paired reader同机。source/方法/缓存/修订次数未改；本机机器检查`runs/20261005_m1_spatial_search/machines_before_release{,_note}.txt`通过。195.46s/158窗smoke新处理低于MERIT334.08s，故先恢复本候选完整主轮，非性能优劣裁定。来源`scheduling/released_original_job.json`。
+
+Full333 source complete onsc474398/192, paired125 atomic wholevideo records thenFAILED2:45:02/1:0: actualmodel imageprocessor rejected crop aspect366 (>intrinsic200). Allsource/current inputs andpartialrun BOTHreturned ROOT; oldlab2fixed5 inputcache retained separately data/temporal_spatial_search_smoke_sc474399 before fullreturn, no images/metadata/bounds changed. Source/model-support narrow diagnosis underway; noGT/evaluator/performance/idea verdict. Require minimally correct unsupported-source handling and independentnarrow confirmation before sameR1 resume; budgets/constants/source costs retained.
