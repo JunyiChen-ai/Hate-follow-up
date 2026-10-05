@@ -84,3 +84,6 @@ Rule9：无任一+.01直接归档；有单项信号先记录真实test error ana
 
 
 完整prototype已实现：真实media顺序caption、按八窗三槽、精确user-token hidden pooling、可分离时间侧源分配、纯真实V/S证据与唯一评测器/固定r6命令。全333 raw/JPEG/ASR/native三轴输入PASS，8组真实36层FP32/BF16×18/20×2/6新图cached/fullreference/KV/clone PASS，embedding pooling2组、已知向量独立可行解枚举/NONE/tie/native-token JSON/cap拒绝PASS，20组生产reader前置/后续/双侧/无remote/缺帧科学CPU PASS。均randomweights/软件输入检查，不是预训练模型性能。来源在manifest列出的runs。唯一独立Rule6审查进行中；无实际GPU/GT/性能数字。
+
+
+唯一独立Rule6审查PASS，来源`docs/reviews/20261006_m1_ordered_slots_code.md`及`runs/20261006_m1_ordered_slots/independent_code_review/`。独立合成10窗video实际PTS→source acquisition→只读验证、两批槽/32embedding/433source forwards计费、NONE/稳定平局/严格前后源归属通过；独立20组真实36层production reader/不同remote speech实际token与margin变化/KV/rope/native所有原始读数/无生成假设进入证据通过，真实tokenizer正文pooling独立完整前向精确。same-family provisional，不是预训练8B/GPU/性能结论。
