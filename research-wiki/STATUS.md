@@ -8,7 +8,7 @@
 - **正常排队**：空间搜索31完整333/sc474398/192；事实核验27完整333/sc474397/193；文字发生32固定5/sc474398/201；MERIT33固定5/sc474398/202；有序事件槽34固定5/sc474398/205。
 - 32/33的完整prototype、实际输入/科学CPU与一次独立代码审查PASS只代表实现检查；它们尚未完成实际8B运行或主性能评测。
 - 有序事件槽34已冻结，完整prototype/作者科学CPU与唯一独立代码审查PASS；实际8B固定5已提交205排队，无GT/性能。
-- 视觉时间工具35已完成完整prototype/作者科学CPU检查，一次独立代码审查进行中；尚无GPU/GT/性能。
+- 视觉时间工具35完整prototype/作者科学CPU与一次独立代码审查PASS，actual8B固定5待提交；尚无GT/性能。
 - 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
 
 **2026-10-04 M1 自主迭代继续**：用户确认 Explorer R1 为正向进展，并要求达到性能与机制目标后再停止。
@@ -717,3 +717,5 @@ logit 尺度。
 
 
 候选35完整视觉时间工具交互：原九池C1/rank8一次方案PASS，VTimeCoT v1方法/Algorithm1及实现细节实际核读，官方code未发布不声称复现。入口`experiments/20261006_m1_vtimecot/README.md`。冻结1fps真实来源/同Qwen clip相关性prefix共享/模型驱动progress/highlight/cut/真实更新与history views进入V、G/S固定；不是旧1fps评测。完整prototype、全333输入、实际36层CPU source cache/cachedvsfull/allKV/最多24新图、实际10窗video全部工具和只读重放、12组productionreader作者CPU PASS，仅软件输入证据，唯一独立Rule6审查进行中，无实际GPU/GT/性能。来源`runs/20261006_m1_vtimecot/`各CPU summary及manifest。
+
+候选35一次独立Rule6审查PASS，来源`docs/reviews/20261006_m1_vtimecot_code.md`：实际collector/缓存共享全部KV与三轴/fullreference/12组生产reader/nativeG/S/allraw/24图history及计费核验通过。same-family provisional，仅软件输入证据；actual8B固定5待提交，未GT/性能。

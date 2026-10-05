@@ -90,3 +90,6 @@ native allraw/G/S及clone精确，完整input/pixel/token/PTS/检索/工具/成�
 
 
 完整prototype及作者科学CPU检查PASS：full333 raw/JPEG/ASR/native三轴预检；8组actual36layer FP32/BF16×18/20×2/24新图cached/fullreference/allKV/clone；actual10窗合成video真实1fps选帧/查询两路/三工具真正执行与更新视图/完整只读pixel/token/状态重放；实际native tokenizer/processor+36layers共享clip prefix与两个query/每个生成hidden的独立完整前向检查，FP32最大2.21e-6、BF16hidden最大.03125，在事前1e-4/.05软件容差内，所有源prefix KV逐值不变；12组actual36layer生产reader14language/5或1vision，S原调用复用计费、nativeG/allraw/clone/KV/rope及24图新V检查。都是randomweights/软件输入证据，CPU processor在sourcecache测试特意缩小到1024/2048pixel，不是真实8B/GPU/性能。初小于top8的fixture期待错误/扩展fixture宽度笔误日志保留，仅修测试，生产检索未改。来源见manifest列出的本机runs，唯一独立Rule6审查进行中。
+
+
+唯一独立Rule6代码审查PASS，来源`docs/reviews/20261006_m1_vtimecot_code.md`及`runs/20261006_m1_vtimecot/independent_code_review/`：独立合成10窗实际1fps/video collector与TERMINATE/UNKNOWN/三工具真正执行、CUT24–48秒实际来源和只读pixel/token/工具重放通过；actual36layer两query clip prefix共享/allprefixKV每步逐值不变/两次均从n开始/1vision15language/完整三轴positions等式与独立全uncached每个生成state通过（FP32最大1.55e-6，BF16hidden .03125）；12组productionreader14language/5或1vision、24图历史/原S复用/全部KV/rope/nativeG allraw和计费通过。same-family provisional，无生产改动，未读真实GT/预测/metrics/真实权重/CUDA；actual8Bfixed5 ready，不是科学性能。
