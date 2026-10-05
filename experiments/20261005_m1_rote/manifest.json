@@ -8,10 +8,10 @@
   "implemented": true,
   "code_pass": true,
   "GT_read": false,
-  "GPU_run": false,
+  "GPU_run": true,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Actual8B fixed5 Slurm156 queuedonlab2 behind151/155; allCPU/codePASS, noGPUresult",
+  "state": "Slurm156 fixed5 DONE/returned; noGT prepare/native allraw/source/5clone PASS; full333 pending",
   "full_input_preflight": "runs/20261005_m1_rote/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
   "cpu_checks": "runs/20261005_m1_rote/cpu_checks/summary.json",
@@ -19,5 +19,6 @@
   "code_review": "docs/reviews/20261005_m1_rote_code.md",
   "smoke_job": 156,
   "GPU_submitted": true,
-  "selected_host": "sc474399"
+  "selected_host": "sc474399",
+  "smoke_pass": true
 }

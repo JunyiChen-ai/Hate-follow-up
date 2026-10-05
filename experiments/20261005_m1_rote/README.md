@@ -91,3 +91,5 @@ clone全部KV/margin精确、非ASR bias为0且原因果可见性保留，新mar
 唯一独立规则6审查 `docs/reviews/20261005_m1_rote_code.md` PASS，source_mapping计时漏项已窄确认修复。独立实际36层CPU FP32/18帧和BF16/20帧，SDPA对手工masked-softmax最大差4.77e-7/.002061，bias对独立双精度算子4.31e-7/.003889；全KV/native恢复精确、新S变化、原因果保持。全333原ASR/7359窗复制body检查通过、6580speech；未GT/预测/metrics/CUDA/权重。证据 `runs/20261005_m1_rote/independent_code_review/`，真实8Bfixed5待派发。
 
 真实8B fixed5在sc474399提交Slurm156；allfourlabs09913cfclean，外国STRAY原名未变未动，lab2idle569Gfree，151/155占QOS2所以正常排队。来源 `runs/20261005_m1_rote/machines_before_smoke{,_note}.txt`。尚未GPU结果/GT。
+
+Slurm156于15:28:27完成fixed5，全部runs已回传本机。samebackend noGT prepare PASS：原生allraw/G/V逐值一致、134S变化、五次clone精确、全部来源映射重放通过。HMM/HCS新阶段9.9503/4.3633s，配对原生8.3985/4.0556s；peak18.33/17.36GiB，来源key最大73,986,048/19,049,472bytes。来源`runs/20261005_m1_rote/r1_full_smoke_analysis/plumbing_summary.json`。完整333待提交，无性能/机制结论。
