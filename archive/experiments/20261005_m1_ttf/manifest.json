@@ -11,14 +11,17 @@
   "constants_declared_before_run": true,
   "cpu_checks": "runs/20261005_m1_ttf/cpu_checks/summary.json",
   "full_input_preflight": "runs/20261005_m1_ttf/full_input_preflight/summary.json",
-  "GT_read": false,
+  "GT_read": true,
   "GPU_run": true,
-  "performance_result": null,
+  "performance_result": "runs/20261005_m1_ttf/r1_full_main_analysis/summary.json",
   "result_guided_revisions_used": 0,
-  "state": "Full333 Slurm153 DONE15:01:56, allruns/projectorinputs returned; local strict replay/canonical evaluation active, no final result yet",
+  "state": "Archived24: full333 nativeallraw/all6exact; noany+.01, noR2/controlGPU",
   "smoke_job": 152,
   "smoke_pass": true,
   "smoke": "runs/20261005_m1_ttf/r1_full_smoke_analysis/plumbing_summary.json",
   "main_job": 153,
-  "selected_host": "sc474398"
+  "selected_host": "sc474398",
+  "performance_pass": false,
+  "mechanism_supported": false,
+  "archived": true
 }

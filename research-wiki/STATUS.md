@@ -96,7 +96,7 @@ within+.019006/+.002202，其他损失在既定容差内，保留HMM正向进展
 权威来源`runs/20261005_m1_program/r1_handles_full_main_decoded/optimized/metrics.json`；实际新处理233.83min/native25.51倍。
 程序/来源完整重放PASS但context/join均0，话语角色仅1/3窗解析；原始max within两语料下降，尚无机制结论。
 实际GT误差分析已记录，R2事前声明只有可用程序事实才加入证据，缺事实则重新调用原生分支；修订1/3，全333来源/token CPU和独立窄代码确认PASS，R2固定五视频在sc474398/Slurm149于13:57:01完成并回传，本机noGT/native allraw/G/10clone/实际回退精确PASS，70V/2S变化；相同完整333 R2已在sc474398/Slurm150运行。来源`runs/20261005_m1_program/r2_handles_full_smoke_analysis/plumbing_summary.json`。
-R2完整333在sc474398/Slurm150于14:20:56完成并回传，native allraw/六项精确。HMM ROC/PR/within .897479/.696264/.766186（84），HCS .716819/.673020/.640984（99）；within+.015404/+.003635，其他损失在容差内，但无同指标双语料+.01，performance FAIL，原始max两语料下降。来源`runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json`。实际新处理229.45min/native25.07倍，保留HMM正向进展；完整实际GT/来源误差分析已记录，R3已事前声明UNKNOWN标记归一/视觉要求可用action（修订2/3）；实际完整333原R1/R2 query/token逐值不变、源码缓存不变与R3CPU检查PASS，独立窄代码/sourceoracle/36层CPU确认PASS，来源`docs/reviews/20261005_m1_program_resolved_action_code.md`，R3固定5在sc474398/Slurm154于15:02:27完成并回传，本机noGT/native allraw/G/10clone/source/freshfallback PASS，完整333待提交；无R3性能/机制结论。
+R2完整333在sc474398/Slurm150于14:20:56完成并回传，native allraw/六项精确。HMM ROC/PR/within .897479/.696264/.766186（84），HCS .716819/.673020/.640984（99）；within+.015404/+.003635，其他损失在容差内，但无同指标双语料+.01，performance FAIL，原始max两语料下降。来源`runs/20261005_m1_program/r2_handles_full_main_decoded/optimized/metrics.json`。实际新处理229.45min/native25.07倍，保留HMM正向进展；完整实际GT/来源误差分析已记录，R3已事前声明UNKNOWN标记归一/视觉要求可用action（修订2/3）；实际完整333原R1/R2 query/token逐值不变、源码缓存不变与R3CPU检查PASS，独立窄代码/sourceoracle/36层CPU确认PASS，来源`docs/reviews/20261005_m1_program_resolved_action_code.md`，R3固定5在sc474398/Slurm154于15:02:27完成并回传，本机noGT/native allraw/G/10clone/source/freshfallback PASS，相同完整333 R3已在sc474398提交Slurm155；无R3性能/机制结论。
 全部development-selected；事实/算法/成本/来源唯一明细为实验README。
 候选24引语/指代图的独立方案/代码审查PASS，CPU原型与独立路径/真实36层可见性检查完成；
 22已归档、23接口未可靠执行；24固定5在sc474399/Slurm131完成并回传本机，noGT prepare PASS。
@@ -111,7 +111,7 @@ R1实际GT误差分析已记录：图上下文只覆盖约5%窗口，HMM正向�
 R2事前声明空packet精确原生S、有真实context保留原结构读数；修订1/3，实际fixed5 source/token CPU及独立窄代码修复确认PASS，相同fixed5 Slurm139于10:17:49完成并回传，noGT/native allraw/G/V、5clone/contextless PASS，13HCS S变化/0HMM，完整333在sc474399/Slurm141于10:31:46完成并回传，native allraw/六项精确。
 R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；无任一主指标+.01，按规则9归档，不跑R3/控制GPU。
 来源`runs/20261005_m1_quote_graph/r2_full_main_decoded/optimized/metrics.json`；实际82.85min/native9.01倍，R1正向信号保留。
-来源`runs/20261005_m1_quote_graph/r2_cpu_checks/summary.json`；入口`archive/experiments/20261005_m1_quote_graph/README.md`；当前累计归档23项。
+来源`runs/20261005_m1_quote_graph/r2_cpu_checks/summary.json`；入口`archive/experiments/20261005_m1_quote_graph/README.md`；当时累计归档23项。
 备用候选25持久实体/话语图驱动实际端点媒体检索：独立方案/代码审查、真实fixed5来源CPU检查与完整333输入预检PASS；
 入口`experiments/20261005_m1_provenance/README.md`。固定5在sc474399/Slurm138于10:12:37完成，BOTH inputs/runs已回传本机。
 全部158源ledger实际schema fields拒绝，五视频graph edges/remote contexts均0，声明的实际执行guard未满足；不降低guard、不跑主实验/GT性能。
@@ -121,6 +121,8 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 本机新隔离`.cache/envs/HateVLM`环境已完成安装，与实际lab2核心Torch2.11cu128/HF5.15.1一致；独立基础设施窄检查PASS，项目离线缓存缺口已通过现有完整本地模型symlink修复；Slurm145于11:24:58完成，原生fixed5全部G/stance/V/S逐值精确，来源`runs/_setup_local_hatevlm/native_smoke/summary.json`；科学fixed5在sc474397/Slurm147于13:37:39完成，本机noGT source/native allraw/10repeat PASS，158V/134S变化，修复次数0保留；相同R1完整333已在sc474397提交Slurm151，当前已实际运行获取完整来源；无性能结论。来源`runs/20261005_m1_interval_witness/r1_full_smoke_analysis/plumbing_summary.json`。
 备用候选27独立事实重观察/typed修订：原9池rank9最后一项，一次独立方案审查PASS；来源`docs/reviews/20261005_m1_verification_proposal.md`。完整factored CoVe四阶段功能迁移的target差异、来源归属与成本已事前声明；`experiments/20261005_m1_verification/README.md`及`spec.json`为入口，原型/33项CPU检查/唯一独立代码审查PASS，科学fixed5在sc474397/Slurm148于13:56:29完成，本机noGT/native allraw/G/10repeat/来源执行PASS，158V/134S变化，96/62次实际独立核验；字面修改不代表正确纠错。完整333待启动/未读GT。来源`runs/20261005_m1_verification/r1_full_smoke_analysis/plumbing_summary.json`。来源`docs/reviews/20261005_m1_verification_code.md`。
 下一批完整九项候选的一次fresh独立方案裁定全部PASS（same-family provisional），选择TTF作低新增调用的备用具体化；TTF候选28具体原型/实际full333 JPEG/ASR/grid输入预检/独立code与真实36层缩小CPU接口检查PASS，入口`experiments/20261005_m1_ttf/README.md`，code审查`docs/reviews/20261005_m1_ttf_code.md`；实际8B fixed5在sc474398/Slurm152于14:34:04完成，BOTH回传后本机samebackend noGT/native allraw/G/S/来源/5clone PASS，158V变化，相同R1完整333在sc474398/Slurm153于15:01:56完成，全部runs/projector输入已回传，本机严格重放和统一评测正在运行，无主实验性能结论。来源`runs/20261005_m1_ttf/r1_full_smoke_analysis/plumbing_summary.json`。来源`docs/reviews/20261005_m1_ideation_jury.md`，完整原始方案与成本见`experiments/20261005_m1_ideation/CANDIDATES.json`。
+候选28 TTF完整333本机重放/统一评测完成，原生allraw/六项精确。HMM ROC/PR/within .897926/.697255/.758985（84），HCS .712970/.671399/.643623（99）；within+.008203/+.006274，无任一主指标+.01，按规则9归档第24项，不跑R2/控制GPU。来源`runs/20261005_m1_ttf/r1_full_main_decoded/optimized/metrics.json`；阶段成本10.51min/native1.16倍，实际Slurm墙钟14:49，原始max两语料下降。全部development-selected，无机制结论；唯一明细`archive/experiments/20261005_m1_ttf/README.md`。
+候选29 RoTE沿用九项jury的一次方案PASS，原论文/已发布官方sinc代码实际读取；原型与事前常数在`experiments/20261005_m1_rote/README.md`。完整333纯输入offset/复制body/归一数值域预检PASS，最小C_r .610283、6580 speech窗、最长原生prefix5829/最长speech suffix756；来源`runs/20261005_m1_rote/full_input_preflight/summary.json`。科学CPU与独立code审查待完成，尚未GPU/GT。
 当前零标签性能与机制目标仍未完成。
 
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
@@ -129,7 +131,7 @@ R2 HMM .897998/.697106/.741690（84）、HCS .716345/.671003/.638255（99）；�
 
 **2026-10-02 M1 自主迭代进行中（2026-10-03 更新）**：用户要求修改第一个模块，
 并建立涨点机制。入口 `experiments/20261002_m1_iteration/README.md`。
-累计归档23个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph性能或机制未过门；Marginalizer、Allocator方案STOP。
+累计归档24个候选：Grounder、Selector、Attributor、Eraser、Factorizer、Contraster、视觉对比、Amplifier、Recycler、Integrator、Reinforcer、Projector、Highlighter、Stabilizer、Preserver、Explorer、Latents、Acoustic、Tree、Lattice、QuoteGraph、TTF性能或机制未过门；Marginalizer、Allocator方案STOP。
 最近完成Eraser实际删除：HateMM ROC/PR/within .878392/.618500/.619622，
 HCS .672767/.615419/.506248，within各下降约.131，原始排序也下降；完整333基线精确复现。
 来源 `runs/20261003_m1_eraser/r1_main_decoded/erase/metrics.json`，详情归档README。

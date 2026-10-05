@@ -1,3 +1,5 @@
+归档原因：完整333无任一主指标提升.01，规则9归档第24项；不跑R2或控制GPU。
+
 # Candidate28: anchor identity temporal token fusion
 
 Proposed2026-10-05 onsc474397. Selectedrank1 from the complete9 pool in
@@ -123,3 +125,23 @@ IndependentnarrowCPUprepare-backendconfirmation `docs/reviews/20261005_m1_ttf_pr
 Full333 sameR1 submitted2026-10-05 onsc474398/Slurm153 afterallfourlabs clean4aa4687 actualcheck, lab3idle/1.4Tfree and151soleactiveQOSjob. Evidence `runs/20261005_m1_ttf/machines_before_main{,_note}.txt`. Actual198/333 at14:54:39, no mainGT/metricsyet; allsourcepositions/retainedfeatures preserved for strictlocalCPUreplay.
 
 Actualfull333 Slurm153 DONE15:01:56, entirepairedruns andprojectorinputs immediatelyreturned via `return_main_runs.log`/`return_main_inputs.log`; localstrictsamebackendprepare andcanonicalr6 evaluation started. MainGT/performance resultnotyetavailable.
+
+## 完整333结果与去向2026-10-05
+
+实际sc474398/Slurm153 COMPLETED，14:47:07–15:01:56，分配墙钟14:49。
+全部runs/projector输入立即回传本机；严格samebackend noGT source/layout重放PASS、
+原生G/stance/V/S全部精确，统一r6六项精确复现当前方法。
+权威 `runs/20261005_m1_ttf/r1_full_main_decoded/optimized/metrics.json`：
+HateMM ROC/PR/within .8979259952098192/.6972553473153058/.7589849848134504（84），
+HateClipSeg .712969804864763/.6713991970274752/.6436227378509533（99）。
+相对r6 within+.00820294084748352/+.006273624046854498，其它变化在噪声内，
+但无任一主指标+.01，performance FAIL、any qualifying gain FALSE。
+按规则9归档第24项，不以接近门槛为由改阈值或重启，尚无机制控制证据。
+原始max within−.006871299319637076/−.001974219484092416，
+原始V within−.022485845597707804/+.007290420662781512；不能把最终微涨解释为双语料原始定位改善。
+所有7359个V实际变化，全部333压缩；HMM保留194043/384560、HCS138395/212198
+visual tokens，非首锚200/112、零token来源块593/222，所有文字和image边界保留。
+阶段处理成本353.5134685705125s HMM+277.12078097782796s HCS=10.510570825805674min，
+对应native1.15950636468911倍；峰值17.84/17.56GiB。阶段计时不含审计缓存写入、
+序列化及配对native V，不宣称部署端到端墙钟或作者算法零成本。
+全部development-selected；报告和来源 `r1_full_main_analysis/{summary,alignment,per_video}.json`。

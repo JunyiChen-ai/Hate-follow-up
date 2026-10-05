@@ -625,3 +625,5 @@ R3authorCPU `runs/20261005_m1_program/resolved_cpu_checks/summary.json` PASS: al
 R3 identicalfixed5 submitted2026-10-05 onsc474398/Slurm154, queuedbehindTTF153 andInterval151 underQOS2. The actualallfourlabs clean4aa4687 check immediatelypreceded153, no interveningcodechange; exactforeignSTRAYnamesunchanged. Evidence `runs/20261005_m1_program/machines_before_resolved_smoke{,_note}.txt`; originalBsourcecacheimmutable, no newsourcegeneration. No R3 performance or mechanism resultyet.
 
 ActualR3 fixed5 Slurm154 DONE15:02:27, wholeruns immediatelyreturned via `return_resolved_smoke.log`; no newsourcecache. LocalstrictnoGT source/nativeallraw/G/10clone/freshfallback PASS, authority `r3_handles_full_smoke_analysis/plumbing_summary.json`. Samewhole333R3ready; no R3mainGT/metricsyet.
+
+Samewhole333R3 submittedsc474398/Slurm155 afterallfourlabs e873b40clean, foreignSTRAYexactunchanged,151soleactiveQOSGPU andlab3idle1.4Tfree. Evidence `machines_before_resolved_main{,_note}.txt`; everyqueryfresh, completeoriginalBcost charged, no R3mainmetricsyet.
