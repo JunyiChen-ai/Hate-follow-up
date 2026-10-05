@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Five-video actual GPU reproduction of frozen native readings, without GT."""
 import json
+import argparse
 import logging
 import socket
 import sys
@@ -14,12 +15,12 @@ from src.video_inputs import load_manifest,load_asr,frame_paths,fixed_windows,wi
 
 
 def main():
-    out=ROOT/'runs/_setup_local_hatevlm/native_smoke';out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser();ap.add_argument('--out',default='runs/_setup_local_hatevlm/native_smoke');args=ap.parse_args();out=ROOT/args.out;assert out.resolve().is_relative_to(ROOT);out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler(sys.stdout)])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(__import__('os').getpid()))
     import transformers
     config=dict(host=socket.gethostname(),model=MODEL,torch=torch.__version__,transformers=transformers.__version__,GT_read=False,
-        code='scripts/check_native_runtime.py + unchanged src/{mllm_judge,stance_cache,video_inputs}.py; sources2026-10-05',command='python -u scripts/check_native_runtime.py')
+        code='scripts/check_native_runtime.py + unchanged src/{mllm_judge,stance_cache,video_inputs}.py; sources2026-10-05',command='python -u '+' '.join(sys.argv))
     (out/'config.json').write_text(json.dumps(config,indent=2)+'\n')
     allrows=load_manifest(ROOT/'data/omsl_v6_inputs/manifests/all_test.jsonl',('HateMM','HateClipSeg'))
     rows=[r for ds in ('HateMM','HateClipSeg') for r in [x for x in allrows if x['dataset']==ds][:2]]+[

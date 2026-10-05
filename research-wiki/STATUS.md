@@ -737,3 +737,5 @@ logit 尺度。
 视觉时间工具35显式字数接口B只增加query<=6word/reason及feedback<=12word的模型可见结束指令，原8/16word/content-token/wholecap/UNKNOWN及实际执行guard不变。A真实输入只读重放、B软件工具状态/像素/token/路径隔离及独立窄code/launcher PASS，来源`docs/reviews/20261006_m1_vtimecot_interface_B_code.md`；同固定5 B已提交ROOT Slurm209/PENDING(QOSMaxGRESPerUser)，未GT/实际8B成功/性能，不重置预算。
 
 候选36相关连续事件/代表背景来源：原九池C9/rank9一次方案PASS，VideoEvent原始方法§3.1–3.5/Fig4及4.1实际核读并保存；单Qwen中性请求/局部固定3点是声明适配，不声称原MCQA复现。入口`experiments/20261006_m1_videoevent/README.md`。完整原型/333真实输入/30,948选择oracle/实际pixel-token collector/8组36层2与11图完整reference/16组生产reader CPU PASS，仅软件检查；独立Rule6 code review待启动，无GPU/GT/性能。
+
+候选36唯一Rule6科学审查已闭合PASS，来源`docs/reviews/20261006_m1_videoevent_code.md`。空闲sc448960已有同版本runtime/原生缓存/模型，全333既定test原始视频已同步至规定实验室原始媒体位置；实际333 raw/native/ASR CPU预检PASS并回传本机`runs/_setup_lab_server_hatevlm/input_preflight/summary.json`。新增lab-server启动/runtime输出隔离独立窄确认PASS；先实际native5，再同5科学source+reader，不据CPU宣布8B成功。34只读closing diagnostic已独立窄PASS，仅在B原guardFAIL后允许提交；仍未实际GPU/GT/截断原因结论。
