@@ -148,6 +148,8 @@ OTT Slurm170固定5/Program R4 Slurm171固定5均DONE并立即回传：严格noG
 OTT完整333同R1在sc474398/Slurm180于21:50:39 DONE，runs和新增源特征正在立即回传，统一评测尚未完成；Program最终R4完整333在同机Slurm181运行。两项均从实际fixed5严格PASS后启动，原生输入和固定r6不变，没有主性能/机制裁定。
 空间搜索31固定5已在完整原视频均齐全的sc474399提交Slurm184；来源图25实际LINK内存修复重放在同机Slurm183排队，重放通过后才恢复原B完整333。派发前四实验室代码14477a8一致/clean，既有foreign STRAY逐行未变，lab2空闲/568Gfree；正常等待用户GPU QOS预算。区间26 Slurm168来源获取已完成，配对读取进行中。当前零标签性能与机制目标仍未完成。
 
+独立事实核验27已在原fixed5运行主机sc474397排入完整333 Slurm185；派发前四实验室64b65f9一致/clean和既有foreign STRAY逐行未变，完整输入/spec/读取路径不变，正常等待根机168结束与用户GPU预算，来源`runs/20261005_m1_verification/machines_before_main{,_note}.txt`。当前零标签性能与机制目标仍未完成。
+
 **2026-10-03 camera-ready 排版修复完成**：TRIAGE（5081）和 HateLens（5097）已修复通知中的页边界越界，
 两篇完整 PDF 均通过 aclpubcheck，并已推送至各自 Overleaf 项目。原稿位置见 `paper/README.md`，
 验证记录及可提交 PDF 见 `runs/20261003_camera_ready/validation.json`。会议系统尚需上传修正版。

@@ -228,3 +228,6 @@ and known flags do not establish factual correctness or successful correction.
 Actual standalone624.008684sHMM+361.092150sHCS includes source and new reading;
 full333 cost beyond these5 remains estimated. Complete same R1 ready only after
 synchronization/current machine check; no GT/main metrics or mechanism controls.
+
+
+独立事实核验27已在原fixed5运行主机sc474397排入完整333 Slurm185；派发前四实验室64b65f9一致/clean和既有foreign STRAY逐行未变，完整输入/spec/读取路径不变，正常等待根机168结束与用户GPU预算，来源`runs/20261005_m1_verification/machines_before_main{,_note}.txt`。当前零标签性能与机制目标仍未完成。 同完整333来源获取和读取均在原root/sc474397完成；完整原获取成本计入新视频处理，不因已缓存固定5而免除。

@@ -16,10 +16,13 @@
   "smoke_pass": true,
   "performance_result": null,
   "constants_declared_before_run": true,
-  "state": "Actualfixed5 Slurm148 DONE; local noGT/native allraw/10repeat/source execution PASS; full333 ready, noGT/performance",
+  "state": "Slurm185 complete333 queued on SAME root/sc474397; fixed5 strictPASS; no mainGT/performance",
   "result_guided_revisions_used": 0,
   "smoke_job": 148,
   "GPU_submitted": true,
   "selected_host": "sc474397",
-  "smoke": "runs/20261005_m1_verification/r1_full_smoke_analysis/plumbing_summary.json"
+  "smoke": "runs/20261005_m1_verification/r1_full_smoke_analysis/plumbing_summary.json",
+  "main_job": 185,
+  "main_submitted": true,
+  "main_running": false
 }
