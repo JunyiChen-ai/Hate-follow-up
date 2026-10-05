@@ -89,6 +89,9 @@
     "code_pass": true,
     "GPU_run": false,
     "code_review": "docs/reviews/20261005_m1_program_source_bound_code.md",
-    "state": "FinalR4 predeclared/authorfull333and36layerCPU/independentnarrowPASS; fixed5 ready"
+    "state": "FinalR4 CPU/narrowreviewPASS; actual8Bfixed5 Slurm171 queuedunderQOS167/168",
+    "smoke_job": 171,
+    "GPU_submitted": true,
+    "selected_host": "sc474398"
   }
 }

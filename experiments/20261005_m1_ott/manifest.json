@@ -11,11 +11,14 @@
   "GPU_run": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "AuthorCPU/full333input/independentcompletedPASS, actual8Bfixed5 ready, noGPU/GT",
+  "state": "Code/CPU/inputPASS; actual8Bfixed5 Slurm170 queuedunderQOS167/168, noGPUresult/GT",
   "cpu_pass": true,
   "cpu_checks": "runs/20261005_m1_ott/cpu_checks/summary.json",
   "full_input_preflight": "runs/20261005_m1_ott/full_input_preflight/summary.json",
   "full_input_preflight_pass": true,
   "code_review": "docs/reviews/20261005_m1_ott_code.md",
-  "independent_evidence": "runs/20261005_m1_ott/independent_code_review/summary.json"
+  "independent_evidence": "runs/20261005_m1_ott/independent_code_review/summary.json",
+  "smoke_job": 170,
+  "GPU_submitted": true,
+  "selected_host": "sc474398"
 }

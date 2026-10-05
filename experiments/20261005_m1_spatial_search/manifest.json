@@ -1,0 +1,15 @@
+{
+  "candidate_number": 31,
+  "rank": 4,
+  "date": "2026-10-05",
+  "proposal": "experiments/20261005_m1_spatial_search/README.md",
+  "proposal_review": "docs/reviews/20261005_m1_ideation_jury.md",
+  "proposal_pass": true,
+  "implemented": false,
+  "code_pass": false,
+  "GT_read": false,
+  "GPU_run": false,
+  "performance_result": null,
+  "result_guided_revisions_used": 0,
+  "state": "Actualpaper/officialsearchcode read; functionaladaptation and constants frozen; prototypepending"
+}

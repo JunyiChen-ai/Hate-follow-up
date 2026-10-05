@@ -1,0 +1,28 @@
+{
+  "version": "R1 frozenQwen Vstar functional spatial search; 2026-10-05",
+  "model": "Qwen/Qwen3-VL-8B-Instruct",
+  "native_frames": 20,
+  "window_seconds": 8.0,
+  "seed": 0,
+  "local_frame_fractions": [
+    0.3333333333333333,
+    0.6666666666666666
+  ],
+  "local_frame_ownership": "Actual decoded PTS within halfopen currentwindow; unavailable otherwise",
+  "max_targets": 1,
+  "max_search_nodes": 2,
+  "detector_tokens": 128,
+  "search_tokens": 96,
+  "description_words": 12,
+  "description_tokens": 32,
+  "coordinate_scale": 1000,
+  "source_partition": "4x1 if width>=2height; 1x4 if height>=2width; else2x2; floor strides, finalcell remainder",
+  "minimum_partition_axis_pixels": 4,
+  "priority": "categorical target/context cue ranks4children; lowest rank then earliestserial",
+  "boxes": "integer0..1000 relativecurrentnode, positivearea; mapleft/top floor andright/bottom ceil to originalpixels",
+  "stopping": "FirstFOUND crop; nodebudget exhaustion/truncation/invalid/UNKNOWN remain UNKNOWN, no bestconfidence rescue",
+  "final_memory": "Original selected localframe +foundexactpixelcrop+originalcoordinates/actualPTS; target is request not fact",
+  "readout": "Fresh native visualquestion with sourceimages appended to currentnativeG/ownstance cache; nativeS/max/fixedr6 preserved",
+  "detector_system": "Find one observable visual detail that is needed to interpret this window but unclear at this view. Only visible writing, a gesture, or an object. Do not infer identity or group membership, classify hate, or output confidence. Choose SEARCH and one supplied local frame plus a neutral target description, NONE if no additional detail is needed, UNKNOWN if unsupported.",
+  "search_system": "Locate the requested observable target in this actual image region. Output FOUND with a box relative to this region, TARGET_CUE with target-specific child-region order, CONTEXT_CUE with a scene-based cue and child-region order, or UNKNOWN. Coordinates are integers from 0 to 1000 and refer only to this displayed region. Do not classify hate, infer identity, or state that the target is absent after an incomplete search."
+}
