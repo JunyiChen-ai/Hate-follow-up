@@ -74,30 +74,32 @@ def main():
     with torch.no_grad():
         for dtype in (torch.float32,torch.bfloat16):
             for count in (18,20):
-                model=Qwen3VLModel(cfg).eval().to(dtype);j,ff=fixture(model,count,dtype,original)
-                cache,ctx=build(j,ff,[]);initial=copy.deepcopy(cache);_,base=j.encode_prefix(ctx['msgs'],ctx['files'])
-                content=[dict(type='text',text='Current actual source.'),dict(type='image'),dict(type='text',text='Exact original-pixel crop.'),dict(type='image')]
-                encoded,p,evidence=encode_branch(j,ctx,'fixture query',content,[original,cropped])
-                fullids=torch.cat([base['input_ids'],torch.tensor([[60,61,62]]),encoded['input_ids']],1)
-                grids=torch.cat([base['image_grid_thw'],encoded['image_grid_thw']],0);fullp,_=positions(j,fullids,grids)
-                assert torch.equal(p,fullp[:,:,ctx['stance_cache_tokens']:])
-                z,e=image_margin(j,cache,ctx,'fixture query',content,[original,cropped]);clone=copy.deepcopy(cache)
-                z2,e2=image_margin(j,clone,ctx,'fixture query',content,[original,cropped]);assert z==z2 and e==e2==evidence
-                assert cache.get_seq_length()==clone.get_seq_length()==initial.get_seq_length()
-                assert all(torch.equal(a.keys,b.keys) and torch.equal(a.values,b.values) for a,b in zip(cache.layers,initial.layers)) and torch.equal(model.rope_deltas,ctx['rope'])
-                assert margin(j,cache,ctx,'native fixture question')==margin(j,initial,ctx,'native fixture question')
-                # Full original conversation is an independent un-cached reference.
-                kw=dict(input_ids=fullids,pixel_values=torch.cat([base['pixel_values'],encoded['pixel_values']],0),image_grid_thw=grids,position_ids=fullp,use_cache=True)
-                if 'mm_token_type_ids' in j.forward_params:kw['mm_token_type_ids']=(fullids==127).long()
-                full=model(**kw);reference=j.margins_fp32(full.last_hidden_state[0,-1:])[0];difference=abs(z-reference)
-                assert difference<=(1e-4 if dtype==torch.float32 else .025)
-                # Same source text/shape with different actual pixels must change reading.
-                changed=out/'changed.png';Image.fromarray(np.full((4,4,3),255,dtype=np.uint8)).save(changed)
-                different,_=image_margin(j,cache,ctx,'fixture query',content,[original,changed]);assert different!=z
-                result.append(dict(dtype=str(dtype),native_frames=count,layers=36,source_images=2,unequal_source_tokens=evidence['image_counts'],
-                    whole_position_reference_exact=True,source_clone_exact=True,allKV_restored_exact=True,native_replay_exact=True,
-                    full_uncached_margin_difference=difference,full_reference_tolerance=1e-4 if dtype==torch.float32 else .025,actual_pixel_changes_margin=True))
-                print(dtype,count,'PASS',difference,flush=True)
+                for source_count in (2,10):
+                    model=Qwen3VLModel(cfg).eval().to(dtype);j,ff=fixture(model,count,dtype,original)
+                    cache,ctx=build(j,ff,[]);initial=copy.deepcopy(cache);_,base=j.encode_prefix(ctx['msgs'],ctx['files'])
+                    source_paths=[original]+[cropped]*(source_count-1)
+                    content=[item for index in range(source_count) for item in [dict(type='text',text=f'Actual source image {index}.'),dict(type='image')]]
+                    encoded,p,evidence=encode_branch(j,ctx,'fixture query',content,source_paths)
+                    fullids=torch.cat([base['input_ids'],torch.tensor([[60,61,62]]),encoded['input_ids']],1)
+                    grids=torch.cat([base['image_grid_thw'],encoded['image_grid_thw']],0);fullp,_=positions(j,fullids,grids)
+                    assert torch.equal(p,fullp[:,:,ctx['stance_cache_tokens']:])
+                    z,e=image_margin(j,cache,ctx,'fixture query',content,source_paths);clone=copy.deepcopy(cache)
+                    z2,e2=image_margin(j,clone,ctx,'fixture query',content,source_paths);assert z==z2 and e==e2==evidence
+                    assert cache.get_seq_length()==clone.get_seq_length()==initial.get_seq_length()
+                    assert all(torch.equal(a.keys,b.keys) and torch.equal(a.values,b.values) for a,b in zip(cache.layers,initial.layers)) and torch.equal(model.rope_deltas,ctx['rope'])
+                    assert margin(j,cache,ctx,'native fixture question')==margin(j,initial,ctx,'native fixture question')
+                    # Full original conversation is an independent un-cached reference.
+                    kw=dict(input_ids=fullids,pixel_values=torch.cat([base['pixel_values'],encoded['pixel_values']],0),image_grid_thw=grids,position_ids=fullp,use_cache=True)
+                    if 'mm_token_type_ids' in j.forward_params:kw['mm_token_type_ids']=(fullids==127).long()
+                    full=model(**kw);reference=j.margins_fp32(full.last_hidden_state[0,-1:])[0];difference=abs(z-reference)
+                    assert difference<=(1e-4 if dtype==torch.float32 else .025)
+                    # Same source text/shape with different actual pixels must change reading.
+                    changed=out/'changed.png';Image.fromarray(np.full((4,4,3),255,dtype=np.uint8)).save(changed)
+                    different,_=image_margin(j,cache,ctx,'fixture query',content,source_paths[:-1]+[changed]);assert different!=z
+                    result.append(dict(dtype=str(dtype),native_frames=count,layers=36,source_images=source_count,unequal_source_tokens=evidence['image_counts'],
+                        whole_position_reference_exact=True,source_clone_exact=True,allKV_restored_exact=True,native_replay_exact=True,
+                        full_uncached_margin_difference=difference,full_reference_tolerance=1e-4 if dtype==torch.float32 else .025,actual_pixel_changes_margin=True))
+                    print(dtype,count,source_count,'PASS',difference,flush=True)
     (out/'summary.json').write_text(json.dumps(dict(host=socket.gethostname(),GT_read=False,PASS=True,checks=result),indent=2)+'\n');print('MODEL_CPU_PASS',flush=True)
 
 
