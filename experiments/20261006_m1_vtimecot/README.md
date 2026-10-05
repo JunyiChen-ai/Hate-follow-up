@@ -116,3 +116,5 @@ B同fixed5/sc474397/209 DONE09:15:03；ROOT匹配runtime currentsource/nativeall
 B独立窄诊断：`docs/reviews/20261006_m1_vtimecot_interface_B_diagnosis.md`，真实5当前source/token/pixel/原grammar只读重放PASS，12wordreason指令实际已传入，仍五个16wordcap，whole30–41tokens未触128，无实现偏离。不从没有的logits猜原因。准备只读`closing_diagnostic.py`/ROOTSlurmlaunch，重算同fixed5首planner原B生成，现成logits观察rawtop/quoteleadingterminal/barequote rank/实际选择，不加forward或改choice/cap/guard；原token/events/input/grid/positions/selection必须exact，源bytes/mtime保持。只诊断，没有新的interface或revision，不salvage旧B。5planner调用预计<5GPUmin(未测)，cost另记；独立窄确认后再普通Slurm提交，不进入主实验/GT。
 
 只读closing observer独立窄确认PASS：`docs/reviews/20261006_m1_vtimecot_closing_diagnostic_code.md`。实际全部5原B首planner CPU输入/语法重放、原head/选择/forward/tokens/events不变、九种记录差异拒绝、源bytes/mtime只读/缓存释放/模块恢复/ROOTlaunch通过。只软件/绑定确认，未GPU/GT/实际截断原因证据。原失败/caps/完整工具执行guard/预算0/3保持，diagnostic可正常调度。
+
+只读原B首planner同5GPU诊断提交ROOT217，PENDINGnormalQOS，all4 committed24de625match/unchangeduserforeignwork/STRAY/451Gfree，证据`machines_before_closing_diagnostic{,_note}.txt`。不改变source或choice/guard/预算，无GT/截断原因结论；所有diagnostic成本与原source分开记录。

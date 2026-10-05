@@ -10,7 +10,7 @@
   "GT_read": false,
   "performance_result": null,
   "result_guided_revisions_used": 0,
-  "state": "Bquery/relevance execution valid, plannerreason cap/zero actualtools; source readonly diagnosis and unchanged-choice logits observer narrow PASS, diagnostic GPU ready; noGT/main/idea verdict",
+  "state": "B originaltools guardFAIL; read-onlyoriginalfirstplanner diagnostic217 ROOTPENDING QOS, no changedsource/choice/guard/GT",
   "core_implemented": true,
   "cpu_pass": true,
   "full_input_preflight": "runs/20261006_m1_vtimecot/full_input_preflight/summary.json",
@@ -38,5 +38,7 @@
   "interface_B_diagnosis": "docs/reviews/20261006_m1_vtimecot_interface_B_diagnosis.md",
   "closing_diagnostic_prepared": true,
   "closing_diagnostic_code_pass": true,
-  "closing_diagnostic_review": "docs/reviews/20261006_m1_vtimecot_closing_diagnostic_code.md"
+  "closing_diagnostic_review": "docs/reviews/20261006_m1_vtimecot_closing_diagnostic_code.md",
+  "closing_diagnostic_job": 217,
+  "closing_diagnostic_submitted": true
 }
