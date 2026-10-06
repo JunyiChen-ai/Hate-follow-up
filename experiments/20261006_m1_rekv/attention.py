@@ -49,7 +49,7 @@ def capture_source(j):
             hook.remove()
 
 
-def retrieval_factory(j, memory, native_cache, ctx, local_ids, question_rows, trace):
+def retrieval_factory(j, memory, native_cache, ctx, local_ids, question_rows, trace, selection=None):
     """Selection uses incoming unrotated Q; final query does not mutate memory."""
     rotary = j.model.model.language_model.rotary_emb
     # Selection and subsequent CPU proof replay use the same FP32 backend.
@@ -67,6 +67,7 @@ def retrieval_factory(j, memory, native_cache, ctx, local_ids, question_rows, tr
             value = att.v_proj(hidden_states).view(shape).transpose(1, 2)
             pooled = mean_query(query, question_rows, key.shape[1])
             remote, scores = remote_selection(pooled.detach().to('cpu'), representatives[layer_index], source_indices, local_ids)
+            if selection is not None:remote=selection.choose(layer_index,remote,scores)
             selected = sorted(set(local_ids + remote), key=lambda index: source_indices[index])
             original_positions = [memory.blocks[index]['positions'] for index in selected]
             packed, end = pack_positions(original_positions, ctx['stance_cache_logical_start'])

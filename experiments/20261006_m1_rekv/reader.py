@@ -18,7 +18,7 @@ def clock(j):
 
 def source_message(frame):
     return dict(role='user',content=[
-        dict(type='text',text=SPEC['source_text'].format(time=frame['time'])),
+        dict(type='text',text=SPEC['source_text'].format(time=frame.get('presented_time',frame['time']))),
         dict(type='image',image=frame['path'])])
 
 
@@ -56,15 +56,17 @@ def history_cache(j,native_cache,ctx,memory,history_ids):
 
 
 @torch.no_grad()
-def collect_source(j,native_cache,ctx,memory,frames):
+def collect_source(j,native_cache,ctx,memory,frames,previous_frames=None):
     start=clock(j)
     before=j.forward_calls
     before_vision=j.vision_calls
     saved_rope=j.model.model.rope_deltas.clone()
     records=[]
+    previous_frames=SPEC['source_previous_frames'] if previous_frames is None else previous_frames
+    assert previous_frames in (0,SPEC['source_previous_frames'])
     try:
         for index,frame in enumerate(frames):
-            history_ids=list(range(max(0,index-SPEC['source_previous_frames']),index))
+            history_ids=list(range(max(0,index-previous_frames),index))
             cache,end=history_cache(j,native_cache,ctx,memory,history_ids)
             encoded,relative,image_rows,evidence=encode_source(j,ctx,frame)
             position=relative+end
@@ -105,13 +107,13 @@ def encode_question(j,ctx,question):
 
 
 @torch.no_grad()
-def visual_margin(j,native_cache,ctx,memory,local_ids,question):
+def visual_margin(j,native_cache,ctx,memory,local_ids,question,selection=None):
     assert local_ids and native_cache.get_seq_length()==ctx['stance_cache_tokens']
     start=clock(j)
     first=j.forward_calls;vision=j.vision_calls
     ids,rows,evidence=encode_question(j,ctx,question)
     trace={}
-    factory=retrieval_factory(j,memory,native_cache,ctx,local_ids,rows,trace)
+    factory=retrieval_factory(j,memory,native_cache,ctx,local_ids,rows,trace,selection=selection)
     position=suffix_positions(len(ids),ctx['stance_cache_logical_start'],j.device)
     saved_rope=j.model.model.rope_deltas.clone()
     try:

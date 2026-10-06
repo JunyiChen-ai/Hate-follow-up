@@ -35,7 +35,7 @@ def prediction(row,ctx,visual,speech,seconds,method,source_calls=0):
 
 
 @torch.no_grad()
-def read_video(j,row,segments,meta,out,smoke):
+def read_video(j,row,segments,meta,out,smoke,source_transform=None,previous_frames=None,selector_factory=None,after_read=None):
     start=clock(j);first=j.forward_calls;first_vision=j.vision_calls
     if j.device.type=='cuda':torch.cuda.reset_peak_memory_stats()
     cache,ctx=build(j,frame_paths(row['dataset'],row['video_id'],SPEC['native_requested_frames']),segments)
@@ -60,8 +60,9 @@ def read_video(j,row,segments,meta,out,smoke):
         logging.info('Preserved interrupted denseKV at %s; rebuilding same video',destination)
     memory=VideoMemory(temporary_folder)
     new_visual=[];traces=[];clones=0;source=source_frames(row,meta['source'])
+    if source_transform is not None:source=source_transform(source)
     try:
-        acquisition=collect_source(j,cache,ctx,memory,source);times['source']=acquisition['seconds']
+        acquisition=collect_source(j,cache,ctx,memory,source,previous_frames=previous_frames);times['source']=acquisition['seconds']
         representatives=memory.representative_layers('cpu').numpy() if source else np.zeros((len(cache.layers),0,cache.layers[0].keys.shape[1]*cache.layers[0].keys.shape[-1]),np.float32)
         proof_start=clock(j);representative_path=proof/'source_keys.npy';np.save(representative_path,representatives,allow_pickle=False)
         proof_write_seconds=clock(j)-proof_start
@@ -71,7 +72,8 @@ def read_video(j,row,segments,meta,out,smoke):
             question=yesno_question(w['i'],len(windows),w['start'],w['end'],w['body'],'visual')
             start=clock(j)
             if local:
-                z,details=visual_margin(j,cache,ctx,memory,local,question)
+                selector=selector_factory(w,memory,local) if selector_factory is not None else None
+                z,details=visual_margin(j,cache,ctx,memory,local,question,selection=selector)
                 layer_records=[]
                 for layer in range(len(cache.layers)):
                     record=details['layers'][layer]
@@ -84,7 +86,9 @@ def read_video(j,row,segments,meta,out,smoke):
                 native_visual=v,native_speech=s,new_visual=z,branch=branch)
             if smoke and clones==0:
                 start=clock(j);clone=copy.deepcopy(cache)
-                if local:replayed,other=visual_margin(j,clone,ctx,memory,local,question);assert other['input']==details['input']
+                if local:
+                    replay_selector=selector_factory(w,memory,local) if selector_factory is not None else None
+                    replayed,other=visual_margin(j,clone,ctx,memory,local,question,selection=replay_selector);assert other['input']==details['input']
                 else:replayed=margin(j,clone,ctx,question)
                 assert replayed==z and clone.get_seq_length()==ctx['stance_cache_tokens']
                 assert all(torch.equal(a.keys,b.keys) and torch.equal(a.values,b.values) for a,b in zip(cache.layers,clone.layers))
@@ -111,6 +115,7 @@ def read_video(j,row,segments,meta,out,smoke):
             binding=binding,
             native_ctx=native,native_rope=ctx['rope'].tolist(),source_blocks=source_metadata,source_acquisition=acquisition,
             representative_path=str(representative_path.relative_to(ROOT)),query_path=str(query_path.relative_to(ROOT)),segments=[list(s) for s in segments])
+        if after_read is not None:result['controls']=after_read(j,cache,ctx,memory,result)
         return result,memory
     except Exception:
         memory.close(release=False)

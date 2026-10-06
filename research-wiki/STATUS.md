@@ -1,17 +1,16 @@
 # 当前研究状态
 
-截至 **2026-10-06**。当前入口如下；下方按日期保留历史更新。
+截至 **2026-10-06 18:39 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
-- 当前正式方法仍为 **r6_bma**；ReKV37共同性能门已PASS，机制门尚未完成，继续运行，未更新Overleaf。
-- 累计归档 **30** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
-- 区间见证26 R2完整333/sc448960/213已回传并严格核对/统一评测：HMM within+.002857、HCS+.009731，未有任一标准主指标+.01，按规则9归档第30项；R1正向证据保留，详情见最新记录。
-- **运行中**：来源图25 sc474399/186原B完整333配对读取，MERIT33 sc448960/218完整333 source+reader，ReKV37 sc474398/225（actualfixed5 guardPASS后完整333）；尚无这三项主指标。
-- VideoEvent36/Spatial31/Interval26R2完整统一评测已归档第28/29/30项，权威路径见下方最新记录。
-- 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34B完整333/216已评测：HCSwithin+.016612，HMMPR−.019455，共同门FAIL；R2 revision1/3 fixed5 ROOT227排队。35B原guardFAIL/217原token不变诊断DONE，C完整JSON闭合修复/narrowPASS后原fixed5 ROOT228排队。
-- 空间搜索31完整333/192+215已BOTH回传/严格核对/统一评测：六项均改善，但无任一+.01，按规则9归档第29项；原8unsupported crop输入故障/修复与正向趋势保留。
-- **主agent调度持有**：事实核验27完整333/sc474397/193仍未启动，优先较低成本完整候选；方法版本/修订预算不变。
-- 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
-- TextTiling38 ROOT224实际fixed5/noGT/source/audio/DTW/native/allraw/compiledboth guardPASS；完整333 ROOT226由主agent调度持有，待短验证227/228先完成再释放，R1/budget不变。入口`experiments/20261006_m1_texttiling/README.md`，未主性能。
+- 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
+- **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，机制尚未成立。当前七项选择对照及 T0/H0 已实现，作者软件/实际处理器检查通过，独立代码审查 PASS（same-family provisional），尚未控制 GPU。
+- **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；保留 revision1/3。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。后续设计待实际误差分析，37机制验证优先。
+- **Provenance25 B** 原完整333/186 DONE、**MERIT33** 完整333/218 DONE，全部输入/结果已回传 ROOT，正在本机严格 prepare；尚无主指标结论。入口为各实验 README，日志在各本机 run analysis 目录。
+- **TextTiling38** 原固定5/source/audio/DTW/native/执行守门已通过；完整333/ROOT226于18:27解除调度持有，正在运行，同 R1/预算0/3，尚无主指标。
+- **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；完整333尚未提交。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
+- **事实核验27** 完整333/193仍由主 agent 调度持有，未启动；原方法/预算不变。
+- VideoEvent36、Spatial31、Interval26 R2已按规则9归档第28/29/30项，正向趋势、故障修复和权威数字保留于下方及归档 README。
+- 全部主结果均 HateMM/HateClipSeg、统一4fps、唯一评测器、固定r6、development-selected；完整性能与机制门同时通过才停止。原生媒体/ASR获取和新增来源成本均须报告。
 
 **2026-10-04 M1 自主迭代继续**：用户确认 Explorer R1 为正向进展，并要求达到性能与机制目标后再停止。
 当前正式方法仍为r6_bma。Explorer R4完整333在sc474399/Slurm87完成并回传本机，
@@ -812,3 +811,9 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 35C ROOT228原fixed5 source+reader DONE17:36:55/9:10/0:0，matchingruntime noGT completeguardPASS：两语料各2次3tools、158clipprefix/316relevance、158newV，nativeallraw/G/S/10clone/source/currentpixels/positions/cost exact；原A/B失败保持。阶段346.45s含source238.29s，较低新增成本R2/38完整比较优先，Cfull333待调度，0/3预算无主GT/指标。
 
 **ReKV37完整主门PASS但goal未完成**：HMM ROC/PR/within .896565/.692932/.764466（84/215），HCS .733478/.684667/.653242（99/118），within提升+.013684/+.015892，HMMpooledloss在噪声内。权威runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json；nativeallraw/decodedall6精确。Fresh result-to-claim partial(C1支持/C2待消融)、integrity WARN（独立复算/333记录/28895blocks/264672choices与raw/decoded指标精确；仅口径/范围/cost/未机制限定）。原GTfloor/predceil/canonicalmin及HCS119GT中固定118预测scope已明确，未改GT/evaluator。正式r6未晋级、全部development-selected；新独立消融方案已prepared，正在实现完整matched/deletion/wrongsource/time/ancestry控制，达到机制门才停。
+
+34R2完整333 ROOT/sc474397/229 DONE18:09:43，本机严格prepare与统一评测结束。HMM ROC/PR/within .897993/.696758/.768152（84），HCS .722316/.677426/.642156（99）；六项改善，within +.017370/+.004807，仍无双语料共同+.01。权威 runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json；native allraw/六项/S精确，revision1/3保留，未机制/晋级。R2比较结束后原38 full333/226于18:27正常释放并运行，source/version/budget不变。33完整333/sc448960/218 DONE18:20:32，BOTH全部回传ROOT后 matching-runtime严格prepare/统一评测启动；25原B/186同样已BOTH回传，本机strictprepare进行中，无25/33主指标结论。37性能通过后的完整机制对照实现中，正式r6/目标不变。
+
+37完整对照作者actual36layer FP32/BF16/native/query/clone软件检查PASS，真实native processor fixed5全部624source wrongtimestamp确实进入input且pixel/token/grid/positions保持；全333token-bucket permutation PASS，未控制GPU/指标。三份既有claim/audit/planner原始trace已补齐，本机runs/.../traces，原partial/WARN/方案不变。Postwhole rawV/S/max canonical诊断HMM −.034702/0/−.014338、HCS +.021886/0/+.015502；finalwithin提升但CIs含0，不能声称直接raw视觉排序/显著性，完整机制验证仍待执行。独立controls代码审查在进行，具体失败成本/批次峰值问题已修待确认。
+
+37新增完整机制对照一次独立code review PASS，来源 docs/reviews/20261006_m1_rekv_controls_code.md 与本机完整trace。独立timestamp-aware actual36layer FP32/BF16 actualkeys/margins变化/固定IDs与packing、非空S/无LOCAL/异常恢复及真实native processor624inputs验证通过；两cost修复已独立确认，无GT/GPU/机制结论。准备同sc474398原fixed5 Slurm验证，完整333须守门通过后再提交。

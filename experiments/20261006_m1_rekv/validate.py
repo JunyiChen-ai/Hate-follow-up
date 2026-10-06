@@ -11,7 +11,7 @@ from src.mllm_judge import yesno_question
 from binding import validate_native_binding
 
 
-def validate_bundle(j,row,segments,meta,bundle,smoke):
+def validate_bundle(j,row,segments,meta,bundle,smoke,control=None):
     assert bundle['version']==SPEC['version'] and bundle['spec']==SPEC
     assert bundle['segments']==[list(s) for s in segments]
     base,new=bundle['base'],bundle['optimized'];ctx=bundle['native_ctx'];checks=bundle['checks']
@@ -22,6 +22,13 @@ def validate_bundle(j,row,segments,meta,bundle,smoke):
     assert ctx['stance']==('Yes' if ctx['global_margin']>0 else 'No')
     validate_native_binding(j,row,segments,ctx,bundle['binding'])
     frames=source_frames(row,meta['source']);blocks=bundle['source_blocks']
+    previous_frames=SPEC['source_previous_frames']
+    if control is not None:
+        assert control['arm'] in ('T0','H0')
+        if control['arm']=='H0':previous_frames=0
+        else:
+            assert len(control['presented_times'])==len(frames)
+            frames=[{**f,'presented_time':t} for f,t in zip(frames,control['presented_times'])]
     assert len(blocks)==len(frames)==checks['source_frames']
     representatives=np.load(ROOT/bundle['representative_path'],allow_pickle=False)
     queries=np.load(ROOT/bundle['query_path'],allow_pickle=False)
@@ -35,7 +42,7 @@ def validate_bundle(j,row,segments,meta,bundle,smoke):
     positions=[]
     for index,(frame,block,record) in enumerate(zip(frames,blocks,bundle['source_acquisition']['records'])):
         assert (block['block_id'],block['source_index'],block['actual_time'])==(index,frame['index'],frame['time'])
-        history=list(range(max(0,index-SPEC['source_previous_frames']),index))
+        history=list(range(max(0,index-previous_frames),index))
         assert block['direct_ancestors']==record['history_ids']==history
         inherited=set(history)
         for ancestor in history:inherited.update(blocks[ancestor]['ancestors'])
@@ -67,6 +74,8 @@ def validate_bundle(j,row,segments,meta,bundle,smoke):
         assert trace['branch']['input']==evidence and len(trace['branch']['layers'])==layers
         for layer,record in enumerate(trace['branch']['layers']):
             remote,_=remote_selection(torch.from_numpy(queries[w['i'],layer]),torch.from_numpy(representatives[layer]),source_indices,local)
+            if control is not None and control['arm']=='T0':
+                remote=list(control['reference']['traces'][w['i']]['branch']['layers'][layer]['remote_ids'])
             selected=sorted(set(local+remote),key=lambda index:source_indices[index])
             assert record['local_ids']==local and record['remote_ids']==remote and record['selected_ids']==selected
             packed,end=pack_positions([positions[index] for index in selected],ctx['stance_cache_logical_start'])
