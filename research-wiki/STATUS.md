@@ -1,11 +1,11 @@
 # 当前研究状态
 
-截至 **2026-10-06 18:52 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-06 19:40 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，机制尚未成立。当前七项选择对照及 T0/H0 已实现，作者软件/实际处理器检查通过，独立代码审查 PASS（same-family provisional），真实8B原fixed5/230与严格本机 prepare 已通过，完整333对照/sc474398/231已提交。
-- **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；保留 revision1/3。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。后续设计待实际误差分析，37机制验证优先。
-- **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；保留0/3修订，实际误差分析进行中。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
+- **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；R3 revision2/3固定5/232正常QOS排队。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。后续设计待实际误差分析，37机制验证优先。
+- **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；R2 revision1/3已通过原fixed5/233及ROOT严格守门，完整333待提交。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
 - **TextTiling38** 原固定5/source/audio/DTW/native/执行守门已通过；完整333/ROOT226于18:27解除调度持有，正在运行，同 R1/预算0/3，尚无主指标。
 - **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；完整333尚未提交。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
 - **事实核验27** 完整333/193仍由主 agent 调度持有，未启动；原方法/预算不变。
@@ -833,3 +833,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 34R3原fixed5 ROOT/Slurm232已提交，独立窄delta/作者CPU/all333source processor及all4code一致通过，正常QOS等待226/231，不dependency/chain/bypass。预算revision2/3不变，无R3 GT/主指标；full333须实际守门通过后提交。37全部机制231继续完整333。
 
 33R2已事前声明revision1/3：仅恢复freshnativeS，视觉R1（含原ASR/LOCAL-only）及全部source/filter/常数/r6不变，避免同时改两个因素。作者20actual36layerCPU/旧R1snapshot与V逐值精确、独立窄delta PASS docs/reviews/20261006_m1_merit_R2_delta.md（all333输入/cost/82processor refs/state/naming/guard），real8B原fixed5待提交；原source266.36min/874507forwards完整计费。37全机制231与ROOT38/226继续；34R3/232正常QOS等待。
+
+33R2原fixed5 sameR1sourcehost sc448960/Slurm233已提交，原完整333source只读复用、无新source generation，作者CPU+一次独立narrowdelta PASS与all4code一致/旧foreign+STRAY保留/702Gfree/currentidle检查通过。配置内normalSlurm/account，未改QOS/持有作业；full333须实际守门，未GT/R2指标。37机制231与ROOT38/226继续，34R3/232正常QOS等待。
+
+33R2真实8B原fixed5 samehost/sc448960/233 DONE19:36:40，1:30/0:0，BOTH回传ROOT后matchingruntime strictpreparePASS；directsamehost完整R1→R2所有V/sourcebranch逐值精确、nativeG/allraw/S原生精确、158新V与0S改变/10clones源输入/positions/cost守门通过。权威 runs/r2_full_smoke_analysis/{plumbing_summary,R1_R2_actual_identity}.json；完整333准备提交，无R2 GT/主指标/机制。37所有机制231继续，ROOT38/226与34R3/232正常顺序。
