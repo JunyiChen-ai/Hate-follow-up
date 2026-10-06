@@ -853,3 +853,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 38R2独立窄delta确认PASS docs/reviews/20261006_m1_texttiling_R2_delta.md（same-family provisional）：8actual36layer FP32/BF16含原生S缺失/UNKNOWN/无LOCAL/compiled、native/packet/clone/KV/rope/host/成本与篡改拒绝；完整333/7359真实未标注包重放/defaultR1兼容/命名/启动/失败阻断通过。未GPU/GT/实际预测/指标；原fixed5准备提交，revision1/3。37全部机制231、33R2主轮234、34R3主轮235继续。
 
 38R2原fixed5 sameROOTsourcehost/Slurm236已提交，一次独立窄delta/作者actualCPU/all7359source包与all4code一致、旧foreign+STRAY保留/382Gfree检查通过；仅freshparser+reader，原ASR/DTW/source只读且全部成本保留。正常QOS排235/231后，不dependency/chain/bypass。revision1/3，无R2 GT/指标，full333须actual守门。37机制231/33R2主轮234/34R3主轮235继续。
+
+34R3完整333 ROOT235 DONE20:32:01，33:00/0:0，本机所有input/run齐，SOURCE_INTERFACE=B READER_REVISION3 matchingruntime strictprepare+唯一评测/固定r6启动，尚无主指标。38R2原fixed5/236已开始运行；37全部机制231/33R2完整234继续，正式r6/目标不变。
+
+38R2真实原fixed5 ROOT236 DONE20:33:31/1:29/0:0，本机matchingruntime strict noGT准备PASS：nativeallraw/G/V原生精确、compiledS与原完整R1逐值/其余nativeS或None、同parser选择、source/audio/3axis/绑定/成本与5clones守门通过。权威 runs/r2_full_smoke_analysis/{plumbing_summary,R1_R2_actual_identity}.json；完整333准备提交，revision1/3，原source与freshparser全部计费，未主指标/机制。34R3完整235已结束、CPU strictprepare进行；37机制231/33R2完整234继续。
