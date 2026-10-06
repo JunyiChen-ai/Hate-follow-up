@@ -57,12 +57,13 @@ def compact(details):
     return dict(input=details['input'],layers=[{k:v for k,v in details['layers'][i].items() if k not in ('query_vector','similarities')} for i in range(len(details['layers']))])
 
 
-def selection_batch(j,cache,ctx,memory,r0,row,out,smoke):
+def selection_batch(j,cache,ctx,memory,r0,row,out,smoke,arms=ARMS):
     before=j.forward_calls;vision=j.vision_calls
     result={};blocks=r0['source_blocks'];reference=r0['traces']
     reps=np.load(ROOT/r0['representative_path'],allow_pickle=False)
     shape=np.load(ROOT/r0['query_path'],allow_pickle=False).shape
-    for arm in ARMS:
+    assert arms and len(set(arms))==len(arms) and all(arm in ARMS for arm in arms)
+    for arm in arms:
         first=j.forward_calls;start=clock(j);traces=[];values=[];queries=np.zeros(shape,np.float32);clones=0;diagnostic=0.
         for w in reference:
             local=w['local_ids'];bounds=w['bounds'];question=w['question'];branch=None;reads=[]

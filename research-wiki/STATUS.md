@@ -1,13 +1,13 @@
 # 当前研究状态
 
-截至 **2026-10-07 00:50 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 01:06 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
 - **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；R3 revision2/3完整333/235已评测：within+.011050/−.001156，共同门FAIL、无超噪声损失，HMM正向保留，最后一修订须实际误差分析。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。R3仅恢复原R1视觉包ASR，nativeS与来源守门保持R2；37机制验证优先。
 - **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；R2 revision1/3已通过原fixed5/233及ROOT严格守门，完整333/sc448960/234已严格评测：HMM within+.006419/PR−.002657噪声内，HCS within+.015796，共同门仍FAIL，revision1/3，正向修复保留。R2权威 `runs/20261006_m1_merit/r2_full_main_decoded/optimized/metrics.json`，原source完整计费。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
 - **TextTiling38** 完整333/ROOT226已严格评测：within +.016902/+.010345双语料达标，但HMM PR−.012746超噪声，整体FAIL；正向结果保留；R2 revision1/3已通过一次独立增量审查，原fixed5/ROOT236已通过严格守门，完整333/ROOT237已严格评测：within+.011596/+.001977、HMMPR−.014250，共同门FAIL；原R1dualwithin进展保留，revision1/3已用，实际误差分析继续。R2权威 `runs/20261006_m1_texttiling/r2_full_main_decoded/optimized/metrics.json`。权威 `runs/20261006_m1_texttiling/r1_full_main_decoded/optimized/metrics.json`。
-- **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；完整333尚未提交。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
+- **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；当前 C 完整333实际输入预检已PASS，准备同ROOT完整轮，预计4–8GPUh（未测），预算0/3。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
 - **事实核验27** 完整333/193仍由主 agent 调度持有，未启动；原方法/预算不变。
 - VideoEvent36、Spatial31、Interval26 R2已按规则9归档第28/29/30项，正向趋势、故障修复和权威数字保留于下方及归档 README。
 - 全部主结果均 HateMM/HateClipSeg、统一4fps、唯一评测器、固定r6、development-selected；完整性能与机制门同时通过才停止。原生媒体/ASR获取和新增来源成本均须报告。
