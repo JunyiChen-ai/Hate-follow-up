@@ -777,3 +777,5 @@ VideoEvent36完整333/sc474398/214统一评测结束/native allraw与六项精�
 - 当前r6、数据/GT、4fps、唯一评测器与共同性能/机制门不变，目标未完成，继续自主迭代。
 
 2026-10-06下一池idea-creator三个fresh同模型readonly镜头各3项完成：KV媒体记忆、转变/依赖状态、语音来源绑定。实际finalJSON由主agent保存/解析，精确dedup_key去重0，全部9项原样进入`experiments/20261006_m1_ideation/CANDIDATES.json`；未质量预筛/选题/GPU。独立fresh一次Rule4 jury正在实际核读/检索，same-family provisional；原生/双语料共同性能/机制门与所有旧家族预算不变。主任务25/33/34继续，27仍调度持有、35只读诊断217排队。
+
+20261006新池一次fresh独立Rule4审查9PASS/0STOP（same-family provisional），来源`docs/reviews/20261006_m1_ideation_jury.md`及本机jury_evidence。选首位ReKV为候选37，`experiments/20261006_m1_rekv/README.md`/spec已事前明确实际0.5fps媒体、逐层query/key检索、nativeG/S/ownstance、三轴位置与逐视频临时KV/全部新视频成本；不是新4fps协议/encoder/旧家族重启。原型尚未实现/未GPU/GT/性能，唯一code review仍需完成；原25/33/34完整运行继续，目标未完成。

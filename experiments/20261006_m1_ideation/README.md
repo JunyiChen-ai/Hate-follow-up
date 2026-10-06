@@ -43,3 +43,5 @@ dedup_key equality was applied. All9 remain, duplicates0. No cost/quality/novelt
 prefilter was applied; complete CANDIDATES.json goes to one fresh independent
 rule4 jury, same-family provisional. No candidate has been selected, coded or
 run, and no target performance or mechanism claim follows from this pool.
+
+Oncefreshindependent Rule4jury completed9PASS/0STOP, same-family provisional; docs/reviews/20261006_m1_ideation_jury.md andruns/jury_evidence/ containactualprimary/searches/family/spec/resource obligations. Rank ReKV,TextTiling,StreamingTOM,MuKV,actor-object,segmental recurrence,LocalAgreement,BaGLM,TFVTG. Parent selects ReKV asCandidate37; concrete preimplementation source/GQA/3axis/local/fallback/storage/cost/controlspec at experiments/20261006_m1_rekv/README.md. NoGPU/targetperformance orbudgetreset.
