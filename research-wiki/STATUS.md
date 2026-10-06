@@ -3,9 +3,9 @@
 截至 **2026-10-06 18:52 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
-- **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，机制尚未成立。当前七项选择对照及 T0/H0 已实现，作者软件/实际处理器检查通过，独立代码审查 PASS（same-family provisional），真实8B原fixed5/230与严格本机 prepare 已通过，完整333对照待提交。
+- **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，机制尚未成立。当前七项选择对照及 T0/H0 已实现，作者软件/实际处理器检查通过，独立代码审查 PASS（same-family provisional），真实8B原fixed5/230与严格本机 prepare 已通过，完整333对照/sc474398/231已提交。
 - **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；保留 revision1/3。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。后续设计待实际误差分析，37机制验证优先。
-- **Provenance25 B** 原完整333/186 DONE，全部输入/结果已回传 ROOT，本机严格 prepare 进行中，尚无主指标。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；保留0/3修订，实际误差分析进行中。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
+- **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；保留0/3修订，实际误差分析进行中。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
 - **TextTiling38** 原固定5/source/audio/DTW/native/执行守门已通过；完整333/ROOT226于18:27解除调度持有，正在运行，同 R1/预算0/3，尚无主指标。
 - **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；完整333尚未提交。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
 - **事实核验27** 完整333/193仍由主 agent 调度持有，未启动；原方法/预算不变。
@@ -823,3 +823,9 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 33完整333 ROOT严格source/native/allraw/六项baseline精确并统一评测结束。HMM ROC/PR/within .898750/.684632/.768536（84），HCS .719679/.673320/.644979（99）；共同门FAIL，HMMwithin+.017754正向保留，HMMPR−.009602超噪声。权威 runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json；Rule9保留budget0/3，实际GT error analysis启动，未新修订/控制/机制。全部development-selected，source874507 forwards及新视频304.47min processing含266.36min来源完整保留，37机制优先。
 
 37真实8B原fixed5全部对照/230 DONE18:49:02，7:23/0:0，BOTH完整回传后ROOT strict noGT prepare PASS。R0源/query/选块/读数及nativeallraw精确；非identity各控制真实改变158V、T0/H0keys真实改变/nativeG/S不变、50clones精确；D0/T0真实替换/跨窗 exposure通过。权威软件执行 runs/controls_smoke_analysis/{plumbing_summary,actual_intervention_summary}.json；尚无GT/control主指标，完整333准备提交，formalr6/目标不变。
+
+37完整333全部必要对照同sc474398/Slurm231已提交，原fixed5真实8B+ROOT strictPASS后派发，当前all4代码一致/旧foreign+STRAY保留/1.3Tfree/idle检查已记runs/machines_before_controls_main{,_note}.txt。顺序selection/T0/H0，全部215/118同host，fresh每videoKV，all9arm/all6结果与成本/负结果全部保留。预计5–8GPUh仍为预测；未控制主指标/机制结论，正式r6/目标不变。
+
+34R2实际postwhole原始V/S/max分析HMM+.029488/0/+.003635、HCS−.003863/0/−.000128；两HCS实际源例子显示去视觉包ASR伴随ordering损失，非单因果证明。R3已事前声明revision2/3：只恢复原R1视觉包literalASR，保留R2 nativeS与实际REMOTE+LOCAL守门，其余完整B source/模型/常数/r6不变，新鲜完整读数不拼旧输出。作者20actual36layer CPU与旧R1/R2逐值比较PASS，独立窄delta确认进行，尚未GPU/主指标；37完整机制231仍优先，38/226持续读数。
+
+25原B完整333本机严格prepare/统一评测结束，nativeallraw/六项baseline精确。HMM ROC/PR/within .895410/.688659/.754772（84），HCS .720096/.670261/.656055（99）；HCSwithin+.018705正向保留，HMMwithin仅+.003990/PR−.005576超噪声，共同门FAIL。权威 runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json，budget0/3保留、实际raw/source erroranalysis继续；HMM rawS/max下降且CI负，未机制。全部development-selected，实际新视频23.24h处理含20.21h原source/4391080 forwards，完整成本不隐藏；37机制231优先。

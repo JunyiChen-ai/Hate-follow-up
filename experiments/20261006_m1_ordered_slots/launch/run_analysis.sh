@@ -7,7 +7,7 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false
 suffix=''
 if [[ ${SOURCE_INTERFACE:-A} == B ]]; then suffix=_B; fi
 revision=${READER_REVISION:-1}
-[[ $revision == 1 || $revision == 2 ]]
+[[ $revision == 1 || $revision == 2 || $revision == 3 ]]
 out="runs/20261006_m1_ordered_slots/r${revision}_full_main${suffix}_analysis"
 mkdir -p "$out"
 exec >>"$out/run.log" 2>&1

@@ -17,8 +17,8 @@ from src.stance_cache import build,margin
 from src.source_image_branch import margin as image_margin,encode_branch
 from src.source_generation import clock
 from src.video_inputs import frame_paths,load_asr,fixed_windows,window_text
-REVISION=int(os.environ.get('READER_REVISION','1'));assert REVISION in (1,2)
-if REVISION==2:assert SPEC.get('interface')=='B'
+REVISION=int(os.environ.get('READER_REVISION','1'));assert REVISION in (1,2,3)
+if REVISION>=2:assert SPEC.get('interface')=='B'
 
 
 def uses_source(window,packet):
@@ -38,7 +38,7 @@ def memory(window,packet,windows):
             content.append(dict(type='text',text=json.dumps(dict(role=role,source='NONE'))));continue
         source=windows[index]
         details=dict(role=role,id=index,bounds=[source['start'],source['end']])
-        if REVISION==1:details['literal_ASR']=source['body']
+        if REVISION in (1,3):details['literal_ASR']=source['body']
         content.append(dict(type='text',text=json.dumps(details,ensure_ascii=False)))
         for frame in source['frames']:
             content.extend([dict(type='text',text=f"Actual frame {frame['id']} at PTS {frame['time']:.9f}s."),dict(type='image')]);paths.append(ROOT/frame['path'])
@@ -108,7 +108,7 @@ def read_video(j,row,segments,m,smoke):
     native_seconds=sum(times[k] for k in ('prefix','native_visual','native_speech'))
     optimized_seconds=m['cost']['standalone_seconds']+sum(times[k] for k in ('prefix','new_speech','new_visual'))
     base=prediction(row,ctx,native_visual,native_speech,native_seconds,'m1_native')
-    new=prediction(row,ctx,new_visual,new_speech,optimized_seconds,'m1_ordered_slots' if REVISION==1 else 'm1_ordered_slots_r2',m['cost']['actual_forwards'])
+    new=prediction(row,ctx,new_visual,new_speech,optimized_seconds,'m1_ordered_slots' if REVISION==1 else f'm1_ordered_slots_r{REVISION}',m['cost']['actual_forwards'])
     found=sum(uses_source(w,p) for w,p in zip(m['windows'],m['packets']))
     checks=dict(host=socket.gethostname(),GT_read=False,times=times,source_seconds=m['cost']['standalone_seconds'],source_forwards=m['cost']['actual_forwards'],source_vision=m['cost']['actual_vision_forwards'],
         actual_forwards=j.forward_calls-before,actual_vision=j.vision_calls-before_vision,diagnostic_forwards=diagnostic_calls,diagnostic_vision=diagnostic_vision,
@@ -118,7 +118,7 @@ def read_video(j,row,segments,m,smoke):
     assert checks['actual_vision']==1+found+diagnostic_vision
     result=dict(base=base,optimized=new,checks=checks,traces=traces,segments=[list(s) for s in segments],
         native_ctx={k:v for k,v in ctx.items() if k not in ('positions','rope','files')},native_rope=ctx['rope'].tolist())
-    if REVISION==2:result['reader_revision']=2
+    if REVISION>=2:result['reader_revision']=REVISION
     del cache;return result
 
 
@@ -167,7 +167,7 @@ def main():
     import transformers
     cfg=dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),model=MODEL,spec=SPEC,GT_read=False,smoke=a.smoke,
         torch=torch.__version__,transformers=transformers.__version__,code='experiments/20261006_m1_ordered_slots/measure.py + src/source_image_branch.py;2026-10-06',command='python -u '+' '.join(__import__('sys').argv))
-    if REVISION==2:cfg['reader_revision']=2
+    if REVISION>=2:cfg['reader_revision']=REVISION
     (out/'config.json').write_text(json.dumps(cfg,indent=2)+'\n');torch.manual_seed(0);j=Judge(MODEL);j.forward_calls=j.vision_calls=0
     hooks=[j.model.model.register_forward_pre_hook(lambda *_:setattr(j,'forward_calls',j.forward_calls+1)),j.model.model.visual.register_forward_pre_hook(lambda *_:setattr(j,'vision_calls',j.vision_calls+1))]
     rows=selected_rows(a.smoke);asr={ds:load_asr(ds) for ds in DATASETS};results={name:[] for name in ('base','optimized')}
