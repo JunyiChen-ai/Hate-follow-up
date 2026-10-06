@@ -1,0 +1,358 @@
+{
+  "scope": "unranked generation; exact dedup_key equality only; no quality/novelty or cost filtering",
+  "source_shards": [
+    "runs/20261006_m1_ideation/shards/kv_retrieval.json",
+    "runs/20261006_m1_ideation/shards/transition_reasoning.json",
+    "runs/20261006_m1_ideation/shards/speech_alignment.json"
+  ],
+  "generated": 9,
+  "duplicates": [],
+  "candidates": [
+    {
+      "shard_id": "kv_retrieval",
+      "dedup_key": "rekv_layerwise_source_memory_local_conditioned_reader",
+      "name": "Layer-wise retrieval of source-bound visual KV memory",
+      "origin": "Transfer of ReKV's complete encoding–offloading–internal retrieval–answering pipeline, with an explicitly proposed local-window conditioning adaptation.",
+      "method": [
+        "Preserve frozen Qwen3-VL-8B, native20/fullASR, native G and its own hard stance. Obtain additional actual video frames at 0.5 fps, recording decoded PTS and source indices; the 4 fps evaluation grid is unchanged.",
+        "Build one chronological visual memory after a clone of the native prefix. Each timestamped source-frame block attends to native context and at most four preceding source frames; offload completed per-layer KV blocks. Store their source and contextual-ancestor identities. Generate no captions, classifications or external embeddings.",
+        "For each independent 8-second V query, keep every available newly sampled frame belonging to that window as compulsory local support. At each language layer, mean-pool the actual question-token queries and each remote frame's keys, concatenate compatible attention heads, and retrieve the four highest-cosine remote blocks. Resolve ties by original frame index. Retrieval uses neither margins nor GT.",
+        "Attend jointly to unchanged native context, compulsory local blocks, selected remote blocks and the current question. Remote blocks carry their actual timestamps and a context-only role. Reposition retrieved blocks contiguously in chronological order, preserving within-image spatial offsets through an explicit three-axis Qwen mRoPE translation; retain original timestamps in text. This is a Qwen adaptation requiring numerical validation, not an assertion that cached and freshly recomputed contextual representations are identical.",
+        "Read one fresh V margin per window; retain native independent S, native G/own stance, original max and unchanged r6. Empty local support is recorded as unavailable, never interpreted as absence of hate."
+      ],
+      "sources": [
+        {
+          "url": "https://arxiv.org/html/2503.00540v1",
+          "read_scope": "Actually read section 3, including sliding-window encoding, internal per-layer mean-key/mean-query retrieval, KV answering and positional encoding, plus implementation defaults in 4.2. The supplied ICLR PDF endpoint returned an internal error; this primary arXiv HTML supplied the accessible method."
+        }
+      ],
+      "transfer_and_difference": "ReKV stores previously computed visual KV, selects query-relevant blocks independently at each layer, and answers through the retrieved memory. The proposed adaptation adds compulsory local support and explicit remote-source roles while preserving the native scoring scaffold. Its scientific hypothesis concerns which contextualized media representations become available to each local question, not faster cache reuse alone.",
+      "local_ordering_hypothesis": "Different windows should retrieve different contextual evidence for interpreting locally visible acts. Correct binding should improve raw V and max ordering within videos; a constant shift induced by extra memory would not support this explanation.",
+      "cost": {
+        "additional_model_calls_per_video": "Let F=ceil(duration_seconds/2), with actual decoded-frame deduplication. Approximately F source-frame vision/LM prefill steps; no generated descriptions and no extra query-probe pass because retrieval occurs within the V forward. Modified V replaces native V in deployment; paired native measurement is charged separately. Native ASR acquisition and original model work remain part of end-to-end cost.",
+        "gpu_time_estimate": "Unmeasured planning range: 20–100 additional GPU seconds per minute of source video on a 5090, plus approximately 0.2–1 second per window for the enlarged V read. These are budget assumptions, not measured performance or a speedup claim.",
+        "cache": "Reuse existing native frames and ASR only with their provenance. New decoded frames, every-layer source KV, source ancestry, positions and retrieval traces must be acquired for each new video. Charge decoding, vision inference, LM prefill, transfers, retrieval and final reads; offloading is not free preprocessing."
+      },
+      "novelty_components_and_ablations": [
+        "Proposed claim: local-conditioned layer-wise retrieval of source-bound media memory. Compare with equal-count chronology-only remote blocks while holding local support and source acquisition fixed.",
+        "Delete remote retrieval entirely while retaining all compulsory local frames, separating contextual retrieval from denser local input.",
+        "Share one fixed layer's selections across all layers to test whether layer-dependent retrieval is needed.",
+        "Cache offloading and positional bookkeeping are implementation details unless separately supported; do not claim novelty for them."
+      ],
+      "wrong_binding_control": "Rotate retrieved remote frame-block identities across windows within the same video using a fixed deterministic ordering, matching block count and token-size buckets. Transfer the actual donor KV and its honest source timestamp together; keep each target's local blocks unchanged. Also compare raw V/max ordering before r6. Every claimed component requires deletion loss of at least .01 on the same main metric in both corpora.",
+      "difference_from_tried_families": "Integrator/FutureMask changes prefix access to future tokens; this candidate constructs additional chronological source memory and retrieves blocks for each local query. Tree/VideoTree uses semantic hierarchy/captions. TTF and OTT compress the original native visual sequence; RoTE integrates temporal positional support. Highlighter/VGA changes value guidance. Provenance25 traverses generated entity/discourse links, and MERIT33 retrieves generated multi-key descriptions before source rereading. This candidate uses neither generated graph keys nor caption filtering.",
+      "operational_limits": "A proposal only; no target-task novelty or performance verdict. GQA head alignment, all three mRoPE axes, contextual ancestry and independent query-cache restoration need actual Qwen validation. Complete333 and canonical unchanged 4 fps evaluation are mandatory. Promotion requires the same main metric +.01 on both corpora, pooled losses no greater than .005 and within losses no greater than .01. No labels in acquisition/scoring/constants, no additional predictor or dataset, no ensemble, no hashes or Git-ID provenance. Existing active and unreliable families retain their original budgets."
+    },
+    {
+      "shard_id": "kv_retrieval",
+      "dedup_key": "mukv_three_grain_coherence_retrieval_local_reader",
+      "name": "Cross-granularity coherent KV retrieval for local evidence",
+      "origin": "Transfer of MuKV's complete multi-granularity memory, dual-signal compression, semi-hierarchical retrieval and KV-conditioned answering, with explicit local-support and Qwen adaptations.",
+      "method": [
+        "Keep the complete native scoring scaffold unchanged. For each original 8-second window acquire four actual frames nearest its one-eighth, three-eighths, five-eighths and seven-eighths positions, using the first in-window decoded frame at or after each target and recording deduplication or missing support.",
+        "Construct three separate memory streams from the same Qwen vision features: the four-frame segment; its earlier middle frame; and four spatial quadrants of that middle frame. Use separate LM prefills for segment, frame and patch streams, preserving all required DeepStack rows and actual source coordinates. Count these as real additional computation.",
+        "Within each granularity, compute last-layer attention importance and the paper-defined key-frequency statistic, min-max normalize each and combine equally. Retain fractions .8/.1/.1 for segment/frame/patch KV respectively, using at least one token per nonempty block and deterministic original-index ties. These are fixed proposed settings shared by both corpora, not fitted constants.",
+        "Obtain one neutral query representation per local window from its actual local media and original ASR under the same frozen Qwen. Retrieve four candidate blocks per granularity by cosine similarity. Form a coarse query from the two highest-ranked segment representatives, rerank lower-granularity candidates with coherence weight .3, and retain two blocks per granularity.",
+        "For the final independent V read, preserve all uncompressed current-window acquired frames as LOCAL support and add the retrieved timestamped KV blocks as contextual memory. Do not replace local evidence with the coarse representation. Use explicit source-aware Qwen position packing, native G/own stance and native S; V/S max and r6 remain unchanged."
+      ],
+      "sources": [
+        {
+          "url": "https://arxiv.org/html/2605.22269v1",
+          "read_scope": "Actually read 3.1–3.5, equations 1–9, and appendix 7.2. This includes the three separate LM prefills, attention/frequency compression, top-2k parallel retrieval and cross-grain reranking. Official implementation was not inspected; equation-level FFT interpretation remains an explicit implementation uncertainty."
+        }
+      ],
+      "transfer_and_difference": "MuKV separately caches patch, frame and segment representations, compresses them using attention and frequency signals, then reranks parallel query retrieval using coarse context. This proposal retains that functional chain. Local compulsory media, smaller fixed retrieval budgets and Qwen source-position handling are adaptations. Three prefills remain three paid computations even if batched or parallelized.",
+      "local_ordering_hypothesis": "A patch containing a salient symbol or text should influence a local read differently when its corresponding segment supports versus contradicts the apparent visual meaning. Cross-granularity coherence could reduce misleading patch matches without erasing brief local evidence.",
+      "cost": {
+        "additional_model_calls_per_video": "For W original windows: approximately 3W memory-prefill calls, W neutral retrieval-query forwards, and four source-frame vision encodings per window reusable across granularities. Patch groups can be batched but their computation remains charged. Modified V replaces native V; native S/G remain.",
+        "gpu_time_estimate": "Unmeasured planning range: 3–12 additional GPU seconds per original window, or roughly 23–90 GPU seconds per minute of video, including memory construction and query probes. Large token grids can exceed this range; measure before extrapolating.",
+        "cache": "Native frames/fullASR are reusable. Additional frames, separate three-grain contextual KV, compression statistics and retrieval traces are new per-video work. Charge acquisition, shared vision encoding, all three LM streams, CPU/GPU FFT, retrieval and final reads."
+      },
+      "novelty_components_and_ablations": [
+        "Proposed claim: coherent multi-granularity memory retrieval. Delete cross-grain reranking while retaining identical memory and per-grain budgets.",
+        "Replace the three-grain memory with a frame-only memory under a matched active-token budget, retaining identical local frames and native scaffold.",
+        "Compare against local-only added media to separate retrieval from source coverage.",
+        "Treat attention/frequency compression as an efficiency component unless its own deletion passes the required dual-corpus .01 loss gate; do not attribute localization gains to compression by default."
+      ],
+      "wrong_binding_control": "Reassign coarse segment representatives to lower-granularity blocks from another window within the same video while keeping candidate counts and actual lower-level sources unchanged. Separately exchange retrieved source blocks between target windows with matching token budgets, retaining honest source times. A mechanism claim needs correct binding to outperform these controls and improve raw V/max ordering.",
+      "difference_from_tried_families": "This is not Tree's semantic cluster expansion or VideoTree caption reasoning: the hierarchy contains actual separate contextual KV streams. It does not revive TTF/OTT compression of native20, RoTE's interval encoding, FutureMask's prefix access or VGA value steering. It lacks Provenance25 discourse edges, Interval26 witness certificates, Verification27 factual revision and MERIT33 generated multi-key/filter loops.",
+      "operational_limits": "Paper-based transfer, not a faithful source-code reproduction. The FFT equation maps frequency bins to retained token positions; that interpretation must be stated literally and independently checked, not silently relabeled temporal saliency. Qwen sparse DeepStack/position handling and all-new source construction remain untested. Same complete333, native parity, fixed-r6/canonical4fps, dual-corpus promotion/noise and component deletion gates apply. No target labels/fitting, stronger predictor, ensemble, new dataset, hashes or Git-ID provenance. No current family is reset."
+    },
+    {
+      "shard_id": "kv_retrieval",
+      "dedup_key": "streamingtom_causal_dualpath_quantized_media_memory",
+      "name": "Causal change-preserving media memory with local retrieval",
+      "origin": "Transfer of StreamingTOM's complete causal pre-LLM reduction plus group-aligned quantized memory and selective retrieval, adapted to independent local measurements.",
+      "method": [
+        "Preserve native20/fullASR, native G and its own stance. Decode a supplementary 0.5 fps visual stream with actual PTS; it is additional source media, not a replacement native prefix or a new evaluation protocol.",
+        "Process source frames chronologically through the same frozen Qwen vision tower. On equal spatial grids, compare each current token with the preceding frame's corresponding token; similarity greater than .9 defines static support. Allocate a fixed budget of 50 tokens proportionally between static and dynamic sets.",
+        "Cluster static tokens within the current frame using density-peak clustering and keep attention-salient dynamic tokens. Apply the same current-frame grouping to the final projector and all DeepStack representations. Reset adjacency at an actual processor-grid change instead of asserting nonexistent token correspondence. Record every merged member and source time.",
+        "Prefill each reduced timestamped frame group once. Quantize its per-layer KV to four bits using per-head/channel group ranges, retaining full-precision representative keys. Native system/prefix memory remains unquantized. Source history may be offloaded; its total storage grows with video length.",
+        "For each independent V question, retain uncompressed current-window sampled media and retrieve the four most similar nonlocal frame groups using their representatives and the actual question state. Dequantize only those groups, bind their real timestamps as context, and read one V margin under native context and own stance. Retain independent native S and original max/r6."
+      ],
+      "sources": [
+        {
+          "url": "https://arxiv.org/html/2510.18269v1",
+          "read_scope": "Actually read methodology 3.1–3.4 and implementation details 4.1: two-frame causal comparison, static/dynamic allocation, clustering/saliency paths, groupwise four-bit memory, representative-key retrieval and selective dequantization. The official GitHub implementation was not audited; this is a paper-based adaptation."
+        }
+      ],
+      "transfer_and_difference": "StreamingTOM combines causal static/dynamic token reduction before the language model with groupwise quantized KV storage and relevant-group retrieval afterward. This proposal transfers both stages into an additional media-memory path. Native scoring is preserved, and local uncompressed support prevents compression from becoming the only view of a short event. Quantization itself is an efficiency detail, not the localization claim.",
+      "local_ordering_hypothesis": "A memory that retains changing local objects/text while consolidating repeated backgrounds may provide more discriminative context for each window. The predicted effect is improved raw local ordering from correct retrieved context; lower memory usage or a global score shift alone is insufficient.",
+      "cost": {
+        "additional_model_calls_per_video": "F=ceil(duration_seconds/2) additional source vision encodings and reduced-frame LM prefills, plus one query-probe forward per window if the implementation cannot retrieve directly inside the final V pass. The optional probe is a cost contingency, not a second scored prediction. No captions or generated evidence. Final V replaces native V.",
+        "gpu_time_estimate": "Unmeasured planning range: 15–80 additional GPU seconds per minute of video, plus 0.2–1 second per local read. Compression reduces language-token work but does not remove video decoding or full vision-tower cost; quantization and transfers must be included.",
+        "cache": "Original native media/ASR reused with provenance. New source frames, vision saliency, compressed token membership, four-bit KV and full-precision representative keys are acquired per video. Count all acquisition, feature extraction, clustering, memory writing/retrieval and final reading."
+      },
+      "novelty_components_and_ablations": [
+        "Proposed claim: the combined change-preserving media memory and local-conditioned retrieval. Compare static/dynamic allocation with equal-budget uniform token selection while keeping acquisition, quantization and retrieval fixed.",
+        "Delete nonlocal retrieval while retaining identical uncompressed local source frames.",
+        "Compare query-conditioned retrieval with equal-count chronological groups.",
+        "Run full-precision KV as a numerical/efficiency control; four-bit storage is not claimed as a source of localization improvement unless its own evidence warrants that claim."
+      ],
+      "wrong_binding_control": "Bind each target window to real retrieved groups selected for another window in the same video, matching group count and token budget while preserving donor timestamps and local support. A second control changes the preceding-frame identity used only for static/dynamic classification, retaining the current frame's real pixels. Require actual raw V/max ordering effects and the prescribed dual-corpus deletion losses.",
+      "difference_from_tried_families": "TTF performs anchor-based identity replacement over native frames; OTT constructs adjacent optimal-transport merge chains. This candidate's additional source stream uses causal two-frame classification and bounded query-active group memory. It does not alter temporal phases as RoTE, future visibility as Integrator, or value directions as Highlighter. It builds no semantic tree, generated discourse graph, witness certificate or MERIT multi-key description store.",
+      "operational_limits": "Causality applies to constructing the supplementary memory; the overall task remains offline because native context contains the complete video summary and ASR. The current design allows contextual retrieval across the complete supplementary stream and does not claim online localization. Fixed active retrieval does not imply bounded total storage or duration-independent retrieval search. Qwen grid changes, DeepStack aggregation and three-axis cache positions need actual validation. Full333, unchanged r6/canonical4fps, native parity, same-metric +.01 both, pooled-loss .005/within-loss .01 limits, raw-order/wrong-binding controls and component deletion gates remain mandatory. No labels, new predictor/dataset, ensemble, hashes or Git-ID provenance; active and unreliable families continue unchanged."
+    },
+    {
+      "shard_id": "transition_reasoning",
+      "dedup_key": "dynamic_static_transition_source_grounding",
+      "name": "动态变化与后续状态共同约束的实际来源读取",
+      "origin": "TFVTG机制迁移；下面的Qwen观测概率、局部检索范围与实际来源读取是新适配设计，不是原方法复现。",
+      "method": [
+        "冻结Qwen3-VL-8B、native20/fullASR/native G及其自身hard stance。保持原始8秒独立V/S读数接口、max、固定r6及canonical4fps。所有额外计算发生在M1实际输入选择之前。",
+        "每个8秒窗获取实际PTS对应的1/3、2/3两帧和原始ASR切片。一次Qwen调用生成最多两个中性、可观察的事件描述及single/sequential/simultaneous关系；每个描述必须引用本窗实际帧或原文坐标。未提取到描述时保留UNKNOWN，不自动补齐前后事件。",
+        "对当前窗的每个有效描述，在当前窗及左右各四窗的两帧上，分别用同一Qwen读取该描述是否被当前实际帧支持的二元概率；语音事件则只读取实际ASR。每个事件得到按真实时间排序的支持序列s，不使用任何仇恨分数。",
+        "枚举范围内所有非空转变段及后续非空状态段。动态项为段内所有正差分之和，但任一差分不大于0则动态项为0；静态项为状态段支持均值减范围内状态段之外的支持均值。无外部点的提案不使用。按两项和保留每事件前三个提案；无平滑、无扫描，分数仅选择来源。",
+        "对两个事件枚举九种提案组合：sequential要求前事件起点不晚于后事件终点，simultaneous要求交集非空；取总分最大组合，平局按最早起点、最短跨度。单事件直接取最高分提案。每个提案取转变起点、转变终点、状态末点三张实际帧；去重后最多六张。",
+        "最终V看到native原对话、本窗LOCAL两帧，以及最多六张选中真实来源及真实时间；S独立看到选中实际ASR，明确remote只提供解释上下文。描述、关系概率、提案分数不进入最终证据。未知或不可解析来源使用原生分支；每窗最终只产生一次新V和一次可用S的margin。"
+      ],
+      "sources": [
+        {
+          "url": "https://www.ecva.net/papers/eccv_2024/papers_ECCV/papers/10687.pdf",
+          "read_scope": "实际读摘要、引言、§§3.1–3.3以及§4.1。网页后续打开超时后，用HTTP获取PDF字节并以pdftotext管道读取第8–10页；未写文件。原文使用GPT-4 Turbo、BLIP-2 Q-Former、3fps、top3，包含高斯平滑和差分阈值。"
+        }
+      ],
+      "transfer_and_difference": "迁移TFVTG对动态变化、后续静态状态及事件关系的联合提案机制；不迁移额外编码器、GPT-4、3fps或原始相似度阈值。Qwen实际支持概率替代对比编码器余弦相似度，差分阈值固定0且不平滑，均为显式适配。最终输出仍为实际来源条件下的原生二元读取，提案不是仇恨区间。",
+      "local_ordering_hypothesis": "具有相似对象或措辞的片段可能分别表示动作开始、持续状态或事后解释。共同读取转变和结果状态，可能使原始V/S/max区分本窗实际发生与邻窗上下文，从而改善within排序。该假设未获目标任务证据。",
+      "cost": {
+        "additional_model_calls_per_video": "W个事件生成调用；每窗最多2事件×18实际帧支持调用，即最多36W视觉调用；若两个事件均需语音支持，再最多18W语音调用。最终增加最多W个V及W个S读取。实际可用事件数与模态决定精确计数，不允许把批处理说成减少逻辑调用。",
+        "gpu_time_estimate": "未测量预算：每100窗额外约20–90 GPU分钟，最终reader另计；上限来源于3600个短视觉支持读取，必须先测真实固定5，分别报告解码、视觉编码、prefill和读数秒数。不能承诺该预算足够。",
+        "cache": "复用native帧及ASR；同视频相同实际帧编码可复用。事件描述、支持读取和新帧首次生成成本全部计入新视频；不按缓存重放时间报告方法成本。"
+      },
+      "novelty_components_and_ablations": [
+        "待检验部件：动态项与静态项的联合来源选择。删除动态项，保持事件、候选范围、最终来源数和读取预算匹配。",
+        "待检验部件：事件关系约束。删除关系约束，保留相同支持序列、提案预算与来源数。",
+        "每个拟主张部件删除后，必须至少同一主指标在两语料均下降≥.01；否则删除或降级。完整方法须先通过同一主指标两语料均+.01及pooled损失≤.005、within损失≤.01。"
+      ],
+      "wrong_binding_control": "固定实际来源数量与真实时间侧，将转变起点和状态末点绑定到同视频其他事件来源；另做相同来源但交换动态/静态角色。报告原始V/S/max排序与全六指标，不能用最终r6上涨单独支持机制。",
+      "difference_from_tried_families": "OrderedSlots/Q2E按前中后三槽分别找来源；此处联合选择具有可测转变与后续状态的区间。Tree及Interval26使用层级摘要或见证一致性；这里没有树或跨层修复。VTimeCoT是工具搜索，Program是生成操作程序，VideoEvent依赖相关性平滑成组；这里采用固定枚举和变化量。Explorer按不确定性获取帧，Latents改变内部连续表示；本候选不做这两件事。上述差异不是独立novelty裁定，也不授权重启归档家族预算。",
+      "operational_limits": "仅生成候选；未读原始GT、预测或metrics，未运行GPU，未写文件。完整333、两语料同配置，禁止目标标签进入来源选择或拟合；不新增模型、数据集、ensemble、仇恨margin校准或平滑。稀疏帧不能保证捕捉转变，Qwen支持概率未校准，事件关系可能错误。UNKNOWN及原执行守门必须保留。"
+    },
+    {
+      "shard_id": "transition_reasoning",
+      "dedup_key": "prerequisite_progress_source_memory",
+      "name": "依赖与完成进度约束的来源记忆",
+      "origin": "BaGLM的依赖矩阵、进度及预测—更新机制迁移到实际来源选择，而不是迁移到最终仇恨分数。",
+      "method": [
+        "保留native20/fullASR/native G、own hard stance、独立8秒V/S/max及固定r6。用同一冻结Qwen先对每窗实际两帧与原ASR生成一个最多12词的中性动作描述，必须携带来源坐标；不生成仇恨状态。",
+        "每连续最多八窗为固定独立处理块，一次Qwen文本调用从有效描述提取最多四个不同动作及其有向前置依赖。动作引用块内已有来源，依赖为模型假设，不作为事实。重复动作不跨块合并；这样一次出现完成后不会永久禁止整视频再次出现。",
+        "对块内每个窗，Qwen在实际两帧/原ASR上读取四个动作及NONE的选项概率；另对每个有效动作读取0至9进度token分布，并以期望除9得到[0,1]进度。全流程不用额外LLM或预测器。空动作集直接原生回退。",
+        "将生成的依赖图转为行归一化转移矩阵，加入自转移；无依赖动作允许从各状态进入。按前序窗最大进度计算每动作的前置完成程度与后继未完成程度，两者乘入转移目的列，再行归一化。无前置或后继分别取1；全零行退回静态转移行。",
+        "初始状态均匀。按belief_t ∝ 当前动作选项概率 × T_t转置belief_(t-1)顺序更新。NONE允许自转移和进入任意动作；NONE相关基础权重固定1。这是明确声明的输入选择状态，而非最终仇恨后处理。",
+        "当前窗选择最大belief动作；若NONE最大，则只用本窗真实来源。否则选该动作最高直接支持的已见来源窗，以及使其前置完成程度最大的最多一个真实前置来源窗。平局最早窗。最多本窗加两个remote窗；belief、动作标签、进度、依赖文字不进入最终reader。",
+        "最终V只增加本窗及选择的实际帧，S独立增加这些来源的实际ASR，均保留所属时间与remote解释角色。最终一次新V/S读取后直接max并交给原r6；不将状态概率乘入或加到margin。"
+      ],
+      "sources": [
+        {
+          "url": "https://arxiv.org/html/2510.16989v1",
+          "read_scope": "实际读§§3.1–3.2、§§4.1–4.3及§5实施说明。包含step/NONE选项、依赖转移、进度、readiness/validity及Bayesian更新。原文进度公式为0至9期望但后续使用1-progress，本适配显式除9，不默认为原文已归一化；作者实现细节尚未核读。"
+        },
+        {
+          "url": "https://github.com/lucazanella/baglm",
+          "read_scope": "官方README实际读；确认原主模型InternVL2.5-8B、支持其他backbone，以及独立step/progress/prerequisite来源成本。未执行或下载作者代码。"
+        }
+      ],
+      "transfer_and_difference": "原方法对给定步骤集合做在线步骤预测，以额外LLM提供依赖；本适配从同视频中性观察产生有来源的动作词表，全部由同一Qwen完成。滤波只选择有限实际来源，最终仇恨margin完全重读并交给固定r6。分块重置、NONE转移、进度除9及零行规则都是本适配声明，不是原文忠实复制。",
+      "local_ordering_hypothesis": "局部语句或画面在缺少已发生前置动作时容易被误解；进度约束可能优先选出必要前置来源，同时在动作完成后避免持续检索已经结束的状态。目标是改变当前实际证据解释与原始窗口排序，而非给整视频增加共同偏置。",
+      "cost": {
+        "additional_model_calls_per_video": "W次中性来源描述、ceil(W/8)次动作/依赖生成、W次动作选项读取、最多4W次进度读取，再最多2W次独立最终V/S读取；合计最多8W+ceil(W/8)额外逻辑调用。",
+        "gpu_time_estimate": "未测量预算每100窗约10–45 GPU分钟加最终reader；实际固定5须报告来源生成、选项概率与进度读取、解码/像素处理及reader成本。CPU滤波成本不能替代GPU成本。",
+        "cache": "native帧与ASR可复用；新实际两帧和同窗视觉编码可在多进度查询中复用，动作描述/依赖仅在本视频复用。首次获取与所有查询成本仍完整计费。"
+      },
+      "novelty_components_and_ablations": [
+        "待检验部件：前置依赖的来源记忆，删除图依赖、改为当前直接支持最高来源，但保持来源数与真实读取预算。",
+        "待检验部件：进度更新，将readiness与validity固定1，保留其余计算和来源预算。",
+        "完整333先通过共同主指标+.01及损失限制；各主张部件删除后必须同一主指标两语料均下降≥.01。状态滤波本身若无删除证据，不称贡献。"
+      ],
+      "wrong_binding_control": "保留同一依赖拓扑与进度数值，将动作对应的实际来源身份作固定循环错配；另一控制将依赖边反向而保留来源描述与调用预算。最终reader始终看到真实donor时间，禁止伪装为当前来源。比较rawV/S/max及全六指标。",
+      "difference_from_tried_families": "OrderedSlots每窗三槽独立检索，没有进度累积和依赖状态；Tree/Interval26是层级组合，不是动作进度；Program执行生成代码，而本候选只有固定状态更新。VideoEvent将相关窗聚成事件，本候选不按相关性阈值成组。VTimeCoT、Explorer选择新观察的机制不同；Latents没有离散实际来源记忆。它与已有r6概率时序模型的位置不同：只在M1前选择原始来源，绝不增加第二个仇恨时序输出层。",
+      "operational_limits": "没有程序性步骤结构的视频可能不适用；块边界会丢失长依赖，模型进度也可能无意义，这些须实测而非预先裁定。不能把步骤词表当标注。保留UNKNOWN、NONE和原生回退；不降低执行guard。仅生成，不变更候选25/26/27/33/34或32/35故障诊断，不运行或写入任何内容。"
+    },
+    {
+      "shard_id": "transition_reasoning",
+      "dedup_key": "actor_object_transition_witness_paths",
+      "name": "动作主体与对象连续性约束的转变见证路径",
+      "origin": "自设计的实体连续性与转变来源机制；VideoGEM仅提供动作/对象分解这一来源线索，不宣称复现其GEM、加权层或CLIP对齐。",
+      "method": [
+        "固定同一Qwen3-VL-8B与native20/fullASR/native G及own stance、8秒独立V/S/max、固定r6。每窗取实际1/3、2/3两帧，真实PTS及原始ASR保持不变。",
+        "每窗一次Qwen调用从两帧输出最多一个可观察动作、主体框、对象框，以及主体—对象关系在两帧之间是否发生变化。框为真实图像坐标，主体/对象/动作各最多六词；无法确认对象或变化时允许UNKNOWN。必须逐帧给出来源ID，不能生成看不见的动作阶段。",
+        "对相邻窗的一后帧与一前帧，用同一Qwen在实际双帧上判定候选主体、对象是否分别为同一实例，并输出same/different/UNKNOWN及其选项概率。只有主体和对象的same均为最大选项时建立身份连续边；无需概率阈值，不跨跳未知边。",
+        "在每条实际身份连续路径内，根据初始两帧观察生成一次最多三个状态的中性关系描述，例如未接触、接触、移开；每个状态必须绑定某个已有帧，不能凭常识补齐状态。每个路径最多取连续四窗为一个处理单元，长路径按时间分块，单窗路径合法。",
+        "同一Qwen对每个真实帧读取这些关系状态及NONE的选项概率。枚举由两个不同状态、一个顺序变化点和两侧非空帧集组成的解释，以两侧对应状态的log概率之和选一个最大解释；同时计算无变化状态解释，若后者更高则保留稳定状态。无时长罚项、无标签拟合。",
+        "每个当前窗选本身份路径中变化点两侧最邻近的实际帧作为额外来源；稳定解释则只取对应状态支持最高的一个实际帧。最多本窗两帧加两个remote帧。远程关系和生成框仅供选择，最终V读取完整真实帧及所有权时间，不传生成状态或分数。S原生独立不变，避免把视觉轨迹当成语音事实。",
+        "最终原问题读取一次新V，以原生S取max后送固定r6。不对仇恨分数做轨迹平滑、不修改视觉隐藏状态、不输出框级仇恨概率。"
+      ],
+      "sources": [
+        {
+          "url": "https://arxiv.org/html/2503.20348v1",
+          "read_scope": "实际读§§3.1–3.4：self-self attention、ViCLIP视频扩展、静态/动态层权重、动作/动词/对象三个空间中心融合。原方法依赖预训练视觉文本对齐；Qwen没有可直接假设的CLS–EOS余弦空间。作者代码未核读。"
+        },
+        {
+          "url": "https://www.ecva.net/papers/eccv_2024/papers_ECCV/papers/10687.pdf",
+          "read_scope": "实际读§§3.1–3.3；转变与结果状态分离仅作为辅助动机，本候选不使用其提案评分公式。"
+        }
+      ],
+      "transfer_and_difference": "VideoGEM将动作、动词、对象的空间预测融合，本候选不用其中心加权，也不用并行GEM表示。可迁移线索只是把动作与参与对象分开检查；新增的是实际主体/对象身份连续性、关系变化点与对应帧见证路径。Qwen框和同一性判断属于同模型额外源观察，不能视为免费或已验证的检测器。",
+      "local_ordering_hypothesis": "相同场景内的不同人物或对象，以及持续姿态与实际动作变化，可能导致窗口证据错归。要求同一主体和对象的连续实际来源再观察关系变化，可能让视觉窗口排序更依赖动作真正发生的阶段。仅有对象出现不应决定本窗动作。",
+      "cost": {
+        "additional_model_calls_per_video": "W次双帧动作/框观察；最多W-1次相邻身份判断；最多W次路径状态生成；2W次状态选项读取；W次最终V读取。上界约6W-1次额外调用，S不新增科学读取；配对native和审计成本另列。",
+        "gpu_time_estimate": "未测量预算每100窗10–40 GPU分钟；短框观察和身份判断可能比普通二元reader更贵。固定5必须测量实际生成token数、视觉/语言forward数、解码时间和峰值显存，再报告完整333成本。",
+        "cache": "可复用native图像/ASR以及本视频实际两帧编码；相邻身份判断、状态观察与首次解码均逐新视频计费。不抽取新的视觉编码器特征，不调用独立跟踪模型。"
+      },
+      "novelty_components_and_ablations": [
+        "待检验部件：主体与对象双重身份连续约束，删除连续性要求但保留同数量邻窗来源及所有实际读取。",
+        "待检验部件：关系转变见证，改为同身份路径内状态支持最高的静态来源，保留来源数与视觉预算。",
+        "各拟主张部件须独立达到同一主指标两语料删除损失≥.01；完整主门仍是共同主指标+.01、pooled损失≤.005及within损失≤.01。只有视觉路径生效也必须报告原始S和max，不隐藏语音分支。"
+      ],
+      "wrong_binding_control": "在同视频同帧预算下将主体连续边保持、对象来源交换到另一实例；另将正确身份路径的前后关系帧逆序并保留真实时间。控制不能篡改源坐标或声称donor属于当前窗。比较rawV/max排序和固定r6全六指标。",
+      "difference_from_tried_families": "OrderedSlots/Q2E关注语义前后事件，不维持实际主体—对象身份；Tree和Interval26不检查实体连续边；VideoEvent关注事件相关性和背景，不定位关系变化。Program可表达跟踪但已有声明是一般证据程序，本候选是固定实际身份与关系状态算法，若审稿认为属于同一家族则继承原预算，不能重命名重启。VTimeCoT/Explorer关注检索或获取，Latents改变连续视觉表示；本候选只选择实际完整帧。它也不是把空间裁剪搜索改名，最终不提供裁剪、放大或区域打分。",
+      "operational_limits": "明显动作少、对象不可见、多人遮挡或纯讲话视频可能大量UNKNOWN；模型输出框并不保证实体正确。固定预算不跨未知连续边追踪，不引入身份识别模型或人名数据库。所有来源判断仍须真实执行审计；实施失败不能评价idea。仅候选生成，无排序、拒绝、target novelty或可发表性结论；无写入、GPU、GT、预测或metrics读取。"
+    },
+    {
+      "shard_id": "speech_alignment",
+      "dedup_key": "lexical_discourse_partition_scoped_speech_measurement",
+      "name": "词汇衔接分段与局部话语作用域读取",
+      "origin": "迁移 TextTiling 的完整词汇衔接分段机制，再自设计局部证据与解释上下文分离的 M1 读取。",
+      "method": [
+        "保持 Qwen3-VL-8B、native20/fullASR、native G及其自身 hard stance、独立8秒 V/S/max、固定r6和canonical4fps。只替换 speech 测量；视觉分支照常独立执行。",
+        "用同一 Whisper-large-v3 对实际音频生成一条贪心转录并获得 DTW 词时间。以实际音频PTS映射视频时间，不将旧长segment的比例切词视为验证过的时间。新转录仅为局部源输入，native全局前缀中的fullASR不替换。固定30秒源块，跨块不复制同一词作为两个证据。",
+        "在新转录上执行明确的 TextTiling 适配：20词伪句，左右各6伪句词频余弦，一次宽3平均，双侧峰谷深度；选择超过本视频深度均值的局部谷底，边界间至少3伪句，同值取早。使用Unicode词分割、casefold、不另用词干或停用词模型；短于12伪句时保留单段。这里的均值阈值和无停用词处理是自定适配，不声称复制原论文隐藏在公式图片中的阈值。",
+        "每个8秒窗检索覆盖该窗已对齐词的完整话语段。构造两个不能混淆的源区域：LOCAL为时间中点落窗的原词；CONTEXT为这些话语段中的其余原词，保留来源坐标和先后顺序。禁止把CONTEXT词写成窗内事件。",
+        "同一Qwen每窗一次中立作用域解析，输入上述源区域，输出LOCAL中逐字可验证的act片段，以及解释该act所必需的CONTEXT片段；每项最多2个跨度，不输出仇恨判断、身份或分数。不存在合法LOCAL act时输出UNKNOWN。解析只接纳实际源跨度；错误输出全部UNKNOWN，无重试。",
+        "最终独立speech读取看到原生完整前缀、自身stance、原生问题和编译后的局部act/解释context。完整话语不是新的评分单元：只产生当前8秒窗的一个speech margin；与独立native V取max后进入固定r6。其余话语的行为不能成为当前窗的直接证据。"
+      ],
+      "sources": [
+        {
+          "url": "https://people.ischool.berkeley.edu/~hearst/papers/tiling-acl94/acl94.html",
+          "read_scope": "实际读ACL94原文 Algorithms for Discovering Subtopic Structure：伪句、相邻块余弦、平滑、峰谷深度、边界间距；亦读讨论中的结构局限。HTML阈值公式为图片，未把该公式当作已核实数值。"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/openai/whisper/main/whisper/timing.py",
+          "read_scope": "实际读find_alignment及DTW：教师强制cross-attention、指定alignment heads、归一化/median filtering、DTW和词边界恢复；读到add_word_timestamps的额外启发式，提案不把启发式修正当作真实时间。"
+        }
+      ],
+      "transfer_and_difference": "TextTiling原任务是书面文章主题分段；这里采用完整分段计算来决定解释上下文的可达范围，再由唯一Qwen解释窗内行为。话语分段、源作用域编译及最终局部测量是自设计组合，不是原文实验复现；单独更换时间戳不构成所主张的方法。",
+      "local_ordering_hypothesis": "同一主题中跨8秒边界的否定、补充和转折可解释局部act，而不同主题的攻击性词不应替当前窗提供act。假设它改善speech/max原始视频内排序，且固定r6后的共同主指标也改善；没有结果支持这一假设。",
+      "cost": {
+        "additional_model_calls_per_video": "令N为8秒窗数、Ns为有局部词窗数、B=ceil(audio_seconds/30)。额外约B次Whisper生成及B次对齐、1次语言识别、Ns次Qwen作用域生成。最终Ns次新speech读取替代部署时native speech；配对实验另计native speech。完整新视频仍计native20获取、原ASR获取、native前缀/G/V成本。",
+        "gpu_time_estimate": "未经实测的5090预算：120秒视频新增Whisper约15–60 GPU秒；15窗作用域生成和替代speech约45–180 GPU秒。预计新增60–240 GPU秒/120秒视频，另加完整native成本；长话语prefill可能更高。必须实测token数、calls、GPU秒并分列配对/消融成本。",
+        "cache": "可复用native20/fullASR/权重；新词对齐与话语分区可按可读路径复用。首次新视频音频解码、生成、对齐和全部生成成本不可免计；无哈希或GitID溯源。"
+      },
+      "novelty_components_and_ablations": [
+        "拟主张单一完整部件：话语分区约束下的LOCAL-act/CONTEXT解释编译。删除它时保留同一新转录/词时间，直接用对齐局部词进行同样speech读取，以排除纯输入修复。",
+        "解释分区控制：使用相同数量和长度的邻近词上下文，但删除词汇边界；源作用域控制：保留相同文本而不编译LOCAL act。若分别作为贡献，两者也各须满足删除后共同主指标在BOTH下降≥.01。",
+        "完整主门为同一主指标BOTH提升≥.01，任一pooled损失≤.005、within损失≤.01；同时报告V/S/max原始排序和全部六项最终指标。"
+      ],
+      "wrong_binding_control": "在同一视频内循环平移话语CONTEXT包，LOCAL词、字数、调用次数及时间坐标数量保持相同；另交换LOCAL与CONTEXT角色。检验正确话语绑定是否优于错绑定，而非只受新增文本影响。",
+      "difference_from_tried_families": "Acoustic20用词时间软支持直接改attention；本提案研究解释上下文边界与局部act作用域。Lattice22的beam竞争词/可达性完全不使用。QuoteGraph24/Provenance25需要语义引用或实体关系图，本提案不用跨节点关系生成；Verification27不执行。Program23不生成可执行工具程序。存在源跨度编译层面的接近性，需独立Rule4判断，不能因改名自动获得新预算。",
+      "operational_limits": [
+        "词汇主题变化不等于说话人变化或态度变化；短视频可能只有一个话语段。不得推定身份或引用所有权。",
+        "新转录/时间可能错误；UNKNOWN不证明无仇恨。完整源块与token上限必须在实施前冻结，不能静默截词。",
+        "本轮只生成候选，未读原始GT/预测/metrics，未运行、未写文件。full333两个语料同一流程；结果一律development-selected。"
+      ]
+    },
+    {
+      "shard_id": "speech_alignment",
+      "dedup_key": "localagreement_acquisition_horizon_source_dependency_reader",
+      "name": "增量语音确认时域与源依赖读取",
+      "origin": "迁移 Whisper-Streaming 的LocalAgreement确认机制，自设计将词的发生时间和确认所需上下文分开的局部推理方法。",
+      "method": [
+        "native20/fullASR/native G/own hard stance与固定r6均保持；只替换独立8秒speech测量。使用同一冻结Whisper-large-v3和同一冻结Qwen，没有beam lattice或预测平均。",
+        "实际音频每4秒增加一次可见源，单条贪心Whisper转录。保留最长30秒活动buffer；跨已确认句末裁剪，无法裁剪时保留最近确认segment，始终记录实际音频覆盖。禁用额外VAD模型，时间更新按媒体坐标而非运行速度触发。",
+        "连续两次解码的未确认部分最长公共词前缀成为confirmed；DTW词时间用于源发生坐标。保存每词首次出现、确认发生时刻和两次实际解码的音频覆盖区间。结尾只出现一次的尾词保留为UNCONFIRMED，不伪造第二次独立确认。",
+        "构造当前窗的source-dependency包：LOCAL是声学中点在本窗的词；对每个LOCAL词，确认前后新增的实际音频区间定义其acquisition horizon，horizon中的转录词单列CONTEXT。确认时刻绝不能替代词发生时刻。包不提供置信度或ASR概率给最终仇恨分数。",
+        "同一Qwen一次中立解析确定LOCAL中的act跨度，以及horizon中使其成为陈述、否定、条件或引用的逐字context跨度。只允许引用实际记录的跨度，无法判断为UNKNOWN；每act最多2个context，不生成说话人身份。",
+        "在原native完整前缀和自身stance后，独立speech Yes/No读取编译后的源依赖包，只判当前8秒LOCAL行为。每窗只有一个最终speech margin；native视觉分支独立读取，max后固定r6。"
+      ],
+      "sources": [
+        {
+          "url": "https://aclanthology.org/2023.ijcnlp-demo.3.pdf",
+          "read_scope": "实际读§2 LocalAgreement、§3更新循环、buffer、确认前缀跳过、裁剪和上下文提示，以及§4–5的计算与时间局限。"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/openai/whisper/main/whisper/timing.py",
+          "read_scope": "实际读find_alignment/DTW源代码，用于区分估计的词发生时间与增量解码确认时间。"
+        }
+      ],
+      "transfer_and_difference": "来源使用LocalAgreement-2提供稳定流式输出，模型large-v2，延迟随计算变化，并有200词提示与可选VAD。本适配固定4秒媒体推进、large-v3、无新增VAD；用途是生成源依赖时域而非追求实时性。确认所需新增音频只是操作性上下文范围，不等于已识别的因果依赖；Qwen跨度编译与局部测量为自设计。",
+      "local_ordering_hypothesis": "同一词依靠后文才能稳定识别或解释时，比例切词可能把局部行为和后续否定混放。将发生区间与解释时域显式分离，可能让Qwen保留解释而不把后续行为搬到前窗，从而改变真实局部排序。",
+      "cost": {
+        "additional_model_calls_per_video": "音频T秒需ceil(T/4)次Whisper生成及对应对齐，另1次语言识别；每次重新处理不超过30秒，重复音频全部计费。Ns次Qwen中立依赖生成，Ns次新speech读取替代部署native speech；配对baseline另计。",
+        "gpu_time_estimate": "未经实测：120秒视频约30次Whisper生成/对齐，预计60–240 GPU秒；15窗Qwen生成/读取约45–180 GPU秒；新增约105–420 GPU秒，外加完整native新视频成本。必须报告实际重复处理的音频秒，不将实时4秒chunk视为仅处理4秒。",
+        "cache": "增量转录历史、词坐标和每次源覆盖可复用；首个新视频必须完整付增量重解码费用。原native fullASR仍获取并计费，不能用已有缓存把重复识别成本隐藏。"
+      },
+      "novelty_components_and_ablations": [
+        "拟主张单一机制：acquisition-horizon约束的局部act/解释依赖。删除控制保留完全相同已确认文本和对齐坐标，丢弃确认历史/horizon，只做单转录局部读取。",
+        "等成本静态context控制：将horizon替换为相同词数的最近时间邻域；若二者等效，不主张确认时域贡献。",
+        "按共同BOTH≥.01主门、pooled≤.005/within≤.01损失门和每项主张删除BOTH≥.01门检验；报告speech/max原始排序，不能只报ASR稳定性。"
+      ],
+      "wrong_binding_control": "循环置换同视频LOCAL词对应的horizon包，保留词自身发生时间、文本和context长度；另把确认时刻错误当作发生时刻作为明确负控制，不混入主方法。",
+      "difference_from_tried_families": "Acoustic20只有单转录声学对齐分布；这里干预由逐步实际获取音频形成的确认依赖。Lattice22整族处理竞争beam路径，本提案只保留单条confirmed词序列，不编码竞争词DAG。QuoteGraph24和Provenance25的引用/实体语义图不使用；Verification27没有独立事实核验循环，Program23没有程序执行。需jury检查它是否仍属于已耗尽speech不确定性家族，提案本身不重置预算。",
+      "operational_limits": [
+        "LocalAgreement是稳定性而非正确性；同一个幻觉可连续出现。确认horizon也可能反映解码机制，不能直接称为语义因果证据。",
+        "不能依据声音相似或buffer连续性推断同一speaker、引用owner或态度。",
+        "主流程不接触任何标签、旧预测或指标；所有常数两语料一致，完整333评测。现有25/26/27/33/34及32/35状态不变。"
+      ]
+    },
+    {
+      "shard_id": "speech_alignment",
+      "dedup_key": "segmental_acoustic_recurrence_local_context_disambiguation",
+      "name": "声学重复片段检索与当前语境独立判读",
+      "origin": "迁移Park–Glass的segmental DTW局部声学检索，在同一视频内检索重复片段，再以实际对应媒体进行局部语义区分。",
+      "method": [
+        "保持原native20/fullASR/G/own stance、独立8秒V/S和max、固定r6。声学相似只选择源证据，绝不直接产生或传播仇恨分数。",
+        "按真实音频PTS解码。使用确定性的14维MFCC、5毫秒hop，在当前视频内做均值/方差归一化；不用新训练头、speaker模型或跨视频拟合。以固定8秒源窗作为待比较utterance；无音频窗明确缺源。",
+        "同视频所有非重叠源窗两两计算segmental DTW：距离矩阵上的重叠对角带宽15帧，每带求最短路径，再取至少100步的最低平均代价子路径；每对保留最低代价片段，同值按源时间。实现时采用精确子序列枚举或等价算法，不依赖未读的高效子算法。",
+        "每窗只检索代价最低的一个异窗片段，保留两端实际音频坐标及路径；不把它认定为同一词、同一声音来源或引用。检索没有基于标签的阈值；最相似但仍无关的结果也须由后续读取面对。",
+        "在每个检索端点范围加前后2秒实际音频，用唯一Whisper-large-v3贪心重新转录，并抽取该范围中点的一个真实PTS视频帧。超过30秒按源时间连续分块，所有块计费；重复源区间按可读坐标复用，不按内容去重。",
+        "同一Qwen每窗一次中立两端对照读取，看到LOCAL端、RETRIEVED端的实际图片及各自文字，输出当前LOCAL行为和两端是否出现可见/可读的解释差别，必须分别引用本端源。不同端不能互相充当当前行为证据，未知关系为UNKNOWN。",
+        "最终V和S仍分别独立读当前8秒问题，附上述源对照记录；检索端仅作解释context。不得继承对端margin、同步相似段分数或预测平均。每窗max(V,S)与native G进入固定r6。"
+      ],
+      "sources": [
+        {
+          "url": "https://people.csail.mit.edu/jrg/2005/Park_ASRU.pdf",
+          "read_scope": "实际读§2 segmental DTW的对角带、多路径及最低平均子序列，§3预处理/参数/成本，§4声学检索，§5节点细化和聚类。§2引用的高效最低平均子序列算法未另读，因此不声称复现该实现。"
+        }
+      ],
+      "transfer_and_difference": "原方法在讲座中发现重复语音，含phone-recognizer分段、MFCC/PCA、检索和聚类。本适配不用phone recognizer/PCA/跨语料聚类，采用固定窗与视频内标准化，仅迁移完整segmental局部匹配和检索链；新增实际端点媒体及唯一Qwen语境区分。不是声学词发现实验的精确复现。",
+      "local_ordering_hypothesis": "重复播放、反驳前述话语或引用片段可能共享词声，却有不同当前语境。显式检索实际相似片段供同一reader区分，有机会改善本来被相同攻击词主导的局部排序；声学重复本身不意味着任何窗口应同分。",
+      "cost": {
+        "additional_model_calls_per_video": "N窗至多2N个端点转录请求，坐标完全相同者复用；每请求一次Whisper贪心生成，另1次语言识别。N次Qwen中立对照生成；最终N个V和有speech的S读取替代native局部读取，配对baseline另计。新增至多2N张真实端点帧，所有解码/处理计费。",
+        "gpu_time_estimate": "未经实测的120秒/15窗预算：最多30个端点转录约30–150 GPU秒，15次两端Qwen生成及最终读取约60–240 GPU秒；新增约90–390 GPU秒，外加完整native成本。DTW主要CPU，O(N²)且5毫秒网格可能昂贵，CPU秒/内存和精确子序列求解必须另报，不能藏在GPU数后。",
+        "cache": "可复用native输入和权重；新音频特征、匹配坐标、端点转录/图片可按路径与时间坐标缓存。首次新视频的MFCC、全对匹配、音频/图片获取和所有推理必须计费。"
+      },
+      "novelty_components_and_ablations": [
+        "拟主张完整部件为segmental recurrence检索驱动的双源语境区分。删除控制保留当前端点新转录/图片与同样最终读取，只移除异窗检索及对照，排除输入改善。",
+        "等成本控制用最低代价whole-window DTW邻居替代segmental检索；另用等长最近时间邻居。若segmental机制不能独立贡献，则不得主张该部件。",
+        "仍须共同主指标BOTH≥.01、其他指标损失门、每个主张删除BOTH≥.01以及原始V/S/max排序证据；不以声学检索例子代替主门。"
+      ],
+      "wrong_binding_control": "同视频循环置换检索端坐标与其真实媒体配对，保持当前端、帧数、转录长度预算和调用数；正确源对必须优于错绑定。另将两端角色互换，检验reader是否错误把context事件当成当前行为。",
+      "difference_from_tried_families": "Acoustic20匹配文字与声学时间，本方法匹配两个真实音频片段。Lattice22没有复用。QuoteGraph24/Provenance25的引用/实体边由语义生成，本方法的检索边完全由局部声学匹配产生且不赋身份；但两端媒体检索与Provenance25接近，必须由独立jury检查完整方法边界。Verification27和Program23不执行，也不重新开放任何已耗尽家族。",
+      "operational_limits": [
+        "相似性可能只是背景音乐、常用词或噪声；不推断speaker identity、quotation owner或因果关系。",
+        "稀少重复、短视频及多speaker会限制作用；无合法异窗时按明确空检索流程仅保留当前端，不能伪造匹配。",
+        "没有引入新数据集或第二预测器；Whisper是唯一语音文字抽取器，Qwen是唯一语义reader。未运行、未写文件、未读取原始GT/预测/metrics；候选未排序、未裁定novelty或发表价值。"
+      ]
+    }
+  ]
+}
