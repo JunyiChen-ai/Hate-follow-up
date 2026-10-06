@@ -50,7 +50,10 @@ claim full source-code reproduction or source-paper efficiency on Qwen.
   remote blocks from this same video. Pool the current question-token Q rows
   after Qwenq_norm and beforeRoPE; group32queryheads into8KVhead groups by
   contiguous mean of4heads, then concatenate and average questionrows. Cosine
-  against that layer's image-key representatives uses FP32; zero vector gives
+  against that layer's image-key representatives uses CPU FP32 for both actual
+  selection and strict proof replay (4threads); per-layer host transfer and
+  synchronization are charged. This avoids mixing GPU selection arithmetic and
+  CPU replay arithmetic. zero vector gives
   zero similarity, deterministic ties by actualsource index. No label, margin,
   generated confidence, corpus route, probe score or fitted threshold enters.
 - Questionrows mean the unchanged originalvisualquestion characters in the
@@ -155,3 +158,13 @@ proposalPASS, sourceexecution or finalr6 alone.
 Author initialsoftware arithmetic PASS at runs/20261006_m1_rekv/operator_cpu_checks/summary.json: independentNumPymeans cover GQA4×1/2/8KVheads, actualimage-row-only pooling, stableties/zeronorm andfullLOCAL exclusion; actualQweninterleaved rotary identity/translation equalsits primitive exactly FP32/BF16; nine rectangularpast+suffix masks match independentexplicitcausality. These are arithmeticchecks only, not36layer sourceimage/fullreference/GPU/pretrained/nativeparity/GT/performance evidence. Collector/source memory/productionreader andfullpreflight still toimplement, thenonceindependentcode review.
 
 Actualowned syntheticvideo sampling/pixel CPU checks PASS runs/20261006_m1_rekv/source_frame_cpu_checks/summary.json: first-at/after2second targets yieldoriginalindices0/16/32/48/64, halfopen8s ownership assignslastindex64 tosecondwindow, uncovered10secondtarget remainsNone. Decoderorigin/PTS/PNGpixels reread exactly. No model/GT/performance or newdataset; this checks sourceacquisition arithmetic only. Complete per-layer sourcecollection/offloadedKV andquestion reader still toimplement.
+
+R1 pre-GPU numericbackend clarified while implementingproofreplay: FP32 cosine/topk is executedonCPU inbothgenerator andstrictreplay, withactualper-layer host-transfer timecharged. No scores/GT/hyperparameter scan or scientificGPUhas occurred; this is a sameR1 implementation definition, not a revisedperformanceresult.
+
+## Complete prototype and one independent code review
+
+Full actualsource frames/collector/pervideooffload/36layer retrieval/newV/strictproof/currentnativebinding/canonicalCLI/fixedr6 prototype andlablaunchers implemented. Actual333raw/native/realprocessor/YesNo source-token andquestionoffset preflightPASS runs/20261006_m1_rekv/full_input_preflight/summary.json; first-grid estimates largest8.7204GiB(non_hate_video_356) andallpersistent499.41GiB are estimates, notactualpeaks. Mandatorypervideo denseKV release avoidssilent499GiBglobalcache. No sourcefps/grid/algorithm changed.
+
+Actual36language-layer/32Q8KV128head/3DeepStack random-weight CPU FP32/BF16×native18/20 sourceprefill+layerretrieval testsPASS: firstfive coincident causalhistories agreewithindependentfullmultimodal reference max4.77e-7 FP32/.006744 BF16 atprior1e-4/.025; sourceclones/nativeallKV/S exact, sevenframe slidingdirect/inherited ancestry explicit, pixelchange entersmargin, LOCAL-only exercised. Productionread_video/strictvalidator realdecodedownedfixture FP32/BF16 PASS andwrongtime/selectionrejected; independentreader additionallyexercised nonemptyS andtrueuncoveredtail. Explicitfixturetokenization/randomweights do notestablishproductiontokenizer/8B semantics; realprocessor/input preflight isseparate.
+
+OnceindependentRule6 review PASS afteronlythreeconcretefixes, docs/reviews/20261006_m1_rekv_code.md andruns/independent_code_review/. Interruptedowned denseKV ispreserved infailed_temporary andsamevideo rebuilt; completedrecord reusefailsclosedonchangedmodel/runtime/implementation/nativeencodedpixels withactualarrays/nohashes. Actualper-attempt extraction/reader/preparewallcost capturesmodelsetup, validation/proof/recordI/O andfailedattempts separately; processingestimate includesoriginaldecode/source/nativebinding/V/S, pairednative/clones/audits nothidden. Numericmechanism/guards unchanged; no new scientific revision/GT/score tuning. Reviewconfirmsthethreefixes only, notanothergeneralreview. Actual8B fixed5 isnext, noGPU/performance/goalcompletionyet.

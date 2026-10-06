@@ -32,5 +32,6 @@
   "reader_role_text": "Additional stored source frames are bound to their actual timestamps. Only frames inside the stated current window provide occurrence evidence; frames outside it provide interpretation context and must not be treated as current occurrences.",
   "persistent_dense_all333": false,
   "temporary_dense": "owned per-video run/.npy; release only afteratomiccompletevideo",
-  "GT_read": false
+  "GT_read": false,
+  "retrieval_arithmetic": "CPU FP32 at generation and strict replay; OMP_NUM_THREADS=4; per-layer host synchronization charged"
 }
