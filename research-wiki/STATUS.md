@@ -1,9 +1,9 @@
 # 当前研究状态
 
-截至 **2026-10-06 21:41 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 00:50 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
-- **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，机制尚未成立。当前七项选择对照及 T0/H0 已实现，作者软件/实际处理器检查通过，独立代码审查 PASS（same-family provisional），真实8B原fixed5/230与严格本机 prepare 已通过，完整333对照/sc474398/231已提交。
+- **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
 - **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；R3 revision2/3完整333/235已评测：within+.011050/−.001156，共同门FAIL、无超噪声损失，HMM正向保留，最后一修订须实际误差分析。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。R3仅恢复原R1视觉包ASR，nativeS与来源守门保持R2；37机制验证优先。
 - **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；R2 revision1/3已通过原fixed5/233及ROOT严格守门，完整333/sc448960/234已严格评测：HMM within+.006419/PR−.002657噪声内，HCS within+.015796，共同门仍FAIL，revision1/3，正向修复保留。R2权威 `runs/20261006_m1_merit/r2_full_main_decoded/optimized/metrics.json`，原source完整计费。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
 - **TextTiling38** 完整333/ROOT226已严格评测：within +.016902/+.010345双语料达标，但HMM PR−.012746超噪声，整体FAIL；正向结果保留；R2 revision1/3已通过一次独立增量审查，原fixed5/ROOT236已通过严格守门，完整333/ROOT237已严格评测：within+.011596/+.001977、HMMPR−.014250，共同门FAIL；原R1dualwithin进展保留，revision1/3已用，实际误差分析继续。R2权威 `runs/20261006_m1_texttiling/r2_full_main_decoded/optimized/metrics.json`。权威 `runs/20261006_m1_texttiling/r1_full_main_decoded/optimized/metrics.json`。
@@ -879,3 +879,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 37 T0完整333输出/proofs约20.37GB已ROOT回传，当前native/actualpixels/真实模型可见wrongtimestamp/R0冻结选块与packing输入绑定核对开始，权威待runs/controls_time_binding/summary.json。H0 full333远端继续，未对照指标/机制结论；整体完成后BOTH回传及全模式prepare再统一评测。
 
 37 T0全333已ROOT strict noGT输入/绑定PASS（499.345s）：native精确/实际pixels当前/wrongpresentedtimestamp真入输入/R0冻结选块与packing精确，权威 runs/controls_time_binding/summary.json。H0继续完整333，仍缺control效能指标与机制结论；原共同性能与机制门/正式r6不变。
+
+37全部必要selection7/T0/H0对照整333同sc474398/231 DONE2026-10-07 00:07:34，5:13:18/0:0。立即finalBOTH全部run/cache回传ROOT完成00:13（最后H0约20.36GB；此前selection/T0已齐），全3模式strict输入/native/source/intervention/成本绑定+唯一评测all9/固定r6启动。尚无对照效能数字或机制结论；原主门PASS/各阶段输入PASS不替代机制，目标active/正式r6不变。
+
+37完整all9对照与统一all6/固定r6评测结束，R0全部精确；L0/L1/L2/H0共同>=.01部件贡献门全部FAIL，D0/T0共同超噪声绑定门全部FAIL，H0/T0效应只在HCS明显，HMM不支持共同机制。权威 runs/controls_main_decoded/<arm>/metrics.json与controls_main_analysis/summary.json，所有输入proof/预算/真实干预PASS不能代替贡献。R1涨点保留但不晋级/不goalcomplete；rawV/S/max及必要独立机制解释继续，unsupported部件必须删除/降级或实际erroranalysis后改设计，未R2声明。
