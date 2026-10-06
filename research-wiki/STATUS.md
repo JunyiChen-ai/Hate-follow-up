@@ -798,3 +798,5 @@ ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审�
 最新完整34B主结果：HMM ROC/PR/within .894458/.674780/.757994（84），HCS .725932/.677985/.653961（99）；HCSwithin+.016612保留正向进展，HMMPR−.019455、共同门FAIL。权威runs/20261006_m1_ordered_slots/r1_full_main_B_decoded/optimized/metrics.json，按规则9做真实误差分析/最多三修订，未完整controls。38原fixed5/224 DONE、本机noGT/source/native allraw/G/V/clone/compiledboth strictPASS，准备同host完整333；未主性能。均development-selected。
 
 38原fixed5/224实际52 compiled/122 changedS、native allraw/G/V/5clone/source/audio/DTW/Pixels strictPASS后，同host完整333 ROOT226已提交，NORMAL QOS排队，原source成本保留。34实际GT/raw/source误差分析已记录：HMM rawmax within−.023753且CI全负；R2事前声明 nativeS原样/视觉suffix去ASR/真实REMOTE+LOCAL才用newV，修订1/3；36层CPU PASS，独立窄delta确认进行中，未R2GPU。
+
+34 R2科学delta/20真实36层CPU/333sources实际tokens/pixels/assignment核对及独立窄确认PASS，原fixed5ROOT227排队等待225/186；38完整226由主agent调度持有以先做该短验证，非goal暂停/非版本重启。35 C合法复合闭合接口已实现，原caps/UNKNOWN/tools守门不变、A/Bactualfixed5源重放和C syntheticcollector/token CPU PASS；独立窄确认进行中，未C GPU/GT/性能。

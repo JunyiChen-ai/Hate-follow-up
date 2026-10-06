@@ -12,7 +12,7 @@ from timeline import ROOT,SPEC,uniform,retrieval,execute
 from inputs import CACHE,DATASETS,selected_rows,acquire_sources,validate_sources,windows_for,media_content
 from interface import query_writer,compile_queries,compile_relevance,plan_writer,compile_plan,feedback_writer
 from relevance import read_clip,validate_clip
-from src.structured_source_generation import generate,validate_generation
+from compound_closure import generate,validate_generation
 from src.video_inputs import frame_paths,load_asr
 from src.mllm_judge import Judge,MODEL
 

@@ -7,9 +7,9 @@ import math
 import numpy as np
 from PIL import Image,ImageDraw
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT))
-INTERFACE=os.environ.get('SOURCE_INTERFACE','A');assert INTERFACE in ('A','B')
-OUTPUT_SUFFIX='' if INTERFACE=='A' else '_B'
-SPEC=json.loads((Path(__file__).parent/('spec.json' if INTERFACE=='A' else 'spec_B.json')).read_text())
+INTERFACE=os.environ.get('SOURCE_INTERFACE','A');assert INTERFACE in ('A','B','C')
+OUTPUT_SUFFIX='' if INTERFACE=='A' else '_'+INTERFACE
+SPEC=json.loads((Path(__file__).parent/('spec.json' if INTERFACE=='A' else f'spec_{INTERFACE}.json')).read_text())
 GLYPHS={
  '0':['111','101','101','101','111'],'1':['010','110','010','010','111'],
  '2':['111','001','111','100','111'],'3':['111','001','111','001','111'],
