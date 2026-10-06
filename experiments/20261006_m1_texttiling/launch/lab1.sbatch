@@ -7,7 +7,7 @@
 #SBATCH --output=runs/20261006_m1_texttiling/slurm_%j.out
 set -euo pipefail
 cd /home/jehc223/Hate-follow-up
-source /home/jehc223/miniconda3/bin/activate HateVLM
+source .cache/envs/HateVLM/bin/activate
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 export HF_HOME=/home/jehc223/Hate-follow-up/.cache/hf
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false

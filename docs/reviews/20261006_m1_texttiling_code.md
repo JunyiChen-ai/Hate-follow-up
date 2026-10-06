@@ -118,3 +118,28 @@ Neither it nor any random-weight test establishes fresh ASR correctness,
 actual8B parser utility, runtime GPU capacity or performance. Source semantic
 errors and the mechanism's effect remain empirical questions for the
 already-declared complete runs and deletion/wrong-binding interventions.
+
+## Narrow launcher activation correction — independently confirmed PASS
+
+2026-10-06, same reviewer instance and same Rule6 review. The parent reported
+owned job223 was canceled while PENDING before source/GPU execution; that
+scheduler history is parent evidence in
+`runs/20261006_m1_texttiling/launcher_environment_fix.txt`, not an independent
+GPU observation. The actual lab1 deployment defect was its activation of a
+named conda HateVLM environment instead of this host's repository-local venv.
+
+Independently confirmed the corrected lab1 line
+`source .cache/envs/HateVLM/bin/activate` after its repository `cd`. Under
+`set -euo pipefail`, actual activation selects the repository's
+`.cache/envs/HateVLM/bin/python` and imports torch2.11.0+cu128,
+transformers5.15.1 and av18.1.0 on CPU. `bash -n` passes. Executing the actual
+launcher control flow with only `nvidia-smi` and Python payload commands
+stubbed confirms smoke sends `--smoke` to extraction then measurement, main
+sends neither flag, and invalid scope exits2 before either payload. Lab1
+partition, GPU count and memory directives remain intact. No GPU query,
+model/source payload, submission, Git operation or GT read was performed.
+
+Evidence: `runs/20261006_m1_texttiling/independent_code_review/launcher_fix_check.py`,
+`launcher_fix_summary.json`, and `launcher_fix_run.log`. This confirms only
+the concrete environment/launcher correction, not a new general review,
+scientific variant, actual GPU readiness or performance result.
