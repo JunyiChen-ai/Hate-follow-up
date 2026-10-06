@@ -17,6 +17,12 @@ from src.stance_cache import build,margin
 from src.source_image_branch import margin as image_margin,encode_branch
 from src.source_generation import clock
 from src.video_inputs import frame_paths,load_asr,fixed_windows,window_text
+REVISION=int(os.environ.get('READER_REVISION','1'));assert REVISION in (1,2)
+if REVISION==2:assert SPEC.get('interface')=='B'
+
+
+def uses_source(window,packet):
+    return bool(window['frames']) and (REVISION==1 or bool(packet['source_ids']))
 
 
 def remote_speech(windows,packet):
@@ -31,7 +37,9 @@ def memory(window,packet,windows):
         if index is None:
             content.append(dict(type='text',text=json.dumps(dict(role=role,source='NONE'))));continue
         source=windows[index]
-        content.append(dict(type='text',text=json.dumps(dict(role=role,id=index,bounds=[source['start'],source['end']],literal_ASR=source['body']),ensure_ascii=False)))
+        details=dict(role=role,id=index,bounds=[source['start'],source['end']])
+        if REVISION==1:details['literal_ASR']=source['body']
+        content.append(dict(type='text',text=json.dumps(details,ensure_ascii=False)))
         for frame in source['frames']:
             content.extend([dict(type='text',text=f"Actual frame {frame['id']} at PTS {frame['time']:.9f}s."),dict(type='image')]);paths.append(ROOT/frame['path'])
     assert len(paths)<=2*(1+SPEC['max_remote_windows'])
@@ -65,12 +73,12 @@ def read_video(j,row,segments,m,smoke):
         else:s=None
         native_speech.append(s)
         start=clock(j)
-        if w['frames']:
+        if uses_source(w,m['packets'][i]):
             content,paths=memory(w,m['packets'][i],m['windows']);z,evidence=image_margin(j,cache,ctx,q,content,paths)
         else:
             content=paths=None;z=margin(j,cache,ctx,q);evidence=None;assert z==v
         times['new_visual']+=clock(j)-start;new_visual.append(z)
-        speech_context=remote_speech(m['windows'],m['packets'][i])
+        speech_context=remote_speech(m['windows'],m['packets'][i]) if REVISION==1 else []
         if s is not None:
             new_sq=sq+('\nActual remote speech context at its own times (not current speech):\n'+json.dumps(speech_context,ensure_ascii=False) if speech_context else '')
             start=clock(j);new_s=margin(j,cache,ctx,new_sq);times['new_speech']+=clock(j)-start
@@ -100,8 +108,8 @@ def read_video(j,row,segments,m,smoke):
     native_seconds=sum(times[k] for k in ('prefix','native_visual','native_speech'))
     optimized_seconds=m['cost']['standalone_seconds']+sum(times[k] for k in ('prefix','new_speech','new_visual'))
     base=prediction(row,ctx,native_visual,native_speech,native_seconds,'m1_native')
-    new=prediction(row,ctx,new_visual,new_speech,optimized_seconds,'m1_ordered_slots',m['cost']['actual_forwards'])
-    found=sum(bool(w['frames']) for w in m['windows'])
+    new=prediction(row,ctx,new_visual,new_speech,optimized_seconds,'m1_ordered_slots' if REVISION==1 else 'm1_ordered_slots_r2',m['cost']['actual_forwards'])
+    found=sum(uses_source(w,p) for w,p in zip(m['windows'],m['packets']))
     checks=dict(host=socket.gethostname(),GT_read=False,times=times,source_seconds=m['cost']['standalone_seconds'],source_forwards=m['cost']['actual_forwards'],source_vision=m['cost']['actual_vision_forwards'],
         actual_forwards=j.forward_calls-before,actual_vision=j.vision_calls-before_vision,diagnostic_forwards=diagnostic_calls,diagnostic_vision=diagnostic_vision,
         peak_GiB=max(torch.cuda.max_memory_allocated()/2**30,m['peak_GiB']),caption_calls=m['cost']['caption_calls'],slot_calls=m['cost']['slot_calls'],embedding_calls=m['cost']['embedding_calls'],
@@ -110,10 +118,12 @@ def read_video(j,row,segments,m,smoke):
     assert checks['actual_vision']==1+found+diagnostic_vision
     result=dict(base=base,optimized=new,checks=checks,traces=traces,segments=[list(s) for s in segments],
         native_ctx={k:v for k,v in ctx.items() if k not in ('positions','rope','files')},native_rope=ctx['rope'].tolist())
+    if REVISION==2:result['reader_revision']=2
     del cache;return result
 
 
 def validate_bundle(row,b,segments,m,j,smoke):
+    assert b.get('reader_revision',1)==REVISION
     base,new=b['base'],b['optimized'];assert b['segments']==[list(s) for s in segments]
     assert b['checks']['GT_read'] is False and b['checks']['source_seconds']==m['cost']['standalone_seconds']
     wins=fixed_windows(float(row['duration']),SPEC['window_seconds']);assert len(b['traces'])==len(m['windows'])==len(wins)
@@ -129,12 +139,12 @@ def validate_bundle(row,b,segments,m,j,smoke):
         i=trace['i'];body=window_text(segments,a,z);assert (trace['start'],trace['end'],trace['body'])==(a,z,body)
         assert trace['question']==yesno_question(i,len(wins),a,z,body,'visual')
         assert trace['native_visual']==bw['z_visual'] and trace['new_visual']==nw['z_visual'] and trace['cache_restored'] and trace['rope_restored']
-        if not window['frames']:assert trace['source_branch'] is None and bw['z_visual']==nw['z_visual']
+        if not uses_source(window,lookup):assert trace['source_branch'] is None and bw['z_visual']==nw['z_visual']
         else:
             content,paths=memory(window,lookup,m['windows']);_,_,expected=encode_branch(j,b['native_ctx'],trace['question'],content,paths)
             assert expected==trace['source_branch']
         assert bw.get('z_speech')==trace['native_speech'] and nw.get('z_speech')==trace['new_speech']
-        context=remote_speech(m['windows'],lookup)
+        context=remote_speech(m['windows'],lookup) if REVISION==1 else []
         expected_speech=yesno_question(i,len(wins),a,z,body,'speech')+('\nActual remote speech context at its own times (not current speech):\n'+json.dumps(context,ensure_ascii=False) if context else '') if body.strip() else None
         assert trace['new_speech_question']==expected_speech
         if not context:assert bw.get('z_speech')==nw.get('z_speech')
@@ -151,12 +161,13 @@ def validate_bundle(row,b,segments,m,j,smoke):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');a=ap.parse_args()
-    out=ROOT/'runs/20261006_m1_ordered_slots'/('r1_full_smoke'+('_B' if SPEC.get('interface')=='B' else '') if a.smoke else 'r1_full_main'+('_B' if SPEC.get('interface')=='B' else ''));out.mkdir(parents=True,exist_ok=True)
+    out=ROOT/'runs/20261006_m1_ordered_slots'/(f'r{REVISION}_full_'+('smoke' if a.smoke else 'main')+('_B' if SPEC.get('interface')=='B' else ''));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler()])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
     import transformers
     cfg=dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),model=MODEL,spec=SPEC,GT_read=False,smoke=a.smoke,
         torch=torch.__version__,transformers=transformers.__version__,code='experiments/20261006_m1_ordered_slots/measure.py + src/source_image_branch.py;2026-10-06',command='python -u '+' '.join(__import__('sys').argv))
+    if REVISION==2:cfg['reader_revision']=2
     (out/'config.json').write_text(json.dumps(cfg,indent=2)+'\n');torch.manual_seed(0);j=Judge(MODEL);j.forward_calls=j.vision_calls=0
     hooks=[j.model.model.register_forward_pre_hook(lambda *_:setattr(j,'forward_calls',j.forward_calls+1)),j.model.model.visual.register_forward_pre_hook(lambda *_:setattr(j,'vision_calls',j.vision_calls+1))]
     rows=selected_rows(a.smoke);asr={ds:load_asr(ds) for ds in DATASETS};results={name:[] for name in ('base','optimized')}

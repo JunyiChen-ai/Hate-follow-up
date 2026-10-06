@@ -158,3 +158,5 @@ ROOT deployment activation defect found before execution: originalowned223 remai
 Corrected unchanged fixed5 submittedROOT/sc474397/Slurm224 afterfourlab code agreement, idleROOT/437Gfree, priorforeignSTRAY unchanged andactualenv narrowPASS. 223 remainednever-executed/canceled; no new method version. Full333 stays forbidden untilsamefixed5 actualsource/native/currentinput/clone/compiledboth guardPASS.
 
 Actualoriginalfixed5/sc474397/Slurm224 DONE15:40:36 andROOT noGT preparePASS at runs/20261006_m1_texttiling/r1_full_smoke_analysis/plumbing_summary.json. Allsource audio/DTW/word/time/grammar/nativepixel/runtime/native allraw/G/V/stance/clone andcompiledboth guards passed. Realpretrained ASR and8B executed, but literal ASR/act selections are not proven semantictruth. Complete333samehost isnext; no GT/mainperformance/mechanism. SourcePROVENANCE updated toactualhost/stage evidence.
+
+SameR1 actualfixed5 strictPASS之后完整333 source+reader提交ROOT/sc474397/Slurm226，NORMAL QOS排队等待原186和ReKV225；同host已有5source复用但原成本保留，其余fresh提取/全333新读取。机器一致性/容量/foreign未改证据 runs/20261006_m1_texttiling/machines_before_main{,_note}.txt。无主指标/机制。

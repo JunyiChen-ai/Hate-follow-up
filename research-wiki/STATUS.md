@@ -796,3 +796,5 @@ ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审�
 已提交：ReKV37实际fixed5 guardPASS后的同host完整333/sc474398/225，正常QOS等待；TextTiling38修正ROOT启动环境后的原fixed5/sc474397/224已运行，未主指标/机制。38原223取消前未执行；版本/修订预算不变。OrderedSlots34B严格完整preparePASS，唯一评测器+固定r6分析继续。
 
 最新完整34B主结果：HMM ROC/PR/within .894458/.674780/.757994（84），HCS .725932/.677985/.653961（99）；HCSwithin+.016612保留正向进展，HMMPR−.019455、共同门FAIL。权威runs/20261006_m1_ordered_slots/r1_full_main_B_decoded/optimized/metrics.json，按规则9做真实误差分析/最多三修订，未完整controls。38原fixed5/224 DONE、本机noGT/source/native allraw/G/V/clone/compiledboth strictPASS，准备同host完整333；未主性能。均development-selected。
+
+38原fixed5/224实际52 compiled/122 changedS、native allraw/G/V/5clone/source/audio/DTW/Pixels strictPASS后，同host完整333 ROOT226已提交，NORMAL QOS排队，原source成本保留。34实际GT/raw/source误差分析已记录：HMM rawmax within−.023753且CI全负；R2事前声明 nativeS原样/视觉suffix去ASR/真实REMOTE+LOCAL才用newV，修订1/3；36层CPU PASS，独立窄delta确认进行中，未R2GPU。
