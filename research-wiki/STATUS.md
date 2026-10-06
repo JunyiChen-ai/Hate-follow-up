@@ -1,6 +1,6 @@
 # 当前研究状态
 
-截至 **2026-10-07 03:07 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 03:25 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
@@ -907,3 +907,5 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 37HL0 full333/240完整BOTHROOT+strict/canonicalDONE：HMM .899281/.690792/.762471(84)，HCS .731430/.685063/.657905(99)，withinvsnative+.011689/+.020556其它lossnoise，性能正向保留。权威runs/20261006_m1_rekv/history_local_main_decoded/HL0/metrics.json。HistoryWithoutREMOTE within仅+.001343/+.001566、jointdeletion+.001995/−.004664，仍无共同机制贡献门；HCS无history时REMOTE反而伤，rawV/max HMM下降而final上升，不能以dense-only升格novelty。完整raw/factorialauthority相应history_local_main_error_analysis/summary.json/history_local_main_analysis/summary.json，必要independentfactorialclaim解释中，预算0/3/正式r6/goal不变。39同sc474398/full333 Slurm242已RUNNING02:57–58，原fixed5真实8B+strict/独立线程fixPASS后all4代码一致/lab3idle1.2T/ROOTcurrentbudget余79.289GB检查，预计3–5GPUh未测，完整source成本/负结果保留；无39main指标/GT/机制。ROOT35C/238继续完整source+reader。
 
 37完整factorial必要独立解释完成：C1/HL0共同performancepositive保留，C2/上下文替代/正向共同conditional贡献不支持；同原独立planner/mechanism实例非blind/samefamilyprovisional，原6HL0/30five-arm指标及333H0完整proof/currentLOCAL/nohistory/REMOTE/nativeparity独立复现。权威runs/20261006_m1_rekv/factorial_claim_review/。撤下原显式检索/逐层选择/源历史科学贡献，HL0仅development-selected输入简化参照；不再追加原救援controls、不自动archive正结果、不重置0/3、不goalcomplete。39full333242继续实质性新机制；35C238已完成HMM来源并进入HCS来源，正式r6不变。HL0实测58551LM29228vision/59.00minprocessing/67.60minstandalone/peak18.098GiB，全部source/native获取与分配/验证/I/O另列，未效率结论。
+
+40原池MuKV rank4一次proposalPASS候选开始source/spec准备，experiments/20261007_m1_mukv/。实际原文eq1–9/7.2和官方源核读发现code默认diff/highpass逆FFT/末tokenK/初始cache与paper定义不同，已明确paper-anchored literal FFTbin+meanQ+allpast同grain历史，不写数值复现。运行前完整spec冻结：当前8s四分之一位置真实源、segment/frame/4quadrants独立source最多6WLM(非3W)+W未评分probe，.8/.1/.1保留、λ.3coarse rerank/每grain最终2块、nativeG/S/stance/max/r6原样，两语料同一。isolatedFFT/coherence独立数学CPU检查PASS仅软件；完整模型链/独立CodeReview/真实输入/GPU/GT未做，预算未用；不重启旧family/不停止goal。39/242约73/333完整实验继续，35C/238来源约234/333，均无新主指标；正式r6不变。

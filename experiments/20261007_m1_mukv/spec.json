@@ -1,0 +1,68 @@
+{
+  "version": "R1-paper-anchored-multigrain-coherence-2026-10-07",
+  "model": "Qwen/Qwen3-VL-8B-Instruct",
+  "native_frames": 20,
+  "window_seconds": 8,
+  "seed": 0,
+  "cpu_threads": 4,
+  "source_fractions": [
+    0.125,
+    0.375,
+    0.625,
+    0.875
+  ],
+  "source_choice": "first actual in-window PTS at or after target; missing is explicit; deduplicate decoded indices",
+  "middle_frame": "available frames[(n-1)//2] earlier middle",
+  "granularities": [
+    "segment",
+    "frame",
+    "patch"
+  ],
+  "patch_quadrants": [
+    "top-left",
+    "top-right",
+    "bottom-left",
+    "bottom-right"
+  ],
+  "patch_coordinates": "actual merged-token spatial coordinates in full middle image; split at floor(height/2),floor(width/2); emptyquadrants absent",
+  "source_prefill_history": "all compressed blocks from strictly earlier source windows of same granularity plus native full context; quadrant siblings do not see one another",
+  "source_prefill_calls_per_window": "one segment+one frame+one per nonempty quadrant, at most6 language prefills; all fullsource vision features reused, not6 vision calls",
+  "source_attention_query_chunk": 16,
+  "source_attention_indicator": "last language-layer probabilities normalized over all visible native/history/current causal keys, averaged across current visual query rows and all32Q heads; take current visual-key columns only",
+  "frequency_indicator": "paper literal complex FFT along current visual token sequence for each last-layer post-k_norm and post-RoPE head/channel; mean magnitude across KVheads/channels, bin index assigned to sameindex originaltoken; no inverse FFT/diff/dedup",
+  "fusion_attention_weight": 0.5,
+  "zero_minmax_range": "zeros",
+  "retention": {
+    "segment": 0.8,
+    "frame": 0.1,
+    "patch": 0.1
+  },
+  "retained_visual_tokens": "max(1,floor(rho*N)) for each nonemptyblock; score desc ties originaltokenindex; sorted retainedrootorder",
+  "source_text_KV": "preserve full original dtype/source time and boundaries; compression onlyvisualrows",
+  "storage": "postk_norm/preRoPE keys and originalV dtype; representative last-layer retainedvisualkey mean FP32/8KVheads concatenate; noquantization",
+  "source_time_text": "Actual source media at original times {times}. This block is context and is not a current-window event. Granularity: {grain}.",
+  "neutral_probe_calls_per_window": 1,
+  "neutral_query_text": "Use the actual current-window LOCAL images and literal current transcript to identify contextual visual observations elsewhere in the same video. Do not classify or score the video. Literal current transcript: {body}",
+  "neutral_probe_Q": "actual neutral-text question rows last-layer postq_norm/preRoPE; mean32Q→8KV byfourcontiguousheadgroups thenquestionrows",
+  "stage1_top_candidates_per_grain": 4,
+  "coarse_context_segments": 2,
+  "coherence_weight": {
+    "segment": 0.0,
+    "frame": 0.3,
+    "patch": 0.3
+  },
+  "final_blocks_per_grain": 2,
+  "retrieval_exclusions": "exclude blocks from targetwindow at everygrain; own source PTS for context; insufficientcandidates kept honestly",
+  "rerank_zero_coarse": "use neutral query vector ascoarse context",
+  "duplicate_context_sources": "keepdistinct contextual representations/grains withtruthfulduplicatedsource identity; neverpresentasindependent corroboration; samegrainIDunique",
+  "LOCAL": "every currentwindow acquired actualframe fullprojector/allDeepStack, uncompressed; no sourcehistory inembedding",
+  "reader_role_text": "Current LOCAL images identify current-window visual evidence. Segment, frame and patch memory blocks are contextual representations of their original source times, not repeated independent evidence and not events in this window. Answer the original visual question.",
+  "positions": "allsource retainedtokens keeporiginal3-axisgeometry; retrievedblocks chronological actualsourcewindow then grain(segment,frame,patch) thenquadrant, onecommonintegertranslationperblock; fullLOCAL/question suffix translatesasone3axisblock aftercontext;nativeKV/positions unchanged",
+  "no_LOCAL": "fresh nativeV and no neutralprobe",
+  "global_stance": "fresh originalnativeG andownhardstance",
+  "speech": "fresh originalnativeS orNone whenoriginalbodyempty",
+  "fusion": "originalmax(V,S)",
+  "decoder": "fixedr6_bma unchanged",
+  "scope": "onlyHateMM215/HateClipSeg118 test,4fpssoleevaluator84/99within; development-selected; noGTmodel/nohash/noGitresultsprovenance/noensemble/nocorpusroute",
+  "paper_code_difference": "paper literal FFT,meanQ andallsamegrainpast chosen; officialdiff/highpassinverseFFT,lasttokenK,initcache/defaultdedup notmixed; no faithful numerical reproduction claim"
+}
