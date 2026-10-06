@@ -21,7 +21,7 @@ def one(y,s):return within_video_macro({'video':y},{'video':s})['within_video_ma
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--revision',type=int,choices=(1,2),default=1);args=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--revision',type=int,choices=(1,2,3),default=1);args=ap.parse_args()
     stem=f'r{args.revision}_full_main_B'
     out=ROOT/'runs/20261006_m1_ordered_slots'/(stem+'_error_analysis');out.mkdir(parents=True,exist_ok=True)
     print(socket.gethostname(),flush=True);(out/'run.pid').write_text(str(os.getpid()))

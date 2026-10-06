@@ -1,12 +1,12 @@
 # 当前研究状态
 
-截至 **2026-10-06 20:23 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-06 20:50 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，机制尚未成立。当前七项选择对照及 T0/H0 已实现，作者软件/实际处理器检查通过，独立代码审查 PASS（same-family provisional），真实8B原fixed5/230与严格本机 prepare 已通过，完整333对照/sc474398/231已提交。
-- **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；R3 revision2/3固定5/232已通过严格守门，完整333/ROOT235正在运行。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。R3仅恢复原R1视觉包ASR，nativeS与来源守门保持R2；37机制验证优先。
-- **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；R2 revision1/3已通过原fixed5/233及ROOT严格守门，完整333/sc448960/234正在运行，原source只读复用并完整计费。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
-- **TextTiling38** 完整333/ROOT226已严格评测：within +.016902/+.010345双语料达标，但HMM PR−.012746超噪声，整体FAIL；正向结果保留；R2 revision1/3已通过一次独立增量审查，原fixed5/ROOT236正常QOS排队，仅compiled源act用增强S，其余原生S。权威 `runs/20261006_m1_texttiling/r1_full_main_decoded/optimized/metrics.json`。
+- **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；R3 revision2/3完整333/235已评测：within+.011050/−.001156，共同门FAIL、无超噪声损失，HMM正向保留，最后一修订须实际误差分析。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。R3仅恢复原R1视觉包ASR，nativeS与来源守门保持R2；37机制验证优先。
+- **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；R2 revision1/3已通过原fixed5/233及ROOT严格守门，完整333/sc448960/234已结束且BOTH回传ROOT，matchingruntime strictprepare/统一评测进行中，原source只读复用并完整计费。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
+- **TextTiling38** 完整333/ROOT226已严格评测：within +.016902/+.010345双语料达标，但HMM PR−.012746超噪声，整体FAIL；正向结果保留；R2 revision1/3已通过一次独立增量审查，原fixed5/ROOT236已通过严格守门，完整333/ROOT237正在运行，仅compiled源act用增强S，其余原生S。权威 `runs/20261006_m1_texttiling/r1_full_main_decoded/optimized/metrics.json`。
 - **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；完整333尚未提交。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
 - **事实核验27** 完整333/193仍由主 agent 调度持有，未启动；原方法/预算不变。
 - VideoEvent36、Spatial31、Interval26 R2已按规则9归档第28/29/30项，正向趋势、故障修复和权威数字保留于下方及归档 README。
@@ -857,3 +857,9 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 34R3完整333 ROOT235 DONE20:32:01，33:00/0:0，本机所有input/run齐，SOURCE_INTERFACE=B READER_REVISION3 matchingruntime strictprepare+唯一评测/固定r6启动，尚无主指标。38R2原fixed5/236已开始运行；37全部机制231/33R2完整234继续，正式r6/目标不变。
 
 38R2真实原fixed5 ROOT236 DONE20:33:31/1:29/0:0，本机matchingruntime strict noGT准备PASS：nativeallraw/G/V原生精确、compiledS与原完整R1逐值/其余nativeS或None、同parser选择、source/audio/3axis/绑定/成本与5clones守门通过。权威 runs/r2_full_smoke_analysis/{plumbing_summary,R1_R2_actual_identity}.json；完整333准备提交，revision1/3，原source与freshparser全部计费，未主指标/机制。34R3完整235已结束、CPU strictprepare进行；37机制231/33R2完整234继续。
+
+38R2完整333 sameROOTsourcehost/Slurm237已提交，原fixed5真实8B/本机strict守门后，当前all4code一致/旧foreign+STRAY保留/382Gfree/ROOTidle检查通过。ASR/DTW只读复用、全新parser+reader，原source21.06min与所有调用/freshparser成本保留；all6/负结果全部报告，revision1/3，未主指标/机制。37全机制231/33R2主轮234继续，34R3完整235的CPU strictprepare进行中。
+
+34R3完整333/235本机strict当前/source/nativeallraw与统一all6 base精确。HMM ROC/PR/within .897574/.694718/.761832（84），HCS .721462/.676807/.636193（99）；within+.011050/−.001156，无超噪声损失但共同门FAIL，HMM正向保留。权威 runs/r3_full_main_B_decoded/optimized/metrics.json，revision2/3，最后一修订先actualerroranalysis，未R4声明/机制。37全机制231/33R2完整234/38R2完整237继续。
+
+33R2完整333 sameR1sourcehost/sc448960/234 DONE20:46:24，1:03:15/0:0，BOTH全部回传ROOT后READER_REVISION2 matchingruntime strictprepare+统一all6/固定r6启动，尚无R2主指标。原source/模型/常数/预算revision1/3保持，全部成本/负结果保留。37全部机制231、38R2完整237继续。
