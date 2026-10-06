@@ -23,7 +23,8 @@ def partition(words):
     lexical=[dict(term=m.group().casefold(),word=w['id']) for w in words for m in LEXICAL.finditer(w['text'])]
     size=SPEC['pseudo_sentence_words'];k=SPEC['lexical_block_sentences']
     sentences=[lexical[i:i+size] for i in range(0,len(lexical),size)]
-    gaps=list(range(k,len(sentences)-k+1))
+    complete=len(lexical)//size
+    gaps=list(range(k,complete-k+1))
     raw=[cosine([x['term'] for sentence in sentences[g-k:g] for x in sentence],
                 [x['term'] for sentence in sentences[g:g+k] for x in sentence]) for g in gaps]
     radius=SPEC['smooth_width']//2

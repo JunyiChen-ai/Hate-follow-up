@@ -30,6 +30,9 @@ def main():
     assert np.array_equal(jumps,expected)
     zeros=[torch.full((1,1,7,2),.5)]
     matrix,jumps_zero=align_weights(zeros,[(0,0)],4,2,2);assert not matrix.any() and np.isfinite(jumps_zero).all()
+    capped=[torch.randn(1,1,448,10).softmax(-1)]
+    matrix,jumps_cap=align_weights(capped,[(0,0)],4,444,10,teacher_eos=False)
+    assert matrix.shape==(445,10) and len(jumps_cap)==445,'capped token prefix was dropped or expanded past448'
     processor=AutoProcessor.from_pretrained('openai/whisper-large-v3',local_files_only=True)
     examples=[]
     for language,text in [('en','Hello, café. Another speaker says no.'),('zh','你好 世界'),('en',' repeated repeated')]:

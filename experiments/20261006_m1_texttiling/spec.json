@@ -8,6 +8,7 @@
   "source_audio_seconds": 30,
   "asr_max_length": 448,
   "asr_num_beams": 1,
+  "alignment_capacity_closing": "preserve all generated content; append teacher EOS only if it fits448, otherwise terminal content query supplies final boundary",
   "alignment_median_width": 7,
   "alignment_frame_seconds": 0.02,
   "alignment_zero_std": "zero normalized row",

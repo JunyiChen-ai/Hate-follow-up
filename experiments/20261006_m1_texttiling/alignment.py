@@ -38,15 +38,15 @@ def word_groups(tokenizer,tokens,language):
     return words,groups,indices
 
 
-def align_weights(attentions,heads,prefix_count,content_count,nframes,median_width=None):
+def align_weights(attentions,heads,prefix_count,content_count,nframes,median_width=None,teacher_eos=True):
     from transformers.models.whisper.generation_whisper import _median_filter
     # HF eager returns softmax attention weights: do not softmax them again.
     weights=torch.stack([attentions[layer][0,head,:,:nframes].float() for layer,head in heads])
-    assert weights.shape[1]==prefix_count+content_count+1 and weights.shape[-1]>0
+    assert weights.shape[1]==prefix_count+content_count+int(teacher_eos) and weights.shape[-1]>0
     std,mean=torch.std_mean(weights,dim=-2,keepdim=True,unbiased=False)
     normalized=torch.where(std>0,(weights-mean)/std.clamp_min(torch.finfo(weights.dtype).tiny),torch.zeros_like(weights))
     filtered=_median_filter(normalized.unsqueeze(0),SPEC['alignment_median_width'] if median_width is None else median_width)[0]
-    matrix=filtered.mean(0)[prefix_count-1:-1].cpu().numpy()
+    matrix=filtered.mean(0)[prefix_count-1:(-1 if teacher_eos else None)].cpu().numpy()
     assert matrix.shape==(content_count+1,nframes) and np.isfinite(matrix).all()
     text,time=dtw(-matrix)
     jumps=np.r_[True,np.diff(text)!=0];jump_seconds=time[jumps]*.02
@@ -112,16 +112,18 @@ class Recognizer:
         assert all(t<self.processor.tokenizer.eos_token_id for t in content)
         matrix=np.empty((0,0),np.float32);jumps=np.empty(0,np.float64);words=[]
         if content:
-            teacher=prefix+content+[self.processor.tokenizer.eos_token_id]
+            teacher_eos=len(prefix)+len(content)<self.model.config.max_target_positions
+            teacher=prefix+content+([self.processor.tokenizer.eos_token_id] if teacher_eos else [])
             aligned=self.model.model(input_features=features,decoder_input_ids=torch.tensor([teacher],device='cuda'),
                 output_attentions=True,use_cache=False,return_dict=True)
             nframes=min(aligned.cross_attentions[0].shape[-1],max(1,int(np.ceil(len(audio)/320))))
-            matrix,jumps=align_weights(aligned.cross_attentions,self.heads,len(prefix),len(content),nframes)
+            matrix,jumps=align_weights(aligned.cross_attentions,self.heads,len(prefix),len(content),nframes,teacher_eos=teacher_eos)
             words=timed_words(self.processor.tokenizer,content,language,jumps,start,end,number)
             del aligned
         result=dict(block=number,prefix_tokens=prefix,tokens=ids,content_tokens=content,words=words,
             truncated=stop==len(generated),text=self.processor.tokenizer.decode(content,skip_special_tokens=True),
             heads=self.heads,raw_jump_seconds=jumps.tolist(),alignment_matrix_shape=list(matrix.shape),
+            teacher_eos=bool(content and len(prefix)+len(content)<self.model.config.max_target_positions),
             generation_api='generic HF GenerationMixin greedy, no longform ASR heuristics')
         del output,features
         return result,matrix

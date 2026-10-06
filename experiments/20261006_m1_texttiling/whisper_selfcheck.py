@@ -24,9 +24,13 @@ def main():
     matrix,jumps=align_weights(output.cross_attentions,g.alignment_heads,len(prefix),len(content),50)
     words=timed_words(p.tokenizer,content,'en',jumps,0,1,0)
     assert ''.join(w['text'] for w in words)==text and all(0<=w['start']<=w['end']<=1 for w in words)
+    capped_content=[content[0]]*444
+    with torch.no_grad():capped=model(input_features=torch.randn(1,128,100),decoder_input_ids=torch.tensor([prefix+capped_content]),use_cache=False,output_attentions=True,return_dict=True)
+    cap_matrix,cap_jumps=align_weights(capped.cross_attentions,g.alignment_heads,4,444,50,teacher_eos=False)
+    assert cap_matrix.shape==(445,50) and len(cap_jumps)==445
     np.save(out/'matrix.npy',matrix,allow_pickle=False)
     summary=dict(PASS=True,actual_encoder_layers=32,actual_decoder_layers=32,actual_heads=20,official_alignment_heads=g.alignment_heads,
-        teacher_rows=matrix.shape[0],content_tokens=len(content),literal_words=words,
+        teacher_rows=matrix.shape[0],content_tokens=len(content),literal_words=words,capped448_real_decoder_rows=True,capped444_content_tokens_preserved=True,
         scope='actual HF architecture with random weights/narrow width and1s features, CPU; not pretrained Whisper generation/GPU/ASR truth or performance')
     (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n');print('PASS actual32layer Whisper teacher-forced cross attention')
 

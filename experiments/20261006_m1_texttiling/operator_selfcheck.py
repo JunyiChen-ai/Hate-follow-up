@@ -20,6 +20,7 @@ def main():
     for count in [0,1,19,20,21,239,240,260,1000]:
         words=[dict(id=i,text='same',start=float(i),end=float(i+1)) for i in range(count)]
         p=partition(words);assert p['boundaries']==[]
+        if count<240:assert not p['gaps'],'partial pseudo sentence cannot supply sixth complete sentence'
         assert [i for s in p['segments'] for i in range(s['start_word'],s['end_word'])]==list(range(count))
         assert all(len(x)==20 for x in p['pseudo_sentence_word_ids'][:-1])
     words=[dict(id=i,text='astronomy' if i<400 else 'cooking',start=i/20,end=(i+1)/20) for i in range(800)]

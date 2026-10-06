@@ -56,8 +56,12 @@ to ceil(actual samples/320) encoder frames at20ms, bounded by encoder length.
 DTW costs areFP32, official CPU strict diagonal/strict up/otherwise left ties;
 save raw jumps before group lookup. Cumulative word token boundaries index
 those jumps; clip only to actual crop endpoints and retain raw endpoints too.
-Teacher EOS closes alignment even if greedy generation capped; it is not a
-generated word or evidence. These details are fixed before source extraction.
+Teacher EOS closes alignment when it fits the448 decoder capacity. A capped
+prefix4+content444 preserves every actual token and teacher-forces those448
+rows without an extraEOS; its terminal content query supplies the final DTW
+boundary. This explicit capacity adaptation normalizes the actual448 rows
+and does not silently drop the last word. Teacher EOS is never a generated
+word or evidence. These details are fixed before source extraction.
 
 Lexical sequence: Unicode letter/number runs with internal apostrophes,
 casefold, no stemming or stop list. A source word with multiple lexical runs
@@ -146,3 +150,5 @@ write its own meaningful CPU evidence under `independent_code_review/`.
 Actual333 raw/native/real processor preflight is running; future source word
 capacity and actual source semantics are not thereby validated. No new source
 cache has been generated, no GT read, no main result and no budget reset.
+
+Independent Rule6 confirmed only B1 capped teacher-capacity and B2 incomplete lexical block fixes. No content tokens were dropped and no execution guard changed. Actual narrow random-weight HF production Recognizer.block greedy reached448 tokens/retained444 content/445 DTW rows; actual36-layer random Qwen production reader/parser/validator exercised fresh S, ten complete native KV restorations and wrong role/source text/native pixel rejection. Evidence runs/20261006_m1_texttiling/independent_code_review/{summary,fix_summary,cost_summary}.json. This is software evidence only, not actual pretrained8B/ASR semantics/performance. Actual333 raw/native/real-processor preflight PASS runs/full_input_preflight/summary.json. The one Rule6 review is PASS at docs/reviews/20261006_m1_texttiling_code.md (same-family provisional). No GPU started; actual fixed5 is next.

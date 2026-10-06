@@ -42,6 +42,7 @@ def validate_source(processor,row,record,folder,decode=True):
         generated=tokens[len(record['prefix_tokens']):];eos=processor.tokenizer.eos_token_id
         assert generated==(content if generation['truncated'] else content+[eos])
         assert generation['text']==processor.tokenizer.decode(content,skip_special_tokens=True)
+        assert generation['teacher_eos']==bool(content and len(record['prefix_tokens'])+len(content)<SPEC['asr_max_length'])
         if content:
             matrix=np.load(folder/'alignment'/f"block_{block['i']:06d}.npy",allow_pickle=False)
             lo,hi=block['crop']['samples']
