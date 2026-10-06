@@ -808,3 +808,5 @@ ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审�
 34R2 ROOT227原fixed5 DONE/matchingruntime noGT strictPASS（nativeallraw/G/S、真实source pixels/positions、缺源回退、nativeS exact/10clones/sourcecost）；准备samehost完整333，revision1/3，未R2主性能。37完整333/225已GPU DONE，BOTH回传中，指标未核对。35C 228实际source已在BOTH执行全部3tools，仍等待完整5/source/native守门，不作性能结论。
 
 ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回传ROOT，matchingruntime严格prepare/唯一评测+固定r6启动，尚未指标。34R2原fixed5 strictPASS后同ROOT完整333/229排队，低新增计算成本优先；38原226继续调度持有，R2完整比较结束后释放。35C/228 sourcefixed5全齐且两语料均actual3tools，配对读取开始，未source/native整体守门与指标。goalactive/正式r6不变。
+
+35C ROOT228原fixed5 source+reader DONE17:36:55/9:10/0:0，matchingruntime noGT completeguardPASS：两语料各2次3tools、158clipprefix/316relevance、158newV，nativeallraw/G/S/10clone/source/currentpixels/positions/cost exact；原A/B失败保持。阶段346.45s含source238.29s，较低新增成本R2/38完整比较优先，Cfull333待调度，0/3预算无主GT/指标。
