@@ -869,3 +869,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 38R2完整333 sameROOTsourcehost/Slurm237 DONE21:35:02，58:53/0:0，本机所有input/run齐，READER_REVISION2 matchingruntime strictprepare+统一all6/固定r6启动，尚无主指标。原ASR/DTW/source/freshparser/读数成本与全部UNKNOWN/负结果保留，revision1/3。37全机制231继续，正式r6/目标未变。
 
 38R2完整333/ROOT237本机strict audio/source/compiler/nativeallraw/G/V与统一all6 base精确后评测结束。HMM ROC/PR/within .896959/.679984/.762378（84），HCS .721299/.672548/.639326（99）；within+.011596/+.001977，HMMPR−.014250超噪声，共同门FAIL。权威 runs/r2_full_main_decoded/optimized/metrics.json，compiled-only假设未改善PR且HCSwithin变弱，R1双语料within正向仍保留。revision1/3，actualerroranalysis后才能继续两修订，未R3声明/机制。37全部机制231继续。
+
+37全部7项selection对照完整333/sc474398/231阶段DONE21:55:12，输出回传ROOT中；同job全333 T0 wrong-presented timestamp重建已开始，之后H0零历史。只是执行阶段齐全，未对照主指标/机制结论，原R0/native与所有费用/negative输出保留。目标active/正式r6未变。
+
+37完成的7项selection对照全333已ROOT strict noGT绑定PASS（1058.226s），R0源/query/选块/读数精确、nativeallraw/当前actualpixels/控制query与完整token预算重放通过。权威 runs/controls_selection_binding/summary.json，仅执行输入证明，未效能/机制。T0 full333远端继续，之后H0；全部完成后再统一评测，目标仍active。
