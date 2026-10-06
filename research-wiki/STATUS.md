@@ -1,6 +1,6 @@
 # 当前研究状态
 
-截至 **2026-10-07 01:14 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 01:21 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
@@ -889,3 +889,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 35C完整333同ROOT/sc474397/Slurm238已提交并RUNNING，原fixed5真实8B+strict noGT与当前C全333实际输入预检PASS后正常派发；all4代码一致/旧foreign work+STRAY保留/ROOT300Gfree，机器证据runs/20261006_m1_vtimecot/machines_before_C_main{,_note}.txt。所有source+reader同host/C，不拼不同hostpilot，原samehost完成5源成本保留，budget0/3，预计4–8GPUh不是实测，原生获取另计。标准后台wait_C_main.log同时检查Slurm消失/Traceback/FAILED/readerDONE，无mainGT/指标/机制结论。37HL0独立narrow确认继续，未GPU。目标active。
 
 37HL0一次独立narrowdelta确认PASS，docs/reviews/20261007_m1_rekv_HL0_delta.md/fulltraces：四actual36层FP32BF16native18/20全部包含nonemptyS/noLOCAL/clone/state，full333currentH0/rawPTS/pixel/runtime/query/selection严格无GT重放28895source/7missingLOCAL/522.824s PASS；原7臂default/L0子集数值精确，cost/resume/fail/peak/launch守门PASS。准备samehostlab3 originalfixed5真实8B，无HL0性能或机制结论。39为原池rank3 StreamingTOM已审候选，实际原文/官方CTR/OQM读取后准备spec与独立prototype算术；部分静动分组/uint4 isolatedCPU PASS，仅软件，无完整collector/reader/code review/GPU/GT。正式r6和全部旧预算不变；35C ROOT238继续完整333。
+
+37HL0原fixed5同sc474398/Slurm239已提交，独立narrowPASS/作者CPU/full333currentH0无GT proof PASS与all4代码一致/lab3idle1.2T后正常派发；ROOT238另一个active，held193不动。完整source重建+H0identity+LOCAL-only读数计费，原方法/主门/预算不变；标准等待含job消失与失败，尚无HL0 GPU结果/GT/指标，full333未提交。
+
+37HL0原fixed5 samehost/sc474398/239 DONE01:18:31/1:47/0:0，BOTHrun/input已ROOT回传，strict noGT preparePASS，authority runs/20261006_m1_rekv/history_local_smoke_analysis/{plumbing_summary,actual_intervention_summary}.json。H0全sourcekeys/query/selection/raw/native exact，HL0无history/REMOTE且真实LOCAL保留，G/S/stanceexact/10clones，全部158V真实改变/与H0不同；624source，81.407s processing/peak18.117GiB全部成本保留。完整333samehost准备提交，无HL0GT/指标/机制或新科学修订。ROOT35C/238继续完整333。
