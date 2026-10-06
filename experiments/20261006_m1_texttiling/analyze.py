@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from inputs import ROOT,SPEC,DATASETS,selected_rows,source,validate_source
 from validate import validate_bundle
+from reader import REVISION
 from src.mllm_renderer import cpu_position_renderer
 from src.video_inputs import load_asr,frame_paths
 from src.mllm_judge import VIDEO_QUESTION
@@ -24,7 +25,7 @@ def read(path):
 def prepare(run,out,smoke):
     from transformers import AutoProcessor
     start=__import__('time').perf_counter();whisper=AutoProcessor.from_pretrained(SPEC['asr_model'],local_files_only=True)
-    cfg=json.loads((run/'config.json').read_text());assert cfg['spec']==SPEC and cfg['smoke']==smoke and cfg['GT_read'] is False
+    cfg=json.loads((run/'config.json').read_text());assert cfg['spec']==SPEC and cfg['smoke']==smoke and cfg['GT_read'] is False and cfg.get('reader_revision',1)==REVISION
     rows=selected_rows(smoke);expected={(r['dataset'],r['video_id']):r for r in rows}
     readings={name:read(run/name/'predictions.jsonl') for name in ('base','optimized')}
     assert all(r.keys()==expected.keys() for r in readings.values())
@@ -82,7 +83,7 @@ def report(decoded,out):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--stage',required=True,choices=('prepare','evaluate','report'));ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base','optimized'));args=ap.parse_args()
-    stem='r1_full_smoke' if args.smoke else 'r1_full_main';run=ROOT/'runs/20261006_m1_texttiling'/stem;out=run.parent/(stem+'_analysis');out.mkdir(parents=True,exist_ok=True);decoded=run.parent/(stem+'_decoded')
+    stem=f'r{REVISION}_full_'+('smoke' if args.smoke else 'main');run=ROOT/'runs/20261006_m1_texttiling'/stem;out=run.parent/(stem+'_analysis');out.mkdir(parents=True,exist_ok=True);decoded=run.parent/(stem+'_decoded')
     if args.stage=='prepare':prepare(run,out,args.smoke)
     elif args.stage=='evaluate':assert not args.smoke and args.name;evaluate(run,decoded,args.name)
     else:assert not args.smoke;report(decoded,out)

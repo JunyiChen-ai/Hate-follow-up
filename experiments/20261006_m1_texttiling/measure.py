@@ -7,7 +7,7 @@ import socket
 import time
 import torch
 from inputs import ROOT,SPEC,DATASETS,selected_rows,source,validate_source
-from reader import read_video,IMPLEMENTATION
+from reader import read_video,IMPLEMENTATION,REVISION
 from validate import validate_bundle
 from src.video_inputs import load_asr
 from src.mllm_judge import Judge,MODEL
@@ -15,13 +15,14 @@ from src.mllm_judge import Judge,MODEL
 
 def main():
     start_pipeline=time.perf_counter();ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');args=ap.parse_args()
-    out=ROOT/'runs/20261006_m1_texttiling'/('r1_full_smoke' if args.smoke else 'r1_full_main');out.mkdir(parents=True,exist_ok=True)
+    out=ROOT/'runs/20261006_m1_texttiling'/(f'r{REVISION}_full_'+('smoke' if args.smoke else 'main'));out.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s',handlers=[logging.FileHandler(out/'run.log'),logging.StreamHandler()])
     logging.info('host %s',socket.gethostname());(out/'run.pid').write_text(str(os.getpid()))
     import transformers,av
     config=dict(host=socket.gethostname(),date=time.strftime('%Y-%m-%d'),model=MODEL,spec=SPEC,implementation=IMPLEMENTATION,
         GT_read=False,smoke=args.smoke,torch=torch.__version__,transformers=transformers.__version__,av=av.__version__,
         code='experiments/20261006_m1_texttiling/{reader,measure,compiler,validate}.py;src/native_input_binding.py;2026-10-06')
+    if REVISION==2:config['reader_revision']=2
     path=out/'config.json'
     if path.exists():assert json.loads(path.read_text())==config,'changed reader configuration; refuse overwrite'
     else:path.write_text(json.dumps(config,indent=2)+'\n')

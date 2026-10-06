@@ -6,7 +6,7 @@
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，机制尚未成立。当前七项选择对照及 T0/H0 已实现，作者软件/实际处理器检查通过，独立代码审查 PASS（same-family provisional），真实8B原fixed5/230与严格本机 prepare 已通过，完整333对照/sc474398/231已提交。
 - **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；R3 revision2/3固定5/232正常QOS排队。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。后续设计待实际误差分析，37机制验证优先。
 - **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；R2 revision1/3已通过原fixed5/233及ROOT严格守门，完整333待提交。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
-- **TextTiling38** 原固定5/source/audio/DTW/native/执行守门已通过；完整333/ROOT226于18:27解除调度持有，正在运行，同 R1/预算0/3，尚无主指标。
+- **TextTiling38** 完整333/ROOT226已严格评测：within +.016902/+.010345双语料达标，但HMM PR−.012746超噪声，整体FAIL；正向结果保留，预算0/3，实际误差分析进行。权威 `runs/20261006_m1_texttiling/r1_full_main_decoded/optimized/metrics.json`。
 - **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；完整333尚未提交。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
 - **事实核验27** 完整333/193仍由主 agent 调度持有，未启动；原方法/预算不变。
 - VideoEvent36、Spatial31、Interval26 R2已按规则9归档第28/29/30项，正向趋势、故障修复和权威数字保留于下方及归档 README。
@@ -843,3 +843,11 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 38原R1完整333 source+pairedreader ROOT/226 DONE19:53:19，1:27:08/0:0，本机所有input/run齐，matchingruntime strictprepare+唯一评测/固定r6启动，尚无主指标。34R3原fixed5/232已调度，正在核对实际完成/守门；37全部机制231/33R2完整234继续，正式r6/目标不变。
 
 34R3真实原fixed5 ROOT232 DONE19:54:13/0:53/0:0，本机matchingruntime strict noGT守门PASS；nativeallraw/G/S原生精确，activeV/sourcebranch=原R1逐值、缺来源nativeV、原B全部源/3axis/成本与10clones通过。权威 runs/r3_full_smoke_B_analysis/{plumbing_summary,R1_R3_actual_identity}.json。完整333准备提交，revision2/3，原source成本保留；38完整333/226已结束，CPU严格准备进行。37机制231/33R2主轮234继续。
+
+34R3完整333 sameROOTsourcehost/Slurm235已提交，原fixed5真实8B/本机strict守门后，all4code一致/旧foreign+STRAY保留/382Gfree/ROOTidle检查通过。原完整B source只读复用/127.26min与458703forwards完整计费，fresh统一R3过程，两语料all6与负结果保留；revision2/3，无主指标/机制。37全机制231、33R2完整234继续；38完整原R1 CPU strictprepare进行中。
+
+38完整333/ROOT226本机strict currentaudio/DTW/compiler/时间/nativeallraw/G/V及统一all6 baseline精确。HMM ROC/PR/within .897858/.681488/.767684（84），HCS .722572/.675367/.647694（99）；within+.016902/+.010345双语料正向保留，但HMMPR−.012746超噪声，overallperformanceFAIL，未机制/晋级。权威 runs/20261006_m1_texttiling/r1_full_main_decoded/optimized/metrics.json，Rule9保留budget0/3，actualGTerroranalysis启动，未R2声明/控制GPU。37机制231/33R2完整234/34R3完整235继续。
+
+38R1实际erroranalysis发现cap/UNKNOWN未编译仍wordlist augmentation的损失例子（HMM330/247 GTpositive窗口nativeS≈11→负分），compiled与uncompiled均有正帧分数下降，不预设修复有效。R2事前声明revision1/3：仅compiled有效LOCAL act使用源S，其余freshnativeS/原生缺S为None，保留全部word/ASR/DTW/partition/parser/compiledprompt/nativeG/V/r6/常数。全7359问句/defaultR1snapshot与actualnarrow36layer CPU数值/状态/计费检查PASS，独立窄delta确认进行中，尚未R2GPU/指标。37全机制231、33R2完整234、34R3完整235继续。
+
+38R2独立窄delta确认PASS docs/reviews/20261006_m1_texttiling_R2_delta.md（same-family provisional）：8actual36layer FP32/BF16含原生S缺失/UNKNOWN/无LOCAL/compiled、native/packet/clone/KV/rope/host/成本与篡改拒绝；完整333/7359真实未标注包重放/defaultR1兼容/命名/启动/失败阻断通过。未GPU/GT/实际预测/指标；原fixed5准备提交，revision1/3。37全部机制231、33R2主轮234、34R3主轮235继续。

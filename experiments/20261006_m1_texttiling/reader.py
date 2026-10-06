@@ -2,6 +2,7 @@
 import copy
 import json
 import math
+import os
 import socket
 import numpy as np
 import torch
@@ -13,6 +14,8 @@ from src.video_inputs import frame_paths,fixed_windows,window_text
 from src.mllm_judge import yesno_question
 from src.source_generation import clock
 from src.native_input_binding import save as save_binding
+
+REVISION=int(os.environ.get('READER_REVISION','1'));assert REVISION in (1,2)
 
 IMPLEMENTATION='R1 speech lexical partition/scoped grammar reader; source binding and full pipeline costs;2026-10-06'
 
@@ -57,7 +60,7 @@ def validate_parse(j,words,scoped,packet):
 
 
 def speech_question(native_question,words,scoped,packet):
-    if packet['reason']=='no_local_words':return native_question
+    if packet['reason']=='no_local_words' or (REVISION==2 and packet['reason']!='compiled'):return native_question
     if packet['reason']=='compiled':return question(native_question,packet['record'])
     local=[words[i] for i in scoped['local_ids']]
     record=dict(current_window=scoped['bounds'],aligned_literal_LOCAL=[dict(id=w['id'],bounds=[w['start'],w['end']],text=w['text']) for w in local],
@@ -103,10 +106,11 @@ def read_video(j,row,segments,source,out,smoke):
         finally:j.model.model.rope_deltas=rope
         times['parser']+=clock(j)-start;packets.append(packet)
         if packet['generation'] is not None:parser_forwards+=packet['generation']['actual_forwards']
-        sq=speech_question(original,words,scoped,packet) if s is not None or scoped['local_ids'] else None
+        available=s is not None or (bool(scoped['local_ids']) and (REVISION==1 or packet['reason']=='compiled'))
+        sq=speech_question(original,words,scoped,packet) if available else None
         if sq is not None:start=clock(j);new=margin(j,cache,ctx,sq);times['new_speech']+=clock(j)-start
         else:new=None
-        if packet['reason']=='no_local_words':assert new==s
+        if packet['reason']=='no_local_words' or (REVISION==2 and packet['reason']!='compiled'):assert new==s
         trace=dict(i=i,bounds=[a,b],body=body,original_question=original,new_question=sq,native_visual=visual[i],native_speech=s,new_speech=new,
             cache_restored=cache.get_seq_length()==ctx['stance_cache_tokens'],rope_restored=torch.equal(j.model.model.rope_deltas,ctx['rope']))
         assert trace['cache_restored'] and trace['rope_restored']
@@ -119,7 +123,7 @@ def read_video(j,row,segments,source,out,smoke):
     native_seconds=sum(times[k] for k in ('prefix','native_visual','native_speech'))
     seconds=source['source_seconds']+sum(times[k] for k in ('prefix','native_visual','parser','new_speech','native_binding'))
     base=prediction(row,ctx,visual,native_speech,native_seconds,'m1_native')
-    new=prediction(row,ctx,visual,new_speech,seconds,'m1_texttiling',parser_forwards+sum(source['counts'].values()))
+    new=prediction(row,ctx,visual,new_speech,seconds,'m1_texttiling' if REVISION==1 else 'm1_texttiling_r2',parser_forwards+sum(source['counts'].values()))
     checks=dict(host=socket.gethostname(),GT_read=False,times=times,source_seconds=source['source_seconds'],source_counts=source['counts'],
         parser_forwards=parser_forwards,diagnostic_forwards=clones,actual_forwards=j.forward_calls-before,actual_vision=j.vision_calls-before_vision,
         peak_GiB=torch.cuda.max_memory_allocated()/2**30 if j.device.type=='cuda' else 0.)
@@ -127,4 +131,5 @@ def read_video(j,row,segments,source,out,smoke):
     result=dict(version=SPEC['version'],spec=SPEC,binding=binding,segments=[list(x) for x in segments],
         native_ctx={k:v for k,v in ctx.items() if k not in ('positions','rope','files')},native_rope=ctx['rope'].tolist(),
         base=base,optimized=new,packets=packets,traces=traces,checks=checks)
+    if REVISION==2:result['reader_revision']=2
     del cache;return result

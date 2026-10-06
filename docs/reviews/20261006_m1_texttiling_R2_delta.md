@@ -1,0 +1,26 @@
+# Candidate38 TextTiling R2 independent narrow delta confirmation
+
+2026-10-06. Separate GPT-6-astra reviewer; same-family provisional.
+
+**PASS for the requested R2 implementation delta.** No concrete scientific implementation defect was observed. This is CPU software/input evidence, not an actual pretrained 8B result or performance/mechanism conclusion.
+
+Reviewed reader.py, validate.py, measure.py, analyze.py, the R2 declaration, source/compiler interfaces and the R2 launch/analysis scripts. Compared the four changed Python files with the author's readable before_R2 source snapshots. Only compiled packets enter the enhanced S question in R2. All other reasons use the original native question, and absence of both native speech and a compiled LOCAL act gives None. A compiled LOCAL act can provide S when native speech is absent. Routing uses parser reason/local availability, without corpus-specific rules or hate margins. Native G/V, full ASR, stance, max fusion and 4 fps output are unchanged.
+
+## Independent execution
+
+Evidence: runs/20261006_m1_texttiling/r2_delta_review/.
+
+- model_check.py and model_summary.json: independently executed and extended the author's fixture to eight cases: FP32/BF16 × native speech present/absent × compiled/UNKNOWN. Each case uses the actual 36-layer narrow random Qwen3-VL model, production reader, actual structured Stream appends and production validator; a third no-LOCAL window is included. Current R1 matches the pre-R2 snapshot in numerical/source behavior, excluding wall-time fields. R2 native context/G/V/base, parser packets and parser forward counts are unchanged. Compiled questions and S values equal R1; unavailable cases equal native S or None. All layer K/V tensors and rope state are independently compared before/after each margin, including clone replay. Wrong revision, invented availability, unavailable-S mutation where applicable, source/parser cost mutation and foreign-host mutation are rejected.
+- The model uses small random weights, a synthetic tokenizer/image adapter and scripted parser choices. These tests establish execution/availability/cache behavior, not pretrained semantic correctness. The model cases cover compiled, UNKNOWN and no-LOCAL; word-cap, input-cap and incomplete status fallback are additionally exercised at the production question function.
+- source_check.py and source_summary.json: all 333 real source records and 7,359 parser packets checked. Counts: 2,129 compiled, 320 UNKNOWN, 1,300 no-LOCAL, 3,610 input-token-cap. Recomputed lexical partitions/scopes; replayed every stored parser generation with the actual CPU tokenizer and frozen grammar; checked R1 question identity against the snapshot and R2 compiled/native question token identity. Current native ASR supplies the original questions. Source metadata bytes/mtime stay unchanged.
+- The source check deserializes only the unlabelled packets projection from mixed R1 record files; base, optimized and traces and their actual prediction values are not deserialized or used. No GT or metrics were accessed. Existing raw-audio/DTW generation and full native-image preprocessing were not rerun because this delta does not change them.
+- Source accounting independently sums to 1,263.8970802812837 seconds and parser generation accounting to 112,003 forwards. Generation-internal seconds sum to 2,405.083792406367; this is narrower than the outer parser wall-time measurement, which also includes parsing/rendering overhead. Production still charges the entire fresh parser timer, existing source cost, native prefix/V, new S and native binding. It does not reuse old parser predictions or zero parser costs. Old native diagnostic S and clone costs retain their original accounting convention.
+- wiring_check.py and wiring_summary.json: parser, validate_parse and prediction ASTs are identical to the pre-R2 snapshot; canonical evaluation/fixed-r6/report functions are identical. The original per-dataset compiled>0 and changed-S>0 execution guard is unchanged and its boundary cases were executed. No scoring/source module imports error_analysis.
+- bash -n and shell stubs cover default smoke, explicit smoke/main, invalid SCOPE and device-check failure. ROOT local-sc474397, one GPU, four CPUs, 32G, repository HateVLM activation/offline environment and READER_REVISION=2 are correct; only measure.py is launched. R1 default, explicit R1 and R2 analysis paths were each checked for successful preparation and failed preparation: failed preparation stops all evaluation/report commands. Actual source/reader host equality is enforced by measure.py and validate.py and independently mutation-tested.
+
+R1 output/config defaults remain compatible; R2 uses r2_full_smoke/main with revision=2 records/config and separate analysis/decoded paths. Inspection confirms fixed-five/main row selection is unchanged.
+
+No production or foreign files were edited, no GPU/Slurm job was run, and no content hashes or Git identifiers were used. Actual pretrained fixed-five and complete333 R2 execution are outside this confirmation. Revision1/3 is the recorded declaration, not a new performance judgment.
+
+Original request, final response and tool command trace are preserved as request.txt, response.md and command_trace.json beside the three independent check scripts and their logs/summaries.
+
