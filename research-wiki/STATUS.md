@@ -1,8 +1,9 @@
 # 当前研究状态
 
-截至 **2026-10-07 03:25 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 04:34 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
-- 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
+- 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成。用户最新指示为“跑完这一轮实验停下”：自主搜索已暂停，仅收尾已经运行的 StreamingTOM39 / Slurm242 与 VTimeCoT35 C / Slurm238 的完整333、回传、严格验证及统一评测；未更新 Overleaf。
+- **StreamingTOM39** 完整333同 sc474398 / Slurm242 运行中，原固定5及严格守门已通过；尚无完整主指标。**MuKV40** 原型与已启动的纯CPU来源获取保留，未启动GPU、独立代码审查、主评测或修订；本轮收尾不继续推进它。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
 - **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；R3 revision2/3完整333/235已评测：within+.011050/−.001156，共同门FAIL、无超噪声损失，HMM正向保留，最后一修订须实际误差分析。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。R3仅恢复原R1视觉包ASR，nativeS与来源守门保持R2；37机制验证优先。
 - **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；R2 revision1/3已通过原fixed5/233及ROOT严格守门，完整333/sc448960/234已严格评测：HMM within+.006419/PR−.002657噪声内，HCS within+.015796，共同门仍FAIL，revision1/3，正向修复保留。R2权威 `runs/20261006_m1_merit/r2_full_main_decoded/optimized/metrics.json`，原source完整计费。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
@@ -10,7 +11,7 @@
 - **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；当前 C 完整333实际输入预检已PASS，同ROOT/sc474397/238完整轮已运行，预计4–8GPUh（未测），预算0/3。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
 - **事实核验27** 完整333/193仍由主 agent 调度持有，未启动；原方法/预算不变。
 - VideoEvent36、Spatial31、Interval26 R2已按规则9归档第28/29/30项，正向趋势、故障修复和权威数字保留于下方及归档 README。
-- 全部主结果均 HateMM/HateClipSeg、统一4fps、唯一评测器、固定r6、development-selected；完整性能与机制门同时通过才停止。原生媒体/ASR获取和新增来源成本均须报告。
+- 全部主结果均 HateMM/HateClipSeg、统一4fps、唯一评测器、固定r6、development-selected；完整性能与机制门未同时通过，不宣称目标完成。按用户最新要求本轮结束即停止，不启动新实验、修订或消融。原生媒体/ASR获取和新增来源成本均须报告。
 
 **2026-10-04 M1 自主迭代继续**：用户确认 Explorer R1 为正向进展，并要求达到性能与机制目标后再停止。
 当前正式方法仍为r6_bma。Explorer R4完整333在sc474399/Slurm87完成并回传本机，
@@ -908,6 +909,6 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 
 37完整factorial必要独立解释完成：C1/HL0共同performancepositive保留，C2/上下文替代/正向共同conditional贡献不支持；同原独立planner/mechanism实例非blind/samefamilyprovisional，原6HL0/30five-arm指标及333H0完整proof/currentLOCAL/nohistory/REMOTE/nativeparity独立复现。权威runs/20261006_m1_rekv/factorial_claim_review/。撤下原显式检索/逐层选择/源历史科学贡献，HL0仅development-selected输入简化参照；不再追加原救援controls、不自动archive正结果、不重置0/3、不goalcomplete。39full333242继续实质性新机制；35C238已完成HMM来源并进入HCS来源，正式r6不变。HL0实测58551LM29228vision/59.00minprocessing/67.60minstandalone/peak18.098GiB，全部source/native获取与分配/验证/I/O另列，未效率结论。
 
-40原池MuKV rank4一次proposalPASS候选开始source/spec准备，experiments/20261007_m1_mukv/。实际原文eq1–9/7.2和官方源核读发现code默认diff/highpass逆FFT/末tokenK/初始cache与paper定义不同，已明确paper-anchored literal FFTbin+meanQ+allpast同grain历史，不写数值复现。运行前完整spec冻结：当前8s四分之一位置真实源、segment/frame/4quadrants独立source最多6WLM(非3W)+W未评分probe，.8/.1/.1保留、λ.3coarse rerank/每grain最终2块、nativeG/S/stance/max/r6原样，两语料同一。isolatedFFT/coherence独立数学CPU检查PASS仅软件；完整模型链/独立CodeReview/真实输入/GPU/GT未做，预算未用；不重启旧family/不停止goal。39/242约73/333完整实验继续，35C/238来源约234/333，均无新主指标；正式r6不变。
+40原池MuKV rank4一次proposalPASS候选开始source/spec准备，experiments/20261007_m1_mukv/。实际原文eq1–9/7.2和官方源核读发现code默认diff/highpass逆FFT/末tokenK/初始cache与paper定义不同，已明确paper-anchored literal FFTbin+meanQ+allpast同grain历史，不写数值复现。运行前完整spec冻结：当前8s四个真实分点(1/8、3/8、5/8、7/8)、segment/frame/4quadrants独立source最多6WLM(非3W)+W未评分probe，.8/.1/.1保留、λ.3coarse rerank/每grain最终2块、nativeG/S/stance/max/r6原样，两语料同一。isolatedFFT/coherence独立数学CPU检查PASS仅软件；完整模型链/独立CodeReview/真实输入/GPU/GT未做，预算未用；不重启旧family/不停止goal。39/242约73/333完整实验继续，35C/238来源约234/333，均无新主指标；正式r6不变。
 
 40 MuKV fullsource/read computationalprototype CPU两actual36层F32native18/BF16native20 PASS：12actualsourcevision/18sourceLM(6/window)、三grain/四真实空间quadrants、all earlier samegrain历史且siblings排除、lastLMattention+literalFFT、1未评分probe及6块一致性context、LOCAL全3DeepStack/nativeS/KV/rope/clone exact。来源runs/20261007_m1_mukv/model_cpu_checks/summary.json，仅toyTokenizer/randomweights，不是8B/语义/性能。实际原fixed5 CPU取帧缓存/RAW RGBPTS重放已ROOT完成，无GT。测量/严格validator/唯一评测wrapper尚待，未independentcode/GPU/GT/metrics，预算未用；39/35完整主任务继续。

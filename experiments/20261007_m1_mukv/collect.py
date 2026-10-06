@@ -44,8 +44,9 @@ def collect(j,native,ctx,memory,window_frames,proof_folder):
                 block=memory.append(window,grain,quadrant,media,p,vis,capture['keys'],capture['values'],keep,history)
                 folder=proof_folder/'sources'/str(block['id']);folder.mkdir(parents=True,exist_ok=True)
                 last=save_tensor(folder/'last_rotated_visual_keys.npy',capture['last_rotated_keys'])
+                last_raw=save_tensor(folder/'last_pre_rotary_visual_keys.npy',capture['keys'][len(native.layers)-1][0,:,vis,:])
                 records.append(dict(id=block['id'],window=window,grain=grain,quadrant=quadrant,input=evidence,history=history,
-                    logical_start=end,positions=p[:,0].tolist(),attention=capture['attention'].tolist(),last_rotated_visual_keys=last,
+                    logical_start=end,positions=p[:,0].tolist(),attention=capture['attention'].tolist(),last_rotated_visual_keys=last,last_pre_rotary_visual_keys=last_raw,
                     frequency=indicator['frequency'].tolist(),normalized_attention=indicator['normalized_attention'].tolist(),normalized_frequency=indicator['normalized_frequency'].tolist(),
                     scores=indicator['score'].tolist(),retained_visual_roots=roots,retained_sequence_rows=keep,KV_storage_bytes=block['storage']['bytes']))
                 times['storage_proof']+=tick(j)-stamp;del capture,packed

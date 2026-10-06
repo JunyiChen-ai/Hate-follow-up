@@ -29,22 +29,34 @@ def acquire_features(j,ctx,frame):
     return dict(feature=f[0],deepstack=ds[0],grid=encoded['image_grid_thw'][0].tolist(),input=evidence)
 
 
-def packed_source(j,ctx,frames,grain,cached,quadrant=None):
+def source_geometry(j,ctx,frames,grain,quadrant=None):
     encoded,p,evidence=source_input(j,ctx,frames,grain)
+    original=encoded['input_ids'][0];visual_full=(original==j.image_token_id).nonzero().flatten().tolist()
+    if quadrant is None:roots=list(range(len(visual_full)))
+    else:
+        assert grain=='patch' and len(frames)==1 and 0<=quadrant<4
+        roots=quadrants(p,visual_full)[quadrant]
+        if not roots:return None,None,None
+    keep=original!=j.image_token_id;keep[torch.tensor(visual_full)[roots]]=True;sequence=keep.nonzero().flatten()
+    selected=original[sequence];position=p[:,:,sequence]
+    visual=(selected==j.image_token_id).nonzero().flatten().tolist()
+    evidence.update(grain=grain,quadrant=quadrant,visual_roots=roots,sequence_rows=sequence.tolist(),visual_rows=visual,packed_ids=selected.tolist(),packed_positions=position[:,0].tolist())
+    return encoded,position,evidence
+
+
+def packed_source(j,ctx,frames,grain,cached,quadrant=None):
+    encoded,p,evidence=source_geometry(j,ctx,frames,grain,quadrant)
+    if encoded is None:return None,None,None
     features=[cached[f['index']]['feature'] for f in frames];deep=[cached[f['index']]['deepstack'] for f in frames]
     counts=[len(v) for v in features]
     assert evidence['grid']==[cached[f['index']]['grid'] for f in frames]
     if quadrant is None:
-        packed,_=reuse(j,encoded,features,deep);visual=packed['visual_pos_masks'][0].nonzero().flatten().tolist()
-        roots=list(range(sum(counts)));sequence=list(range(len(evidence['suffix_ids'])))
+        packed,_=reuse(j,encoded,features,deep)
     else:
         assert grain=='patch' and len(frames)==1 and 0<=quadrant<4
-        visual_full=(encoded['input_ids'][0]==j.image_token_id).nonzero().flatten().tolist()
-        roots=quadrants(p,visual_full)[quadrant]
-        if not roots:return None,None,None
+        roots=evidence['visual_roots']
         full=torch.cat(features);all_ds=[torch.cat([d[l] for d in deep]) for l in range(len(deep[0]))]
         packed,layout=pack(j,dict(encoded=encoded,deepstack=all_ds),roots,full[roots],[v[roots] for v in all_ds])
-        p=packed['position_ids'];sequence=layout['sequence_indices'];visual=packed['visual_pos_masks'][0].nonzero().flatten().tolist()
+        assert layout['sequence_indices']==evidence['sequence_rows'] and packed['position_ids'][:,0].tolist()==evidence['packed_positions']
     packed={k:v for k,v in packed.items() if k not in ('attention_mask','position_ids')}
-    evidence.update(grain=grain,quadrant=quadrant,visual_roots=roots,sequence_rows=sequence,visual_rows=visual,packed_ids=[evidence['suffix_ids'][i] for i in sequence],packed_positions=p[:,0].tolist())
     return packed,p,evidence

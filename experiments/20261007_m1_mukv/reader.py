@@ -10,7 +10,7 @@ from src.expanded_image_offsets import expand
 from coherence import retrieve
 
 
-def local_input(j,ctx,frames,cached,question,role):
+def local_geometry(j,ctx,frames,question,role):
     content=[dict(type='text',text=role)]
     for f in frames:content+=[dict(type='text',text=f"Actual LOCAL frame at {f['time']:.3f} seconds."),dict(type='image',image=f['path'])]
     content.append(dict(type='text',text=question));message=dict(role='user',content=content)
@@ -21,15 +21,23 @@ def local_input(j,ctx,frames,cached,question,role):
         enc=j.encode(text,images)
     finally:
         for image in images:image.close()
-    features=[cached[f['index']]['feature'] for f in frames];deep=[cached[f['index']]['deepstack'] for f in frames]
-    assert enc['image_grid_thw'].tolist()==[cached[f['index']]['grid'] for f in frames]
-    packed,p=reuse(j,enc,features,deep);counts=[len(f) for f in features]
+    from src.stance_cache import positions
+    p,_=positions(j,enc['input_ids'].to(j.device),enc['image_grid_thw'].to(j.device))
+    counts=[int(g.prod())//j.processor.image_processor.merge_size**2 for g in enc['image_grid_thw']]
     raw=j.tok(text,add_special_tokens=False,return_offsets_mapping=True);ids=enc['input_ids'][0].tolist()
     offsets=expand(raw['input_ids'],raw['offset_mapping'],j.image_token_id,counts,ids);begin=text.rfind(question);assert begin>=0
     rows=[i for i,(a,b) in enumerate(offsets) if a<begin+len(question) and b>begin]
     assert rows and all(ids[i] not in j.tok.all_special_ids for i in rows)
     evidence=dict(message=message,suffix_text=text,suffix_ids=ids,grid=enc['image_grid_thw'].tolist(),positions=p[:,0].tolist(),question_rows=rows,
         raw_ids=raw['input_ids'],raw_offsets=[list(x) for x in raw['offset_mapping']])
+    return enc,p,rows,evidence
+
+
+def local_input(j,ctx,frames,cached,question,role):
+    enc,p,rows,evidence=local_geometry(j,ctx,frames,question,role)
+    features=[cached[f['index']]['feature'] for f in frames];deep=[cached[f['index']]['deepstack'] for f in frames]
+    assert enc['image_grid_thw'].tolist()==[cached[f['index']]['grid'] for f in frames]
+    packed,_=reuse(j,enc,features,deep)
     return packed,p,rows,evidence
 
 
