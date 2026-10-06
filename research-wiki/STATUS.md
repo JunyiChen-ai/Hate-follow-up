@@ -785,3 +785,5 @@ VideoEvent36完整333/sc474398/214统一评测结束/native allraw与六项精�
 ReKV37 sourcefps/actualPTS/pixel采样及缺目标/半开8s归属的真实合成videoCPU检查PASS，authority`runs/20261006_m1_rekv/source_frame_cpu_checks/summary.json`；此前GQA/rotary/mask算术PASS保留。仅软件输入/算子，非36层完整source读数/8B/性能；完整collector/reader与唯一code review仍待完成，旧全量运行继续。
 
 ReKV37完整prototype与一次独立Rule6 code review PASS，来源`docs/reviews/20261006_m1_rekv_code.md`/independent_code_review。三个具体输入/runtime绑定、断点denseKV重建与失败/完整wallcost问题已修复独立确认，非性能修订。actual333raw/native/realprocessor/token preflight、实际36层随机权重CPU/fullreference/像素效应/native恢复与生产reader/validator PASS；scope均为软件，非8B/性能。真实固定5ready待Slurm资源/代码同步，目标继续。
+
+ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审查/作者CPU与333真实输入预检PASS，all4 operativecode一致/旧foreignwork与STRAY保留。source+reader同机，未GPU执行/GT/性能；原共同性能/机制门与R1预算不变。
