@@ -26,15 +26,17 @@ def ordering(before,after,frame_counts):
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--controls',action='store_true');a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--controls',action='store_true');ap.add_argument('--history-local',action='store_true');a=ap.parse_args()
     root=ROOT/'runs/20261006_m1_rekv';run=root/'r1_full_main';decoded=root/'r1_full_main_decoded'
     paths={'native':(run/'base/predictions.jsonl',decoded/'base/predictions.jsonl'),
         'main':(run/'optimized/predictions.jsonl',decoded/'optimized/predictions.jsonl')}
-    if a.controls:
+    if a.controls or a.history_local:
         for arm in ('R0','L0','C0','L1','C1','L2','D0','T0','H0'):
             mode='selection' if arm not in ('T0','H0') else 'time' if arm=='T0' else 'history'
             paths[arm]=(root/('controls_main_'+mode)/arm/'predictions.jsonl',root/'controls_main_decoded'/arm/'predictions.jsonl')
-    out=root/('controls_main_error_analysis' if a.controls else 'r1_full_main_error_analysis');out.mkdir(parents=True,exist_ok=True)
+    if a.history_local:
+        paths['HL0']=(root/'history_local_main/HL0/predictions.jsonl',root/'history_local_main_decoded/HL0/predictions.jsonl')
+    out=root/('history_local_main_error_analysis' if a.history_local else 'controls_main_error_analysis' if a.controls else 'r1_full_main_error_analysis');out.mkdir(parents=True,exist_ok=True)
     print(socket.gethostname(),flush=True);(out/'run.pid').write_text(str(os.getpid()))
     raw={name:read(pair[0]) for name,pair in paths.items()};final={name:read(pair[1]) for name,pair in paths.items()}
     result=dict(GT_read=True,scope='development-selected descriptive post-whole analysis only; canonical helpers; no scoring/fitting/threshold route',
