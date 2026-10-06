@@ -873,3 +873,9 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 37全部7项selection对照完整333/sc474398/231阶段DONE21:55:12，输出回传ROOT中；同job全333 T0 wrong-presented timestamp重建已开始，之后H0零历史。只是执行阶段齐全，未对照主指标/机制结论，原R0/native与所有费用/negative输出保留。目标active/正式r6未变。
 
 37完成的7项selection对照全333已ROOT strict noGT绑定PASS（1058.226s），R0源/query/选块/读数精确、nativeallraw/当前actualpixels/控制query与完整token预算重放通过。权威 runs/controls_selection_binding/summary.json，仅执行输入证明，未效能/机制。T0 full333远端继续，之后H0；全部完成后再统一评测，目标仍active。
+
+37 T0错误presentedtimestamp完整333阶段DONE23:07:35，输出回传ROOT中；同host/job231 H0零directsourcehistory完整333已开始，nativeglobal上下文保留，不能称无上下文。整体job仍在运行、未对照指标/机制结论；全部完成BOTH回传/strictprepare后统一评测。
+
+37 T0完整333输出/proofs约20.37GB已ROOT回传，当前native/actualpixels/真实模型可见wrongtimestamp/R0冻结选块与packing输入绑定核对开始，权威待runs/controls_time_binding/summary.json。H0 full333远端继续，未对照指标/机制结论；整体完成后BOTH回传及全模式prepare再统一评测。
+
+37 T0全333已ROOT strict noGT输入/绑定PASS（499.345s）：native精确/实际pixels当前/wrongpresentedtimestamp真入输入/R0冻结选块与packing精确，权威 runs/controls_time_binding/summary.json。H0继续完整333，仍缺control效能指标与机制结论；原共同性能与机制门/正式r6不变。
