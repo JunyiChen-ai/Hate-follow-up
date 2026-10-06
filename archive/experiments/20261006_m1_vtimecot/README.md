@@ -1,3 +1,5 @@
+**淘汰原因（2026-10-07，累计第31项）**：可靠C完整333统一评测的六项差异均在噪声内、无任一提升≥.01，按规则9归档；输入/工具执行与A/B失败证据保留，用户要求本轮结束后停止，故不开新实验。
+
 # M1候选35：完整视觉时间工具交互
 
 2026-10-06，R1在本候选实际8B/GT前冻结，主机sc474397实现；运行主机待派发。
@@ -138,3 +140,18 @@ Coriginalfixed5 ROOT228 complete17:36:55,9:10/0:0; source+reader/rootnoGT prepar
 2026-10-07 lower incremental comparisons have completed; C full333 is now next while ReKV's missing factorial control is reviewed. Current C full333 raw/native/ASR/processor/mRoPE preflight was rerun in the actual ROOT HateVLM runtime and passed (`full_input_preflight/run_C_current.log`, `summary.json`); no GT was read. Same ROOT/sc474397 source+reader, original C input/closure/tools/model/constants and existing guards unchanged, no slicing or pilot-host splicing. Existing five completed same-host C source records may be reused with their original cost, each source and reader is validated under current C. Fixed5 source/newV scaling over 7359 windows is ~4.4 GPU processing hours; forecast **4–8 allocated GPU hours** including paired native/setup/validation/I/O, not a measurement, detailed `runs/20261006_m1_vtimecot/full_C_forecast.json`. Original native20/fullASR input acquisition is additional. Original R1 budget0/3; all six canonical metrics/raw ordering/negative results and costs must be recorded before any performance or mechanism decision. Full main not yet submitted.
 
 Actual full333 C ROOT/sc474397/Slurm238 submitted and RUNNING2026-10-07 01:05–06 after current C full333 preflight and original fixed5 strictPASS. All4 operative code agreement and unchanged foreign/STRAY documented machines_before_C_main{,_note}.txt; ROOT300Gfree/idle, normal local partition/no budget bypass, held193 unchanged. Standard detached wait_C_main.log observes job disappearance/Traceback/FAILED and actual reader DONE. Same source/reader host, scientific C constants, guard and budget0/3 unchanged. No main metrics/GT/mechanism claim yet.
+
+## Complete C result; current round finished and stopped
+
+Whole333 source+reader on sc474397 / Slurm238 completed2026-10-07 07:32:35 NZDT, allocation6:26:51, exit0:0; source EXTRACTION_DONE333 at05:04:13. All outputs and caches are already on ROOT; no host splicing or remote return was needed. Strict current RAW/PTS/RGB, literal C query/tool/current-image/coordinate/token input and native allraw/G/S/stance replay passed333 before main GT evaluation (`runs/20261006_m1_vtimecot/r1_full_main_C_analysis/alignment.json`). Actual changed visual windows7352 (HMM3764/HCS3588), source clip prefixes7352, relevance14415; three real tools executed in both corpora: progress/highlight/cut142/142/133 HMM,93/93/92 HCS. No forced salvage, source generation or current-input guard was weakened. Main has no clones; the original fixed5 had10.
+
+| Dataset | pooled ROC-AUC | pooled PR-AUC | within macro ROC-AUC | defined videos |
+|---|---:|---:|---:|---:|
+| HateMM | .8973527478747025 | .6924774224517328 | .7544228928629766 | 84/215 |
+| HateClipSeg | .7198610766666074 | .6738456466050611 | .6352575236637795 | 99/118 |
+
+Authority: `runs/20261006_m1_vtimecot/r1_full_main_C_decoded/optimized/metrics.json`; sole evaluator4fps/test/fixedr6, development-selected. Against `runs/20260926_twolevel/r6_bma/metrics.json`, HMM ROC/PR/within deltas+.0002340864605928/−.0017571808944782/+.0036408488970097; HCS+.0030362127519478/+.0027735622048741/−.0020915901403192. Paired base reproduces allsix r6 values exactly; frame counts, predicted/overlap/eligible cohorts and skipped IDs all match. Every difference lies inside the predeclared noise floors, no primary gains>=.01, common performance FAIL (`r1_full_main_C_analysis/summary.json`). Actual tools entering inputs do not establish useful localization or mechanism. Main GT `data/gt_4fps/{HateMM,HateClipSeg}.npz` was used only after complete inference/strict replay by the sole evaluator; no wrap-up main-GT error analysis or design revision was performed.
+
+Actual source10531.649624s (174.53min, includes source decode), paired model/source processing15258.931473s (254.32min), standalone15040.766780s (250.68min); source146893LM+8821vision and reader22297LM+7685vision forwards, peak19.437665GiB. Source-generation and per-window reading are new-video work, not free preprocessing; original native20/fullASR acquisition is additional. Allocation/setup/current-input audit/I/O/paired baseline/failure costs remain separate. Final strict+canonical CPU command took50:01.82 and exited0 (`analysis_C_launcher.log`, /usr/bin/time); no efficiency claim. A/B interface failures and actual C fixed5 evidence remain preserved and are not scientific revisions.
+
+Rule9: no>=.01 gain, so archive as candidate31 with this negative result; no C scientific revision or mechanism controls. The user's latest instruction is to finish the already-running round and stop, so do not move to another candidate. Formal method remains r6_bma, original research goal not complete.
