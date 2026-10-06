@@ -5,7 +5,7 @@
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，机制尚未成立。当前七项选择对照及 T0/H0 已实现，作者软件/实际处理器检查通过，独立代码审查 PASS（same-family provisional），尚未控制 GPU。
 - **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；保留 revision1/3。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。后续设计待实际误差分析，37机制验证优先。
-- **Provenance25 B** 原完整333/186 DONE、**MERIT33** 完整333/218 DONE，全部输入/结果已回传 ROOT，正在本机严格 prepare；尚无主指标结论。入口为各实验 README，日志在各本机 run analysis 目录。
+- **Provenance25 B** 原完整333/186 DONE，全部输入/结果已回传 ROOT，本机严格 prepare 进行中，尚无主指标。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；保留0/3修订，实际误差分析进行中。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
 - **TextTiling38** 原固定5/source/audio/DTW/native/执行守门已通过；完整333/ROOT226于18:27解除调度持有，正在运行，同 R1/预算0/3，尚无主指标。
 - **VTimeCoT35 C** 原固定5/ROOT228与严格本机 prepare 已通过，真实工具调用进入两语料读数；完整333尚未提交。**TextTracking32** A执行接口失败保留，未GT/性能裁定。
 - **事实核验27** 完整333/193仍由主 agent 调度持有，未启动；原方法/预算不变。
@@ -817,3 +817,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 37完整对照作者actual36layer FP32/BF16/native/query/clone软件检查PASS，真实native processor fixed5全部624source wrongtimestamp确实进入input且pixel/token/grid/positions保持；全333token-bucket permutation PASS，未控制GPU/指标。三份既有claim/audit/planner原始trace已补齐，本机runs/.../traces，原partial/WARN/方案不变。Postwhole rawV/S/max canonical诊断HMM −.034702/0/−.014338、HCS +.021886/0/+.015502；finalwithin提升但CIs含0，不能声称直接raw视觉排序/显著性，完整机制验证仍待执行。独立controls代码审查在进行，具体失败成本/批次峰值问题已修待确认。
 
 37新增完整机制对照一次独立code review PASS，来源 docs/reviews/20261006_m1_rekv_controls_code.md 与本机完整trace。独立timestamp-aware actual36layer FP32/BF16 actualkeys/margins变化/固定IDs与packing、非空S/无LOCAL/异常恢复及真实native processor624inputs验证通过；两cost修复已独立确认，无GT/GPU/机制结论。准备同sc474398原fixed5 Slurm验证，完整333须守门通过后再提交。
+
+37真实8B原fixed5完整对照已提交sc474398/Slurm230，samehost原source/native/mainproof、顺序selection/T0/H0、freshKV，独立codePASS与all4代码一致/旧foreign+STRAY保留/1.3Tfree检查通过。正常调度，ROOT226为另一运行GPU；未GT/控制指标，full333须实际守门通过后提交。
+
+33完整333 ROOT严格source/native/allraw/六项baseline精确并统一评测结束。HMM ROC/PR/within .898750/.684632/.768536（84），HCS .719679/.673320/.644979（99）；共同门FAIL，HMMwithin+.017754正向保留，HMMPR−.009602超噪声。权威 runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json；Rule9保留budget0/3，实际GT error analysis启动，未新修订/控制/机制。全部development-selected，source874507 forwards及新视频304.47min processing含266.36min来源完整保留，37机制优先。
