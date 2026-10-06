@@ -240,3 +240,5 @@ synchronization/current machine check; no GT/main metrics or mechanism controls.
 
 
 2026-10-06：尚未启动的Slurm193由主agent暂持有，先取得201/202/205/206固定5实际8B反馈；运行中的168/186不受影响。仅调度顺序，未GPU分配、不改科学版本/预算/来源成本；稍后由主agent释放本次实验室hold。来源`runs/20261005_m1_verification/scheduling/hold_before_start.json`。
+
+2026-10-07 stop-after-current-round instruction: after the two already-running333 experiments39/35C completed and were evaluated, ownership-held Slurm193 was cancelled without ever starting (Elapsed00:00:00, no GPU allocation). Operational record: runs/20261005_m1_verification/stop_193.log. Prototype/source/spec and scientific revision budget remain unchanged; no actual main/GT/performance result was produced, and no replacement job is submitted.
