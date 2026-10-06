@@ -4,7 +4,9 @@ cd /home/jehc223/Hate-follow-up
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 export HF_HOME=/home/jehc223/Hate-follow-up/.cache/hf
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false
-out=runs/20261006_m1_merit/r1_full_main_analysis
+revision=${READER_REVISION:-1}
+[[ $revision == 1 || $revision == 2 ]]
+out="runs/20261006_m1_merit/r${revision}_full_main_analysis"
 mkdir -p "$out"
 exec >>"$out/run.log" 2>&1
 hostname

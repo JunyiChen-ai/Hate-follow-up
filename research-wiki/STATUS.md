@@ -829,3 +829,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 34R2实际postwhole原始V/S/max分析HMM+.029488/0/+.003635、HCS−.003863/0/−.000128；两HCS实际源例子显示去视觉包ASR伴随ordering损失，非单因果证明。R3已事前声明revision2/3：只恢复原R1视觉包literalASR，保留R2 nativeS与实际REMOTE+LOCAL守门，其余完整B source/模型/常数/r6不变，新鲜完整读数不拼旧输出。作者20actual36layer CPU与旧R1/R2逐值比较PASS，独立窄delta确认进行，尚未GPU/主指标；37完整机制231仍优先，38/226持续读数。
 
 25原B完整333本机严格prepare/统一评测结束，nativeallraw/六项baseline精确。HMM ROC/PR/within .895410/.688659/.754772（84），HCS .720096/.670261/.656055（99）；HCSwithin+.018705正向保留，HMMwithin仅+.003990/PR−.005576超噪声，共同门FAIL。权威 runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json，budget0/3保留、实际raw/source erroranalysis继续；HMM rawS/max下降且CI负，未机制。全部development-selected，实际新视频23.24h处理含20.21h原source/4391080 forwards，完整成本不隐藏；37机制231优先。
+
+34R3原fixed5 ROOT/Slurm232已提交，独立窄delta/作者CPU/all333source processor及all4code一致通过，正常QOS等待226/231，不dependency/chain/bypass。预算revision2/3不变，无R3 GT/主指标；full333须实际守门通过后提交。37全部机制231继续完整333。
+
+33R2已事前声明revision1/3：仅恢复freshnativeS，视觉R1（含原ASR/LOCAL-only）及全部source/filter/常数/r6不变，避免同时改两个因素。作者20actual36layerCPU/旧R1snapshot与V逐值精确、独立窄delta PASS docs/reviews/20261006_m1_merit_R2_delta.md（all333输入/cost/82processor refs/state/naming/guard），real8B原fixed5待提交；原source266.36min/874507forwards完整计费。37全机制231与ROOT38/226继续；34R3/232正常QOS等待。

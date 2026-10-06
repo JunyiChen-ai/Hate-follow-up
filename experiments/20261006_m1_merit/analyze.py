@@ -5,7 +5,7 @@ import subprocess
 import sys
 import numpy as np
 import torch
-from measure import ROOT,SPEC,DATASETS,selected_rows,validate_bundle,validate_acquisition,CACHE
+from measure import ROOT,SPEC,DATASETS,selected_rows,validate_bundle,validate_acquisition,CACHE,REVISION
 from src.mllm_renderer import cpu_position_renderer
 from src.mllm_judge import VIDEO_QUESTION
 from src.video_inputs import load_asr,frame_paths
@@ -24,7 +24,7 @@ def metrics(path):return {r['dataset']:r for r in json.loads(path.read_text())['
 
 
 def prepare(root,out,smoke):
-    cfg=json.loads((root/'config.json').read_text());assert cfg['GT_read'] is False and cfg['spec']==SPEC and cfg['smoke']==smoke
+    cfg=json.loads((root/'config.json').read_text());assert cfg['GT_read'] is False and cfg['spec']==SPEC and cfg['smoke']==smoke and cfg.get('reader_revision',1)==REVISION
     rows=selected_rows(smoke);expected={(r['dataset'],r['video_id']):r for r in rows}
     rr={name:read(root/name/'predictions.jsonl') for name in ('base','optimized')};assert all(r.keys()==expected.keys() for r in rr.values())
     old=read(ROOT/'runs/20260926_glr/base_gridA/predictions.jsonl');j=cpu_position_renderer();asr={ds:load_asr(ds) for ds in DATASETS};bundles={}
@@ -48,7 +48,7 @@ def prepare(root,out,smoke):
             remote_windows=sum(c['remote_windows'] for c in cc),source_windows=sum(c['source_windows'] for c in cc),
             changed_visual_windows=sum(t['native_visual']!=t['new_visual'] for b in bb for t in b['traces']),changed_speech_windows=sum(t['native_speech']!=t['new_speech'] for b in bb for t in b['traces']),
             visual_clones=sum(t.get('clone_exact',False) for b in bb for t in b['traces']),speech_clones=sum(t.get('speech_clone_exact',False) for b in bb for t in b['traces']))
-        assert result['source'][ds]['remote_windows']>0 and result['source'][ds]['changed_visual_windows']>0 and result['source'][ds]['changed_speech_windows']>0,'actual remote-source reader not exercised; preserve UNKNOWN/interface diagnosis'
+        assert result['source'][ds]['remote_windows']>0 and result['source'][ds]['changed_visual_windows']>0 and (result['source'][ds]['changed_speech_windows']>0 if REVISION==1 else result['source'][ds]['changed_speech_windows']==0),'actual remote-source reader not exercised; preserve UNKNOWN/interface diagnosis'
         result['cost'][ds]=dict(standalone_seconds={name:sum(b[name]['extra']['standalone_seconds'] for b in bb) for name in rr},peak_GiB=max(c['peak_GiB'] for c in cc),
             source_forwards=sum(c['source_forwards'] for c in cc),source_vision=sum(c['source_vision'] for c in cc),reader_forwards=sum(c['actual_forwards'] for c in cc),reader_vision=sum(c['actual_vision'] for c in cc),
             source_seconds=sum(c['source_seconds'] for c in cc),times={k:sum(c['times'][k] for c in cc) for k in cc[0]['times']})
@@ -75,7 +75,7 @@ def report(decoded,out):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--stage',choices=('prepare','evaluate','report'),required=True);ap.add_argument('--smoke',action='store_true');ap.add_argument('--name',choices=('base','optimized'));a=ap.parse_args()
-    stem='r1_full_'+('smoke' if a.smoke else 'main');root=ROOT/'runs/20261006_m1_merit'/stem;out=root.parent/(stem+'_analysis');out.mkdir(parents=True,exist_ok=True);decoded=root.parent/(stem+'_decoded')
+    stem=f'r{REVISION}_full_'+('smoke' if a.smoke else 'main');root=ROOT/'runs/20261006_m1_merit'/stem;out=root.parent/(stem+'_analysis');out.mkdir(parents=True,exist_ok=True);decoded=root.parent/(stem+'_decoded')
     if a.stage=='prepare':prepare(root,out,a.smoke)
     elif a.stage=='evaluate':assert not a.smoke and a.name;evaluate(root,decoded,a.name)
     else:assert not a.smoke;report(decoded,out)
