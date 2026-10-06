@@ -13,6 +13,9 @@ from src.mllm_judge import yesno_question
 
 
 def validate_bundle(j,row,segments,bundle,smoke):
+    # Generation explicitly uses four CPU threads. Match its cdist reduction
+    # backend before exact grouping replay; preserve every equality check.
+    torch.set_num_threads(4)
     from measure import IMPLEMENTATION
     assert bundle['version']==SPEC['version'] and bundle['spec']==SPEC and bundle['segments']==[list(s) for s in segments]
     ctx=bundle['native_ctx'];checks=bundle['checks'];base=bundle['base'];new=bundle['optimized']

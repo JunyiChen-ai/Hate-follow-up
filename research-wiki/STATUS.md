@@ -1,6 +1,6 @@
 # 当前研究状态
 
-截至 **2026-10-07 02:23 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 02:38 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
@@ -899,3 +899,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 39原池StreamingTOM rank3完整原型/运行前spec已实现（原proposalPASS，不重启旧family）：静动CTR50tokens+uint4视觉/fullBF16文字源KV+last4与继承/真实LOCAL未压缩+逐层真实Q检索，无Probe/G/S/stance/r6不变。作者actual36CPU四model/two完整measurement/strict链及孤立vision、quant/成员、memory均PASS；真实全333当前rawPTS/PNG/nativepixel/IDs/3axis/source/LOCAL实际image-expansion与question span绑定PASS，28895sources/7359windows/7缺LOCAL，603.021s CPU，authority runs/20261007_m1_streamingtom/full_input_preflight/summary.json。完整+compressedfeaturesproof132.288GB估算，native/rep/JSON/temp另计，提交前须ROOT/host容量。一次独立Rule6code review进行中，未39GPU/GT/性能。37HL0/240继续完整333（约279/333），35C/238来源获取继续（约133/333）；正式r6/原全部门和预算不变，目标active。
 
 39一次独立Rule6科学审查PASS（same-family provisional），docs/reviews/20261007_m1_streamingtom_code.md/fulltraces；4actual36/native18/20/F32BF16逐层独立dense GQA/三axis/causality与NumPy量化/text/history exact，2完整生产CPU链及失败/永久proof/corruption、actualnativeprocessor fixed5 624F/158W raw-token-question binding PASS，未GPU/GT/metrics。作者full333真实inputsPASS单独标明非独立复跑；准备originalfixed5 real8B，未39主性能。37HL0/240约322/333、35C/238来源继续，goalactive/正式r6不变。
+
+37HL0完整333/sc474398/240 DONE02:34:57.639/1:12:12/0:0，立即BOTH回传ROOT中（inputs已完成/newruns约20GB传输中），未HL0GT/指标/条件机制裁定，须完整回传+strict+唯一评测。39原fixed5实际8B/sc474398/241已提交并运行，author/full333真实input/一次independent codePASS+all4code一致+lab3actualidle1.26TB后正常派发，ROOT238另一active/held193不动；全部source与reader同host，新模型源完整计费，前2视频完成，无GT/性能。ROOT容量计划余86.49GB(扣132.288GBfeatures及其它预算后，非实测保证)，full333仍守门后提交。正式r6/目标不变。
+
+39 originalfixed5实际8B/sc474398/241 DONE02:39:55/3:38/0:0、BOTHROOTreturn3.213GB；ROOTstrict初FAIL为线程1对生成4，只有DPC末位诊断不等、科学分组选择完全一致，独立全624在4线程逐值exact。仅validator设置相同4线程/报告记录，保留全部exact条件/原失败成本；独立修复确认PASS docs/reviews/20261007_m1_streamingtom_group_replay_diagnosis.md。官方matchingruntime strictPASS r1_full_smoke_analysis/plumbing_summary.json，nativeallraw/G/S/stanceexact、624source/1099LM629vision/158newV/10clones/双静动路径真实/nonzero5688remote，peak18.153GiB；无GT/性能。完整333同host准备派发，forecast3–5GPUh不是实测/原input获取另计，budget0/3。37HL0 strict已齐开始canonicalfinalmetrics，35C/238来源继续，正式r6/goal不变。

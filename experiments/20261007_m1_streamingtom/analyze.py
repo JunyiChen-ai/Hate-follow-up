@@ -42,6 +42,7 @@ def prepare(root,out,smoke):
     assert all(r['changed_V']>0 and r['remote_reads']>0 and r['static_tokens']>0 and r['dynamic_tokens']>0 for r in result.values()),'both dual paths and actual context intervention must execute; this is not efficacy'
     (out/('plumbing_summary.json' if smoke else 'alignment.json')).write_text(json.dumps(dict(PASS=True,GT_read=False,coverage=len(rows),native_allraw_exact=True,datasets=result,
         mechanism_supported=False,cost_scope='all fresh vision/source/quantization/proof/reader work and original source decode charged; saliency nested in source vision, not double counted; native20/fullASR original acquisition additional; setup/validation/I/O/failure wall in attempt paths',
+        replay_cpu_threads=__import__('torch').get_num_threads(),generation_cpu_threads=4,
         attempt_paths=[str(p.relative_to(ROOT)) for p in sorted(root.glob('pipeline_attempt_*.json'))]),indent=2)+'\n');print('PREPARE_PASS',flush=True)
 
 
