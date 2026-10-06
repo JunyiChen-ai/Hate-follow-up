@@ -1,9 +1,9 @@
 # 当前研究状态
 
-截至 **2026-10-07 05:04 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 06:33 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成。用户最新指示为“跑完这一轮实验停下”：自主搜索已暂停，仅收尾已经运行的 StreamingTOM39 / Slurm242 与 VTimeCoT35 C / Slurm238 的完整333、回传、严格验证及统一评测；未更新 Overleaf。
-- **StreamingTOM39** 完整333同 sc474398 / Slurm242 运行中，原固定5及严格守门已通过；尚无完整主指标。**MuKV40** 原型保留，已启动的纯CPU来源获取于04:38完成333/333；未启动GPU、独立代码审查、主评测或修订，本轮收尾不继续推进它。
+- **StreamingTOM39 R1** 完整333/sc474398/242与全部ROOT回传、严格验证、唯一评测/固定r6分析已完成。HMM ROC/PR/within .898768/.694942/.763623（84），HCS .735772/.687293/.659743（99）；六项均上涨，within相对r6 +.012841/+.022394，共同性能门PASS。权威 `runs/20261007_m1_streamingtom/r1_full_main_decoded/optimized/metrics.json`，输入/成本 `r1_full_main_analysis/alignment.json`。机制尚未验证，不晋级；用户要求本轮停下，故不追加消融或修订，budget0/3保留。Slurm2:29:02/0:0，完整run约144GiB；实际processing125.58min/source111.52min/standalone147.63min，native获取另计；严格CPU验证28.99min及回传/I/O另列。**MuKV40** 原型保留，已启动的纯CPU来源获取于04:38完成333/333；未启动GPU、独立代码审查、主评测或修订，本轮收尾不继续推进它。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
 - **OrderedSlots34 R2** 完整333已评测：六项改善，within +.017370/+.004807，仍无共同+.01；R3 revision2/3完整333/235已评测：within+.011050/−.001156，共同门FAIL、无超噪声损失，HMM正向保留，最后一修订须实际误差分析。权威 `runs/20261006_m1_ordered_slots/r2_full_main_B_decoded/optimized/metrics.json`。R3仅恢复原R1视觉包ASR，nativeS与来源守门保持R2；37机制验证优先。
 - **Provenance25 B** 完整333/186已回传并严格评测：HMM within+.003990/PR−.005576，HCS within+.018705，无共同门，保留0/3修订。权威 `runs/20261005_m1_provenance/r1_handles_full_main_decoded/optimized/metrics.json`。**MERIT33** 完整333/218已严格评测：HMM within+.017754但PR−.009602，HCS within+.007630，无共同门；R2 revision1/3已通过原fixed5/233及ROOT严格守门，完整333/sc448960/234已严格评测：HMM within+.006419/PR−.002657噪声内，HCS within+.015796，共同门仍FAIL，revision1/3，正向修复保留。R2权威 `runs/20261006_m1_merit/r2_full_main_decoded/optimized/metrics.json`，原source完整计费。权威 `runs/20261006_m1_merit/r1_full_main_decoded/optimized/metrics.json`。
