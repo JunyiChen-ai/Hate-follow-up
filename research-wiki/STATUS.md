@@ -5,13 +5,13 @@
 - 当前正式方法仍为 **r6_bma**；M1自主迭代的共同性能门和机制门均未完成，继续运行，未更新Overleaf。
 - 累计归档 **30** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
 - 区间见证26 R2完整333/sc448960/213已回传并严格核对/统一评测：HMM within+.002857、HCS+.009731，未有任一标准主指标+.01，按规则9归档第30项；R1正向证据保留，详情见最新记录。
-- **运行中**：来源图25，sc474399/186，完整333 source已齐，原B配对读取进行中，未主指标。
-- MERIT33原fixed5严格PASS；完整333 freshsource+reader同sc448960/218运行。VideoEvent36已完整评测归档第28项，权威路径见最新记录。
-- 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B固定5/207严格PASS，完整333 ROOT216运行；35B固定5/209仍原guardFAIL，只读logits诊断217排队。
+- **运行中**：来源图25 sc474399/186原B完整333配对读取，MERIT33 sc448960/218完整333 source+reader，ReKV37 sc474398/225（actualfixed5 guardPASS后完整333）；尚无这三项主指标。
+- VideoEvent36/Spatial31/Interval26R2完整统一评测已归档第28/29/30项，权威路径见下方最新记录。
+- 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34B完整333/216已评测：HCSwithin+.016612，HMMPR−.019455，共同门FAIL；R2 revision1/3 fixed5 ROOT227排队。35B原guardFAIL/217原token不变诊断DONE，C完整JSON闭合修复/narrowPASS后原fixed5 ROOT228排队。
 - 空间搜索31完整333/192+215已BOTH回传/严格核对/统一评测：六项均改善，但无任一+.01，按规则9归档第29项；原8unsupported crop输入故障/修复与正向趋势保留。
 - **主agent调度持有**：事实核验27完整333/sc474397/193仍未启动，优先较低成本完整候选；方法版本/修订预算不变。
 - 全部主结果继续用HateMM/HateClipSeg、统一4fps、固定r6及唯一评测器；development-selected，不挑语料/指标，完整新视频来源成本保留。
-- 下一备用38词汇分区作用域speech完整原型已实现，词汇/官方DTW/真实token grammar/随机32层Whisper CPU检查PASS；一次独立代码审查与333输入预检已PASS（含两项具体修复）；待实际fixed5，未实际8B/ASR/GT/性能。入口`experiments/20261006_m1_texttiling/README.md`。
+- TextTiling38 ROOT224实际fixed5/noGT/source/audio/DTW/native/allraw/compiledboth guardPASS；完整333 ROOT226由主agent调度持有，待短验证227/228先完成再释放，R1/budget不变。入口`experiments/20261006_m1_texttiling/README.md`，未主性能。
 
 **2026-10-04 M1 自主迭代继续**：用户确认 Explorer R1 为正向进展，并要求达到性能与机制目标后再停止。
 当前正式方法仍为r6_bma。Explorer R4完整333在sc474399/Slurm87完成并回传本机，
