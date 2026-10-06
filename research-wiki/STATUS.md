@@ -1,6 +1,6 @@
 # 当前研究状态
 
-截至 **2026-10-07 01:21 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 02:23 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
@@ -893,3 +893,7 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 37HL0原fixed5同sc474398/Slurm239已提交，独立narrowPASS/作者CPU/full333currentH0无GT proof PASS与all4代码一致/lab3idle1.2T后正常派发；ROOT238另一个active，held193不动。完整source重建+H0identity+LOCAL-only读数计费，原方法/主门/预算不变；标准等待含job消失与失败，尚无HL0 GPU结果/GT/指标，full333未提交。
 
 37HL0原fixed5 samehost/sc474398/239 DONE01:18:31/1:47/0:0，BOTHrun/input已ROOT回传，strict noGT preparePASS，authority runs/20261006_m1_rekv/history_local_smoke_analysis/{plumbing_summary,actual_intervention_summary}.json。H0全sourcekeys/query/selection/raw/native exact，HL0无history/REMOTE且真实LOCAL保留，G/S/stanceexact/10clones，全部158V真实改变/与H0不同；624source，81.407s processing/peak18.117GiB全部成本保留。完整333samehost准备提交，无HL0GT/指标/机制或新科学修订。ROOT35C/238继续完整333。
+
+37HL0完整333同sc474398/Slurm240已提交，originalfixed5真实8B/BOTH ROOTreturn/strict PASS后正常派发，all4代码一致/foreignwork保留/lab3idle1.2Tfree；ROOT238另一active，held193不动。Fresh H0 source+exact H0identity+HL0单独查询全部计费，nativeG/S/stance/r6保留，无sharding/GT；1–2GPUh仍预测。只补原计划条件交互诊断，不能补救原失败novelty；no R2budgetspent/no指标/机制结论，完整BOTH回传/strict/唯一评测后判断。标准wait_HL0_main.log含Slurm消失与失败。
+
+39原池StreamingTOM rank3完整原型/运行前spec已实现（原proposalPASS，不重启旧family）：静动CTR50tokens+uint4视觉/fullBF16文字源KV+last4与继承/真实LOCAL未压缩+逐层真实Q检索，无Probe/G/S/stance/r6不变。作者actual36CPU四model/two完整measurement/strict链及孤立vision、quant/成员、memory均PASS；真实全333当前rawPTS/PNG/nativepixel/IDs/3axis/source/LOCAL实际image-expansion与question span绑定PASS，28895sources/7359windows/7缺LOCAL，603.021s CPU，authority runs/20261007_m1_streamingtom/full_input_preflight/summary.json。完整+compressedfeaturesproof132.288GB估算，native/rep/JSON/temp另计，提交前须ROOT/host容量。一次独立Rule6code review进行中，未39GPU/GT/性能。37HL0/240继续完整333（约279/333），35C/238来源获取继续（约133/333）；正式r6/原全部门和预算不变，目标active。
