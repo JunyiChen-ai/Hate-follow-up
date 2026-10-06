@@ -837,3 +837,9 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 33R2原fixed5 sameR1sourcehost sc448960/Slurm233已提交，原完整333source只读复用、无新source generation，作者CPU+一次独立narrowdelta PASS与all4code一致/旧foreign+STRAY保留/702Gfree/currentidle检查通过。配置内normalSlurm/account，未改QOS/持有作业；full333须实际守门，未GT/R2指标。37机制231与ROOT38/226继续，34R3/232正常QOS等待。
 
 33R2真实8B原fixed5 samehost/sc448960/233 DONE19:36:40，1:30/0:0，BOTH回传ROOT后matchingruntime strictpreparePASS；directsamehost完整R1→R2所有V/sourcebranch逐值精确、nativeG/allraw/S原生精确、158新V与0S改变/10clones源输入/positions/cost守门通过。权威 runs/r2_full_smoke_analysis/{plumbing_summary,R1_R2_actual_identity}.json；完整333准备提交，无R2 GT/主指标/机制。37所有机制231继续，ROOT38/226与34R3/232正常顺序。
+
+33R2完整333 sameR1sourcehost/sc448960/Slurm234已提交，原fixed5真实8B/ROOT严格守门后正常派发，all4code一致/旧foreign+STRAY保留/701Gfree/currentidle。仅fresh reader、原完整source只读复用且874507forwards/266.36min成本保留，source/常数/r6/预算revision1/3不变，all6/负结果全部保留；未主指标/机制。37全部机制231与ROOT38/226运行、34R3/232正常等待。
+
+38原R1完整333 source+pairedreader ROOT/226 DONE19:53:19，1:27:08/0:0，本机所有input/run齐，matchingruntime strictprepare+唯一评测/固定r6启动，尚无主指标。34R3原fixed5/232已调度，正在核对实际完成/守门；37全部机制231/33R2完整234继续，正式r6/目标不变。
+
+34R3真实原fixed5 ROOT232 DONE19:54:13/0:53/0:0，本机matchingruntime strict noGT守门PASS；nativeallraw/G/S原生精确，activeV/sourcebranch=原R1逐值、缺来源nativeV、原B全部源/3axis/成本与10clones通过。权威 runs/r3_full_smoke_B_analysis/{plumbing_summary,R1_R3_actual_identity}.json。完整333准备提交，revision2/3，原source成本保留；38完整333/226已结束，CPU严格准备进行。37机制231/33R2主轮234继续。
