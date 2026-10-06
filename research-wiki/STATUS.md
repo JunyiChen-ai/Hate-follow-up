@@ -1,6 +1,6 @@
 # 当前研究状态
 
-截至 **2026-10-07 01:06 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-07 01:14 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
 - 正式方法仍为 **r6_bma**，累计归档 **30** 项，目标未完成，继续自主迭代，未更新 Overleaf。
 - **ReKV37** 完整333已回传并通过共同性能门：within +.013684/+.015892，其余损失在噪声内。权威 `runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json`；fresh claim verdict partial、integrity WARN，完整all9对照已结束并strict/canonical评测，L0/L1/L2/H0双语料贡献门与D0/T0共同绑定门全部FAIL，机制未成立；必须删除/降级这些novelty主张或据实际erroranalysis修订，未晋级。对照权威 `runs/20261006_m1_rekv/controls_main_decoded/<arm>/metrics.json`，完整表与门 `controls_main_analysis/summary.json`。
@@ -887,3 +887,5 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 37完整controls独立result-to-claim复算66指标/原始R0/nativeG/S/stance精确：partial，C1yes/C2no（same-family provisional），来源runs/20261006_m1_rekv/mechanism_claim_review/。原检索/逐层/历史必要性/正确绑定主张删除或降级，涨点仍保留，未晋级。仅补原计划priority2 H0+L0因子格，零源历史与零显式REMOTE同时执行、保留全部LOCAL/nativecontext/G/S/stance/r6，fresh H0全proof/读数identity后单L0查询；全部重建/额外replay与成本计费，forecast1–2GPUh（未测）。作者actual36层FP32/BF16 native18/20含非空S CPU PASS，一次独立narrowdelta确认进行中，未HL0 GPU/指标/新R2修订。35C当前完整333实际C输入预检PASS，原fixed5严格PASS后准备ROOT主轮，预计4–8GPUh，source/预算不变。goalactive。
 
 35C完整333同ROOT/sc474397/Slurm238已提交并RUNNING，原fixed5真实8B+strict noGT与当前C全333实际输入预检PASS后正常派发；all4代码一致/旧foreign work+STRAY保留/ROOT300Gfree，机器证据runs/20261006_m1_vtimecot/machines_before_C_main{,_note}.txt。所有source+reader同host/C，不拼不同hostpilot，原samehost完成5源成本保留，budget0/3，预计4–8GPUh不是实测，原生获取另计。标准后台wait_C_main.log同时检查Slurm消失/Traceback/FAILED/readerDONE，无mainGT/指标/机制结论。37HL0独立narrow确认继续，未GPU。目标active。
+
+37HL0一次独立narrowdelta确认PASS，docs/reviews/20261007_m1_rekv_HL0_delta.md/fulltraces：四actual36层FP32BF16native18/20全部包含nonemptyS/noLOCAL/clone/state，full333currentH0/rawPTS/pixel/runtime/query/selection严格无GT重放28895source/7missingLOCAL/522.824s PASS；原7臂default/L0子集数值精确，cost/resume/fail/peak/launch守门PASS。准备samehostlab3 originalfixed5真实8B，无HL0性能或机制结论。39为原池rank3 StreamingTOM已审候选，实际原文/官方CTR/OQM读取后准备spec与独立prototype算术；部分静动分组/uint4 isolatedCPU PASS，仅软件，无完整collector/reader/code review/GPU/GT。正式r6和全部旧预算不变；35C ROOT238继续完整333。
