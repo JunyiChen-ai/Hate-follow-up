@@ -790,3 +790,5 @@ ReKV37完整prototype与一次独立Rule6 code review PASS，来源`docs/reviews
 ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审查/作者CPU与333真实输入预检PASS，all4 operativecode一致/旧foreignwork与STRAY保留。source+reader同机，未GPU执行/GT/性能；原共同性能/机制门与R1预算不变。
 
 有序槽34原B/216全333source于14:51:52齐，pairedreader进行中；B ROOTanalysis的日志/PID路径已修为_B_analysis，default/A未变，独立窄18shell案例确认PASS，无科学/eval/guard变化。来源`docs/reviews/20261006_m1_ordered_slots_analysis_B_log_fix.md`，原预算与共同门不变，未主指标。
+
+2026-10-06 更新：OrderedSlots34B完整333/ROOT216于15:30:51 DONE，严格本机prepare/统一评测运行中，尚无主指标。VTimeCoT35B只读217 fixed5完成，原token逐值一致；实际多个合法compound quote终止token优于当前继续token，当前bare-quote接口仍原guardFAIL，未改source/guard或读GT。ReKV37 fixed5/sc474398/222 DONE并立即BOTH回传，本机noGT/sourcepixel/PTS/layer检索/native allraw/G/S/5clone PASS，实际624源prefills/158newV；同host完整333待提交，未主性能/机制。TextTiling38一次code review与333inputs PASS；ROOT错误activation已在尚PENDING223执行前取消并修，独立窄确认PASS，待重新fixed5；均development-selected，正式r6/目标不变。
