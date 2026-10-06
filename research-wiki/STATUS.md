@@ -802,3 +802,5 @@ ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审�
 34 R2科学delta/20真实36层CPU/333sources实际tokens/pixels/assignment核对及独立窄确认PASS，原fixed5ROOT227排队等待225/186；38完整226由主agent调度持有以先做该短验证，非goal暂停/非版本重启。35 C合法复合闭合接口已实现，原caps/UNKNOWN/tools守门不变、A/Bactualfixed5源重放和C syntheticcollector/token CPU PASS；独立窄确认进行中，未C GPU/GT/性能。
 
 35C复合closing具体修复独立窄确认PASS（49tokenizer组合/51smallmodel实际append/位置/cache、A/B源各5重放、C三tools/拒绝/guard/scope隔离）；原caps/UNKNOWN/执行守门不变，准备原fixed5实际8B，未性能或版本预算消耗。
+
+35C原fixed5 ROOT228正常QOS排队（227后），同host freshCsource+reader/旧A+B保留，unique narrowPASS后提交；未实际C GPU/GT/性能。226暂由主agent调度持有，待两项短验证227/228先完成再释放；用户goal持续active，不是暂停。
