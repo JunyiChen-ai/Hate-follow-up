@@ -3,6 +3,7 @@
 Never imported by source construction, prediction, fitting, or thresholds.
 """
 import json
+import argparse
 import math
 import os
 from pathlib import Path
@@ -20,9 +21,11 @@ def one(y,s):return within_video_macro({'video':y},{'video':s})['within_video_ma
 
 
 def main():
-    out=ROOT/'runs/20261006_m1_ordered_slots/r1_full_main_B_error_analysis';out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser();ap.add_argument('--revision',type=int,choices=(1,2),default=1);args=ap.parse_args()
+    stem=f'r{args.revision}_full_main_B'
+    out=ROOT/'runs/20261006_m1_ordered_slots'/(stem+'_error_analysis');out.mkdir(parents=True,exist_ok=True)
     print(socket.gethostname(),flush=True);(out/'run.pid').write_text(str(os.getpid()))
-    run=ROOT/'runs/20261006_m1_ordered_slots/r1_full_main_B';decoded=run.parent/'r1_full_main_B_decoded'
+    run=ROOT/'runs/20261006_m1_ordered_slots'/stem;decoded=run.parent/(stem+'_decoded')
     raw={a:read(run/a/'predictions.jsonl') for a in ('base','optimized')};final={a:read(decoded/a/'predictions.jsonl') for a in raw}
     sources=[str((run/a/'predictions.jsonl').relative_to(ROOT)) for a in raw]+[str((decoded/a/'predictions.jsonl').relative_to(ROOT)) for a in final]
     result=dict(GT_read=True,scope='development-selected post-whole error analysis only; canonical metric calls, no scoring/fitting/threshold input',sources=sources,datasets={})
