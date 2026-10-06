@@ -804,3 +804,5 @@ ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审�
 35C复合closing具体修复独立窄确认PASS（49tokenizer组合/51smallmodel实际append/位置/cache、A/B源各5重放、C三tools/拒绝/guard/scope隔离）；原caps/UNKNOWN/执行守门不变，准备原fixed5实际8B，未性能或版本预算消耗。
 
 35C原fixed5 ROOT228正常QOS排队（227后），同host freshCsource+reader/旧A+B保留，unique narrowPASS后提交；未实际C GPU/GT/性能。226暂由主agent调度持有，待两项短验证227/228先完成再释放；用户goal持续active，不是暂停。
+
+34R2 ROOT227原fixed5 DONE/matchingruntime noGT strictPASS（nativeallraw/G/S、真实source pixels/positions、缺源回退、nativeS exact/10clones/sourcecost）；准备samehost完整333，revision1/3，未R2主性能。37完整333/225已GPU DONE，BOTH回传中，指标未核对。35C 228实际source已在BOTH执行全部3tools，仍等待完整5/source/native守门，不作性能结论。
