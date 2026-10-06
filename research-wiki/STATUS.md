@@ -787,3 +787,5 @@ ReKV37 sourcefps/actualPTS/pixel采样及缺目标/半开8s归属的真实合成
 ReKV37完整prototype与一次独立Rule6 code review PASS，来源`docs/reviews/20261006_m1_rekv_code.md`/independent_code_review。三个具体输入/runtime绑定、断点denseKV重建与失败/完整wallcost问题已修复独立确认，非性能修订。actual333raw/native/realprocessor/token preflight、实际36层随机权重CPU/fullreference/像素效应/native恢复与生产reader/validator PASS；scope均为软件，非8B/性能。真实固定5ready待Slurm资源/代码同步，目标继续。
 
 ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审查/作者CPU与333真实输入预检PASS，all4 operativecode一致/旧foreignwork与STRAY保留。source+reader同机，未GPU执行/GT/性能；原共同性能/机制门与R1预算不变。
+
+有序槽34原B/216全333source于14:51:52齐，pairedreader进行中；B ROOTanalysis的日志/PID路径已修为_B_analysis，default/A未变，独立窄18shell案例确认PASS，无科学/eval/guard变化。来源`docs/reviews/20261006_m1_ordered_slots_analysis_B_log_fix.md`，原预算与共同门不变，未主指标。
