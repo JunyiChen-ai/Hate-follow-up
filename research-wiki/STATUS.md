@@ -883,3 +883,5 @@ ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回
 37全部必要selection7/T0/H0对照整333同sc474398/231 DONE2026-10-07 00:07:34，5:13:18/0:0。立即finalBOTH全部run/cache回传ROOT完成00:13（最后H0约20.36GB；此前selection/T0已齐），全3模式strict输入/native/source/intervention/成本绑定+唯一评测all9/固定r6启动。尚无对照效能数字或机制结论；原主门PASS/各阶段输入PASS不替代机制，目标active/正式r6不变。
 
 37完整all9对照与统一all6/固定r6评测结束，R0全部精确；L0/L1/L2/H0共同>=.01部件贡献门全部FAIL，D0/T0共同超噪声绑定门全部FAIL，H0/T0效应只在HCS明显，HMM不支持共同机制。权威 runs/controls_main_decoded/<arm>/metrics.json与controls_main_analysis/summary.json，所有输入proof/预算/真实干预PASS不能代替贡献。R1涨点保留但不晋级/不goalcomplete；rawV/S/max及必要独立机制解释继续，unsupported部件必须删除/降级或实际erroranalysis后改设计，未R2声明。
+
+37完整controls独立result-to-claim复算66指标/原始R0/nativeG/S/stance精确：partial，C1yes/C2no（same-family provisional），来源runs/20261006_m1_rekv/mechanism_claim_review/。原检索/逐层/历史必要性/正确绑定主张删除或降级，涨点仍保留，未晋级。仅补原计划priority2 H0+L0因子格，零源历史与零显式REMOTE同时执行、保留全部LOCAL/nativecontext/G/S/stance/r6，fresh H0全proof/读数identity后单L0查询；全部重建/额外replay与成本计费，forecast1–2GPUh（未测）。作者actual36层FP32/BF16 native18/20含非空S CPU PASS，一次独立narrowdelta确认进行中，未HL0 GPU/指标/新R2修订。35C当前完整333实际C输入预检PASS，原fixed5严格PASS后准备ROOT主轮，预计4–8GPUh，source/预算不变。goalactive。
