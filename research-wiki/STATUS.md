@@ -800,3 +800,5 @@ ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审�
 38原fixed5/224实际52 compiled/122 changedS、native allraw/G/V/5clone/source/audio/DTW/Pixels strictPASS后，同host完整333 ROOT226已提交，NORMAL QOS排队，原source成本保留。34实际GT/raw/source误差分析已记录：HMM rawmax within−.023753且CI全负；R2事前声明 nativeS原样/视觉suffix去ASR/真实REMOTE+LOCAL才用newV，修订1/3；36层CPU PASS，独立窄delta确认进行中，未R2GPU。
 
 34 R2科学delta/20真实36层CPU/333sources实际tokens/pixels/assignment核对及独立窄确认PASS，原fixed5ROOT227排队等待225/186；38完整226由主agent调度持有以先做该短验证，非goal暂停/非版本重启。35 C合法复合闭合接口已实现，原caps/UNKNOWN/tools守门不变、A/Bactualfixed5源重放和C syntheticcollector/token CPU PASS；独立窄确认进行中，未C GPU/GT/性能。
+
+35C复合closing具体修复独立窄确认PASS（49tokenizer组合/51smallmodel实际append/位置/cache、A/B源各5重放、C三tools/拒绝/guard/scope隔离）；原caps/UNKNOWN/执行守门不变，准备原fixed5实际8B，未性能或版本预算消耗。
