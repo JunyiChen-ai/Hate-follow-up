@@ -792,3 +792,7 @@ ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审�
 有序槽34原B/216全333source于14:51:52齐，pairedreader进行中；B ROOTanalysis的日志/PID路径已修为_B_analysis，default/A未变，独立窄18shell案例确认PASS，无科学/eval/guard变化。来源`docs/reviews/20261006_m1_ordered_slots_analysis_B_log_fix.md`，原预算与共同门不变，未主指标。
 
 2026-10-06 更新：OrderedSlots34B完整333/ROOT216于15:30:51 DONE，严格本机prepare/统一评测运行中，尚无主指标。VTimeCoT35B只读217 fixed5完成，原token逐值一致；实际多个合法compound quote终止token优于当前继续token，当前bare-quote接口仍原guardFAIL，未改source/guard或读GT。ReKV37 fixed5/sc474398/222 DONE并立即BOTH回传，本机noGT/sourcepixel/PTS/layer检索/native allraw/G/S/5clone PASS，实际624源prefills/158newV；同host完整333待提交，未主性能/机制。TextTiling38一次code review与333inputs PASS；ROOT错误activation已在尚PENDING223执行前取消并修，独立窄确认PASS，待重新fixed5；均development-selected，正式r6/目标不变。
+
+已提交：ReKV37实际fixed5 guardPASS后的同host完整333/sc474398/225，正常QOS等待；TextTiling38修正ROOT启动环境后的原fixed5/sc474397/224已运行，未主指标/机制。38原223取消前未执行；版本/修订预算不变。OrderedSlots34B严格完整preparePASS，唯一评测器+固定r6分析继续。
+
+最新完整34B主结果：HMM ROC/PR/within .894458/.674780/.757994（84），HCS .725932/.677985/.653961（99）；HCSwithin+.016612保留正向进展，HMMPR−.019455、共同门FAIL。权威runs/20261006_m1_ordered_slots/r1_full_main_B_decoded/optimized/metrics.json，按规则9做真实误差分析/最多三修订，未完整controls。38原fixed5/224 DONE、本机noGT/source/native allraw/G/V/clone/compiledboth strictPASS，准备同host完整333；未主性能。均development-selected。
