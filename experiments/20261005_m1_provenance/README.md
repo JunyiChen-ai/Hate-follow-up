@@ -435,3 +435,5 @@ Slurm167 failedafter116fullHMM atnextvideo non_hate_video_356 link-prefill MLP; 
 
 
 来源图25实际8B LINK重放Slurm183 PASS且完整runs已回传本机：15630/15270token输入，原生与4096分块生成tokens/events/compiledlinks均与原保存来源相同。权威`runs/20261005_m1_provenance/link_mlp_memory_fix/gpu/summary.json`；相同原B完整333以sc474399/Slurm186续跑，正常排队，116HMM和原HCS检查点严格复用、原获取成本保留。派发前四实验室代码a070c00一致/clean、旧foreign STRAY逐行未变，来源`link_mlp_memory_fix/machines_before_resume{,_note}.txt`。无主GT或性能裁定。
+
+2026-10-06 originalB complete333/sc474399/186 sourceacquisition finished andpairedreader began; originalcheckpoint/sourcecosts/budget retained, no mainGT/performance yet. ROOT actualsource audit must match generatingruntime: B run_handles_analysis.sh nowuses .cache/envs/HateVLM (Torch2.11/HF5.15.1/av18.1) onlyforstrictprepare, thenHateVideo forunchangedcanonicalbase/new/fixedr6/report. This follows independentlyconfirmed sharedraw PyAV17/18 discrepancy; noguard/evaluator/math/source modifications. Narrow routing/failure/environment confirmation PASS docs/reviews/20261006_m1_provenance_audit_runtime_fix.md, softwarestubs only/noactualmainprepare yet. Run onlyafterwholeB outputs/cache returnedROOT. OriginalAlauncher untouched.

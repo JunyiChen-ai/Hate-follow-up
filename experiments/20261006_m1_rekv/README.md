@@ -13,7 +13,7 @@ README/model directory. Core transfer: chronological source encoding with a
 bounded direct attention window, offloaded contextual KV, per-layer internal
 query/key retrieval and answering from retrieved media. Original LLaVA/1D
 RoPE/64-frame retrieval differ from this singleQwen/mRoPE/local-support design.
-Official attention implementation will be read before code is frozen; don't
+Official attention implementation has now been read as recorded below; don't
 claim full source-code reproduction or source-paper efficiency on Qwen.
 
 ## Complete R1 definition before implementation
@@ -147,3 +147,11 @@ DenseLOCAL coverage/ordinary bookkeeping cannot be relabeled as retrieval gains.
 Unsupported contributions are removed or implementationdetails. Necessaryfinal
 independent review/localrawauthority/STATUS precede goal success; no claim from
 proposalPASS, sourceexecution or finalr6 alone.
+
+## Actual official implementation reading and initial software checks
+
+2026-10-06 actualofficial mainbranch raw files downloaded (notexecuted) to runs/20261006_m1_rekv/source_reading/: model/abstract_rekv.py andmodel/attention/{rekv_attention,kv_cache_manager,rope}.py. Read sourceprefill vsretrieval switching, noquery-cacheupdate retrieval path, unrotatedQKV storage and positional transformation, meanquery/blocktopk and vector scoring. ActualVectorTensor topk uses FP32 unnormalizeddot product, while sourcepaper specifies cosine; thisR1 keeps predeclared paper-cosine andQwenpost-q/k-norm GQA adaptation. This is not an officialcode numeric reproduction. Originalinitialtokens/distanceceiling and1D rotary differ from preservedfullnative prefix/per-layer threeaxis source packing. No officialsysctl/environmentcommands wereexecuted, noexternalpredictor/model installed.
+
+Author initialsoftware arithmetic PASS at runs/20261006_m1_rekv/operator_cpu_checks/summary.json: independentNumPymeans cover GQA4×1/2/8KVheads, actualimage-row-only pooling, stableties/zeronorm andfullLOCAL exclusion; actualQweninterleaved rotary identity/translation equalsits primitive exactly FP32/BF16; nine rectangularpast+suffix masks match independentexplicitcausality. These are arithmeticchecks only, not36layer sourceimage/fullreference/GPU/pretrained/nativeparity/GT/performance evidence. Collector/source memory/productionreader andfullpreflight still toimplement, thenonceindependentcode review.
+
+Actualowned syntheticvideo sampling/pixel CPU checks PASS runs/20261006_m1_rekv/source_frame_cpu_checks/summary.json: first-at/after2second targets yieldoriginalindices0/16/32/48/64, halfopen8s ownership assignslastindex64 tosecondwindow, uncovered10secondtarget remainsNone. Decoderorigin/PTS/PNGpixels reread exactly. No model/GT/performance or newdataset; this checks sourceacquisition arithmetic only. Complete per-layer sourcecollection/offloadedKV andquestion reader still toimplement.

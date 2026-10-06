@@ -5,7 +5,7 @@
 - 当前正式方法仍为 **r6_bma**；M1自主迭代的共同性能门和机制门均未完成，继续运行，未更新Overleaf。
 - 累计归档 **30** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
 - 区间见证26 R2完整333/sc448960/213已回传并严格核对/统一评测：HMM within+.002857、HCS+.009731，未有任一标准主指标+.01，按规则9归档第30项；R1正向证据保留，详情见最新记录。
-- **运行中**：来源图25，sc474399/186，HMM全215 source已齐、HCS来源继续获取。
+- **运行中**：来源图25，sc474399/186，完整333 source已齐，原B配对读取进行中，未主指标。
 - MERIT33原fixed5严格PASS；完整333 freshsource+reader同sc448960/218运行。VideoEvent36已完整评测归档第28项，权威路径见最新记录。
 - 文字发生32/201、有序事件槽34/205、视觉时间工具35/206实际固定5均完成并BOTH回传；均源输入/原生读数核对到原执行guard FAIL，未GT/性能，不降guard或裁定idea。34显式字数接口B固定5/207严格PASS，完整333 ROOT216运行；35B固定5/209仍原guardFAIL，只读logits诊断217排队。
 - 空间搜索31完整333/192+215已BOTH回传/严格核对/统一评测：六项均改善，但无任一+.01，按规则9归档第29项；原8unsupported crop输入故障/修复与正向趋势保留。
@@ -779,3 +779,7 @@ VideoEvent36完整333/sc474398/214统一评测结束/native allraw与六项精�
 2026-10-06下一池idea-creator三个fresh同模型readonly镜头各3项完成：KV媒体记忆、转变/依赖状态、语音来源绑定。实际finalJSON由主agent保存/解析，精确dedup_key去重0，全部9项原样进入`experiments/20261006_m1_ideation/CANDIDATES.json`；未质量预筛/选题/GPU。独立fresh一次Rule4 jury正在实际核读/检索，same-family provisional；原生/双语料共同性能/机制门与所有旧家族预算不变。主任务25/33/34继续，27仍调度持有、35只读诊断217排队。
 
 20261006新池一次fresh独立Rule4审查9PASS/0STOP（same-family provisional），来源`docs/reviews/20261006_m1_ideation_jury.md`及本机jury_evidence。选首位ReKV为候选37，`experiments/20261006_m1_rekv/README.md`/spec已事前明确实际0.5fps媒体、逐层query/key检索、nativeG/S/ownstance、三轴位置与逐视频临时KV/全部新视频成本；不是新4fps协议/encoder/旧家族重启。原型尚未实现/未GPU/GT/性能，唯一code review仍需完成；原25/33/34完整运行继续，目标未完成。
+
+来源图25/186原B整333获取结束并开始pairedreader；原检查点/源费用/版本预算保留，无主GT/性能。B本机审计launcher匹配实际HateVLM18 prepare后仍原HateVideo唯一评测/r6，独立窄环境/失败阻断PASS（非actualmainprepare），来源`docs/reviews/20261006_m1_provenance_audit_runtime_fix.md`。ReKV37初始GQA/3axis/mask算术CPU检查PASS仅软件证据，完整collector/reader未实现/未code-review/GPU/GT，旧全量任务继续。
+
+ReKV37 sourcefps/actualPTS/pixel采样及缺目标/半开8s归属的真实合成videoCPU检查PASS，authority`runs/20261006_m1_rekv/source_frame_cpu_checks/summary.json`；此前GQA/rotary/mask算术PASS保留。仅软件输入/算子，非36层完整source读数/8B/性能；完整collector/reader与唯一code review仍待完成，旧全量运行继续。

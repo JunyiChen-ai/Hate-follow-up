@@ -1,0 +1,13 @@
+# Provenance B audit runtime fix — narrow confirmation PASS
+
+2026-10-06. Independent GPT-6-astra reviewer; same-family provisional. Scope is `experiments/20261005_m1_provenance/launch/run_handles_analysis.sh` interpreter ordering and failure gating. No new scientific review, method change or performance interpretation.
+
+Evidence: `runs/20261005_m1_provenance/prepare_runtime_fix/independent/{check.py,summary.json,run.log,runtime.json}`. Executed `.cache/envs/HateVLM/bin/python runs/20261005_m1_provenance/prepare_runtime_fix/independent/check.py`; result `PROVENANCE_AUDIT_RUNTIME_PASS`.
+
+`bash -n` passes. The launcher's relative cwd resolves to the repository root. Strict `--stage prepare` now explicitly uses `.cache/envs/HateVLM/bin/python` before activating HateVideo. Local installed package metadata confirms this interpreter has torch 2.11.0+cu128, transformers 5.15.1 and av 18.1.0. HF_HOME points to the ROOT project cache, with offline HF/transformers settings. This avoids selecting the older default/HateVideo decoder for this new-source audit.
+
+After successful prepare, activation uses `/home/jehc223/miniconda3/bin/activate HateVideo`; the remaining commands exactly preserve base evaluation, optimized evaluation and report order/arguments. The scientific `analyze_handles.py` file is unchanged from its prior committed source, including full-cohort/source/native-equality checks, ledger/remote-source guard, canonical evaluator and fixed-r6 arguments. Inspecting prepare confirms it does not invoke metrics, report, evaluator or GT-array loading; GT access belongs to later evaluation/report stages.
+
+Executed the shell body with interpreter/activation stubs and redirected only shell log/PID paths into the owned evidence directory. The success case calls prepare in HateVLM, then the three unchanged stages in HateVideo. Injected prepare failure exits 21 with no activation-dependent stage; activation failure exits 22 without evaluation; base failure exits 23 before optimized/report; optimized failure exits 24 before report; report failure exits 25. `set -euo pipefail` therefore retains strict prepare-before-GT failure gating.
+
+Limits: no actual prepare was rerun in this narrow confirmation, so it does not establish full-333 source/reader audit success. Runtime metadata and shell routing were checked; the previously diagnosed av17/av18 media discrepancy was not independently repeated here. No GT, prediction contents, metrics or GPU workload were read/run. Only the frozen report and owned evidence files were written; scientific code, the original plumbing summary, A launcher, and foreign twolevel README/gaussian-check files were untouched.
