@@ -2,7 +2,7 @@
 
 截至 **2026-10-06**。当前入口如下；下方按日期保留历史更新。
 
-- 当前正式方法仍为 **r6_bma**；M1自主迭代的共同性能门和机制门均未完成，继续运行，未更新Overleaf。
+- 当前正式方法仍为 **r6_bma**；ReKV37共同性能门已PASS，机制门尚未完成，继续运行，未更新Overleaf。
 - 累计归档 **30** 项；最近Program最终R4和OTT完整主门均FAIL，权威结果/归档入口见下方对应更新。
 - 区间见证26 R2完整333/sc448960/213已回传并严格核对/统一评测：HMM within+.002857、HCS+.009731，未有任一标准主指标+.01，按规则9归档第30项；R1正向证据保留，详情见最新记录。
 - **运行中**：来源图25 sc474399/186原B完整333配对读取，MERIT33 sc448960/218完整333 source+reader，ReKV37 sc474398/225（actualfixed5 guardPASS后完整333）；尚无这三项主指标。
@@ -810,3 +810,5 @@ ReKV37实际8B原fixed5/sc474398/222已提交，正常QOS排队；唯一code审�
 ReKV37全333/225 DONE17:26:55，1:46:20/0:0，BOTHinputs+runs20.37GB已完整回传ROOT，matchingruntime严格prepare/唯一评测+固定r6启动，尚未指标。34R2原fixed5 strictPASS后同ROOT完整333/229排队，低新增计算成本优先；38原226继续调度持有，R2完整比较结束后释放。35C/228 sourcefixed5全齐且两语料均actual3tools，配对读取开始，未source/native整体守门与指标。goalactive/正式r6不变。
 
 35C ROOT228原fixed5 source+reader DONE17:36:55/9:10/0:0，matchingruntime noGT completeguardPASS：两语料各2次3tools、158clipprefix/316relevance、158newV，nativeallraw/G/S/10clone/source/currentpixels/positions/cost exact；原A/B失败保持。阶段346.45s含source238.29s，较低新增成本R2/38完整比较优先，Cfull333待调度，0/3预算无主GT/指标。
+
+**ReKV37完整主门PASS但goal未完成**：HMM ROC/PR/within .896565/.692932/.764466（84/215），HCS .733478/.684667/.653242（99/118），within提升+.013684/+.015892，HMMpooledloss在噪声内。权威runs/20261006_m1_rekv/r1_full_main_decoded/optimized/metrics.json；nativeallraw/decodedall6精确。Fresh result-to-claim partial(C1支持/C2待消融)、integrity WARN（独立复算/333记录/28895blocks/264672choices与raw/decoded指标精确；仅口径/范围/cost/未机制限定）。原GTfloor/predceil/canonicalmin及HCS119GT中固定118预测scope已明确，未改GT/evaluator。正式r6未晋级、全部development-selected；新独立消融方案已prepared，正在实现完整matched/deletion/wrongsource/time/ancestry控制，达到机制门才停。
