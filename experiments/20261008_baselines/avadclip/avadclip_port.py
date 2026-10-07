@@ -233,7 +233,8 @@ def train(args):
             raise RuntimeError("last epoch has a non-finite loss")
         best_epoch, best_ap = len(history), None
         print(f"kept the last epoch ({best_epoch}); validation not used", flush=True)
-    torch.save(model.state_dict(), out_dir / "model.pth")
+    # the frozen CLIP (clipmodel.*, ~600 MB) is not saved; it is reloaded from ViT-B-16.pt when the model is built
+    torch.save({k: v for k, v in model.state_dict().items() if not k.startswith("clipmodel.")}, out_dir / "model.pth")
     meta = {"method": "avadclip", "upstream": "https://github.com/RowanSu/AVadCLIP @ d3f6e16 (model_t.AVADCLIP)",
             "args": vars(args), "train_ids": train_ids, "val_ids": val_ids, "selected_epoch": best_epoch,
             "select": args.select, "selected_val_video_ap": best_ap, "history": history, "class_prompts": PROMPT_TEXT}
@@ -250,7 +251,10 @@ def infer(args):
     loader = DataLoader(AVDataset(args.corpus, ids, args.visual_length, True, labels), batch_size=1,
                         shuffle=False, num_workers=args.num_workers)
     model = make_model(args)
-    model.load_state_dict(torch.load(args.model_path or Path(args.out_dir) / "model.pth", map_location=device))
+    state = torch.load(args.model_path or Path(args.out_dir) / "model.pth", map_location=device)
+    missing, unexpected = model.load_state_dict(state, strict=False)
+    if unexpected or any(not k.startswith("clipmodel.") for k in missing):
+        raise RuntimeError(f"checkpoint mismatch: missing {missing[:5]}, unexpected {unexpected[:5]}")
     model.to(device).eval()
     maxlen = args.visual_length
     out = Path(args.out_dir) / "scores.jsonl"
