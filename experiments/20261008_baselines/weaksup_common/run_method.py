@@ -163,7 +163,9 @@ def tune(method, corpus, root, n_trials, log):
     def n_complete():
         return sum(t.state == TrialState.COMPLETE for t in study.trials)
 
-    attempts = max(2 * (n_trials - n_complete()), n_trials - n_complete() + 5)
+    # Pruned attempts (batch guard, duplicates) cost no training; with the MultiHateLoc batch guard about a third of
+    # the suggestions are pruned, so the budget is generous. A rerun resumes the same study.
+    attempts = n_trials - n_complete() + 20
     while n_complete() < n_trials and attempts > 0:
         before = len(study.trials)
         study.optimize(objective, n_trials=min(n_trials - n_complete(), attempts), gc_after_trial=True,
