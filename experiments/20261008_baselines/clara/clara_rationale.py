@@ -41,8 +41,8 @@ DATA = Path(os.environ.get("CLARA_DATA", C.REPO / "data"))  # env override: smok
 RAW = DATA / "clara_raw"
 RAT = DATA / "clara_rationale"
 MODEL = "Qwen/Qwen3-VL-8B-Instruct"
-MAX_MODEL_LEN = 40960
-MAX_IMG_TOKENS = 36000
+MAX_MODEL_LEN = 49152
+GEN_TOKENS = 2048
 
 
 def load_authors():
@@ -99,10 +99,22 @@ def main():
         log("DONE rationale (nothing to do)")
         return
     processor = AutoProcessor.from_pretrained(MODEL)
-    llm = LLM(model=MODEL, dtype="bfloat16", max_model_len=MAX_MODEL_LEN, gpu_memory_utilization=0.90,
-              enable_prefix_caching=False, mm_processor_cache_gb=0, limit_mm_per_prompt={"image": 20, "video": 0},
-              seed=0)
-    log(f"vLLM loaded: {MODEL}")
+    max_len = MAX_MODEL_LEN
+    try:
+        llm = LLM(model=MODEL, dtype="bfloat16", max_model_len=max_len, gpu_memory_utilization=0.90,
+                  enable_prefix_caching=False, mm_processor_cache_gb=0,
+                  limit_mm_per_prompt={"image": 20, "video": 0}, seed=0)
+    except Exception as e:  # noqa: BLE001 - one conservative retry (memory / profiling limits)
+        log(f"vLLM init failed ({e!r}); retry with max_model_len 32768, eager mode")
+        import gc
+        import torch
+        gc.collect()
+        torch.cuda.empty_cache()
+        max_len = 32768
+        llm = LLM(model=MODEL, dtype="bfloat16", max_model_len=max_len, gpu_memory_utilization=0.88,
+                  enable_prefix_caching=False, mm_processor_cache_gb=0,
+                  limit_mm_per_prompt={"image": 20, "video": 0}, seed=0, enforce_eager=True, max_num_seqs=16)
+    log(f"vLLM loaded: {MODEL}, max_model_len {max_len}")
 
     def request(v, images, prompt):
         msgs = [{"role": "user", "content": [{"type": "image"} for _ in images] + [{"type": "text", "text": prompt}]}]
@@ -125,30 +137,53 @@ def main():
                 inputs[v] = None
                 continue
             imgs = [Image.open(p).convert("RGB") for p in paths[:20]]
-            tok = sum(img_tokens(*im.size) for im in imgs)
-            scale = 1.0
-            if tok > MAX_IMG_TOKENS:  # only for very large frames; recorded per video
-                scale = math.sqrt(MAX_IMG_TOKENS / tok)
-                imgs = [im.resize((max(32, int(im.width * scale)), max(32, int(im.height * scale)))) for im in imgs]
             title, desc = tf.get(v, ("N/A", "N/A"))
             trans = asr.get(v, "").strip() or "N/A"
+            # the step-B prompt (step-A text + up to 2048 step-A tokens) and 2048 new tokens must fit the context;
+            # frames are shrunk only when they would not (very large frames or very long transcripts), recorded
+            n_text = len(processor.tokenizer(A.prompt_step_a_tagged(title, desc, trans))["input_ids"])
+            trunc = False
+            while n_text > max_len // 2 and len(trans) > 1000:  # extreme transcripts only; recorded
+                trans = trans[: int(len(trans) * 0.8)]
+                trunc = True
+                n_text = len(processor.tokenizer(A.prompt_step_a_tagged(title, desc, trans))["input_ids"])
+            budget = max_len - GEN_TOKENS - (n_text + GEN_TOKENS + 512) - 4 * len(imgs)
+            tok = sum(img_tokens(*im.size) for im in imgs)
+            scale = 1.0
+            if tok > budget:
+                scale = math.sqrt(max(budget, 64 * len(imgs)) / tok) * 0.97
+                imgs = [im.resize((max(32, int(im.width * scale)), max(32, int(im.height * scale)))) for im in imgs]
             inputs[v] = {"images": imgs, "title": title, "desc": desc, "trans": trans, "scale": scale,
-                         "n_frames": len(imgs)}
+                         "n_frames": len(imgs), "trans_truncated": trunc}
         live = [v for v in chunk if inputs[v] is not None]
-        outs_a = llm.generate([request(v, inputs[v]["images"],
-                                       A.prompt_step_a_tagged(inputs[v]["title"], inputs[v]["desc"], inputs[v]["trans"]))
-                               for v in live], [params(1, v) for v in live], use_tqdm=False)
-        step_a = {}
-        raw_a = {}
-        for v, o in zip(live, outs_a):
-            raw_a[v] = o.outputs[0].text.strip()
-            step_a[v] = A.parse_tagged_step_a(raw_a[v])
-        outs_b = llm.generate([request(v, inputs[v]["images"],
-                                       A.prompt_step_b_tagged(step_a[v], inputs[v]["title"], inputs[v]["desc"],
-                                                              inputs[v]["trans"]))
-                               for v in live], [params(2, v) for v in live], use_tqdm=False)
-        for v, o in zip(live, outs_b):
-            raw_b = o.outputs[0].text.strip()
+
+        def gen(step, vs, prompt_of):
+            """Batched generate; if the batch fails, retry one by one so one bad video cannot stop the rest."""
+            try:
+                outs = llm.generate([request(v, inputs[v]["images"], prompt_of(v)) for v in vs],
+                                    [params(step, v) for v in vs], use_tqdm=False)
+                return {v: o.outputs[0].text.strip() for v, o in zip(vs, outs)}
+            except Exception as e:  # noqa: BLE001
+                log(f"  batch step {step} failed ({e!r}); one by one")
+                res = {}
+                for v in vs:
+                    try:
+                        o = llm.generate([request(v, inputs[v]["images"], prompt_of(v))], [params(step, v)],
+                                         use_tqdm=False)[0]
+                        res[v] = o.outputs[0].text.strip()
+                    except Exception as e2:  # noqa: BLE001
+                        failed[v] = f"step {step}: {e2!r}"
+                return res
+
+        failed = {}
+        raw_a = gen(1, live, lambda v: A.prompt_step_a_tagged(inputs[v]["title"], inputs[v]["desc"], inputs[v]["trans"]))
+        step_a = {v: A.parse_tagged_step_a(t) for v, t in raw_a.items()}
+        live_b = [v for v in live if v in step_a]
+        raw_bs = gen(2, live_b, lambda v: A.prompt_step_b_tagged(step_a[v], inputs[v]["title"], inputs[v]["desc"],
+                                                                 inputs[v]["trans"]))
+        for v in failed:
+            (out_dir / f"{v}_rationale.json").write_text(json.dumps({"video_id": v, "error": failed[v]}) + "\n")
+        for v, raw_b in raw_bs.items():
             b = A.parse_tagged_step_b(raw_b)
             rec = {"video_id": v, "objective_description": step_a[v],
                    "final_decision": {"label": b["final_decision"]["label"],
@@ -157,6 +192,7 @@ def main():
                                       "notes": b.get("notes", "")},
                    "raw": {"step_a": raw_a[v], "step_b": raw_b},
                    "inputs": {"n_frames": inputs[v]["n_frames"], "frame_scale": inputs[v]["scale"],
+                              "transcription_truncated": inputs[v]["trans_truncated"],
                               "title": inputs[v]["title"] != "N/A", "description": inputs[v]["desc"] != "N/A",
                               "transcription_chars": len(inputs[v]["trans"])}}
             (out_dir / f"{v}_rationale.json").write_text(json.dumps(rec, ensure_ascii=False, indent=1) + "\n")
