@@ -51,4 +51,15 @@ Outputs: `runs/20261008_baselines/avadclip/<Dataset>/seed<k>/` and `.../<Dataset
 
 ## Results
 
-RESULTS_PLACEHOLDER
+Seed mean ± sd (n − 1) over seeds 2025 / 234 / 3407, transcribed from `runs/20261008_baselines/avadclip/<Dataset>/summary.json`, which is built from each seed's `metrics.json` (canonical evaluator). Pooled frame ROC-AUC / pooled frame PR-AUC / within-video macro ROC-AUC.
+
+| row | corpus | ROC | PR | within | per seed (ROC / PR / within; 2025, 234, 3407) | host |
+|---|---|---:|---:|---:|---|---|
+| AVadCLIP (score_align, headline) | HateMM | 0.6369 ± 0.0225 | 0.3503 ± 0.0398 | 0.5077 ± 0.0358 | 0.6226/0.3087/0.5233; 0.6629/0.3879/0.5331; 0.6252/0.3545/0.4667 | sc474397 |
+| AVadCLIP (score_align, headline) | HateClipSeg | 0.4996 ± 0.0096 | 0.4596 ± 0.0091 | 0.5291 ± 0.0184 | 0.5008/0.4578/0.5417; 0.4896/0.4515/0.5376; 0.5086/0.4694/0.5080 | sc474397 |
+| AVadCLIP (score_align, headline) | DeHate | 0.6104 ± 0.0168 | 0.1112 ± 0.0017 | 0.5343 ± 0.0314 | 0.6008/0.1094/0.5134; 0.6006/0.1114/0.5190; 0.6298/0.1128/0.5704 | sc474397 |
+| AVadCLIP score_mlp | HateMM | 0.6772 ± 0.0214 | 0.4345 ± 0.0359 | 0.4764 ± 0.0268 | 0.6757/0.4226/0.5048; 0.6992/0.4748/0.4727; 0.6566/0.4060/0.4517 | sc474397 |
+| AVadCLIP score_mlp | HateClipSeg | 0.5574 ± 0.0229 | 0.5163 ± 0.0274 | 0.5326 ± 0.0065 | 0.5377/0.4863/0.5377; 0.5825/0.5401/0.5348; 0.5520/0.5224/0.5253 | sc474397 |
+| AVadCLIP score_mlp | DeHate | 0.6419 ± 0.0345 | 0.1385 ± 0.0231 | 0.5057 ± 0.0172 | 0.6031/0.1219/0.5144; 0.6539/0.1288/0.5167; 0.6688/0.1649/0.4859 | sc474397 |
+
+Host: uoa-lab1 (sc474397), Slurm 291, 2026-10-08. Every cohort video scored on every GT frame (`coverage.json`).

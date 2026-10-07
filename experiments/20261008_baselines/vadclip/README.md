@@ -41,4 +41,15 @@ Outputs: `runs/20261008_baselines/vadclip/<Dataset>/seed<k>/` and `.../<Dataset>
 
 ## Results
 
-RESULTS_PLACEHOLDER
+Seed mean ± sd (n − 1) over seeds 2025 / 234 / 3407, transcribed from `runs/20261008_baselines/vadclip/<Dataset>/summary.json`, which is built from each seed's `metrics.json` (canonical evaluator). Pooled frame ROC-AUC / pooled frame PR-AUC / within-video macro ROC-AUC.
+
+| row | corpus | ROC | PR | within | per seed (ROC / PR / within; 2025, 234, 3407) | host |
+|---|---|---:|---:|---:|---|---|
+| VadCLIP (score_align, headline) | HateMM | 0.6111 ± 0.0434 | 0.3588 ± 0.0435 | 0.4783 ± 0.0365 | 0.5784/0.3110/0.4697; 0.5947/0.3694/0.5184; 0.6604/0.3959/0.4469 | sc474398 |
+| VadCLIP (score_align, headline) | HateClipSeg | 0.5308 ± 0.0246 | 0.4825 ± 0.0256 | 0.5124 ± 0.0181 | 0.5510/0.4923/0.5274; 0.5380/0.5016/0.5174; 0.5033/0.4534/0.4923 | sc474398 |
+| VadCLIP (score_align, headline) | DeHate | 0.6035 ± 0.0046 | 0.1091 ± 0.0049 | 0.5120 ± 0.0109 | 0.6041/0.1111/0.5000; 0.6077/0.1128/0.5213; 0.5986/0.1036/0.5147 | sc474398 |
+| VadCLIP score_mlp | HateMM | 0.6822 ± 0.0226 | 0.3998 ± 0.0562 | 0.4640 ± 0.0356 | 0.6578/0.3522/0.4263; 0.6865/0.4619/0.4971; 0.7024/0.3854/0.4686 | sc474398 |
+| VadCLIP score_mlp | HateClipSeg | 0.5001 ± 0.0114 | 0.4580 ± 0.0163 | 0.5126 ± 0.0209 | 0.4932/0.4485/0.5053; 0.5133/0.4768/0.5361; 0.4939/0.4486/0.4963 | sc474398 |
+| VadCLIP score_mlp | DeHate | 0.6276 ± 0.0150 | 0.1167 ± 0.0122 | 0.4619 ± 0.0047 | 0.6396/0.1301/0.4566; 0.6108/0.1061/0.4644; 0.6326/0.1139/0.4648 | sc474398 |
+
+Host: uoa-lab3 (sc474398), Slurm 290, 2026-10-08 (results rsynced to uoa-lab1 without the model checkpoints, which stay on uoa-lab3 under the same paths). The VadCLIP rows have the largest seed spread on HateMM (sd .04): with a fixed last epoch and no selection, seeds vary more.

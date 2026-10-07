@@ -45,4 +45,15 @@ Outputs: `runs/20261008_baselines/dsanet/<Dataset>/seed<k>/` and `.../<Dataset>/
 
 ## Results
 
-RESULTS_PLACEHOLDER
+Seed mean ± sd (n − 1) over seeds 2025 / 234 / 3407, transcribed from `runs/20261008_baselines/dsanet/<Dataset>/summary.json`, which is built from each seed's `metrics.json` (canonical evaluator). Pooled frame ROC-AUC / pooled frame PR-AUC / within-video macro ROC-AUC.
+
+| row | corpus | ROC | PR | within | per seed (ROC / PR / within; 2025, 234, 3407) | host |
+|---|---|---:|---:|---:|---|---|
+| DSANet (score_mlp, headline) | HateMM | 0.7005 ± 0.0142 | 0.4136 ± 0.0546 | 0.5290 ± 0.0427 | 0.6844/0.3754/0.4976; 0.7115/0.4762/0.5776; 0.7055/0.3893/0.5118 | sc474398 |
+| DSANet (score_mlp, headline) | HateClipSeg | 0.5080 ± 0.0178 | 0.4622 ± 0.0119 | 0.5024 ± 0.0188 | 0.5261/0.4703/0.5125; 0.5073/0.4679/0.5140; 0.4906/0.4485/0.4808 | sc474398 |
+| DSANet (score_mlp, headline) | DeHate | 0.6404 ± 0.0151 | 0.1363 ± 0.0268 | 0.4776 ± 0.0126 | 0.6574/0.1662/0.4737; 0.6350/0.1145/0.4916; 0.6287/0.1282/0.4674 | sc474398 |
+| DSANet score_align | HateMM | 0.6862 ± 0.0105 | 0.4479 ± 0.0182 | 0.5600 ± 0.0055 | 0.6873/0.4311/0.5539; 0.6752/0.4672/0.5646; 0.6962/0.4452/0.5614 | sc474398 |
+| DSANet score_align | HateClipSeg | 0.5349 ± 0.0269 | 0.5053 ± 0.0098 | 0.5074 ± 0.0391 | 0.5646/0.5166/0.5455; 0.5279/0.4995/0.4674; 0.5121/0.4998/0.5093 | sc474398 |
+| DSANet score_align | DeHate | 0.6655 ± 0.0117 | 0.1398 ± 0.0098 | 0.5229 ± 0.0096 | 0.6766/0.1467/0.5245; 0.6666/0.1442/0.5316; 0.6532/0.1286/0.5126 | sc474398 |
+
+Host: uoa-lab3 (sc474398), Slurm 290, 2026-10-08 (results rsynced to uoa-lab1 without the model checkpoints, which stay on uoa-lab3).
