@@ -6,6 +6,12 @@ prompt, features; see DESIGN_EVENTVAD.md there). Those modules are imported unch
 
   1. Corpora and cohorts: video paths from the test manifests, the exact cohorts of hate_query.md section 3.
   2. Decode at min(native, 30) fps, the paper's FPS = 30 (run_plan.md L5, decision D5 = paper rate).
+     Graph constants: the released code's (config `--preset upstream`: CLIP weight alpha = 0.8, time decay
+     gamma = 0.05 per frame index, upstream moving-average arithmetic, raw CLIP magnitudes in the node features);
+     the paper states alpha = 0.75 and gamma = 0.6. CLIP and RAFT features are cached per video
+     (<dataset>/features/<id>.npz), so the graph stage can be rerun without RAFT.
+     Prompt: the release has the placeholder string "prompt"; the reconstruction of prompt.py (Figure 2) is used,
+     with the nine hate rules of hate_query.md in its anomaly slot (`build_prompt`). Label: prompt reconstructed.
   3. Throughput only, same arithmetic: RAFT is run on batches of adjacent frame pairs (RAFT is a per-pair function;
      its encoders use instance norm and eval-mode batch norm, so a batch gives each pair the result it gets alone,
      up to floating-point reduction order) and CLIP preprocessing runs in a thread pool. CLIP is loaded from the
@@ -197,12 +203,26 @@ class BatchedExtractor:
         return clip, (flow_raw @ self.flow_proj).astype(np.float32)
 
 
-def segment_one(path, extractor, cfg):
+def segment_one(path, extractor, cfg, feat_path):
+    """Decode + CLIP/RAFT features (cached to feat_path, so the graph stage can be rerun without RAFT), then the
+    dynamic graph, propagation and boundary detection."""
     timings = {}
     t0 = time.time()
     pr = video_io.probe(path, cfg)
     t1 = time.time()
-    clip_feats, flow_feats = extractor.extract(video_io.iter_frames(pr))
+    if feat_path and os.path.isfile(feat_path):
+        z = np.load(feat_path)
+        clip_feats, flow_feats = z["clip"], z["flow"]
+        if abs(float(z["decode_fps"]) - pr.decode_fps) > 1e-6:
+            raise RuntimeError("cached features were decoded at %s fps, probe says %s" % (z["decode_fps"],
+                                                                                          pr.decode_fps))
+    else:
+        clip_feats, flow_feats = extractor().extract(video_io.iter_frames(pr))
+        if feat_path:
+            os.makedirs(os.path.dirname(feat_path), exist_ok=True)
+            tmp = feat_path + ".tmp.npz"
+            np.savez(tmp, clip=clip_feats, flow=flow_feats, decode_fps=pr.decode_fps)
+            os.replace(tmp, feat_path)
     t2 = time.time()
     n = clip_feats.shape[0]
     adj = gmod.build_dynamic_graph(clip_feats, flow_feats, pr.decode_fps, cfg)
@@ -232,10 +252,18 @@ def cmd_segment(args):
     print("config: %s" % json.dumps(cfg.as_dict(), sort_keys=True), flush=True)
     if not todo:
         return 0
-    extractor = BatchedExtractor(args.device, args.raft_ckpt, args.clip_ckpt, cfg.raft_iters, cfg.chunk_size,
-                                 args.raft_batch, args.threads)
+    holder = {}
+
+    def extractor():          # built on first use, so a rerun on cached features never loads CLIP/RAFT
+        if "x" not in holder:
+            holder["x"] = BatchedExtractor(args.device, args.raft_ckpt, args.clip_ckpt, cfg.raft_iters,
+                                           cfg.chunk_size, args.raft_batch, args.threads)
+        return holder["x"]
     with open(os.path.join(dest, "segment_config.json"), "w") as fh:
-        json.dump({"dataset": args.dataset, "config": cfg.as_dict(), "raft_ckpt": args.raft_ckpt,
+        json.dump({"dataset": args.dataset, "preset": args.preset, "config": cfg.as_dict(),
+                   "paper_states": {"alpha": 0.75, "gamma": 0.6, "note": "paper values; the released config.py has "
+                                    "clip_weight 0.8 and time_decay 0.05 (per frame), which are used here"},
+                   "raft_ckpt": args.raft_ckpt,
                    "clip_ckpt": args.clip_ckpt, "raft_batch": args.raft_batch, "threads": args.threads,
                    "code_version": L.git_version(), "started": time.strftime("%Y-%m-%d %H:%M:%S")}, fh, indent=2)
     started, frames_seen = time.time(), 0
@@ -245,7 +273,7 @@ def cmd_segment(args):
             rec = {"video_id": vid, "video_path": path}
             t0 = time.time()
             try:
-                rec.update(segment_one(path, extractor, cfg))
+                rec.update(segment_one(path, extractor, cfg, os.path.join(dest, "features", vid + ".npz")))
                 frames_seen += rec["n_frames"]
             except Exception as exc:                                       # noqa: BLE001
                 rec["error"] = "%s: %s" % (type(exc).__name__, exc)
@@ -325,6 +353,29 @@ def mm_continue(tensor, instruct, prefix, model, tokenizer, max_new_tokens=8):
     return tokenizer.batch_decode(out, skip_special_tokens=True)[0].strip()
 
 
+# hate_query.md section 1, verbatim (YOUTUBE_RULES of experiments/20260910_spvl/spvl.py)
+HATE_RULES = (
+    "1. Encourage violence against groups based on protected status",
+    "2. Incite hatred against groups based on protected status",
+    "3. Dehumanize groups by comparing to non-human entities",
+    "4. Praise or glorify violence against protected groups",
+    "5. Use slurs and stereotypes that incite hatred (including through humor, irony, or coded language)",
+    "6. Claim groups are inferior based on protected status",
+    "7. Promote hateful supremacism",
+    "8. Make conspiratorial claims about groups based on protected status",
+    "9. Deny or minimize major violent events",
+)
+
+
+def build_prompt():
+    """The reconstructed Figure 2 prompt (prompt.py, `paper` arm) with the hate rules in its anomaly slot: the
+    #Question line is followed by the definition of an anomaly as content violating any of the rules; the
+    #Question and #Instruction sentences are unchanged."""
+    question = (pmod.PAPER_QUESTION + " An anomaly is content that violates any of the following rules:\n"
+                + "\n".join(HATE_RULES))
+    return "#Question: %s\n#Instruction: %s" % (question, pmod.PAPER_INSTRUCTION)
+
+
 def cmd_score(args):
     import score_events as sev                     # load_model (SigLIP sdpa patch E1), collect_event_frames (E6)
     cfg = cfgmod.config_from_args(args)
@@ -339,7 +390,7 @@ def cmd_score(args):
         ids = ids[:args.limit]
     done = done_ids(sc_path)
     todo = [v for v in ids if v not in done]
-    instruct = pmod.build_prompt("paper")
+    instruct = build_prompt()
     print("%s score: %d videos with events, %d done, %d to do (%d events)" % (
         args.dataset, len(ids), len(done), len(todo), sum(len(events_by_id[v]["events"]) for v in todo)), flush=True)
     print("prompt:\n%s\nextraction suffix: %r" % (instruct, EXTRACT_SUFFIX), flush=True)
@@ -349,7 +400,9 @@ def cmd_score(args):
     from videollama2 import mm_infer
     import torch
     with open(os.path.join(dest, "score_config.json"), "w") as fh:
-        json.dump({"dataset": args.dataset, "arm": "paper", "prompt": instruct, "extraction_suffix": EXTRACT_SUFFIX,
+        json.dump({"dataset": args.dataset, "arm": "paper_reconstructed_with_hate_rules",
+                   "prompt_note": "prompt reconstructed (release has the placeholder string 'prompt')",
+                   "prompt": instruct, "extraction_suffix": EXTRACT_SUFFIX,
                    "extraction_max_new_tokens": 8, "model": args.model, "attn_implementation": "sdpa",
                    "max_new_tokens": args.max_new_tokens, "do_sample": False,
                    "frames_per_event": cfg.frames_per_event, "unparsed_fill": UNPARSED_FILL,
@@ -476,6 +529,7 @@ def main(argv=None):
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--max-new-tokens", type=int, default=2048)
     cfgmod.add_config_args(ap)
+    ap.set_defaults(preset="upstream")      # released code constants (coordinator 2026-10-08), see README
     args = ap.parse_args(argv)
     if args.stage == "selftest":
         return selftest()

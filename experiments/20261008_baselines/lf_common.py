@@ -75,6 +75,19 @@ def local_path(path):
     return path
 
 
+def resolve_video(ds, vid, manifest_path):
+    """The manifest path mapped to this machine; if it is absent (HateClipSeg's manifest points at a removed
+    pilot directory), the raw-video location of CLAUDE.md, ~/data/<dataset>/{videos,video,test}/<id>.<ext>."""
+    cand = [local_path(manifest_path)]
+    for sub in ("videos", "video", "test"):
+        for ext in (".mp4", ".webm", ".mkv"):
+            cand.append(os.path.join(os.path.expanduser("~/data"), ds, sub, vid + ext))
+    for c in cand:
+        if os.path.isfile(c):
+            return c
+    return cand[0]
+
+
 def manifest(ds):
     """video_id -> {duration, video_path} for the dataset's test manifest."""
     out = {}
@@ -84,7 +97,7 @@ def manifest(ds):
             if row.get("dataset") != ds:
                 continue
             out[row["video_id"]] = {"duration": float(row["duration"]),
-                                    "video_path": local_path(row["video_path"])}
+                                    "video_path": resolve_video(ds, row["video_id"], row["video_path"])}
     return out
 
 
@@ -97,6 +110,27 @@ def gt_lengths(ds):
     """video_id -> number of GT frames. Only the array length is read."""
     gt = np.load(os.path.join(GT_DIR, ds + ".npz"), allow_pickle=True)
     return {str(v): len(gt["y4"][i]) for i, v in enumerate(gt["video_ids"]) if str(gt["split"][i]) == "test"}
+
+
+def transcode_h264(src, dst):
+    """Decode-only fallback for files decord cannot open (some HateClipSeg webm/AV1): re-encode the video stream to
+    H.264 at the same frame rate and size (libx264, CRF 18, no audio). The caller records that it was used."""
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    cmd = ["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", src, "-map", "0:v:0", "-c:v", "libx264", "-crf", "18",
+           "-preset", "veryfast", "-pix_fmt", "yuv420p", "-an", dst]
+    subprocess.run(cmd, check=True)
+    return dst
+
+
+def decord_ok(path):
+    try:
+        import decord
+        vr = decord.VideoReader(path, num_threads=1)
+        n = len(vr)
+        vr.get_batch([0, max(0, n // 2), n - 1]).asnumpy()
+        return n > 0 and vr.get_avg_fps() > 0
+    except Exception:  # noqa: BLE001
+        return False
 
 
 # ----------------------------------------------------------------------------- 4 fps mapping
