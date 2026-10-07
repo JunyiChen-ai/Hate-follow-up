@@ -5,7 +5,7 @@
 # torch 2.7.1+cu128) with only transformers 4.49.0 and tokenizers 0.21.4 installed into it
 # (runs/_setup_uoa-lab2/lavad_tf449_venv.log). The campus server used (uoa-campus2) has no HateVideo env, so this
 # script builds a standalone Python 3.11.8 env that holds the same versions of every package the LAVAD port
-# (BLIP-2, Llama-2 NF4 via bitsandbytes, ImageBind) and the evaluator import: `campus_lavad_env_constraints.txt`
+# (BLIP-2, Llama-2 NF4 via bitsandbytes, ImageBind incl. pytorchvideo FrameVideo, which needs opencv) and the evaluator import: `campus_lavad_env_constraints.txt`
 # is lab2's HateVideo package list with transformers 4.49.0 / tokenizers 0.21.4, used as pip constraints.
 # Everything (conda packages, pip cache, temp files, dotfiles) stays inside the repository.
 #
@@ -25,7 +25,7 @@ echo "host $(hostname) start $(date -Is) commit $(git rev-parse --short HEAD)"
   torch torchvision torchaudio
 "$E/bin/python" -m pip install -c "$C" --extra-index-url https://download.pytorch.org/whl/cu128 \
   transformers tokenizers accelerate bitsandbytes safetensors huggingface_hub sentencepiece protobuf \
-  timm ftfy regex iopath fvcore pytorchvideo einops numpy scipy scikit-learn pillow av
+  timm ftfy regex iopath fvcore pytorchvideo einops numpy scipy scikit-learn pillow av opencv-python
 # lab2's HateVideo env carries this 4-line shim in torchvision (added 2026-08-19 by the Retrieval-hate repro
 # campaign): torchvision >= 0.17 removed `transforms.functional_tensor`, which pytorchvideo 0.1.5 (imported by
 # ImageBind's data.py) still imports. Same file content as on uoa-lab2.
