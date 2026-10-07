@@ -74,18 +74,74 @@ So the campaign's 117 curves are not mixed with rerun curves: all 118 HateClipSe
 (`lab2_lavad_hcs_full.sbatch`). The rerun still leaves `bit_ZaY0S1anrdep` with unscored samples (Llama-2 refused
 all 10 neighbours); F3 fills them. Full record: `runs/20261008_baselines/lavad/HateClipSeg_rerun_check.json`.
 
-Status (2026-10-08 06:50): the full HateClipSeg rerun is not submitted yet (one pending job per partition; Slurm 303
-is pending on uoa-lab2). Next: `sbatch experiments/20261008_baselines/launch/lab2_lavad_hcs_full.sbatch` on uoa-lab2
-once 303 is running. Estimated 4–5 GPU-h (the 6-video check took 17.5 min for 0.42 h of video; the 6 videos are
-not redone). The job ends with `finalize.py --dataset HateClipSeg --all-rerun`, which writes
-`runs/20261008_baselines/lavad/HateClipSeg/metrics.json`.
+Status: the full rerun of all 118 videos runs on uoa-campus2 in Slurm 24597 (section "Campus run" below). The 6
+lab2 videos of the check are redone there as well, so that every HateClipSeg curve comes from one machine and GPU
+type. The job writes `runs/20261008_baselines/lavad/HateClipSeg/metrics.json` with `finalize.py --dataset
+HateClipSeg --all-rerun`.
 
 ## DeHate
 
-`lab2_lavad_dehate.sbatch`: the 1151 cohort videos (30.7 h of video). Frames are hard-linked into
-`data/frames_1fps/DeHate/` on uoa-lab2. Status (2026-10-08 06:50): not submitted. Submit on uoa-lab2 once the full
-HateClipSeg job is running. Estimated 14–20 GPU-h (campaign rate 0.44 GPU-h per video hour; the 6-video check ran
-at 0.69 with less prompt-cache reuse). The job is resumable (every stage skips finished videos). It ends with
-`finalize.py --dataset DeHate`. Then rsync `runs/20261008_baselines/lavad/` and `data/blip2_captions_1fps/` back to
-uoa-lab1, and write `data/blip2_captions_1fps/PROVENANCE.md` (generated on uoa-lab2 by `blip2_caption.py` in the
-`lavad_tf449` venv).
+The 1151 cohort videos (30.7 h of video), second half of Slurm 24597 on uoa-campus2 (section "Campus run"). The
+job ends with `finalize.py --dataset DeHate`. Estimated cost before the run: 14–20 GPU-h on a 5090 (campaign rate
+0.44 GPU-h per video hour; the 6-video check ran at 0.69 with less prompt-cache reuse).
+
+## Campus run (2026-10-08)
+
+Moved from uoa-lab2 to **uoa-campus2 (foscsmlprd02), one NVIDIA A100-SXM4-80GB**, because the lab account may run
+only 2 GPU jobs at a time (QOS `gpu2`) and 7 jobs were queued. `lab2_lavad_hcs_full.sbatch` and
+`lab2_lavad_dehate.sbatch` were never submitted. uoa-campus1 was not usable: its `/data` quota for jehc223 is over the
+soft limit with the grace period expired (296G of 290G), so no file can be written there.
+
+- Job: `cd /data/jehc223/Hate-follow-up && sbatch experiments/20261008_baselines/launch/campus_lavad.sbatch` on
+  uoa-campus2, Slurm 24597 (started 2026-10-08 10:31 NZDT, commit d9db913). One job runs HateClipSeg (all 118)
+  and then DeHate (1151), each `run_chain.sh` + `finalize.py`, the commands of the two lab2 files. Log
+  `runs/20261008_baselines/lavad/slurm_24597.out`.
+- Same setup as lab2: the port in this directory, the verbatim LAVAD prompts, `Salesforce/blip2-opt-6.7b-coco` fp16,
+  `NousResearch/Llama-2-13b-chat-hf` in NF4 (bitsandbytes 0.49.2, double quantisation, bf16 compute) through the
+  `llama_hf` shim, greedy decoding, batch 48, ImageBind-Huge (`data/assets/imagebind/imagebind_huge.pth`,
+  `third_party/lavad/libs/ImageBind` copied from uoa-lab1), 1 fps frames copied from uoa-lab2 (real files, see
+  `data/frames_1fps/PROVENANCE.md` on uoa-campus2). The only differences are the GPU (A100 instead of RTX 5090) and the env build.
+- Env: campus2 has no HateVideo env, so `launch/campus_lavad_env.sh` builds `.cache/envs/lavad_tf449` as a standalone
+  Python 3.11.8 env with lab2's HateVideo package versions as pip constraints
+  (`launch/campus_lavad_env_constraints.txt`; torch 2.7.1+cu128, torchvision 0.22.1, torchaudio 2.7.1, accelerate
+  1.5.2, bitsandbytes 0.49.2, numpy 1.26.4, pytorchvideo 0.1.5, opencv-python 4.11.0.86, scikit-learn 1.5.2) plus
+  the lab2 venv's transformers 4.49.0 and tokenizers 0.21.4, and writes the same 4-line torchvision
+  `functional_tensor.py` shim that lab2's HateVideo carries for pytorchvideo. Logs and `pip freeze` in
+  `runs/_setup_uoa-campus2/`.
+- Models: downloaded on campus2 into `.cache/hf` with `hf download` (Llama-2 and BLIP-2 without the `.bin` shards,
+  as in lab2's cache). File names and sizes equal lab2's cache; config, tokenizer and index files are byte-identical.
+- Port change for the campus run: `blip2_caption.py` no longer needs the video file when the video's 1 fps frame
+  directory already holds JPEGs (the video is read only to extract frames; campus2 holds frames, not videos). The
+  captions are computed from the same JPEGs as before.
+- Smoke test on HateClipSeg `bit_0nXuyV2rypaf` and DeHate `4PmH5EgjyduF`: Slurm 24586 found the missing torchvision
+  shim and the video-file check, 24595 ran stages 01–04 and found the missing opencv, 24596 finished stages 05–06
+  and the curves for both videos. Outputs are in
+  `runs/20261008_baselines/_smoke_campus/lavad/` (moved there so that the real run recomputes them). A100 versus the
+  lab2 5090 rerun (Slurm 294) on `bit_0nXuyV2rypaf`: BLIP-2 captions differ on 17 of 259 frames (lab2 versus the
+  campaign: 1 of 259); clean / summary / score entries differ on 13 / 22 / 36 of 259; `base` curve max abs diff
+  .033, Pearson .931. This is the same kind of hardware-level difference the lab2 check found, so the HateClipSeg and
+  DeHate curves all come from the A100 run and are not mixed with lab2 or campaign curves.
+- Speed on the A100 (HateClipSeg): BLIP-2 captions 20.9 frames/s (28,242 frames in 22.5 min), caption cleaning 26 min,
+  Llama-2 summaries 1.17 generations/s (the lab2 5090 ran 3.2/s in Slurm 294). The A100 is shared with small
+  processes of other users. Estimate from these rates: HateClipSeg done on the evening of 2026-10-08 (NZDT), DeHate
+  about 40 h later (around midday 2026-10-10); about 50 GPU-h in total instead of the 18–25 estimated for the 5090.
+- On uoa-lab1, the lab2 check's per-stage files were moved to
+  `runs/20261008_baselines/lavad/lab2_rerun_check_job294/` before the campus outputs were copied back (see the
+  README.txt there); `HateClipSeg_rerun_check.json` and `slurm_294.out` stay where they were.
+
+Remaining steps after Slurm 24597 ends (check `slurm_24597.out` for `JOB_DONE`, `FAILED`, `Traceback`; if it stopped,
+resubmitting the same sbatch continues, because every stage skips finished videos):
+
+```
+# on uoa-lab1
+rsync -a uoa-campus2:/data/jehc223/Hate-follow-up/runs/20261008_baselines/lavad/ runs/20261008_baselines/lavad/
+rsync -a uoa-campus2:/data/jehc223/Hate-follow-up/data/blip2_captions_1fps/ data/blip2_captions_1fps/
+python experiments/20261008_baselines/campus_lab1_check.py \
+  runs/20261008_baselines/lavad/HateClipSeg:HateClipSeg runs/20261008_baselines/lavad/DeHate:DeHate
+# then write data/blip2_captions_1fps/PROVENANCE.md (generated on uoa-campus2 by blip2_caption.py in
+# .cache/envs/lavad_tf449, Slurm 24597) and fill the results below
+```
+
+## Results (HateClipSeg, DeHate)
+
+(pending: Slurm 24597 on uoa-campus2)
