@@ -35,6 +35,28 @@ sbatch experiments/20261008_baselines/launch/videomind_lab1.sbatch            # 
 python3 experiments/20261008_baselines/videomind/videomind_hate.py raster --dataset HateMM   # then HCS, DeHate
 ```
 
-## Runs and results
+- Memory fix: transformers 4.45.2's SDPA vision attention builds a dense block-diagonal mask over all patches of the
+  video (about 15k patches for 150 frames) and ran out of memory on the 32 GB card for 131 of 215 HateMM videos in
+  job 298. `patch_vision_attention` runs the same attention per temporal block (checked equal to the masked version,
+  max difference 2e-16 in float64). HateClipSeg and DeHate ran with the patch; the HateMM output of job 298 was moved
+  to `runs/20261008_baselines/videomind/_superseded/` and HateMM is rerun in full with the patch (job 306).
 
-Filled in when the runs finish.
+## Runs
+
+| corpus | host | job | status |
+|---|---|---|---|
+| HateMM (215) | uoa-lab1 (sc474397) | 306 | queued (full rerun with the attention patch) |
+| HateClipSeg (118) | uoa-lab1 (sc474397) | 298 | done, 10.5 min |
+| DeHate (1151) | uoa-lab1 (sc474397) | 298 | running |
+
+## Results
+
+Pooled frame ROC-AUC / pooled frame PR-AUC / within-video macro ROC-AUC, transcribed from `metrics.json` written by
+`src/eval/evaluate_four_datasets.py`; exact cohort and every GT frame scored (`coverage.json`, `n_videos_overlap`).
+
+| corpus | ROC | PR | within | source |
+|---|---:|---:|---:|---|
+| HateClipSeg | .6174 | .5766 | .5336 | `runs/20261008_baselines/videomind/HateClipSeg/metrics.json` |
+
+HateClipSeg: the grounder returned 100 proposals for every video (its cap after NMS); the verified top 5 cover on
+average 32 % of a video's frames (`raster_stats.json`); 0 F2; `yt_5yZByxbH8cg` and `yt_jNY3ZXSTBb8` were re-encoded.

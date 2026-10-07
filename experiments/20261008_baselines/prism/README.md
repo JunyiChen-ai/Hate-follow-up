@@ -43,6 +43,23 @@ sbatch experiments/20261008_baselines/launch/prism_lab3.sbatch        # extract 
 python3 experiments/20261008_baselines/prism/prism_hate.py eval --dataset HateMM
 ```
 
-## Runs and results
+## Runs
 
-Filled in when the runs finish.
+Job 295 on uoa-lab3 (sc474398) started HateMM with the first version of the extraction (release preprocessing, about
+1.05 windows/s, 18 h projected for HateMM alone). After 6 videos its batch shell was paused and its extraction
+process stopped, and the same sbatch script was started as a step inside the same allocation
+(`srun --jobid=295 --overlap`, log `runs/20261008_baselines/prism/step_in_295.log`) with the per-frame cache, about
+2.37 windows/s. The cache gives processor inputs identical to the release path (`prism_hate.py check`, run on the
+first and last windows of one video per corpus), so the 6 features from the first version are kept. Projected cost
+at 2.37 windows/s: HateMM about 6 h, HateClipSeg about 6 h, DeHate about 23 h (about 0.29 M windows in all); the
+partition's 1-day limit will stop the job inside DeHate, which then resumes in a new job.
+
+| corpus | host | job | status |
+|---|---|---|---|
+| HateMM (215) | uoa-lab3 (sc474398) | 295 (step) | running |
+| HateClipSeg (118) | uoa-lab3 | 295 (step) | after HateMM |
+| DeHate (1151) | uoa-lab3 | 295, then a resubmission | after HateClipSeg |
+
+## Results
+
+None yet.

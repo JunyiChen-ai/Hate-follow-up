@@ -50,7 +50,8 @@ Mechanism hypothesis: none; this is a comparison row.
 
 ```bash
 # on lab-server (sc448960, user junyi), repo ~/Hate-follow-up
-sbatch experiments/20261008_baselines/launch/eventvad_labserver.sbatch DeHate      # segment, then score
+sbatch experiments/20261008_baselines/launch/eventvad_labserver.sbatch DeHate                     # job 289
+sbatch experiments/20261008_baselines/launch/eventvad_labserver.sbatch DeHate HateMM HateClipSeg  # job 296 (queued)
 # when both stages are complete, on uoa-lab1 after rsync of runs/20261008_baselines/eventvad/<corpus>/:
 python3 experiments/20261008_baselines/eventvad/eventvad_4fps.py raster --dataset DeHate
 ```
@@ -62,9 +63,9 @@ is resubmitted unchanged.
 
 | corpus | host | job | status |
 |---|---|---|---|
-| DeHate (1151) | lab-server (sc448960) | 289 | running (segmentation started 2026-10-08 03:5x NZDT, about 58 frames/s) |
-| HateMM (215) | — | — | not started |
-| HateClipSeg (118) | — | — | not started |
+| DeHate (1151) | lab-server (sc448960) | 289, then 296 | running: segmentation since 2026-10-08 03:52 NZDT at about 48 decoded frames/s (about 20 h projected), then scoring (about 11 h projected); the 1-day limit stops 289, and the queued job 296 resumes it |
+| HateMM (215) | lab-server | 296 | queued after DeHate (same job) |
+| HateClipSeg (118) | lab-server | 296 | queued after HateMM (same job) |
 
 A first DeHate job (283/284) used the paper preset (alpha 0.75, gamma 0.6); it was cancelled after 11 videos when the
 coordinator fixed the released constants. Its outputs are kept in
