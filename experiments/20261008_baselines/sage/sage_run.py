@@ -293,7 +293,7 @@ def evaluate(model, enc, items, bs):
         preds += logits.argmax(1).tolist()
         labels += y.tolist()
         probs += torch.softmax(logits.float(), 1)[:, 1].tolist()
-    return {"acc": accuracy_score(labels, preds), "macro_f1": f1_score(labels, preds, average="macro"),
+    return {"acc": float(accuracy_score(labels, preds)), "macro_f1": float(f1_score(labels, preds, average="macro")),
             "n": len(labels)}
 
 
@@ -356,14 +356,14 @@ def cmd_infer(args):
     out.mkdir(parents=True, exist_ok=True)
     log = C.RunLog(out / "run.log")
     cfg = load_config()
-    cfg["device"] = "cuda"
+    cfg["device"] = args.device
     seeds = [s for s in C.SEEDS if (C.RUNS / "sage" / ds / f"seed{s}" / "sage_best_model.pth").is_file()]
     log(f"infer SAGE {ds}, seeds {seeds}; code {C.code_version()}")
-    enc = Encoders(cfg, "cuda")
+    enc = Encoders(cfg, args.device)
     models = {}
     for s in seeds:
-        m = SAGE(cfg["model"]).to("cuda")
-        ck = torch.load(C.RUNS / "sage" / ds / f"seed{s}" / "sage_best_model.pth", map_location="cuda")
+        m = SAGE(cfg["model"]).to(args.device)
+        ck = torch.load(C.RUNS / "sage" / ds / f"seed{s}" / "sage_best_model.pth", map_location=args.device)
         m.load_state_dict(ck["model_state_dict"])
         m.eval()
         models[s] = m

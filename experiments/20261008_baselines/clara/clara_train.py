@@ -68,6 +68,7 @@ def main():
     ap.add_argument("--dataset", required=True, choices=C.DATASETS)
     ap.add_argument("--seed", type=int, required=True)
     ap.add_argument("--rationale-mode", default="both", choices=["both", "none"])
+    ap.add_argument("--cpu-smoke", action="store_true", help="debug on CPU (bf16 autocast on CPU), 2 epochs")
     args = ap.parse_args()
     ds, mode = args.dataset, args.rationale_mode
     method_dir = "clara" if mode == "both" else "clara_norationale"
@@ -100,9 +101,24 @@ def main():
     DSET._stable_int_from_str = _no_hash
 
     import main as CM
+    import torch
+    # The packs store features in fp16 (extract_video_emb.py OUT_DTYPE). Under run_clara.sh's --bf16 autocast,
+    # torch.cat of two fp16 tensors in clip_encoder.FeatureProjector (text_proj_both) raises "Unexpected floating
+    # ScalarType in at::autocast::prioritize". Upcasting the loaded features to fp32 keeps every value and lets the
+    # released code run; autocast then computes the layers in bf16 as intended.
+    _orig_getitem = DSET.VideoDataset.__getitem__
+
+    def _getitem_fp32(self, idx):
+        out = _orig_getitem(self, idx)
+        return {k: (v.float() if torch.is_tensor(v) and v.is_floating_point() else v) for k, v in out.items()}
+
+    DSET.VideoDataset.__getitem__ = _getitem_fp32
     from transformers import HfArgumentParser
     from utils.training_arguments import TrainingArguments, DataArguments
     argv = run_clara_args(ds, hf_out, args.seed, mode)
+    if args.cpu_smoke:
+        argv = argv + ["--use_cpu", "true"]
+        argv[argv.index("--num_train_epochs") + 1] = "2"
     (rd / "config_snapshot.json").write_text(json.dumps({"argv": argv, "method": method}, indent=1) + "\n")
     training_args, data_args = HfArgumentParser((TrainingArguments, DataArguments)).parse_args_into_dataclasses(argv)
     training_args.raw_textual_emb_dim = CM.infer_text_dim(data_args.text_emb_model)
