@@ -161,7 +161,9 @@ def main() -> int:
             if (CAP_ROOT / ds / f"{vid}.json").exists():
                 continue
             p = find_video(ds, vid)
-            if p is None:
+            # port (2026-10-08, campus run): the video file is needed only to extract frames; a video whose
+            # frame directory already holds JPEGs is captioned from them (extract_1fps returns them unchanged)
+            if p is None and not any((FRAME_ROOT / ds / vid).glob("*.jpg")):
                 print(f"[fail] {ds}/{vid} missing_file", flush=True)
                 continue
             jobs.append((ds, vid, p, min(int(dur) + 2, args.max_frames), dur))

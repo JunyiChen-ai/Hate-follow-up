@@ -26,6 +26,16 @@ echo "host $(hostname) start $(date -Is) commit $(git rev-parse --short HEAD)"
 "$E/bin/python" -m pip install -c "$C" --extra-index-url https://download.pytorch.org/whl/cu128 \
   transformers tokenizers accelerate bitsandbytes safetensors huggingface_hub sentencepiece protobuf \
   timm ftfy regex iopath fvcore pytorchvideo einops numpy scipy scikit-learn pillow av
+# lab2's HateVideo env carries this 4-line shim in torchvision (added 2026-08-19 by the Retrieval-hate repro
+# campaign): torchvision >= 0.17 removed `transforms.functional_tensor`, which pytorchvideo 0.1.5 (imported by
+# ImageBind's data.py) still imports. Same file content as on uoa-lab2.
+TV=$("$E/bin/python" -c "import os, torchvision; print(os.path.dirname(torchvision.__file__))")
+cat > "$TV/transforms/functional_tensor.py" <<'EOF'
+# ADAPTED (repro campaign): torchvision >=0.17 removed this private module, but
+# pytorchvideo 0.1.5 (needed by LAVAD's ImageBind) still imports from it.
+from torchvision.transforms.functional import *  # noqa: F401,F403
+from torchvision.transforms.functional import rgb_to_grayscale  # noqa: F401
+EOF
 "$E/bin/python" -m pip list --format=freeze > "$R/runs/_setup_$MACHINE/lavad_tf449_pip_freeze.txt"
 "$E/bin/python" -m pip cache purge || true
 rm -rf "$CONDA_PKGS_DIRS"   # the env's files are hard links or copies; the package cache is not needed afterwards
