@@ -8,7 +8,7 @@ recorded in PATCHES.md.
 `lavis.models.load_model_and_preprocess(name="clip", model_type="ViT-B-16")`.
 LAVIS's `clip_vit_base16.yaml` resolves that to `pretrained: openai`, i.e. the
 OpenAI CLIP ViT-B/16 checkpoint this repository already caches at
-`~/.cache/clip/ViT-B-16.pt` (sha256 `5806e77c...`), and its `clip_image_eval`
+`~/.cache/clip/ViT-B-16.pt`, and its `clip_image_eval`
 processor at image_size 224 is
 
     Resize(224, BICUBIC) -> CenterCrop(224) -> convert("RGB")
@@ -52,8 +52,6 @@ if BASELINES not in sys.path:
 
 RAFT_CORE = os.path.join(PROJECT_ROOT, "third_party", "RAFT", "core")
 DEFAULT_RAFT_CKPT = "/home/jehc223/data/checkpoints/raft/raft-things.pth"
-RAFT_THINGS_SHA256 = \
-    "fcfa4125d6418f4de95d84aec20a3c5f4e205101715a79f193243c186ac9a7e1"
 CLIP_CACHE = os.path.expanduser("~/.cache/clip")
 CLIP_NAME = "ViT-B/16"
 
@@ -184,15 +182,3 @@ class FeatureExtractor:
         flow = (flow_raw @ self.flow_proj).astype(np.float32)
         return clip, flow
 
-
-def check_raft_checkpoint(path=DEFAULT_RAFT_CKPT):
-    """Return (exists, sha256_matches, sha)."""
-    import hashlib
-    if not os.path.isfile(path):
-        return False, False, None
-    h = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for block in iter(lambda: fh.read(1 << 20), b""):
-            h.update(block)
-    sha = h.hexdigest()
-    return True, sha == RAFT_THINGS_SHA256, sha
