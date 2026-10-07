@@ -10,6 +10,7 @@
 set -uo pipefail
 cd /home/jehc223/Hate-follow-up
 source experiments/20261008_baselines/launch/lab2_env.sh
+$LAVAD_PYTHON -c "import transformers; assert transformers.__version__ == '4.49.0', transformers.__version__" || { echo "FAILED LAVAD env"; exit 1; }
 IDS=runs/20261008_baselines/lavad/ids_DeHate.txt
 $PY_VIDEO -c "
 import sys; sys.path.insert(0, 'experiments/20261008_baselines'); import exact_cohort as ec

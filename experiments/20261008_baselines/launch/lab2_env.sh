@@ -10,6 +10,9 @@ export TORCH_HOME=/home/jehc223/Hate-follow-up/.cache/torch
 export PYTHONPATH=/home/jehc223/Hate-follow-up
 export PY_VIDEO=$HOME/miniconda3/envs/HateVideo/bin/python   # torch 2.7.1, transformers 4.57.6
 export PY_VLM=$HOME/miniconda3/envs/HateVLM/bin/python       # torch 2.11.0, transformers 5.15.1
+# LAVAD: the campaign ran in HateVideo when it had transformers 4.49.0 (upgraded to 4.57.6 on 2026-08-29); this
+# venv (--system-site-packages on HateVideo, only transformers 4.49.0 + tokenizers 0.21.4 installed) restores that.
+export LAVAD_PYTHON=/home/jehc223/Hate-follow-up/.cache/envs/lavad_tf449/bin/python
 export EVAL_PYTHON=$PY_VIDEO                                  # canonical evaluator runs in HateVideo
 echo "job ${SLURM_JOB_ID:-none} host $(hostname) start $(date -Is) commit $(git -C /home/jehc223/Hate-follow-up rev-parse --short HEAD)"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv,noheader || true
