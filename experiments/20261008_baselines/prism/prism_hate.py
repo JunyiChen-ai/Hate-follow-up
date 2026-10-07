@@ -10,7 +10,9 @@ instruction "Represent the video content for anomaly detection." (Qwen3VLEmbedde
 embedder's own frame sampler expands each 7-frame list to 64 frames, as in the release).
   Engineering changes, same arithmetic: windows of one video are embedded in batches of 8 (all windows of a video
   have the same size, so there is no padding); the model is loaded in bfloat16 (the checkpoint's dtype; the release
-  passes no dtype). A file decord cannot open is re-encoded to H.264 once (lf_common.transcode_h264) and listed.
+  passes no dtype); each sampled frame is resized once per video instead of once per occurrence in every window
+  (`frame_cache`; `check_fast_path` asserts identical processor inputs), and CPU preprocessing of the next batch
+  overlaps the GPU forward. A file decord cannot open is re-encoded to H.264 once (lf_common.transcode_h264) and listed.
 
 Text side (Qwen_xd.py, unchanged arithmetic): normal pool embedded with the prefix "Video footage of ", each class
 pool with "Real-world video footage of anomalous event: " (the release's XD templates; the UCF template "A
@@ -71,6 +73,62 @@ def read_samples(path):
     return frames, total, float(vr.get_avg_fps())
 
 
+def frame_cache(emb, frames):
+    """Per-frame part of qwen_vl_utils.fetch_video (list-of-frames branch), computed once per sampled frame.
+
+    In the release path every window is a list of 7 frames that the embedder expands to 64 (each frame repeated
+    about 9 times) and fetch_video resizes all 64 frames of every window: fetch_image per frame (PIL), then one
+    bicubic antialiased torch resize to the size set by total_pixels / 64. Both steps act on each frame alone and all
+    windows of a video share frames and target size, so each sampled frame is resized once here and windows index
+    the cache. `check_fast_path` asserts that the processor inputs are identical to the release path."""
+    import torch
+    from qwen_vl_utils import vision_process as vp
+    from torchvision import transforms
+    from torchvision.transforms import InterpolationMode
+    image_factor = 16 * vp.SPATIAL_MERGE_SIZE                       # image_patch_size=16 in _preprocess_inputs
+    info = {"total_pixels": emb.total_pixels}                       # format_model_input's kwargs for a frame list
+    imgs = [vp.fetch_image({"image": f, **info}, image_factor) for f in frames]
+    stacked = torch.stack([torch.from_numpy(np.array(im).transpose(2, 0, 1)) for im in imgs])
+    nframes = vp.ceil_by_factor(min(emb.num_frames, emb.max_frames), vp.FRAME_FACTOR)
+    min_pixels = vp.VIDEO_MIN_TOKEN_NUM * image_factor * image_factor
+    max_pixels = max(min(vp.VIDEO_MAX_TOKEN_NUM * image_factor * image_factor,
+                         info["total_pixels"] / nframes * vp.FRAME_FACTOR), int(min_pixels * 1.05))
+    rh, rw = vp.smart_resize(stacked.shape[2], stacked.shape[3], factor=image_factor, min_pixels=min_pixels,
+                             max_pixels=max_pixels)
+    return transforms.functional.resize(stacked, [rh, rw], interpolation=InterpolationMode.BICUBIC,
+                                        antialias=True).float()
+
+
+def window_inputs(emb, frames, cache, starts):
+    """Qwen3VLEmbedder._preprocess_inputs for a batch of windows, reading the per-frame cache."""
+    rel = np.linspace(0, WINDOW_SIZE - 1, emb.num_frames, dtype=int)[:emb.max_frames]
+    convs = [emb.format_model_input(video=frames[i:i + WINDOW_SIZE], instruction=INSTRUCTION) for i in starts]
+    text = emb.processor.apply_chat_template(convs, add_generation_prompt=True, tokenize=False)
+    n = len(rel)
+    videos = [cache[i + rel] for i in starts]
+    meta = [dict(fps=2.0, frames_indices=list(range(n)), total_num_frames=(n / 2.0) * 2.0) for _ in starts]
+    return emb.processor(text=text, images=None, videos=videos, video_metadata=meta, truncation=True,
+                         max_length=emb.max_length, padding=True, do_resize=False, return_tensors="pt",
+                         do_sample_frames=False)
+
+
+def embed_inputs(emb, inputs):
+    """Qwen3VLEmbedder.process after preprocessing: forward, last-token pooling, L2 normalisation."""
+    import torch.nn.functional as F
+    inputs = {k: v.to(emb.model.device) for k, v in inputs.items()}
+    out = emb.forward(inputs)
+    return F.normalize(emb._pooling_last(out["last_hidden_state"], out["attention_mask"]), p=2, dim=-1)
+
+
+def check_fast_path(emb, frames, starts):
+    """True if the cached path gives the release path's processor inputs exactly."""
+    import torch
+    convs = [emb.format_model_input(video=frames[i:i + WINDOW_SIZE], instruction=INSTRUCTION) for i in starts]
+    ref = emb._preprocess_inputs(convs)
+    new = window_inputs(emb, frames, frame_cache(emb, frames), starts)
+    return set(ref) == set(new) and all(torch.equal(ref[k], new[k]) for k in ref)
+
+
 def cmd_extract(args):
     import torch
     ds = args.dataset
@@ -94,10 +152,13 @@ def cmd_extract(args):
     if not todo:
         return 0
     emb = load_embedder(args.model, args.dtype)
+    from concurrent.futures import ThreadPoolExecutor
+    pool = ThreadPoolExecutor(1)
     with open(os.path.join(dest, "extract_config.json"), "w") as fh:
         json.dump({"dataset": ds, "model": args.model, "dtype": args.dtype, "sample_interval": SAMPLE_INTERVAL,
                    "window_size": WINDOW_SIZE, "window_stride": WINDOW_STRIDE, "instruction": INSTRUCTION,
-                   "embedder_max_pixels": 600 * 1000, "batch": args.batch, "code_version": L.git_version(),
+                   "embedder_max_pixels": 600 * 1000, "batch": args.batch,
+                   "preprocessing": "per-frame cache (frame_cache) + prefetch of the next batch", "code_version": L.git_version(),
                    "started": time.strftime("%Y-%m-%d %H:%M:%S")}, fh, indent=2)
     t_start, n_win = time.time(), 0
     with open(meta_path, "a") as out:
@@ -118,11 +179,15 @@ def cmd_extract(args):
                 rec["n_windows"] = len(starts)
                 if starts:
                     embs = []
-                    for b in range(0, len(starts), args.batch):
-                        batch = [{"video": frames[i:i + WINDOW_SIZE], "instruction": INSTRUCTION}
-                                 for i in starts[b:b + args.batch]]
+                    cache = frame_cache(emb, frames)
+                    batches = [starts[b:b + args.batch] for b in range(0, len(starts), args.batch)]
+                    nxt = pool.submit(window_inputs, emb, frames, cache, batches[0])
+                    for j in range(len(batches)):
+                        inputs = nxt.result()
+                        if j + 1 < len(batches):                   # CPU preprocessing of the next batch overlaps
+                            nxt = pool.submit(window_inputs, emb, frames, cache, batches[j + 1])
                         with torch.no_grad():
-                            embs.append(emb.process(batch).float().cpu())
+                            embs.append(embed_inputs(emb, inputs).float().cpu())
                     arr = torch.cat(embs).numpy().astype(np.float32)
                     np.save(os.path.join(fdir, vid + ".npy"), arr)
                     n_win += len(arr)
@@ -278,6 +343,34 @@ def cmd_score(args):
     return 0
 
 
+def cmd_check(args):
+    """CPU check of the cached preprocessing against the release path on the first videos of a corpus."""
+    sys.path.insert(0, args.model)
+    from scripts.qwen3_vl_embedding import Qwen3VLEmbedder
+    from transformers.models.qwen3_vl.processing_qwen3_vl import Qwen3VLProcessor
+    import scripts.qwen3_vl_embedding as q
+
+    class TextOnly(Qwen3VLEmbedder):                       # the release's attributes, without loading weights
+        def __init__(self, path):
+            self.max_length, self.min_pixels, self.max_pixels = q.MAX_LENGTH, q.MIN_PIXELS, 600 * 1000
+            self.total_pixels, self.fps, self.num_frames, self.max_frames = q.MAX_TOTAL_PIXELS, q.FPS, \
+                q.MAX_FRAMES, q.MAX_FRAMES
+            self.default_instruction = "Represent the user's input."
+            self.processor = Qwen3VLProcessor.from_pretrained(path, padding_side="right")
+    emb = TextOnly(args.model)
+    man = L.manifest(args.dataset)
+    ok = True
+    for vid in L.cohort(args.dataset)[:args.limit or 2]:
+        frames, _, _ = read_samples(man[vid]["video_path"])
+        n = len(frames) - WINDOW_SIZE + 1
+        for starts in ([0, 1, 2, 3], list(range(max(0, n - 3), n))):
+            same = check_fast_path(emb, frames, starts)
+            ok &= same
+            print(vid, starts, "identical" if same else "DIFFERENT", flush=True)
+    print("CHECK_OK" if ok else "CHECK_FAILED")
+    return 0 if ok else 1
+
+
 def cmd_eval(args):
     ds = args.dataset
     dest = os.path.join(OUT_ROOT, ds)
@@ -288,14 +381,14 @@ def cmd_eval(args):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("stage", choices=("extract", "score", "eval"))
+    ap.add_argument("stage", choices=("extract", "score", "eval", "check"))
     ap.add_argument("--dataset", choices=L.DATASETS, required=True)
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--model", default=None, help="Qwen3-VL-Embedding-2B snapshot directory")
     ap.add_argument("--dtype", default="bfloat16")
     ap.add_argument("--batch", type=int, default=8)
     args = ap.parse_args()
-    return {"extract": cmd_extract, "score": cmd_score, "eval": cmd_eval}[args.stage](args)
+    return {"extract": cmd_extract, "score": cmd_score, "eval": cmd_eval, "check": cmd_check}[args.stage](args)
 
 
 if __name__ == "__main__":
