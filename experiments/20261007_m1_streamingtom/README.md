@@ -105,3 +105,56 @@ Runs (one host each, full 333, after a fixed-5 smoke):
 
 Cost estimate from R1 (forecast, not measured): source memory 111.5 min per job; each reading arm about 14 min.
 Job `dualpath` about 2.6 h of GPU, job `uniform` about 2.2 h.
+
+### Control results (2026-10-08; development-selected)
+
+Runs: job `dualpath` sc474398 / Slurm 281, 2:59:08, exit 0:0; job `uniform` sc474397 / Slurm 282, 2:17:15, exit 0:0.
+Smoke (fixed 5) Slurm 279 / 280 passed first. `dualpath` returned to sc474397 with rsync (no deletion, no checksum).
+Binding checks (`controls_{dualpath,uniform}_main_analysis/alignment.json`) PASS on all 333 videos:
+- native reads equal the r6 reads;
+- every rebuilt projector, DeepStack and saliency tensor equals the persisted R1 proof (both hosts), and in `dualpath`
+  also every grouping plan, source representative and replay question vector;
+- `replay` reproduces the R1 predictions and all six R1 metrics exactly;
+- the `no_remote`, `nearest` and `uniform` selection rules hold in every covered window (7352) and layer.
+
+Pooled ROC / pooled PR / within (84 / 99 videos). Sources: `controls_dualpath_main_decoded/<arm>/metrics.json`,
+`controls_uniform_main_decoded/uniform/metrics.json`; table and gates `controls_analysis/summary.json`.
+
+| arm | HateMM | HateClipSeg | R1 − arm, HateMM | R1 − arm, HateClipSeg |
+|---|---|---|---|---|
+| R1 (= `replay`) | .8988 / .6949 / .7636 | .7358 / .6873 / .6597 | 0 | 0 |
+| `no_remote` | .9003 / .6952 / .7655 | .7384 / .6911 / .6572 | −.0015 / −.0003 / −.0019 | −.0026 / −.0038 / +.0025 |
+| `nearest` | .8975 / .6925 / .7663 | .7338 / .6860 / .6631 | +.0012 / +.0025 / −.0027 | +.0019 / +.0013 / −.0033 |
+| `uniform` | .8978 / .6944 / .7648 | .7341 / .6863 / .6616 | +.0010 / +.0005 / −.0011 | +.0017 / +.0010 / −.0019 |
+| r6 | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 | | |
+
+Gate: no control loses ≥ .01 against R1 on any metric in either corpus. None of the three components is supported:
+- remote memory (`no_remote` is as good as R1, within noise on all six numbers);
+- per-layer question matching (`nearest`);
+- static/dynamic compression (`uniform`).
+
+Where the R1 gain comes from: `no_remote` keeps only the LOCAL frames and still has the whole R1 gain over r6:
+- HateMM +.0032 / +.0010 / +.0148;
+- HateClipSeg +.0216 / +.0201 / +.0199.
+
+So the gain comes from giving every 8 s window its own actual frames.
+
+Raw visual reads over the 7352 covered windows:
+- Remote memory changes the read (`no_remote` vs R1: mean |difference| 1.98 against an R1 standard deviation of 7.83;
+  Spearman .965).
+- The change does not improve the ranking.
+- LOCAL frames change the read more (native vs R1: Spearman .852).
+- R1 retrieval shares on average .17 of its 4 frames with `nearest` (identical in 0.46 % of layer reads).
+
+Cost (actual, summed over both corpora):
+- Reading per arm: `no_remote` 14.3 min; `replay` 30.6 min; `nearest` 29.1 min; `uniform` 30.6 min.
+- Source memory per job: about 110 min.
+- From the R1 records, the source vision encoding alone was 3.9 min of the 85.9 min of R1 source acquisition.
+
+Conclusion: the StreamingTOM components (dual-path compression, quantized remote memory, per-layer retrieval) fail
+rule 14(g) and cannot be claimed. Candidate 39 is not promoted; its mechanism is not established.
+
+The positive finding is LOCAL frames on r6. That is an input change (rule 5: a new input is not novelty by itself),
+and adopting it is the user's decision.
+
+DeHate was not run. R1 and these controls cover HateMM and HateClipSeg only.

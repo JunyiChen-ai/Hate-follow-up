@@ -1,6 +1,8 @@
 # 当前研究状态
 
-截至 **2026-10-07 08:30 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-08 04:00 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+
+- **StreamingTOM39 机制对照 1–3（2026-10-08，用户指示跑 1、2、3）**：三个对照完整 333 均已跑完并通过逐视频核对（重建输入与 R1 逐值相同，replay 臂复现 R1 全部六项）。去掉远处记忆（no_remote）、改成时间上最近 4 帧（nearest）、改成均匀选 token（uniform），相对 R1 都没有任何一项下降 ≥ .01，三个部件都不成立，候选 39 不晋级。R1 相对 r6 的涨点全部来自"每个 8 秒窗加入本窗 0.5 fps 原始帧"：no_remote 对 r6 为 HMM +.0032/+.0010/+.0148，HCS +.0216/+.0201/+.0199。这是输入改动（规则 5，本身不算 novelty），是否采用待用户裁定。表与门 `runs/20261007_m1_streamingtom/controls_analysis/summary.json`，各臂权威 `controls_{dualpath,uniform}_main_decoded/<arm>/metrics.json`，细节 `experiments/20261007_m1_streamingtom/README.md` 末节。正式方法仍为 r6_bma；DeHate 未跑。
 
 - 正式方法仍为 **r6_bma**，累计归档 **31** 项，研究目标未完成。用户最新指示为“跑完这一轮实验停下”：StreamingTOM39 / Slurm242 与 VTimeCoT35 C / Slurm238 的完整333、ROOT回传、严格验证及统一评测均已完成，自主迭代已停止；不启动新实验、修订或消融，未更新 Overleaf。
 - **StreamingTOM39 R1** 完整333/sc474398/242与全部ROOT回传、严格验证、唯一评测/固定r6分析已完成。HMM ROC/PR/within .898768/.694942/.763623（84），HCS .735772/.687293/.659743（99）；六项均上涨，within相对r6 +.012841/+.022394，共同性能门PASS。权威 `runs/20261007_m1_streamingtom/r1_full_main_decoded/optimized/metrics.json`，输入/成本 `r1_full_main_analysis/alignment.json`。机制尚未验证，不晋级；用户要求本轮停下，故不追加消融或修订，budget0/3保留。Slurm2:29:02/0:0，完整run约144GiB；实际processing125.58min/source111.52min/standalone147.63min，native获取另计；严格CPU验证28.99min及回传/I/O另列。**MuKV40** 原型保留，已启动的纯CPU来源获取于04:38完成333/333；未启动GPU、独立代码审查、主评测或修订，本轮收尾不继续推进它。
