@@ -192,3 +192,33 @@ Run: `launch/local_lab1.sbatch` on sc474397 (`SCOPE=smoke`, then `SCOPE=main`), 
 `runs/20261007_m1_streamingtom/local_controls_{smoke,main}/`. Analysis: `STAGE=prepare|evaluate|report bash
 launch/run_local_analysis.sh`; table `runs/20261007_m1_streamingtom/local_controls_analysis/summary.json`.
 DeHate is not part of this run.
+
+### Error analysis: empty versus covered windows (2026-10-08, sc474397, CPU; development, not a gate)
+
+Question (user): does control #1 gain because windows that had no frame now have one, or elsewhere? Split from r6's
+own input layout, no labels: a window is "empty" if none of the 20 shared prefix frames (`data/frames_k20` times)
+falls inside [start, end), else "covered". Two diagnostic prediction sets take control #1's visual read in one kind of
+window and r6's read elsewhere (speech, G and stance are r6's), then go through the sole evaluator and the fixed r6
+decoder. Files read: `controls_dualpath_main/{base,no_remote}/predictions.jsonl`, `runs/20260926_glr/base_gridA`,
+`data/frames_k20` file names; test GT only inside `src/eval/evaluate_four_datasets.py` and `twolevel_r2.py`.
+Code `coverage_analysis.py`; output `runs/20261007_m1_streamingtom/coverage_analysis/{summary.json,decoded/}`.
+No design was changed.
+
+| | HateMM empty windows | HateClipSeg empty windows | HateMM gain vs r6 | HateClipSeg gain vs r6 |
+|---|---|---|---|---|
+| control #1 in empty windows only | 1030 / 3768 (114 videos) | 1233 / 3591 (all 118) | +.0008 / −.0005 / +.0034 | +.0071 / +.0066 / +.0092 |
+| control #1 in covered windows only | | | +.0025 / +.0015 / +.0167 | +.0163 / +.0140 / +.0102 |
+| control #1 everywhere | | | +.0032 / +.0010 / +.0148 | +.0216 / +.0201 / +.0199 |
+
+Reading:
+- The coverage explanation is not supported on HateMM. The within gain comes from covered windows (+.0167). Empty
+  windows add +.0034.
+- On HateClipSeg the within gain splits about evenly (+.0092 empty, +.0102 covered). The pooled gain comes more from
+  covered windows.
+- The visual read changes by a similar amount in both kinds of window (mean |Δ| 3.9 / 3.5 HateMM, 4.2 / 4.4
+  HateClipSeg).
+- So most of the gain is in windows that already had a shared frame inside. That points to more frames per window
+  and/or frames placed next to the window's question, not only to filling empty windows. These two causes are not
+  separated yet.
+- The swaps are not additive: the decoder is fitted on the whole corpus. On HateMM the covered-only set is above full
+  control #1.
