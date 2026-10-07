@@ -583,6 +583,7 @@ def main() -> int:
     ap.add_argument("--center-step", type=int, default=1,
                     help="seconds between scored centers (LAVAD: frame_interval)")
     args = ap.parse_args()
+    args.ids_file = os.path.abspath(args.ids_file)  # port: the id list is read after the chdir below
     os.chdir(LAVAD)  # ImageBind resolves .checkpoints/ relative to cwd
     {"clean": stage_clean, "summarize": stage_summarize, "score": stage_score,
      "refine": stage_refine, "curves": stage_curves}[args.stage](args)
