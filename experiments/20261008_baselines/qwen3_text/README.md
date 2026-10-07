@@ -36,6 +36,15 @@ Label-free text-only baseline. No training, no tuning, no prompt selection, no l
 `runs/20261008_baselines/qwen3_8b_text/<DS>/` (`segment_scores.jsonl` = every segment's score, `predictions.jsonl`,
 `coverage.json`, `config.json`, `metrics.json`, `run.log`).
 
+## Status (2026-10-08 06:50)
+
+Not run yet. Slurm 303 (`lab2_text_winonly.sbatch` = this job, then the Qwen2.5-VL winonly DeHate job) is pending
+on uoa-lab2. The user account may run only 2 GPU jobs at a time across the lab cluster (QOS `gpu2`), and both slots
+are held by long jobs of other baseline runs. The job writes `metrics.json` per corpus itself; afterwards:
+`rsync -a uoa-lab2:Hate-follow-up/runs/20261008_baselines/qwen3_8b_text/ runs/20261008_baselines/qwen3_8b_text/`.
+CPU check done on uoa-lab2: the chat template ends in `<|im_start|>assistant\n<think>\n\n</think>\n\n`, and every Yes/No
+variant is one token (Yes ids 9454, 7414, 9693, 9834, 14004, 14080; No ids 2753, 2308, 2152, 902, 8996, 5664).
+
 ## Results
 
 (pending)

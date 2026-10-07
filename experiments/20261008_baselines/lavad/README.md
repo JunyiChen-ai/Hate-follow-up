@@ -74,10 +74,18 @@ So the campaign's 117 curves are not mixed with rerun curves: all 118 HateClipSe
 (`lab2_lavad_hcs_full.sbatch`). The rerun still leaves `bit_ZaY0S1anrdep` with unscored samples (Llama-2 refused
 all 10 neighbours); F3 fills them. Full record: `runs/20261008_baselines/lavad/HateClipSeg_rerun_check.json`.
 
-(results pending)
+Status (2026-10-08 06:50): the full HateClipSeg rerun is not submitted yet (one pending job per partition; Slurm 303
+is pending on uoa-lab2). Next: `sbatch experiments/20261008_baselines/launch/lab2_lavad_hcs_full.sbatch` on uoa-lab2
+once 303 is running. Estimated 4–5 GPU-h (the 6-video check took 17.5 min for 0.42 h of video; the 6 videos are
+not redone). The job ends with `finalize.py --dataset HateClipSeg --all-rerun`, which writes
+`runs/20261008_baselines/lavad/HateClipSeg/metrics.json`.
 
 ## DeHate
 
-`lab2_lavad_dehate.sbatch`: the 1151 cohort videos.
-
-(results pending)
+`lab2_lavad_dehate.sbatch`: the 1151 cohort videos (30.7 h of video). Frames are hard-linked into
+`data/frames_1fps/DeHate/` on uoa-lab2. Status (2026-10-08 06:50): not submitted. Submit on uoa-lab2 once the full
+HateClipSeg job is running. Estimated 14–20 GPU-h (campaign rate 0.44 GPU-h per video hour; the 6-video check ran
+at 0.69 with less prompt-cache reuse). The job is resumable (every stage skips finished videos). It ends with
+`finalize.py --dataset DeHate`. Then rsync `runs/20261008_baselines/lavad/` and `data/blip2_captions_1fps/` back to
+uoa-lab1, and write `data/blip2_captions_1fps/PROVENANCE.md` (generated on uoa-lab2 by `blip2_caption.py` in the
+`lavad_tf449` venv).

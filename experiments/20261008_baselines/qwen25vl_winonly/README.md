@@ -43,3 +43,7 @@ Canonical evaluator, exact cohorts; pooled frame ROC-AUC / pooled frame PR-AUC /
 | ispvl_rrank | .5486 / .2721 / .6414 | .5397 / .5020 / .5662 | (pending) | `runs/20261008_baselines/qwen25vl_winonly/ispvl_rrank/<DS>/metrics.json` |
 
 Frame pools: HateMM 116,975 frames / 215 videos (within defined on 84), HateClipSeg 113,002 / 118 (99).
+
+DeHate status (2026-10-08 06:50): not run yet; it is the second half of Slurm 303 (`lab2_text_winonly.sbatch`),
+pending on uoa-lab2 behind the account's 2-GPU limit. The job runs spvl.py, compose.py and `finalize.py --datasets
+DeHate` itself; afterwards rsync `runs/20261008_baselines/qwen25vl_winonly/` back to uoa-lab1.
