@@ -44,7 +44,12 @@ HateClipSeg have none.
 - The release passes the single config flag `train: True` to the train, val and test datasets, so val and test frames
   also get random crop / flip. Val and test use the eval branch of the authors' `VideoTransform` here.
 - The frozen encoders (VideoMAE, XLM-R, MFCC) run batched in the collate step instead of once per sample; each
-  sample's arithmetic is the authors'. Resized 224 x 224 frames are cached (resize is the first transform op, and
+  sample's arithmetic is the authors'. From 2026-10-08 06:45 the CPU part (frame load + `VideoTransform`, wav load)
+  runs in 3 DataLoader workers (checked identical to the synchronous path on HateMM val samples); DeHate seed 2025
+  ran with the synchronous loop (job 299), later runs with the workers. Only the augmentation random streams differ.
+- `nn.MultiheadAttention` in GED is called with `need_weights=False`: the release materialises the (discarded)
+  attention weights, which does not fit a 32 GB GPU at batch 16 (OOM, job 293); the output is the same (max abs
+  difference 7e-8 on a random input). Resized 224 x 224 frames are cached (resize is the first transform op, and
   resizing a 224 x 224 frame again is the identity, checked).
 - Kept as published: frames are normalised with ImageNet mean/std without dividing by 255 (`read_image` gives uint8);
   the first epoch runs at learning rate 0 (warm-up step 0).

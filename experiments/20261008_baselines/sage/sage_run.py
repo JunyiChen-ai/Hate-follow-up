@@ -282,6 +282,48 @@ def batches(items, bs, shuffle, rng):
         yield [items[j] for j in idx[i:i + bs]]
 
 
+class _Prefetch(torch.utils.data.Dataset):
+    """CPU part of the authors' CustomDataset.__getitem__ (frames + VideoTransform, torchaudio.load of the wav),
+    run in DataLoader workers so the GPU part does not wait for disk."""
+
+    def __init__(self, items, tf):
+        self.items, self.tf = items, tf
+
+    def __len__(self):
+        return len(self.items)
+
+    def __getitem__(self, i):
+        import torchaudio
+        b = self.items[i]
+        st = torch.from_numpy(np.load(b["frames"]))
+        frames = self.tf([f for f in st])
+        try:
+            w, _ = torchaudio.load(b["wav"])
+            if w.shape[0] > 1:
+                w = torch.mean(w, dim=0, keepdim=True)
+        except Exception:  # noqa: BLE001 - AudioEncoder's failure path gives zeros
+            w = None
+        return frames, w, b["text"], b["label"]
+
+
+def loader(items, bs, shuffle, seed, tf, workers=3):
+    g = torch.Generator()
+    g.manual_seed(seed)
+    return torch.utils.data.DataLoader(_Prefetch(items, tf), batch_size=bs, shuffle=shuffle, generator=g,
+                                       num_workers=workers, collate_fn=lambda x: list(zip(*x)),
+                                       persistent_workers=False, prefetch_factor=4)
+
+
+def encode_prefetched(enc: Encoders, batch):
+    frames, waves, texts, labels = batch
+    with torch.no_grad():
+        v = enc.vmae(torch.stack(frames).to(enc.device)).last_hidden_state
+    t = enc.texts(list(texts))
+    a = torch.stack([enc.audio_from_wave(None if w is None else w[0].numpy()) for w in waves]).to(enc.device)
+    y = torch.tensor(list(labels), dtype=torch.long, device=enc.device)
+    return t, a, v, y
+
+
 def encode_batch(enc: Encoders, batch, train: bool):
     frames = [torch.from_numpy(np.load(b["frames"])) for b in batch]
     v = enc.vision(frames, train)
@@ -298,8 +340,8 @@ def evaluate(model, enc, items, bs):
     from sklearn.metrics import accuracy_score, f1_score
     model.eval()
     preds, labels, probs = [], [], []
-    for batch in batches(items, bs, False, None):
-        t, a, v, y = encode_batch(enc, batch, train=False)
+    for batch in loader(items, bs, False, 0, enc.tf_eval):
+        t, a, v, y = encode_prefetched(enc, batch)
         _, _, _, logits, _, _ = model(t, a, v)
         preds += logits.argmax(1).tolist()
         labels += y.tolist()
@@ -336,8 +378,8 @@ def cmd_train(args):
     for ep in range(epochs):
         model.train()
         t0, tot, n = time.time(), 0.0, 0
-        for batch in batches(train, bs, True, rng):
-            t, a, v, y = encode_batch(enc, batch, train=True)
+        for batch in loader(train, bs, True, args.seed * 1000 + ep, enc.tf_train):
+            t, a, v, y = encode_prefetched(enc, batch)
             optimizer.zero_grad()
             lt, la, lv, lf, gates, gmask = model(t, a, v)
             loss, _ = criterion(lt, la, lv, lf, gates, gmask, y)
