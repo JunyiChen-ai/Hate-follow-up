@@ -51,7 +51,7 @@ def encode_local(j,ctx,memory,frames,local,question):
     return dict(inputs_embeds=embedding,visual_pos_masks=visual,deepstack_visual_embeds=injected),relative,rows,evidence
 
 
-def factory(j,cache,ctx,memory,local,relative,question_rows,traces):
+def factory(j,cache,ctx,memory,local,relative,question_rows,traces,pick=None):
     representatives=memory.representatives();indices=[b['source_index'] for b in memory.blocks]
     rotary=j.model.model.language_model.rotary_emb
     def make(layer):
@@ -61,7 +61,9 @@ def factory(j,cache,ctx,memory,local,relative,question_rows,traces):
             q=att.q_norm(att.q_proj(hidden_states).view(shape)).transpose(1,2)
             k=att.k_norm(att.k_proj(hidden_states).view(shape)).transpose(1,2);v=att.v_proj(hidden_states).view(shape).transpose(1,2)
             pooled=mean_query(q,question_rows,k.shape[1]).detach().cpu()
-            remote,scores=select(pooled,representatives[layer],indices,set(local),SPEC['remote_frames_per_layer'])
+            # pick (mechanism controls only) replaces per-layer question matching; None is R1.
+            if pick is None:remote,scores=select(pooled,representatives[layer],indices,set(local),SPEC['remote_frames_per_layer'])
+            else:remote=list(pick(layer))
             ordered=sorted(remote,key=lambda i:indices[i]);packed,end=translate([memory.blocks[i]['positions'] for i in ordered],ctx['stance_cache_logical_start'])
             context_k=[];context_v=[]
             for i,p in zip(ordered,packed):
@@ -83,12 +85,12 @@ def factory(j,cache,ctx,memory,local,relative,question_rows,traces):
 
 
 @torch.no_grad()
-def visual_margin(j,cache,ctx,memory,frames,local,question):
+def visual_margin(j,cache,ctx,memory,frames,local,question,pick=None):
     assert local and cache.get_seq_length()==ctx['stance_cache_tokens']
     kwargs,relative,rows,evidence=encode_local(j,ctx,memory,frames,local,question);trace={}
     old=j.model.model.rope_deltas.clone();first=j.forward_calls;vision=j.vision_calls
     try:
-        with attention_scope(j,factory(j,cache,ctx,memory,local,relative,rows,trace)):
+        with attention_scope(j,factory(j,cache,ctx,memory,local,relative,rows,trace,pick)):
             out=j.model.model.language_model(**kwargs,position_ids=relative+ctx['stance_cache_logical_start'],past_key_values=cache,use_cache=True)
             hidden=out.last_hidden_state[0,-1].clone();del out
         assert len(trace)==len(cache.layers) and cache.get_seq_length()==ctx['stance_cache_tokens']

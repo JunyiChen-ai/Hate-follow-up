@@ -4,6 +4,7 @@ import torch
 from transformers.cache_utils import DynamicCache
 from inputs import SPEC
 from source_encoding import encode,reduce
+from ctr import group
 from src.pre_rotary_memory import translate,rotate,observe
 
 
@@ -24,13 +25,13 @@ def context_cache(j,native,ctx,memory,history):
 
 
 @torch.no_grad()
-def collect(j,native,ctx,memory,frames,proof_folder):
+def collect(j,native,ctx,memory,frames,proof_folder,grouping=group,persist=True):
     start=tick(j);records=[];previous=None;previous_grid=None;saved=j.model.model.rope_deltas.clone()
     first=j.forward_calls;vision=j.vision_calls;parts=dict(encoding=0.,vision=0.,saliency=0.,grouping_pack=0.,history_dequant=0.,source_LM=0.,storage_proof=0.)
     try:
         for i,frame in enumerate(frames):
             stamp=tick(j);encoded,input_evidence=encode(j,ctx,frame);parts['encoding']+=tick(j)-stamp
-            stamp=tick(j);packed,captured,proof=reduce(j,encoded,previous,previous_grid)
+            stamp=tick(j);packed,captured,proof=reduce(j,encoded,previous,previous_grid,grouping)
             elapsed=tick(j)-stamp;parts['vision']+=proof['vision_seconds'];parts['saliency']+=proof['saliency_seconds']
             parts['grouping_pack']+=max(0.,elapsed-proof['vision_seconds'])
             history=list(range(max(0,i-SPEC['source_previous_frames']),i));stamp=tick(j)
@@ -45,12 +46,15 @@ def collect(j,native,ctx,memory,frames,proof_folder):
             block=memory.append(frame,pos,visual,keys,values,history,captured['features'],captured['deepstack'])
             # Persistent compressed observations are output proofs, not inputs
             # to future native/global/speech branches or free per-video work.
+            # Mechanism controls (persist=False) keep no tensor proofs; R1 keeps all.
             from memory import save_tensor
-            folder=proof_folder/str(i);folder.mkdir(parents=True,exist_ok=True)
-            feature=save_tensor(folder/'compressed_features.npy',proof['compressed_features'])
-            original_feature=save_tensor(folder/'full_projector.npy',captured['features'])
-            original_ds=[save_tensor(folder/f'full_deepstack_{l}.npy',v) for l,v in enumerate(captured['deepstack'])]
-            ds=[save_tensor(folder/f'compressed_deepstack_{l}.npy',v) for l,v in enumerate(proof['compressed_deepstack'])]
+            feature=original_feature=original_ds=ds=None
+            if persist:
+                folder=proof_folder/str(i);folder.mkdir(parents=True,exist_ok=True)
+                feature=save_tensor(folder/'compressed_features.npy',proof['compressed_features'])
+                original_feature=save_tensor(folder/'full_projector.npy',captured['features'])
+                original_ds=[save_tensor(folder/f'full_deepstack_{l}.npy',v) for l,v in enumerate(captured['deepstack'])]
+                ds=[save_tensor(folder/f'compressed_deepstack_{l}.npy',v) for l,v in enumerate(proof['compressed_deepstack'])]
             records.append(dict(block_id=i,history_ids=history,physical_start=ctx['stance_cache_tokens']+sum(memory.blocks[h]['shape'][-2] for h in history),
                 logical_start=end,suffix_tokens=packed['inputs_embeds'].shape[1],input=input_evidence,plan=proof['plan'],packing=proof['packing'],
                 full_projector=original_feature,full_deepstack=original_ds,compressed_features=feature,compressed_deepstack=ds,

@@ -60,3 +60,48 @@ Authority: `runs/20261007_m1_streamingtom/r1_full_main_decoded/optimized/metrics
 Actual source/read processing7534.731744s (~125.58min), including source6691.353936s (~111.52min); standalone8857.576657s (~147.63min) includes source decode accounting. Paid51192LM/29228vision forwards,28895sourceframes,7352changedV,264528recordedremote_reads,7missingLOCAL, peak18.134750GiB; no main clones (originalfixed5 had10). Source costs, proof storage/replay and native20/fullASR original acquisition remain charged separately as specified; allocation, ROOT strict28.99min, transfer/setup/I/O and prior failed smoke-validator attempt are retained, no efficiency claim.
 
 User's latest instruction is to finish the already-running round and stop. Therefore preserve this positive R1 and budget0/3; do not start mechanism controls, scientific revisions or new candidates. Formal method remains r6_bma. Performance passed, mechanism untested and overall research goal not declared complete.
+
+## R1 mechanism controls 1–3 (declared 2026-10-08, before any control run)
+
+User instruction 2026-10-08: run controls 1, 2 and 3 of the list above (no remote, same-count chronological context,
+same-budget uniform token selection). The full-precision comparison and the wrong-donor binding control are not part
+of this request, so the binding claim stays untested.
+
+Each arm changes one thing relative to R1. Unchanged in every arm: native prefix, G, own stance and S; the LOCAL
+frames of each window (actual 0.5 fps frames in the half-open 8 s window, uncompressed); every prompt text, including
+`reader_role_text`; uint4 source memory; 4 remote frames per layer where remote frames exist; windows without LOCAL keep
+the native V; fusion max(V, S); fixed r6; sole evaluator.
+
+| arm | the one change |
+|---|---|
+| `no_remote` | no remote blocks at any layer: native prefix, then LOCAL, then the question |
+| `nearest` | per-layer question matching replaced by time: the 4 non-LOCAL source frames closest to the window (distance start − t for t < start, t − end for t ≥ end; ties to the earlier frame), the same 4 at every layer |
+| `uniform` | memory construction keeps g = min(50, n) tokens per frame at raster positions floor((k + 0.5) n / g), k = 0 … g − 1: no static/dynamic split, no merging, no saliency ranking (saliency is still computed by the shared vision path and is unused). Retrieval is R1's per-layer question matching |
+| `replay` | R1 itself, rebuilt in the same job as `no_remote` and `nearest`; plumbing check, not a control. It must reproduce the R1 record exactly |
+
+Gate (declared in this README before R1): a component is supported when R1 − control ≥ .01 on the same primary metric
+in both corpora. R1 reference `runs/20261007_m1_streamingtom/r1_full_main_decoded/optimized/metrics.json`. Each
+control is also reported against r6 (`runs/20260926_twolevel/r6_bma/metrics.json`); `no_remote` − r6 is the gain from
+LOCAL frames alone. All numbers development-selected.
+
+Implementation:
+- `controls.py`; hooks with R1 defaults added to `reader.visual_margin(pick=None)`, `source_encoding.reduce(grouping=group)`
+  and `collect.collect(grouping=group, persist=True)`. With defaults R1 is unchanged; the CPU fixture check runs
+  production R1 `read_video` + strict `validate_bundle` with the hooks in place.
+- Controls persist no tensor proofs. Instead each video compares the rebuilt full projector, all DeepStack features and
+  saliency with the persisted R1 proofs (exact equality), and in job `dualpath` also the grouping plans, source
+  representatives and replay question vectors. `controls_analyze.py prepare` checks native reads = r6 reads, replay =
+  R1 predictions, the `no_remote` / `nearest` / `uniform` selection rules, and recomputes uniform retrieval from saved
+  vectors.
+- CPU fixture check (random-weight 36-layer model, FP32 native18 and BF16 native20): `controls_selfcheck.py`, PASS,
+  `runs/20261007_m1_streamingtom/controls_cpu_checks/{run.log,summary.json}`.
+
+Runs (one host each, full 333, after a fixed-5 smoke):
+- job `dualpath` (`replay`, `no_remote`, `nearest`) on sc474398, the R1 host: `launch/controls_lab3.sbatch`,
+  `SCOPE=smoke|main`, output `runs/20261007_m1_streamingtom/controls_dualpath_{smoke,main}/`.
+- job `uniform` on sc474397: `launch/controls_lab1.sbatch`, output `controls_uniform_{smoke,main}/`.
+- Analysis on sc474397: `STAGE=prepare|evaluate JOB=… bash launch/run_controls_analysis.sh`, then `STAGE=report`;
+  table and gates `runs/20261007_m1_streamingtom/controls_analysis/summary.json`.
+
+Cost estimate from R1 (forecast, not measured): source memory 111.5 min per job; each reading arm about 14 min.
+Job `dualpath` about 2.6 h of GPU, job `uniform` about 2.2 h.

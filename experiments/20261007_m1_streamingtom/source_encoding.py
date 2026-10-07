@@ -23,9 +23,9 @@ def encode(j,ctx,frame):
     return encoded,evidence
 
 
-def reduce(j,encoded,previous,previous_grid):
+def reduce(j,encoded,previous,previous_grid,grouping=group):
     captured=extract(j,encoded);assert len(captured['grid'])==1
-    plan=group(captured['features'],captured['saliency'],captured['grid'][0],previous,previous_grid)
+    plan=grouping(captured['features'],captured['saliency'],captured['grid'][0],previous,previous_grid)
     feature=aggregate(captured['features'],plan);deep=[aggregate(v,plan) for v in captured['deepstack']]
     packed,evidence=pack(j,{'encoded':encoded,'deepstack':captured['deepstack']},[r['root'] for r in plan['groups']],feature,deep)
     assert torch.equal(packed['inputs_embeds'][packed['visual_pos_masks']],feature.to(j.device,j.dtype))
