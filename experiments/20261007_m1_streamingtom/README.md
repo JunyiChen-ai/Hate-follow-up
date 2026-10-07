@@ -158,3 +158,37 @@ The positive finding is LOCAL frames on r6. That is an input change (rule 5: a n
 and adopting it is the user's decision.
 
 DeHate was not run. R1 and these controls cover HateMM and HateClipSeg only.
+
+## Decomposing control #1 against r6 (declared 2026-10-08, before the run)
+
+User instruction 2026-10-08: confirm where the gain of control #1 (`no_remote`) over r6 comes from, on HateMM and
+HateClipSeg first. Control #1 differs from r6 in three things: the R1 attention code (`reader.factory`) instead of
+the model's own forward; the LOCAL frames with their time labels; and the R1 role text, which still describes remote
+memory. Two new arms change these one at a time. All share the fresh native prefix, G, own stance and S of each video:
+
+| arm | attention code | LOCAL frames + time labels | role text |
+|---|---|---|---|
+| r6 (A) | model's own forward | no | no |
+| `custom_native` (B) | R1 code, nothing inserted | no; r6's exact question ids and positions | no |
+| `local_clean` (E) | R1 code, no remote | yes | no |
+| control #1 | R1 code, no remote | yes | yes |
+
+- B reads every window. E and control #1 keep the native V for the 7 windows without LOCAL, as control #1 does.
+- `no_remote_replay` re-reads control #1 in the same job and must reproduce `controls_dualpath_main/no_remote` exactly.
+- LOCAL features are read from the persisted R1 proofs, which equal fresh features exactly (controls alignment, all
+  333 videos). The single-frame vision cost of these frames is therefore not in this job's times; it is reported from R1.
+- Code: `local_controls.py`; default-preserving `role` argument added to `reader.encode_local_input`,
+  `reader.encode_local` and `reader.visual_margin` (None omits the role text). CPU fixture check
+  `local_selfcheck.py` PASS (B equals the native read exactly in FP32 and BF16 on the fixture; E has no role text and
+  the same time labels/images), `runs/20261007_m1_streamingtom/local_cpu_checks/`.
+
+Declared reading (pooled noise floor .005, within .01):
+- code path: B − r6. No effect if all six differences are inside the noise floor.
+- frames: E − B. Supported if one metric gains ≥ .01 in both corpora and no metric loses beyond the noise floor.
+- role text: control #1 − E. No effect if all six differences are inside the noise floor.
+- The three steps add up exactly to control #1 − r6.
+
+Run: `launch/local_lab1.sbatch` on sc474397 (`SCOPE=smoke`, then `SCOPE=main`), output
+`runs/20261007_m1_streamingtom/local_controls_{smoke,main}/`. Analysis: `STAGE=prepare|evaluate|report bash
+launch/run_local_analysis.sh`; table `runs/20261007_m1_streamingtom/local_controls_analysis/summary.json`.
+DeHate is not part of this run.

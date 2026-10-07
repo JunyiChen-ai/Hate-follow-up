@@ -9,8 +9,9 @@ from src.pre_rotary_memory import translate,rotate,mask,attention_scope,mean_que
 from src.expanded_image_offsets import expand
 
 
-def encode_local_input(j,ctx,frames,local,question):
-    content=[dict(type='text',text=SPEC['reader_role_text'])]
+def encode_local_input(j,ctx,frames,local,question,role=SPEC['reader_role_text']):
+    # role=None (LOCAL-only control E) omits the role text; the default is R1.
+    content=[] if role is None else [dict(type='text',text=role)]
     for i in local:
         content+=[dict(type='text',text=f"Actual LOCAL source at {frames[i]['time']:.3f} seconds."),dict(type='image',image=frames[i]['path'])]
     content.append(dict(type='text',text=question));message=dict(role='user',content=content)
@@ -39,8 +40,8 @@ def encode_local_input(j,ctx,frames,local,question):
     return encoded,relative,rows,evidence
 
 
-def encode_local(j,ctx,memory,frames,local,question):
-    encoded,relative,rows,evidence=encode_local_input(j,ctx,frames,local,question)
+def encode_local(j,ctx,memory,frames,local,question,role=SPEC['reader_role_text']):
+    encoded,relative,rows,evidence=encode_local_input(j,ctx,frames,local,question,role)
     ids=encoded['input_ids'].to(j.device);visual=ids==j.image_token_id;features=[];deep=[]
     for i,count in zip(local,evidence['image_counts']):
         f,ds=memory.local_features(i);assert count==len(f) and all(v.shape==f.shape for v in ds)
@@ -85,9 +86,9 @@ def factory(j,cache,ctx,memory,local,relative,question_rows,traces,pick=None):
 
 
 @torch.no_grad()
-def visual_margin(j,cache,ctx,memory,frames,local,question,pick=None):
+def visual_margin(j,cache,ctx,memory,frames,local,question,pick=None,role=SPEC['reader_role_text']):
     assert local and cache.get_seq_length()==ctx['stance_cache_tokens']
-    kwargs,relative,rows,evidence=encode_local(j,ctx,memory,frames,local,question);trace={}
+    kwargs,relative,rows,evidence=encode_local(j,ctx,memory,frames,local,question,role);trace={}
     old=j.model.model.rope_deltas.clone();first=j.forward_calls;vision=j.vision_calls
     try:
         with attention_scope(j,factory(j,cache,ctx,memory,local,relative,rows,trace,pick)):
