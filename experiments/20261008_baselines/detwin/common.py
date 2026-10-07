@@ -30,13 +30,13 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parents[3]
 EXP_ID = "20261008_baselines"
-RUNS = REPO / "runs" / EXP_ID
+RUNS = Path(os.environ.get("DETWIN_RUNS", REPO / "runs" / EXP_ID))  # env override: smoke tests only
 DATASETS = ("HateMM", "HateClipSeg", "DeHate")
 SEEDS = (2025, 234, 3407)
 WIN = 8.0
 FPS4 = 4.0
 COHORT_SIZE = {"HateMM": 215, "HateClipSeg": 118, "DeHate": 1151}
-SPLIT_DIR = REPO / "data" / "weaksup_video_splits"
+SPLIT_DIR = Path(os.environ.get("DETWIN_SPLIT_DIR", REPO / "data" / "weaksup_video_splits"))  # smoke override
 ASR_DIR = REPO / "data" / "asr_whisper_large_v3"
 WAV_DIR = REPO / "data" / "wav16k_mono"
 GT_DIR = REPO / "data" / "gt_4fps"
