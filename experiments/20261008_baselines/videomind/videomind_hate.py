@@ -16,6 +16,9 @@ centre, 0 where no verified proposal covers it. One deviation from infer_auto.py
 proposal, infer_auto.py skips the verifier (`len(pred) > 1`); here the verifier is run on it as well, so that every
 video has verifier scores. The count of such videos is reported.
 
+Memory: transformers 4.45.2's SDPA vision attention materialises a dense block-diagonal mask over all patches of the
+video and runs out of memory on 32 GB for long videos; `patch_vision_attention` runs the same attention block by block.
+
 Decoding: VideoMind reads videos with decord. A file decord cannot open is re-encoded to H.264 (same rate and size)
 once, read, and the copy deleted (lf_common.transcode_h264); such videos are listed.
 """
@@ -53,6 +56,31 @@ def load_done(path):
                         continue
                     out[r["video_id"]] = r
     return out
+
+
+def patch_vision_attention():
+    """transformers 4.45.2 VisionSdpaAttention builds a dense (seq x seq) block-diagonal mask over all patches of the
+    video (150 frames -> about 15k patches) and runs masked SDPA, which needs 8-19 GB for the scores and runs out of
+    memory on a 32 GB card. The mask only lets each temporal patch group attend within itself, so attention is run
+    per group instead (same arithmetic, no dense mask). Upstream's flash-attention path does the same with cu_seqlens."""
+    import torch
+    import torch.nn.functional as F
+    from transformers.models.qwen2_vl import modeling_qwen2_vl as m
+
+    def forward(self, hidden_states, cu_seqlens, rotary_pos_emb=None):
+        seq_length = hidden_states.shape[0]
+        q, k, v = self.qkv(hidden_states).reshape(seq_length, 3, self.num_heads, -1).permute(1, 0, 2, 3).unbind(0)
+        q = m.apply_rotary_pos_emb_vision(q.unsqueeze(0), rotary_pos_emb).squeeze(0)
+        k = m.apply_rotary_pos_emb_vision(k.unsqueeze(0), rotary_pos_emb).squeeze(0)
+        q, k, v = q.transpose(0, 1), k.transpose(0, 1), v.transpose(0, 1)
+        outs = []
+        bounds = cu_seqlens.tolist()
+        for a, b in zip(bounds[:-1], bounds[1:]):
+            outs.append(F.scaled_dot_product_attention(q[:, a:b], k[:, a:b], v[:, a:b], dropout_p=0.0))
+        attn_output = torch.cat(outs, dim=1).transpose(0, 1).reshape(seq_length, -1)
+        return self.proj(attn_output)
+
+    m.VisionSdpaAttention.forward = forward
 
 
 def run_video(model, processor, device, video_path, query, question):
@@ -139,6 +167,7 @@ def cmd_infer(args):
     sys.path.insert(0, VM)
     import nncore
     from videomind.model.builder import build_model
+    patch_vision_attention()
 
     ds = args.dataset
     dest = os.path.join(OUT_ROOT, ds)
