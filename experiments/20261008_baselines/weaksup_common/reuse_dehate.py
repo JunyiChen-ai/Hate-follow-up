@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Check and re-evaluate the existing DeHate runs of DSANet and MultiHateLoc (CPU, uoa-lab1).
+"""Check and re-evaluate the existing DeHate run of MultiHateLoc (CPU, uoa-lab1).
+
+DSANet's DeHate run was checked the same way and passed, but it is not reused: after the coordinator's instruction of
+2026-10-08, DSANet (like VadCLIP and AVadCLIP) runs its upstream XD-Violence preset with a fixed schedule and the last
+epoch on all three corpora, while the existing DeHate run was Optuna-tuned.  Its check and evaluation were moved to
+runs/20261008_baselines/_superseded/dsanet_DeHate_reused_optuna/; DeHate DSANet is rerun.
 
 Source: Retrieval-hate on uoa-lab2, runs/20260926_dehate_external/baselines/{tuning,final}/<method>/dehate/ (5-trial
 Optuna on val video AP, then seeds 234 / 2025 / 3407, launch/baseline.sh there).  The run records (best.json, every
@@ -79,7 +84,7 @@ def check(method, src, log):
 
 
 def main():
-    for method in ("dsanet", "multihateloc"):
+    for method in ("multihateloc",):
         base = C.RUNS / method / "DeHate"
         src = base / "source_lab2"
         log = C.RunLog(base / "run.log")

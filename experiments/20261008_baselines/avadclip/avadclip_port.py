@@ -11,11 +11,13 @@ VadCLIP port does (scripts/reproduction_baselines/vadclip/train.py, patches V3-V
            16-frame snippet, here one row is one second
   classes  two, ["normal content", "hateful content"] (the VadCLIP port's prompts); the text-orthogonality term is
            divided by num_class - 1 instead of the literal 6 (VadCLIP port patch T1)
-  V3       upstream evaluates the test set every epoch and keeps the best test AP. Here the epoch with the best
-           validation video AP is kept: bag score = mean of the top floor(T/16)+1 sigmoid(logits1) rows, the
-           aggregate CLAS2 trains, against video-level val labels. Test labels are never read.
-  V4       upstream reloads the best checkpoint after every epoch; here the best state is kept in memory and
-           restored once at the end
+  V3       upstream evaluates the test set every epoch and keeps the best test AP. That is removed.
+           --select last (used for all reported runs): train the preset's fixed epochs, keep the last epoch, and do
+           not read the validation split.  --select val (not used): keep the epoch with the best validation video
+           AP (bag score = mean of the top floor(T/16)+1 sigmoid(logits1) rows vs video-level val labels).
+           Test labels are never read.
+  V4       upstream reloads the best checkpoint after every epoch; that reload is removed (with --select val the best
+           state is kept in memory and restored once at the end)
   V5       per-epoch log line instead of the step % 4800 print
 Scores written per test video (1 fps): score_align = 1 - softmax(logits2)[:, 0] (upstream's AP2, the number it
 selects on), score_mlp = sigmoid(logits1) (upstream's AUC1).
@@ -98,6 +100,7 @@ def build_parser():
     p.add_argument("--clip-download-root", default=None)
     p.add_argument("--num-workers", default=4, type=int)
     p.add_argument("--limit-videos", default=0, type=int, help="debug only")
+    p.add_argument("--select", default="last", choices=("last", "val"))
     # architecture: upstream xd_option.py defaults (classes 7 -> 2)
     p.add_argument("--classes-num", default=2, type=int)
     p.add_argument("--embed-dim", default=512, type=int)
@@ -174,7 +177,8 @@ def train(args):
     device = args.device
     setup_seed(args.seed)
     labels = C.train_val_labels(args.corpus)
-    train_ids, val_ids = C.split_ids(args.corpus, "train"), C.split_ids(args.corpus, "val")
+    train_ids = C.split_ids(args.corpus, "train")
+    val_ids = C.split_ids(args.corpus, "val") if args.select == "val" else []
     if set(train_ids) & set(val_ids):
         raise RuntimeError("train/val overlap")
     if args.limit_videos:
@@ -182,7 +186,7 @@ def train(args):
     train_loader = DataLoader(AVDataset(args.corpus, train_ids, args.visual_length, False, labels),
                               batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(AVDataset(args.corpus, val_ids, args.visual_length, False, labels),
-                            batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+                            batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers) if val_ids else None
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"corpus {args.corpus}: train {len(train_ids)} ({sum(labels[v] for v in train_ids)} hateful), "
@@ -209,7 +213,7 @@ def train(args):
             nb += 1
         scheduler.step()
         totals /= max(nb, 1)
-        ap = val_video_ap(model, val_loader, device)
+        ap = val_video_ap(model, val_loader, device) if val_loader is not None else None
         history.append({"epoch": e + 1, "loss1": totals[0], "loss2": totals[1], "loss3": totals[2],
                         "val_video_ap": ap, "seconds": round(time.time() - t0, 1)})
         print(f"epoch {e + 1:2d} | loss1 {totals[0]:.4f} | loss2 {totals[1]:.4f} | loss3 {totals[2]:.4f} | "
@@ -217,16 +221,22 @@ def train(args):
         if not np.all(np.isfinite(totals)):
             print("non-finite loss; stopping and keeping the best validation state", flush=True)
             break
-        if ap is not None and ap > best_ap:
+        if args.select == "val" and ap is not None and ap > best_ap:
             best_ap, best_epoch, best_state = ap, e + 1, copy.deepcopy(model.state_dict())
-    if best_state is None:
-        raise RuntimeError("no validation-selected state")
-    model.load_state_dict(best_state)
-    print(f"selected epoch {best_epoch} (val video AP {best_ap:.4f})", flush=True)
+    if args.select == "val":
+        if best_state is None:
+            raise RuntimeError("no validation-selected state")
+        model.load_state_dict(best_state)
+        print(f"selected epoch {best_epoch} (val video AP {best_ap:.4f})", flush=True)
+    else:
+        if not np.all(np.isfinite(totals)):
+            raise RuntimeError("last epoch has a non-finite loss")
+        best_epoch, best_ap = len(history), None
+        print(f"kept the last epoch ({best_epoch}); validation not used", flush=True)
     torch.save(model.state_dict(), out_dir / "model.pth")
     meta = {"method": "avadclip", "upstream": "https://github.com/RowanSu/AVadCLIP @ d3f6e16 (model_t.AVADCLIP)",
             "args": vars(args), "train_ids": train_ids, "val_ids": val_ids, "selected_epoch": best_epoch,
-            "selected_val_video_ap": best_ap, "history": history, "class_prompts": PROMPT_TEXT}
+            "select": args.select, "selected_val_video_ap": best_ap, "history": history, "class_prompts": PROMPT_TEXT}
     (out_dir / "train_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 

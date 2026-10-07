@@ -14,4 +14,4 @@ source "$HOME/miniconda3/bin/activate" HateVideo
 export HF_HOME="$PWD/.cache/hf" TORCH_HOME="$PWD/.cache/torch"
 hostname
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv
-bash experiments/20261008_baselines/weaksup_common/run_tasks.sh method:dsanet:hateclipseg method:dsanet:hatemm method:vadclip:hateclipseg method:vadclip:hatemm method:vadclip:dehate
+bash experiments/20261008_baselines/weaksup_common/run_tasks.sh method:dsanet:hateclipseg method:dsanet:hatemm method:dsanet:dehate method:vadclip:hateclipseg method:vadclip:hatemm method:vadclip:dehate

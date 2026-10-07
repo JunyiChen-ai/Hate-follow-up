@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
-"""One weakly supervised baseline on one corpus: validation search, three seeds, test scoring, evaluation.
+"""One weakly supervised baseline on one corpus: training at three seeds, test scoring, evaluation.
 
-Protocol (the one the reused DeHate runs of DSANet / MultiHateLoc followed, Retrieval-hate
-experiments/20260926_dehate_external/launch/baseline.sh):
-  1. Optuna TPE search, 5 completed trials, sampler seed 234 (+ number of earlier attempts on resume), each trial
-     trained at seed 234 on the train split; objective = the trial's selected validation video AP (video-level
-     labels of the val split only).  Search spaces = scripts/reproduction_baselines/tune_official_val.suggest; AVadCLIP
-     uses the VadCLIP space (it is VadCLIP plus an audio branch).  The feasibility guards of tune_official_val for
-     DSANet and MultiHateLoc are applied unchanged.  Trial checkpoints are deleted.
-  2. The winner is retrained at seeds 2025 / 234 / 3407.  Inside every training run the epoch is selected on the
-     val split's video AP (each port's own rule).  Test labels and frame labels are never read.
-  3. The selected checkpoint scores the exact test cohort at 1 fps; the scores are put on the 4 fps grid
-     (x4, last-value pad), checked for full coverage, and evaluated by src/eval/evaluate_four_datasets.py.
+Two protocols (coordinator instruction of 2026-10-08 for the CLIP-based detectors):
+
+  fixed  (VadCLIP, DSANet, AVadCLIP)  Upstream trains on XD-Violence, tests on the test set after every epoch (DSANet:
+         every few steps) and keeps the checkpoint with the best TEST frame AP.  That selection is removed.  Here each
+         method uses one documented hyper-parameter set on all three corpora, its upstream XD-Violence preset
+         (src/xd_option.py; classes 7 -> 2), trains for the preset's fixed 10 epochs and keeps the LAST epoch.  The
+         validation split is not read at all (port.py --no-val; AVadCLIP --select last).
+  tuned  (MultiHateLoc, reimplemented; no official code)  The protocol of the existing DeHate MultiHateLoc run
+         (Retrieval-hate experiments/20260926_dehate_external/launch/baseline.sh): Optuna TPE, 5 completed trials,
+         sampler seed 234, trials trained at seed 234, objective = the trial's selected validation video AP (val split,
+         video-level labels; search space = scripts/reproduction_baselines/tune_official_val.suggest with its
+         MultiHateLoc guard); the winner is retrained per seed and its epoch is selected on validation video AP.
+         Trial checkpoints are deleted.
+
+Seeds 2025 / 234 / 3407.  The selected / last checkpoint scores the exact test cohort at 1 fps; the scores are put on
+the 4 fps grid (x4, last-value pad), checked for full coverage, and evaluated by src/eval/evaluate_four_datasets.py.
+Test labels and frame labels are never read.
 
 Branches (declared before any result): VadCLIP and AVadCLIP score_align (upstream's reported AP branch), with
-score_mlp as `<method>_mlp`; DSANet score_mlp (the branch its DeHate run reports), with score_align as
+score_mlp as `<method>_mlp`; DSANet score_mlp (the branch its earlier DeHate run reported), with score_align as
 `dsanet_align`; MultiHateLoc score_fused.
 
     python experiments/20261008_baselines/weaksup_common/run_method.py --method vadclip --corpus hatemm
@@ -47,12 +53,25 @@ BRANCHES = {"vadclip": (("score_align", "vadclip"), ("score_mlp", "vadclip_mlp")
             "avadclip": (("score_align", "avadclip"), ("score_mlp", "avadclip_mlp")),
             "dsanet": (("score_mlp", "dsanet"), ("score_align", "dsanet_align")),
             "multihateloc": (("score_fused", "multihateloc"),)}
+FIXED = ("vadclip", "dsanet", "avadclip")
+FIXED_NOTE = {"vadclip": "VadCLIP @ c41067f src/xd_option.py (port defaults): embed 512, width 512, 1 head, 1 layer, "
+                         "visual-length 256, attn-window 64, prompt 10/10, 10 epochs, batch 96, lr 1e-5, MultiStepLR "
+                         "[3, 6, 10] x0.1, loss3 weight 1e-4",
+              "dsanet": "DSANet @ eb335b2 src/xd_option.py (port defaults): embed 512, width 512, 1 head, 1 layer, "
+                        "visual-length 256, attn-window 64, prompt 10/10, decoder_depth 8, normal_selection_ratio .8, "
+                        "DNP on, 16 prototypes, text_adapt_until 1, t_w .6, loss2_weight 5, temp 1, 10 epochs, batch 96, "
+                        "lr 1e-5, warm-up 100",
+              "avadclip": "AVadCLIP @ d3f6e16 src/xd_option.py (teacher): embed 512, width 512, 1 head, 2 layers, "
+                          "visual/audio length 256, attn-window 4, prompt 10/10, 10 epochs, batch 96, lr 1e-5, "
+                          "MultiStepLR [3, 6, 10] x0.1, loss3 weight 1e-4"}
 
 
 def train_cmd(method, corpus, out, values, seed, run_test=False):
     py = sys.executable
     space = "vadclip" if method == "avadclip" else method
     opts = option_args(values, space)
+    if method in FIXED:
+        opts = ["--select", "last"] + ([] if method == "avadclip" else ["--no-val"])
     common = ["--corpus", corpus, "--device", "cuda", "--seed", str(seed)]
     if method == "multihateloc":
         return [py, str(PORT), "multihateloc.train", *common, "--out-root", str(out), *opts] + \
@@ -68,7 +87,7 @@ def infer_cmd(method, corpus, out, values):
     if method == "multihateloc":
         return None
     space = "vadclip" if method == "avadclip" else method
-    opts = [o for o in option_args(values, space)]
+    opts = [] if method in FIXED else option_args(values, space)
     # inference needs the architecture options only; optimisation ones are accepted and ignored by the parsers
     if method == "avadclip":
         return [py, str(AVAD), "infer", "--corpus", corpus, "--device", "cuda", "--out-dir", str(out),
@@ -177,10 +196,16 @@ def seed_run(method, corpus, seed, best, base, log):
     out.mkdir(parents=True)
     slog = C.RunLog(out / "run.log", mode="w")
     values = materialize(best["best_params"])
+    if method in FIXED:
+        selection = {"protocol": "fixed", "hyper-parameters": FIXED_NOTE[method],
+                     "epoch": "last of the fixed 10 epochs; validation split not read"}
+    else:
+        selection = {"protocol": "tuned",
+                     "hyper-parameters": f"{best['n_complete']}-trial Optuna on val video AP, best trial "
+                                         f"{best['best_trial']} ({best['best_value']:.4f})",
+                     "epoch": "best val video AP inside the run (val split, video-level labels)"}
     config = {"method": method, "dataset": ds, "corpus_key": corpus, "seed": seed, "params": values,
-              "selection": {"hyper-parameters": f"{best['n_complete']}-trial Optuna on val video AP, best trial "
-                                                f"{best['best_trial']} ({best['best_value']:.4f})",
-                            "epoch": "best val video AP inside the run (val split, video-level labels)"},
+              "selection": selection,
               "train_val_test": {k: len(C.split_ids(corpus, k)) for k in ("train", "val", "test")},
               "inputs": "data/weaksup_1fps (see PROVENANCE.md)", "branches": BRANCHES[method],
               "code": f"experiments/20261008_baselines/weaksup_common/run_method.py, {C.code_version()}",
@@ -236,7 +261,11 @@ def main():
     base = C.RUNS / args.method / C.DATASET[args.corpus]
     log = C.RunLog(base / "run.log")
     log(f"start {args.method} {args.corpus} trials={args.trials} seeds={args.seeds} code {C.code_version()}")
-    best = tune(args.method, args.corpus, base / "tuning", args.trials, log)
+    if args.method in FIXED:
+        best = {"best_params": {}}
+        log(f"fixed protocol: {FIXED_NOTE[args.method]}; last epoch; no validation")
+    else:
+        best = tune(args.method, args.corpus, base / "tuning", args.trials, log)
     for seed in args.seeds:
         seed_run(args.method, args.corpus, seed, best, base, log)
     summarize(args.method, args.corpus, base, args.seeds, log)

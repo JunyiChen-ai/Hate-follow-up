@@ -12,6 +12,8 @@ The ports are used unchanged.  Before their entry point runs, `hate_common.data`
                   ids and to check lengths; no frame label is read)
   CORPORA      -> hatemm, hateclipseg, dehate (DeHate uses the HateMM window 256 / 64, as in Retrieval-hate)
   load_train_val with legacy_resplit=True is refused, so validation is always the split file.
+  --no-val (consumed here, not passed on): load_train_val returns no validation ids, so the port reads no
+                  validation label and, with --select last, keeps the last epoch (fixed-schedule protocol).
 
     python experiments/20261008_baselines/weaksup_common/port.py vadclip.train --corpus hatemm --out-dir ... [opts]
     entries: vadclip.train vadclip.infer dsanet.train dsanet.infer multihateloc.train
@@ -35,7 +37,7 @@ from hate_common import runtime  # noqa: E402
 ENTRIES = ("vadclip.train", "vadclip.infer", "dsanet.train", "dsanet.infer", "multihateloc.train")
 
 
-def patch():
+def patch(no_val=False):
     hdata.FEATURE_ROOT = str(C.INPUTS / "clip_b16_1fps")
     hdata.SPLIT_ROOT = str(C.INPUTS / "splits")
     hdata.GT_ROOT = None
@@ -61,7 +63,8 @@ def patch():
     def load_train_val(corpus, labels=None, val_frac=0.1, seed=234, legacy_resplit=False):
         if legacy_resplit:
             raise RuntimeError("legacy re-split is disabled: validation is the fixed val split")
-        return original(corpus, labels, val_frac, seed, False)
+        train_ids, val_ids = original(corpus, labels, val_frac, seed, False)
+        return (train_ids, []) if no_val else (train_ids, val_ids)
 
     hdata.load_labels = load_labels
     hdata.gt_arrays = gt_arrays
@@ -72,7 +75,9 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] not in ENTRIES:
         raise SystemExit(f"usage: port.py <{'|'.join(ENTRIES)}> [args]")
     entry, argv = sys.argv[1], sys.argv[2:]
-    patch()
+    no_val = "--no-val" in argv
+    argv = [a for a in argv if a != "--no-val"]
+    patch(no_val)
     module = importlib.import_module(entry)
     if entry == "multihateloc.train":
         module.mdata.FEATURE_ROOT = str(C.INPUTS)
