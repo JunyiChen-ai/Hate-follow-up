@@ -363,7 +363,8 @@ def cmd_infer(args):
     models = {}
     for s in seeds:
         m = SAGE(cfg["model"]).to(args.device)
-        ck = torch.load(C.RUNS / "sage" / ds / f"seed{s}" / "sage_best_model.pth", map_location=args.device)
+        ck = torch.load(C.RUNS / "sage" / ds / f"seed{s}" / "sage_best_model.pth", map_location=args.device,
+                        weights_only=False)  # own checkpoint
         m.load_state_dict(ck["model_state_dict"])
         m.eval()
         models[s] = m
