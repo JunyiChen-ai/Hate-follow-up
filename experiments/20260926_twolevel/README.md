@@ -1288,3 +1288,126 @@ augmented state carries the previous cell's level id, and emitters are fitted pe
 `--conditions` is given. With the default flags nothing changes: `runs/20260928_infer/c1_plumb` reproduces `final_m2`
 exactly (all six numbers and both EM log-likelihoods), and the self-test covers all four kinds against brute force
 (max difference 4.3e-14). The redesigns themselves did not pass (that README §9.4); `r6_bma` stays.
+
+## 22. Post hoc check of the Gaussian evidence (2026-10-06, uoa-lab1, CPU; diagnosis with test labels, not a gate)
+
+Asked while writing the paper: are the transformed reads of each state close to Gaussian, with similar spreads (the
+shared-variance emission)? `gaussian_check.py` uses the `r6_bma` reads (`runs/20260926_glr/base_gridA`), the normal
+score of each read's corpus rank, and the test GT (a window is hateful when at least half of its frames are).
+Output: `runs/20260926_twolevel/gaussian_check/{run.log,summary.json}`. Test labels enter no fitting.
+
+| corpus, modality | non-hateful mean / sd | hateful mean / sd | skewness | excess kurtosis |
+|---|---|---|---|---|
+| HateMM visual | −0.22 / 0.95 | +0.68 / 0.82 | +0.05 / +0.12 | +0.05 / +0.32 |
+| HateMM speech | −0.30 / 0.87 | +0.90 / 0.78 | −0.07 / −0.21 | +0.18 / +1.30 |
+| HateClipSeg visual | −0.30 / 0.97 | +0.33 / 0.92 | +0.10 / −0.02 | +0.26 / −0.13 |
+| HateClipSeg speech | −0.26 / 0.92 | +0.28 / 1.00 | +0.04 / −0.17 | +0.24 / −0.01 |
+
+- Each state is close to Gaussian (|skewness| ≤ .21; |excess kurtosis| ≤ .32), except hateful speech windows on
+  HateMM (excess kurtosis +1.30).
+- The two states' standard deviations are similar (ratio .82–1.09), which supports the shared variance. Separate
+  variances were never run.
+- The raw speech reads are flat (excess kurtosis −1.31 HateMM, −1.06 HateClipSeg).
+
+## 23. Decoder output used directly as the frame score (2026-10-07, uoa-lab1, CPU; reporting ablation)
+
+Question: what does the frame score look like with no video term and no rank transform, i.e. the time level's fused
+probability alone?
+- `direct_posterior.py` reads the saved `final_m2` predictions (no EM rerun). Each record's `extra.cell_prob` is the
+  OR-fused P(hateful cell | V = 1, reads), the `p` that `twolevel_r2.py` turns into frames. The frame score is
+  `to_frames(cell_prob, L)` (imported from `twolevel.py`), with L the length of the record's `score_curve`.
+- Same for DeHate from `final_dehate/final_m2`. Metrics only through `src/eval/evaluate_four_datasets.py`.
+- Plumbing: within must equal `final_m2`, because the centred rank keeps the within-video order of `cell_prob`. The
+  difference is exactly 0 on all three corpora.
+- Command: `python experiments/20260926_twolevel/direct_posterior.py` (defaults), and with `--src
+  runs/20260926_twolevel/final_dehate/final_m2 --out runs/20260926_twolevel/final_dehate/final_postdirect --datasets
+  DeHate`. Bootstrap: `analyze_dvd.py --root runs/20260926_twolevel --arms final_m2 final_postdirect --out
+  runs/20260926_twolevel/analysis_postdirect/main`, and the DeHate equivalent into `analysis_postdirect/dehate`.
+
+Sources: `runs/20260926_twolevel/final_postdirect/{run.log,metrics.json}`,
+`final_dehate/final_postdirect/metrics.json`, `analysis_postdirect/{main,dehate}/table.txt`.
+
+Pooled ROC / pooled PR / within (development-selected; DeHate external):
+
+| arm | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| `final_m2` (key + centred rank) | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 | .7011 / .1582 / .6431 |
+| `final_postdirect` (decoder probability) | .8563 / .6234 / .7508 | .7339 / .6662 / .6373 | .6721 / .1361 / .6431 |
+| `final_nokey` (centred rank only, §20) | .5718 / .2854 / .7508 | .5699 / .5294 / .6373 | — |
+
+`final_postdirect` − `final_m2`, paired bootstrap over videos (4000 draws, 95 % interval):
+
+| | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| pooled ROC | −.0408 [−.076, −.010] | +.0171 [−.018, +.053] | −.0290 [−.060, +.0003] |
+| pooled PR | −.0709 [−.150, +.010] | −.0049 [−.042, +.033] | −.0221 [−.058, +.011] |
+
+Among hateful videos only, the decoder probability is higher in pooled ROC (HateMM .694 vs .677, HateClipSeg .703 vs
+.666, DeHate .536 vs .521). The table's P(V) and video AUC columns read the unchanged `extra.p_video_logodds`, not
+the frame score.
+
+Reading: the decoder probability alone already ranks videos far better than the centred rank alone. The calibrated
+video term adds pooled ROC on HateMM (+.041, interval excludes 0) and, less clearly, on DeHate (+.029). On
+HateClipSeg it changes nothing within the intervals.
+
+## 24. Raw vs calibrated video key on the eight MLLMs (2026-10-07, uoa-lab1, CPU; declared rule)
+
+Question: does the label-free calibration of the video key (`--key calib`, §11) help across the eight MLLM
+backbones? On the main reads (§20) calibrated − raw was +.0016 / +.0059 (HateMM) and +.0032 / +.0045 (HateClipSeg),
+pooled ROC / PR.
+
+Command: `setsid nohup bash experiments/20260926_twolevel/launch/run_r6_rawkey.sh`, log
+`runs/20260926_twolevel/robust/launch_r6_rawkey.out`, host sc474397 (uoa-lab1), code at commit 2dcaa00 plus the
+uncommitted README edits. For each m in q3vl-2b, q3vl-4b, q3vl-8b, q3vl-32b, q25vl-7b, internvl35-8b, llava-ov-7b,
+gemma3-12b:
+`twolevel_r2.py --noleak --transform nscore --key raw --arm m2 --duration bma --bma-prior length --min-windows 2
+--bma-grid 6 --run runs/20260910_spvl/mllm/<m>/full --tag <m>_r6_rawkey --out-root runs/20260926_twolevel/robust`.
+This is the `<m>_r6` line of `run_r6.sh` with only `--key calib` replaced by `--key raw`. The calibrated runs are the
+existing `robust/<m>_r6` (2026-09-27).
+
+Rule (declared before the results were seen):
+- Δ = calibrated (`<m>_r6`) − raw (`<m>_r6_rawkey`), for pooled frame ROC and pooled frame PR, per corpus.
+- Calibration is USEFUL if, on at least one corpus, (a) at least 3 of the 8 models have Δ > .005 in pooled ROC or in
+  pooled PR, or (b) the mean Δ over the 8 models exceeds .005 in pooled ROC or in pooled PR.
+- Otherwise it is NOT USEFUL.
+- Every Δ < −.005 is listed.
+
+Plumbing check:
+- Within is bitwise identical in all 16 model × corpus pairs. The key is constant within a video.
+- EM: same iteration counts and log-likelihoods. `params.json` agree to within 7.1e-15 absolute (9.3e-15 relative),
+  but not bitwise. The `<m>_r6` files were written before the §21 code generalisation. That change altered the file
+  layout (iota stored as [1 − p, p]; an added `mu` list per emitter) and the order of floating-point operations.
+- Frame scores: calibrated − raw is constant within every video (spread at most 7.1e-15). It equals (a − 1) K + b
+  (error at most 1.8e-14). So the key is the only difference between the two arms.
+
+Sources: `runs/20260926_twolevel/robust/<m>_r6/metrics.json` and `<m>_r6_rawkey/metrics.json`. Slope a comes from
+`<m>_r6/params.json` `key_ab`, where logit P(V = 1 | K) = a K + b. Development-selected.
+
+| model | HateMM Δ ROC | HateMM Δ PR | HateMM a | HateClipSeg Δ ROC | HateClipSeg Δ PR | HateClipSeg a |
+|---|---|---|---|---|---|---|
+| q3vl-2b | +.0000 | +.0010 | 0.929 | −.0054 | −.0050 | 2.544 |
+| q3vl-4b | +.0013 | +.0044 | 0.464 | +.0016 | +.0012 | 0.401 |
+| q3vl-8b | +.0020 | **+.0067** | 0.343 | +.0024 | +.0042 | 0.362 |
+| q3vl-32b | +.0022 | **+.0056** | 0.372 | +.0016 | +.0001 | 0.309 |
+| q25vl-7b | −.0015 | −.0062 | 1.550 | +.0004 | +.0009 | 0.859 |
+| internvl35-8b | +.0015 | **+.0054** | 0.521 | +.0002 | +.0001 | 0.929 |
+| llava-ov-7b | −.0017 | −.0126 | 3.886 | −.0053 | −.0050 | 5.438 |
+| gemma3-12b | +.0023 | +.0030 | 0.429 | +.0017 | +.0017 | 0.538 |
+| mean of 8 | +.0008 | +.0009 | | −.0004 | −.0002 | |
+
+- Count with Δ > .005: HateMM ROC 0/8, PR 3/8; HateClipSeg ROC 0/8, PR 0/8.
+- No mean exceeds .005, so (b) fails on both corpora.
+- Δ < −.005 (calibration hurts):
+  - HateMM: llava-ov-7b PR −.0126; q25vl-7b PR −.0062.
+  - HateClipSeg: q3vl-2b ROC −.0054 and PR −.0050 (−.00502); llava-ov-7b ROC −.0053.
+  - llava-ov-7b HateClipSeg PR is −.00498, just above the limit.
+
+**Verdict: USEFUL under the declared rule, by the smallest possible margin.**
+- Only condition (a) is met, and only on HateMM pooled PR.
+- Exactly 3 models pass, and the third (internvl35-8b, +.0054) is .0004 above the threshold.
+- HateClipSeg meets neither condition.
+- The means are below .001 in absolute value on both corpora.
+
+Post hoc observation (outside the rule): calibration lowers both pooled numbers in all four cases with a fitted slope
+a > 1, where it stretches the raw key: llava-ov-7b on both corpora, q25vl-7b on HateMM, q3vl-2b on HateClipSeg. In
+the twelve cases with a < 1, both Δ are ≥ 0.
