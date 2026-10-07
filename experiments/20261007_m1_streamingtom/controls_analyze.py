@@ -79,11 +79,13 @@ def prepare(job,smoke):
         s['source_seconds']+=ch['source_seconds'];s['peak_GiB']=max(s['peak_GiB'],ch['peak_GiB']);s['actual_forwards']+=ch['actual_forwards']
         for a in JOBS[job]:s['arm_seconds'][a]+=ch['times'][a]
         if ordinal%25==0:print('BOUND',ordinal,len(rows),flush=True)
-    result=dict(PASS=True,GT_read=False,job=job,coverage=len(rows),native_allraw_exact=True,datasets=summary,
-        replay_equals_r1=job=='dualpath',comparison_all_exact=not any(s['comparison_failures'] for s in summary.values()),
+    # Every rebuilt input must equal R1 exactly; otherwise an arm would differ from R1 in more than its one change.
+    exact=not any(s['comparison_failures'] for s in summary.values())
+    result=dict(PASS=exact,GT_read=False,job=job,coverage=len(rows),native_allraw_exact=True,datasets=summary,
+        replay_equals_r1=job=='dualpath',comparison_all_exact=exact,
         nearest_vs_retrieval=None if job!='dualpath' else dict(overlap,mean_shared_of_4=overlap['shared']/max(1,overlap['layers']),identical_fraction=overlap['identical']/max(1,overlap['layers'])),
         attempt_paths=[str(p.relative_to(ROOT)) for p in sorted(root.glob('pipeline_attempt_*.json'))])
-    (out/('plumbing_summary.json' if smoke else 'alignment.json')).write_text(json.dumps(result,indent=2)+'\n');print('PREPARE_PASS',job,flush=True)
+    (out/('plumbing_summary.json' if smoke else 'alignment.json')).write_text(json.dumps(result,indent=2)+'\n');print('PREPARE_PASS' if exact else 'PREPARE_FAILED_inexact_rebuild',job,flush=True);assert exact
 
 
 def evaluate(job,name):
