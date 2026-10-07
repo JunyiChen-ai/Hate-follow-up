@@ -39,7 +39,7 @@ none; comparison row.
 ```bash
 # uoa-lab3, repo ~/Hate-follow-up
 sbatch experiments/20261008_baselines/launch/prism_lab3.sbatch        # extract + score, HateMM HateClipSeg DeHate
-# after rsync of runs/20261008_baselines/prism/<corpus>/ to uoa-lab1:
+# after rsync -a uoa-lab3:Hate-follow-up/runs/20261008_baselines/prism/<corpus>/ to the same path on uoa-lab1:
 python3 experiments/20261008_baselines/prism/prism_hate.py eval --dataset HateMM
 ```
 
@@ -58,7 +58,7 @@ partition's 1-day limit will stop the job inside DeHate, which then resumes in a
 |---|---|---|---|
 | HateMM (215) | uoa-lab3 (sc474398) | 295 (step) | running |
 | HateClipSeg (118) | uoa-lab3 | 295 (step) | after HateMM |
-| DeHate (1151) | uoa-lab3 | 295, then a resubmission | after HateClipSeg |
+| DeHate (1151) | uoa-lab3 | 295, then 308 (queued; resumes extraction, re-runs the cheap score stages) | after HateClipSeg |
 
 ## Results
 
