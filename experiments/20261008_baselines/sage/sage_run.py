@@ -240,6 +240,17 @@ class Encoders:
 
 
 # ------------------------------------------------------------------- train ---
+def no_attention_weights(model):
+    """GED calls nn.MultiheadAttention with the default need_weights=True and discards the weights. With 3744 keys
+    and batch 16 the materialised weights do not fit a 32 GB GPU (OOM, job 293). need_weights=False computes the same
+    attention output (PyTorch's fused path, same dropout) without returning the discarded weights."""
+    import functools
+    for mod in model.modules():
+        if isinstance(mod, torch.nn.MultiheadAttention):
+            mod.forward = functools.partial(mod.forward, need_weights=False)
+    return model
+
+
 def set_seed(seed: int):
     random.seed(seed)
     np.random.seed(seed)
@@ -315,7 +326,7 @@ def cmd_train(args):
     if args.smoke:
         train, val = train[:4], val[:4]
     enc = Encoders(cfg, args.device)
-    model = SAGE(cfg["model"]).to(args.device)
+    model = no_attention_weights(SAGE(cfg["model"]).to(args.device))
     _, _, _, _, optimizer, criterion, scheduler = get_training_setting(cfg, model)
     tc = cfg["train"]
     bs, epochs = int(tc["batch_size"]), int(tc["epochs"])
@@ -362,7 +373,7 @@ def cmd_infer(args):
     enc = Encoders(cfg, args.device)
     models = {}
     for s in seeds:
-        m = SAGE(cfg["model"]).to(args.device)
+        m = no_attention_weights(SAGE(cfg["model"]).to(args.device))
         ck = torch.load(C.RUNS / "sage" / ds / f"seed{s}" / "sage_best_model.pth", map_location=args.device,
                         weights_only=False)  # own checkpoint
         m.load_state_dict(ck["model_state_dict"])
