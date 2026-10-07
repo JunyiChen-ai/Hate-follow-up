@@ -27,11 +27,20 @@ Label-free baseline, run_plan.md L8. No model is trained, nothing is tuned, no l
   uoa-lab3 sc474398, transformers 5.15.1). Coverage check: 215/215 and 118/118 cohort videos, every GT frame
   finite, no fallback. Re-evaluated on uoa-lab1 with
   `python experiments/20261008_baselines/qwen25vl_winonly/finalize.py --datasets HateMM HateClipSeg`.
-- DeHate: `sbatch experiments/20261008_baselines/launch/lab2_winonly_dehate.sbatch` on uoa-lab2 (sc474399):
-  spvl.py on the 1341 test videos of `data/manifests/DeHate_test.jsonl` →
-  `runs/20261008_baselines/qwen25vl_winonly/DeHate_spvl/`, then compose.py, then `finalize.py --datasets DeHate`
-  (evaluated on the 1151 cohort videos). compose.py also writes `DeHate_spvl/metrics_ispvl_rrank.json`; that
-  file holds all 1341 predicted rows and is not the reported number.
+- DeHate: run on **uoa-campus2 (foscsmlprd02), one NVIDIA A100-SXM4-80GB**, not on an RTX 5090 (the lab account may
+  run only 2 GPU jobs at a time, so the pending lab2 job, Slurm 303, was moved to campus and cancelled). Second part of
+  `sbatch experiments/20261008_baselines/launch/campus_qwen.sbatch` (Slurm 24594, 2026-10-08 10:30–10:47 NZDT, commit
+  0d6012f), which runs the commands of `lab2_winonly_dehate.sbatch` unchanged: spvl.py on the 1341 test videos of
+  `data/manifests/DeHate_test.jsonl` → `runs/20261008_baselines/qwen25vl_winonly/DeHate_spvl/` (1341 videos, 0 errors,
+  904 s), then compose.py, then `finalize.py --datasets DeHate` (evaluated on the 1151 cohort videos). compose.py also
+  writes `DeHate_spvl/metrics_ispvl_rrank.json`; that file comes from all 1341 predicted rows and is not the reported
+  number. Environment: campus2's HateVLM env (torch 2.11.0+cu128, transformers 5.15.1, same package versions as
+  lab2's HateVLM apart from pip and packaging). `Qwen/Qwen2.5-VL-7B-Instruct` was already in campus2's
+  `.cache/hf` (same file names and sizes as lab2's cache; config, tokenizer, chat-template and index files
+  byte-identical). Smoke test before the run: Slurm 24586 (2 videos, `runs/20261008_baselines/_smoke_campus/`).
+  Outputs copied back to uoa-lab1 with `rsync -a`; re-checked there with
+  `python experiments/20261008_baselines/campus_lab1_check.py runs/20261008_baselines/qwen25vl_winonly/<read-out>/DeHate:DeHate`
+  (exact cohort, canonical evaluator into `metrics_lab1.json`; identical to the campus `metrics.json`).
 
 ## Results
 
@@ -39,11 +48,8 @@ Canonical evaluator, exact cohorts; pooled frame ROC-AUC / pooled frame PR-AUC /
 
 | read-out | HateMM | HateClipSeg | DeHate | source |
 |---|---|---|---|---|
-| raw | .7700 / .5701 / .6414 | .6182 / .6165 / .5662 | (pending) | `runs/20261008_baselines/qwen25vl_winonly/raw/<DS>/metrics.json` |
-| ispvl_rrank | .5486 / .2721 / .6414 | .5397 / .5020 / .5662 | (pending) | `runs/20261008_baselines/qwen25vl_winonly/ispvl_rrank/<DS>/metrics.json` |
+| raw | .7700 / .5701 / .6414 | .6182 / .6165 / .5662 | .6520 / .1443 / .6234 | `runs/20261008_baselines/qwen25vl_winonly/raw/<DS>/metrics.json` |
+| ispvl_rrank | .5486 / .2721 / .6414 | .5397 / .5020 / .5662 | .5453 / .0873 / .6234 | `runs/20261008_baselines/qwen25vl_winonly/ispvl_rrank/<DS>/metrics.json` |
 
-Frame pools: HateMM 116,975 frames / 215 videos (within defined on 84), HateClipSeg 113,002 / 118 (99).
-
-DeHate status (2026-10-08 06:50): not run yet; it is the second half of Slurm 303 (`lab2_text_winonly.sbatch`),
-pending on uoa-lab2 behind the account's 2-GPU limit. The job runs spvl.py, compose.py and `finalize.py --datasets
-DeHate` itself; afterwards rsync `runs/20261008_baselines/qwen25vl_winonly/` back to uoa-lab1.
+Frame pools: HateMM 116,975 frames / 215 videos (within defined on 84), HateClipSeg 113,002 / 118 (99), DeHate
+441,345 / 1151 (222). No fallback was needed on any corpus.
