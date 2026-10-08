@@ -46,9 +46,15 @@ def main():
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--nshards", type=int, default=1)
     ap.add_argument("--max-minutes", type=float, default=0)
+    ap.add_argument("--check", action="store_true", help="exit 0 if every clip frame folder has its OCR file")
     ap.add_argument("--reverse", action="store_true", help="walk the clip folders from the end (a GPU pass can "
                     "finish what a CPU pass started from the front; both skip folders already written)")
     args = ap.parse_args()
+    if args.check:
+        missing = [d for d in clip_dirs(args.dataset)
+                   if not (d.parent.parent / "ocr_text" / "ocr_clip.json").is_file()]
+        print(f"OCR check {args.dataset}: {len(missing)} clip folders without OCR")
+        sys.exit(1 if missing else 0)
     log_dir = Path(os.environ.get("DETWIN_RUNS", REPO / "runs" / "20261008_baselines")) / "clara" / args.dataset / "ocr"
     log_dir.mkdir(parents=True, exist_ok=True)
     logf = log_dir / f"run_shard{args.shard}.log"

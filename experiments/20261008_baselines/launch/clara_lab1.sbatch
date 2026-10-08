@@ -31,8 +31,10 @@ run_one() {
   if ! grep -q "DONE rationale" $R/rationale/run.log 2>/dev/null; then
     $C/envs/vllm_q3vl/bin/python $X/clara_rationale.py --dataset $DS || { echo "FAILED rationale"; return 1; }
   fi
-  $C/envs/paddleocr/bin/python $X/clara_ocr.py --dataset $DS --device gpu:0 --reverse --shard 0 --nshards 1 \
-    || { echo "OCR on GPU failed; CPU fallback"; OMP_NUM_THREADS=8 $C/envs/paddleocr/bin/python $X/clara_ocr.py --dataset $DS --device cpu --reverse || { echo "FAILED ocr"; return 1; }; }
+  if ! $C/envs/hv_cv2/bin/python $X/clara_ocr.py --dataset $DS --check; then
+    $C/envs/paddleocr/bin/python $X/clara_ocr.py --dataset $DS --device gpu:0 --reverse --shard 0 --nshards 1 \
+      || { echo "OCR on GPU failed; CPU fallback"; OMP_NUM_THREADS=8 $C/envs/paddleocr/bin/python $X/clara_ocr.py --dataset $DS --device cpu --reverse || { echo "FAILED ocr"; return 1; }; }
+  fi
   $C/envs/hv_cv2/bin/python $X/clara_embed.py --dataset $DS || { echo "FAILED embed"; return 1; }
   for mode in both none; do
     for s in 2025 234 3407; do
