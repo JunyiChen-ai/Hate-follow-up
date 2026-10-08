@@ -69,6 +69,7 @@ def main():
     ap.add_argument("--seed", type=int, required=True)
     ap.add_argument("--rationale-mode", default="both", choices=["both", "none"])
     ap.add_argument("--cpu-smoke", action="store_true", help="debug on CPU (bf16 autocast on CPU), 2 epochs")
+    ap.add_argument("--cpu", action="store_true", help="train on CPU (bf16 autocast on CPU), all settings unchanged")
     args = ap.parse_args()
     ds, mode = args.dataset, args.rationale_mode
     method_dir = "clara" if mode == "both" else "clara_norationale"
@@ -77,7 +78,8 @@ def main():
     hf_out = rd / "hf"
     rd.mkdir(parents=True, exist_ok=True)
     log = C.RunLog(rd / "run.log")
-    log(f"train {method} {ds} seed {args.seed}; code {C.code_version()}")
+    log(f"train {method} {ds} seed {args.seed}; device {'cpu' if (args.cpu or args.cpu_smoke) else 'cuda'}; "
+        f"code {C.code_version()}")
 
     sys.path.insert(0, str(CLARA_DIR))
     import utils.segment_sampling as SS
@@ -126,7 +128,7 @@ def main():
     from transformers import HfArgumentParser
     from utils.training_arguments import TrainingArguments, DataArguments
     argv = run_clara_args(ds, hf_out, args.seed, mode)
-    if args.cpu_smoke:
+    if args.cpu or args.cpu_smoke:
         argv = argv + ["--use_cpu", "true"]
         argv[argv.index("--num_train_epochs") + 1] = "2"
     (rd / "config_snapshot.json").write_text(json.dumps({"argv": argv, "method": method}, indent=1) + "\n")
