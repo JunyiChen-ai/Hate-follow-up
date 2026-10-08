@@ -226,48 +226,77 @@ def main():
         images.pop(v, None)
         (out_dir / f"{v}_rationale.json").write_text(json.dumps({"video_id": v, "error": why}) + "\n")
 
-    def try_admit():
+    # Two lanes. A "large" video (step-A need > half the KV cache, i.e. 720p-1080p frames) cannot share the cache
+    # with another large one, so large videos run one at a time while small videos fill the rest of the cache; a
+    # large video is never starved by the stream of small ones (small admissions pause until it fits).
+    log("planning all videos (frame sizes, prompt lengths) ...")
+    small, large = deque(), deque()
+    for v in todo:
+        inp = plan(v)
+        if inp is None:
+            fail(v, "no rationale frames")
+            continue
+        plans[v] = inp
+        (large if inp["need1"] > kv_cap // 2 else small).append(v)
+    pending.clear()
+    log(f"planned: {len(large)} large videos (one at a time), {len(small)} small")
+    lane = {"large": None}
+
+    def admit(v, step):
         nonlocal reserved
+        inp = plans[v]
+        need = inp["need1"] if step == 1 else inp["need2"]
+        if v not in images:
+            images[v] = load_images(inp)
+        if step == 1:
+            req = request(v, images[v], A.prompt_step_a_tagged(inp["title"], inp["desc"], inp["trans"]))
+        else:
+            req = request(v, images[v], A.prompt_step_b_tagged(step_a[v], inp["title"], inp["desc"], inp["trans"]))
+        rid = str(next(llm.request_counter))
+        try:
+            eng.add_request(rid, req, params(step, v), tokenization_kwargs=None)
+        except Exception as e:  # noqa: BLE001 - a bad input for this video only
+            fail(v, f"step {step}: {e!r}")
+            if lane["large"] == v:
+                lane["large"] = None
+            return False
+        inflight[rid] = (v, step, need)
+        reserved += need
+        return True
+
+    def fits(need):
+        return reserved + need <= kv_cap or not inflight
+
+    def try_admit():
         admitted = False
-        for queue, step in ((ready_b, 2), (pending, 1)):
-            for _ in range(min(WINDOW, len(queue))):
-                v = queue[0]
-                if v not in plans:
-                    inp = plan(v)
-                    if inp is None:
-                        queue.popleft()
-                        fail(v, "no rationale frames")
-                        continue
-                    plans[v] = inp
-                inp = plans[v]
-                need = inp["need1"] if step == 1 else inp["need2"]
-                if reserved + need > kv_cap and inflight:
-                    queue.rotate(-1)   # this one waits for room; look at the next one
-                    continue
-                queue.popleft()
-                if v not in images:
-                    images[v] = load_images(inp)
-                if step == 1:
-                    req = request(v, images[v], A.prompt_step_a_tagged(inp["title"], inp["desc"], inp["trans"]))
-                else:
-                    req = request(v, images[v], A.prompt_step_b_tagged(step_a[v], inp["title"], inp["desc"],
-                                                                       inp["trans"]))
-                rid = str(next(llm.request_counter))
-                try:
-                    eng.add_request(rid, req, params(step, v), tokenization_kwargs=None)
-                except Exception as e:  # noqa: BLE001 - a bad input for this video only
-                    fail(v, f"step {step}: {e!r}")
-                    continue
-                inflight[rid] = (v, step, need)
-                reserved += need
+        # 1) step B of videos whose step A is done, first come first served
+        while ready_b:
+            v = ready_b[0]
+            if not fits(plans[v]["need2"]):
+                return admitted          # wait for room; no new step-A work meanwhile
+            ready_b.popleft()
+            admitted |= admit(v, 2)
+        # 2) the next large video, if none is running
+        if lane["large"] is None and large:
+            v = large[0]
+            if not fits(plans[v]["need1"]):
+                return admitted          # let small requests drain until it fits
+            large.popleft()
+            lane["large"] = v
+            if admit(v, 1):
                 admitted = True
+        # 3) small videos fill the rest
+        while small and fits(plans[small[0]]["need1"]):
+            admitted |= admit(small.popleft(), 1)
         return admitted
 
-    while pending or ready_b or inflight:
+    n_large_done, t_large = 0, 0.0
+    started = {}
+    while small or large or ready_b or inflight:
         while try_admit():
             pass
         if not inflight:
-            if pending or ready_b:
+            if small or large or ready_b:
                 continue
             break
         for o in eng.step():
@@ -275,6 +304,8 @@ def main():
                 continue
             v, step, need = inflight.pop(o.request_id)
             reserved -= need
+            if step == 1:
+                started.setdefault(v, time.time())
             text = o.outputs[0].text.strip()
             if step == 1:
                 raw_a[v] = text
@@ -285,11 +316,17 @@ def main():
                 ready_b.append(v)
             else:
                 finish_video(v, text)
+                if lane["large"] == v:
+                    lane["large"] = None
+                    n_large_done += 1
+                    if n_large_done % 10 == 0:
+                        log(f"  large videos done: {n_large_done}; {len(large)} left")
                 if (n_ok - n_last) >= 64:
                     now = time.time()
                     log(f"  {n_ok}/{len(todo)} videos, {now - t0:.0f}s; last {n_ok - n_last}: "
                         f"{(now - t_last) / (n_ok - n_last):.2f} s/video; in flight {len(inflight)}, "
-                        f"reserved {reserved}/{kv_cap} tokens")
+                        f"reserved {reserved}/{kv_cap} tokens; large done {n_large_done}, left {len(large)}, "
+                        f"small left {len(small)}")
                     t_last, n_last = now, n_ok
         if len(failed) >= 20 and n_ok == 0:
             raise RuntimeError(f"first {len(failed)} videos failed, e.g. {next(iter(failed.items()))}")
