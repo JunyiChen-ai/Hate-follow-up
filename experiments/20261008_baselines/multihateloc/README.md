@@ -47,4 +47,20 @@ Outputs: `runs/20261008_baselines/multihateloc/<Dataset>/seed<k>/`, `.../<Datase
 
 ## Results
 
-RESULTS_PLACEHOLDER
+Seed mean ± sd (n − 1) over seeds 2025 / 234 / 3407, transcribed from `runs/20261008_baselines/multihateloc/<Dataset>/summary.json` (built from each seed's `metrics.json`, canonical evaluator). Branch `score_fused`.
+
+| corpus | ROC | PR | within | per seed (ROC / PR / within; 2025, 234, 3407) | host | tuning (val video AP of the winner) |
+|---|---:|---:|---:|---|---|---|
+| HateMM | 0.7441 ± 0.0134 | 0.4946 ± 0.0138 | 0.6228 ± 0.0128 | 0.7537/0.4957/0.6081; 0.7499/0.5080/0.6312; 0.7288/0.4803/0.6292 | sc474397 | trial 9, 0.8741 (5 complete, 6 pruned) |
+| HateClipSeg | 0.5185 ± 0.0152 | 0.4787 ± 0.0100 | 0.4983 ± 0.0063 | 0.5168/0.4823/0.5052; 0.5345/0.4864/0.4965; 0.5043/0.4673/0.4930 | sc474397 | trial 10, 0.9947 (5 complete, 6 pruned) |
+| DeHate | 0.6102 ± 0.0090 | 0.1289 ± 0.0040 | 0.5420 ± 0.0161 | 0.6050/0.1316/0.5439; 0.6206/0.1244/0.5570; 0.6050/0.1308/0.5250 | sc474397 (re-evaluated); trained on uoa-lab2 2026-09-26 | trial 10, 0.5390 (5 complete, 6 pruned) |
+
+Runs: HateMM and HateClipSeg on uoa-lab1 (sc474397). Slurm 291 completed 4 of 5 trials on each corpus within its
+attempt budget (about a third of the suggestions are pruned by the batch ≥ 64 guard) and stopped; Slurm 302 resumed
+the same Optuna studies (sampler re-seeded 234 + 10 = 244, as in the DeHate run's resume) and finished the fifth
+trial and the three seeds. Selected epochs (seeds 2025 / 234 / 3407): HateMM 21 / 8 / 8, HateClipSeg 11 / 18 / 9.
+HateClipSeg's validation AP is near its ceiling for every trial (.98–.995; 34 of 39 val videos are positive), so the
+HCS hyper-parameter and epoch choices carry little information. Coverage: every cohort video scored on every GT frame.
+
+Earlier rows replaced: the leaked HCS number (`runs/20260829_omsl_v6/multihateloc_frozen_current4fps_v1_metrics.json`)
+and the HateMM DMS-branch single-seed row must not be used.

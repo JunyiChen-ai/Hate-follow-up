@@ -71,3 +71,27 @@ runs unchanged (its `DistanceAdj` hard-codes `cuda`, so it needs a GPU even for 
 
 Outputs: `runs/20261008_baselines/<method>/<Dataset>/seed<k>/` (`run.log` first line = host, `config.json`,
 `scores.jsonl` 1 fps, `predictions.jsonl`, `coverage.json`, `metrics.json`) and `.../<Dataset>/summary.json`.
+
+## 7. Results (all rows done, 2026-10-08)
+
+Seed mean ± sd (n − 1), seeds 2025 / 234 / 3407; pooled frame ROC-AUC / pooled frame PR-AUC / within-video macro
+ROC-AUC. Transcribed from `runs/20261008_baselines/weaksup_table.md` (`collect.py`), which reads each
+`runs/20261008_baselines/<method>/<Dataset>/summary.json`, itself built from the per-seed `metrics.json`. Headline
+branches are the unlabelled rows; "score_mlp" / "score_align" rows are the declared secondary branches. All rows use
+video-level labels of the target corpus's train split; DeHate is external validation only.
+
+| method | HateMM ROC | PR | within | HateClipSeg ROC | PR | within | DeHate ROC | PR | within |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| BERT + MIL (text) | 0.6362 ± 0.0309 | 0.3835 ± 0.0440 | 0.5253 ± 0.0148 | 0.5442 ± 0.0085 | 0.5138 ± 0.0070 | 0.5044 ± 0.0108 | 0.6456 ± 0.0036 | 0.1730 ± 0.0035 | 0.5526 ± 0.0027 |
+| wav2vec2 + MIL (audio) | 0.6919 ± 0.0090 | 0.4422 ± 0.0046 | 0.5570 ± 0.0057 | 0.4973 ± 0.0017 | 0.4718 ± 0.0036 | 0.4775 ± 0.0011 | 0.5418 ± 0.0002 | 0.0821 ± 0.0003 | 0.5293 ± 0.0094 |
+| CLIP + MIL (visual) | 0.7191 ± 0.0036 | 0.4585 ± 0.0057 | 0.5229 ± 0.0027 | 0.5583 ± 0.0035 | 0.5182 ± 0.0035 | 0.5249 ± 0.0035 | 0.6418 ± 0.0032 | 0.1312 ± 0.0012 | 0.5202 ± 0.0047 |
+| VadCLIP | 0.6111 ± 0.0434 | 0.3588 ± 0.0435 | 0.4783 ± 0.0365 | 0.5308 ± 0.0246 | 0.4825 ± 0.0256 | 0.5124 ± 0.0181 | 0.6035 ± 0.0046 | 0.1091 ± 0.0049 | 0.5120 ± 0.0109 |
+| VadCLIP, score_mlp | 0.6822 ± 0.0226 | 0.3998 ± 0.0562 | 0.4640 ± 0.0356 | 0.5001 ± 0.0114 | 0.4580 ± 0.0163 | 0.5126 ± 0.0209 | 0.6276 ± 0.0150 | 0.1167 ± 0.0122 | 0.4619 ± 0.0047 |
+| DSANet | 0.7005 ± 0.0142 | 0.4136 ± 0.0546 | 0.5290 ± 0.0427 | 0.5080 ± 0.0178 | 0.4622 ± 0.0119 | 0.5024 ± 0.0188 | 0.6404 ± 0.0151 | 0.1363 ± 0.0268 | 0.4776 ± 0.0126 |
+| DSANet, score_align | 0.6862 ± 0.0105 | 0.4479 ± 0.0182 | 0.5600 ± 0.0055 | 0.5349 ± 0.0269 | 0.5053 ± 0.0098 | 0.5074 ± 0.0391 | 0.6655 ± 0.0117 | 0.1398 ± 0.0098 | 0.5229 ± 0.0096 |
+| AVadCLIP (audio-visual) | 0.6369 ± 0.0225 | 0.3503 ± 0.0398 | 0.5077 ± 0.0358 | 0.4996 ± 0.0096 | 0.4596 ± 0.0091 | 0.5291 ± 0.0184 | 0.6104 ± 0.0168 | 0.1112 ± 0.0017 | 0.5343 ± 0.0314 |
+| AVadCLIP, score_mlp | 0.6772 ± 0.0214 | 0.4345 ± 0.0359 | 0.4764 ± 0.0268 | 0.5574 ± 0.0229 | 0.5163 ± 0.0274 | 0.5326 ± 0.0065 | 0.6419 ± 0.0345 | 0.1385 ± 0.0231 | 0.5057 ± 0.0172 |
+| MultiHateLoc (reimpl.) | 0.7441 ± 0.0134 | 0.4946 ± 0.0138 | 0.6228 ± 0.0128 | 0.5185 ± 0.0152 | 0.4787 ± 0.0100 | 0.4983 ± 0.0063 | 0.6102 ± 0.0090 | 0.1289 ± 0.0040 | 0.5420 ± 0.0161 |
+
+Hosts: MIL and AVadCLIP uoa-lab1 (Slurm 291), MultiHateLoc HateMM/HCS uoa-lab1 (291 + 302), DSANet and VadCLIP
+uoa-lab3 (Slurm 290; checkpoints left on uoa-lab3), MultiHateLoc DeHate re-evaluated from the 2026-09-26 run.
