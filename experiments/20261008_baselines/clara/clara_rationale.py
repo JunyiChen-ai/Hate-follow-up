@@ -70,7 +70,8 @@ def img_tokens(w: int, h: int) -> int:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", required=True, choices=C.DATASETS)
-    ap.add_argument("--chunk", type=int, default=64)
+    ap.add_argument("--chunk", type=int, default=64, help="unused since the KV-aware loop (kept for old commands)")
+    ap.add_argument("--kv-tokens", type=int, default=55000, help="KV capacity if vLLM does not report it")
     ap.add_argument("--limit", type=int, default=0, help="debug: first N videos only")
     args = ap.parse_args()
     ds = args.dataset
@@ -129,97 +130,170 @@ def main():
         return SamplingParams(temperature=0.2, top_p=0.9, top_k=20, repetition_penalty=1.0, max_tokens=2048,
                               seed=1000 * step + index[v])
 
-    t0 = time.time()
-    n_ok = 0
-    for c0 in range(0, len(todo), args.chunk):
-        chunk = todo[c0:c0 + args.chunk]
-        inputs = {}
-        for v in chunk:
-            paths = sorted((RAW / ds / v / "rationale_frames").glob("frame_*.jpg"))
-            if not paths:
-                inputs[v] = None
-                continue
-            imgs = [Image.open(p).convert("RGB") for p in paths[:20]]
-            title, desc = tf.get(v, ("N/A", "N/A"))
-            trans = asr.get(v, "").strip() or "N/A"
-            # the step-B prompt (step-A text + up to 2048 step-A tokens) and 2048 new tokens must fit the context;
-            # frames are shrunk only when they would not (very large frames or very long transcripts), recorded
+    # KV-aware admission (2026-10-09). vLLM's scheduler admits requests as long as their *prompts* fit and, when the
+    # KV cache later runs out during decoding, preempts a request and recomputes it from scratch (vLLM v1, silent).
+    # DeHate frames are often 720p-1080p, so a 20-frame prompt holds 17k-41k image tokens against a 55k-token cache;
+    # admitting several such requests made vLLM preempt and recompute them over and over (throughput fell from 2.5k to
+    # 0.25k image tokens/s, Slurm 318). Here a request is added only when its prompt + 2048 new tokens fits in the
+    # KV cache not yet reserved by running requests, so nothing is ever preempted. Inputs, prompts and sampling are
+    # unchanged; step B of a video is queued as soon as its step A finishes.
+    from collections import deque
+    eng = llm.llm_engine
+    try:
+        cc = eng.vllm_config.cache_config
+        kv_cap = int(cc.num_gpu_blocks) * int(cc.block_size)
+    except Exception:  # noqa: BLE001
+        kv_cap = 0
+    if kv_cap <= 0:
+        kv_cap = args.kv_tokens
+    kv_cap -= 256
+    log(f"KV capacity used for admission: {kv_cap} tokens")
+    pad_id = processor.tokenizer.convert_tokens_to_ids("<|image_pad|>")
+
+    def plan(v):
+        """Everything except the decoded frames: text fields, frame sizes, scale, prompt token counts (cheap)."""
+        paths = sorted((RAW / ds / v / "rationale_frames").glob("frame_*.jpg"))[:20]
+        if not paths:
+            return None
+        sizes = []
+        for p in paths:
+            with Image.open(p) as im:
+                sizes.append(im.size)
+        title, desc = tf.get(v, ("N/A", "N/A"))
+        trans = asr.get(v, "").strip() or "N/A"
+        # the step-B prompt (step-A text + up to 2048 step-A tokens) and 2048 new tokens must fit the context;
+        # frames are shrunk only when they would not (very large frames or very long transcripts), recorded
+        n_text = len(processor.tokenizer(A.prompt_step_a_tagged(title, desc, trans))["input_ids"])
+        trunc = False
+        while n_text > max_len // 2 and len(trans) > 1000:  # extreme transcripts only; recorded
+            trans = trans[: int(len(trans) * 0.8)]
+            trunc = True
             n_text = len(processor.tokenizer(A.prompt_step_a_tagged(title, desc, trans))["input_ids"])
-            trunc = False
-            while n_text > max_len // 2 and len(trans) > 1000:  # extreme transcripts only; recorded
-                trans = trans[: int(len(trans) * 0.8)]
-                trunc = True
-                n_text = len(processor.tokenizer(A.prompt_step_a_tagged(title, desc, trans))["input_ids"])
-            budget = max_len - GEN_TOKENS - (n_text + GEN_TOKENS + 512) - 4 * len(imgs)
-            tok = sum(img_tokens(*im.size) for im in imgs)
-            scale = 1.0
-            if tok > budget:
-                scale = math.sqrt(max(budget, 64 * len(imgs)) / tok) * 0.97
-                imgs = [im.resize((max(32, int(im.width * scale)), max(32, int(im.height * scale)))) for im in imgs]
-            inputs[v] = {"images": imgs, "title": title, "desc": desc, "trans": trans, "scale": scale,
-                         "n_frames": len(imgs), "trans_truncated": trunc}
-        live = [v for v in chunk if inputs[v] is not None]
+        budget = max_len - GEN_TOKENS - (n_text + GEN_TOKENS + 512) - 4 * len(sizes)
+        tok = sum(img_tokens(*wh) for wh in sizes)
+        scale = 1.0
+        if tok > budget:
+            scale = math.sqrt(max(budget, 64 * len(sizes)) / tok) * 0.97
+            sizes = [(max(32, int(w * scale)), max(32, int(h * scale))) for w, h in sizes]
+        inp = {"paths": paths, "sizes": sizes, "title": title, "desc": desc, "trans": trans, "scale": scale,
+               "n_frames": len(paths), "trans_truncated": trunc, "img_tokens": sum(img_tokens(*wh) for wh in sizes)}
+        inp["need1"] = prompt_tokens(inp, A.prompt_step_a_tagged(title, desc, trans)) + GEN_TOKENS
+        return inp
 
-        def run(reqs, pars):
-            """LLM.generate always passes tokenization_kwargs={"truncation": False}, which makes vLLM key every image
-            by a content hash even with an explicit id. Requests are added with tokenization_kwargs=None instead
-            (the tokenizer's default is no truncation, so the token ids are the same) and the engine is run as
-            LLM.generate does."""
-            rids = []
-            for r, p in zip(reqs, pars):
+    def load_images(inp):
+        imgs = [Image.open(p).convert("RGB") for p in inp["paths"]]
+        if inp["scale"] < 1.0:
+            imgs = [im.resize(wh) for im, wh in zip(imgs, inp["sizes"])]
+        return imgs
+
+    def prompt_tokens(inp, prompt):
+        msgs = [{"role": "user", "content": [{"type": "image"} for _ in inp["paths"]] + [{"type": "text", "text": prompt}]}]
+        text = processor.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+        ids = processor.tokenizer(text)["input_ids"]
+        return len(ids) - sum(1 for t in ids if t == pad_id) + inp["img_tokens"] + 64
+
+    t0 = time.time()
+    t_last, n_last = t0, 0
+    n_ok = 0
+    pending = deque(todo)
+    ready_b = deque()          # videos whose step A is done
+    plans, images, raw_a, step_a, failed = {}, {}, {}, {}, {}
+    inflight = {}              # request id -> (video, step, reserved tokens)
+    reserved = 0
+    WINDOW = 64                # how far down the queue to look for a request that fits
+
+    def finish_video(v, raw_b):
+        nonlocal n_ok
+        b = A.parse_tagged_step_b(raw_b)
+        inp = plans.pop(v)
+        images.pop(v, None)
+        rec = {"video_id": v, "objective_description": step_a.pop(v),
+               "final_decision": {"label": b["final_decision"]["label"],
+                                  "explicitness": b["final_decision"]["explicitness"],
+                                  "reasons": b.get("reasons", ""), "confidence": b.get("confidence", ""),
+                                  "notes": b.get("notes", "")},
+               "raw": {"step_a": raw_a.pop(v), "step_b": raw_b},
+               "inputs": {"n_frames": inp["n_frames"], "frame_scale": inp["scale"],
+                          "transcription_truncated": inp["trans_truncated"],
+                          "title": inp["title"] != "N/A", "description": inp["desc"] != "N/A",
+                          "transcription_chars": len(inp["trans"]), "image_tokens": inp["img_tokens"]}}
+        (out_dir / f"{v}_rationale.json").write_text(json.dumps(rec, ensure_ascii=False, indent=1) + "\n")
+        n_ok += 1
+
+    def fail(v, why):
+        failed[v] = why
+        plans.pop(v, None)
+        images.pop(v, None)
+        (out_dir / f"{v}_rationale.json").write_text(json.dumps({"video_id": v, "error": why}) + "\n")
+
+    def try_admit():
+        nonlocal reserved
+        admitted = False
+        for queue, step in ((ready_b, 2), (pending, 1)):
+            for _ in range(min(WINDOW, len(queue))):
+                v = queue[0]
+                if v not in plans:
+                    inp = plan(v)
+                    if inp is None:
+                        queue.popleft()
+                        fail(v, "no rationale frames")
+                        continue
+                    plans[v] = inp
+                inp = plans[v]
+                need = inp["need1"] if step == 1 else inp["need2"]
+                if reserved + need > kv_cap and inflight:
+                    queue.rotate(-1)   # this one waits for room; look at the next one
+                    continue
+                queue.popleft()
+                if v not in images:
+                    images[v] = load_images(inp)
+                if step == 1:
+                    req = request(v, images[v], A.prompt_step_a_tagged(inp["title"], inp["desc"], inp["trans"]))
+                else:
+                    req = request(v, images[v], A.prompt_step_b_tagged(step_a[v], inp["title"], inp["desc"],
+                                                                       inp["trans"]))
                 rid = str(next(llm.request_counter))
-                llm.llm_engine.add_request(rid, r, p, tokenization_kwargs=None)
-                rids.append(rid)
-            done = {o.request_id: o for o in llm._run_engine(use_tqdm=False)}
-            return [done[r] for r in rids]
+                try:
+                    eng.add_request(rid, req, params(step, v), tokenization_kwargs=None)
+                except Exception as e:  # noqa: BLE001 - a bad input for this video only
+                    fail(v, f"step {step}: {e!r}")
+                    continue
+                inflight[rid] = (v, step, need)
+                reserved += need
+                admitted = True
+        return admitted
 
-        def gen(step, vs, prompt_of):
-            """Batched generate; if the batch fails, retry one by one so one bad video cannot stop the rest."""
-            try:
-                outs = run([request(v, inputs[v]["images"], prompt_of(v)) for v in vs], [params(step, v) for v in vs])
-                return {v: o.outputs[0].text.strip() for v, o in zip(vs, outs)}
-            except Exception as e:  # noqa: BLE001
-                log(f"  batch step {step} failed ({e!r}); one by one")
-                res = {}
-                for v in vs:
-                    try:
-                        o = run([request(v, inputs[v]["images"], prompt_of(v))], [params(step, v)])[0]
-                        res[v] = o.outputs[0].text.strip()
-                    except Exception as e2:  # noqa: BLE001
-                        failed[v] = f"step {step}: {e2!r}"
-                return res
-
-        failed = {}
-        raw_a = gen(1, live, lambda v: A.prompt_step_a_tagged(inputs[v]["title"], inputs[v]["desc"], inputs[v]["trans"]))
-        step_a = {v: A.parse_tagged_step_a(t) for v, t in raw_a.items()}
-        live_b = [v for v in live if v in step_a]
-        raw_bs = gen(2, live_b, lambda v: A.prompt_step_b_tagged(step_a[v], inputs[v]["title"], inputs[v]["desc"],
-                                                                 inputs[v]["trans"]))
-        if live and len(failed) == len(live):  # a systematic error, not a bad video: stop instead of writing errors
-            raise RuntimeError(f"every video of the chunk failed, e.g. {next(iter(failed.items()))}")
-        for v in failed:
-            (out_dir / f"{v}_rationale.json").write_text(json.dumps({"video_id": v, "error": failed[v]}) + "\n")
-        for v, raw_b in raw_bs.items():
-            b = A.parse_tagged_step_b(raw_b)
-            rec = {"video_id": v, "objective_description": step_a[v],
-                   "final_decision": {"label": b["final_decision"]["label"],
-                                      "explicitness": b["final_decision"]["explicitness"],
-                                      "reasons": b.get("reasons", ""), "confidence": b.get("confidence", ""),
-                                      "notes": b.get("notes", "")},
-                   "raw": {"step_a": raw_a[v], "step_b": raw_b},
-                   "inputs": {"n_frames": inputs[v]["n_frames"], "frame_scale": inputs[v]["scale"],
-                              "transcription_truncated": inputs[v]["trans_truncated"],
-                              "title": inputs[v]["title"] != "N/A", "description": inputs[v]["desc"] != "N/A",
-                              "transcription_chars": len(inputs[v]["trans"])}}
-            (out_dir / f"{v}_rationale.json").write_text(json.dumps(rec, ensure_ascii=False, indent=1) + "\n")
-            n_ok += 1
-        for v in chunk:
-            if inputs[v] is None:
-                (out_dir / f"{v}_rationale.json").write_text(json.dumps(
-                    {"video_id": v, "error": "no rationale frames"}) + "\n")
-        el = time.time() - t0
-        log(f"  {min(c0 + args.chunk, len(todo))}/{len(todo)} videos, {el:.0f}s ({el / max(n_ok, 1):.2f} s/video)")
-    log(f"DONE rationale: {n_ok} written, {time.time() - t0:.0f}s")
+    while pending or ready_b or inflight:
+        while try_admit():
+            pass
+        if not inflight:
+            if pending or ready_b:
+                continue
+            break
+        for o in eng.step():
+            if not o.finished:
+                continue
+            v, step, need = inflight.pop(o.request_id)
+            reserved -= need
+            text = o.outputs[0].text.strip()
+            if step == 1:
+                raw_a[v] = text
+                step_a[v] = A.parse_tagged_step_a(text)
+                inp = plans[v]
+                inp["need2"] = prompt_tokens(inp, A.prompt_step_b_tagged(step_a[v], inp["title"], inp["desc"],
+                                                                        inp["trans"])) + GEN_TOKENS
+                ready_b.append(v)
+            else:
+                finish_video(v, text)
+                if (n_ok - n_last) >= 64:
+                    now = time.time()
+                    log(f"  {n_ok}/{len(todo)} videos, {now - t0:.0f}s; last {n_ok - n_last}: "
+                        f"{(now - t_last) / (n_ok - n_last):.2f} s/video; in flight {len(inflight)}, "
+                        f"reserved {reserved}/{kv_cap} tokens")
+                    t_last, n_last = now, n_ok
+        if len(failed) >= 20 and n_ok == 0:
+            raise RuntimeError(f"first {len(failed)} videos failed, e.g. {next(iter(failed.items()))}")
+    log(f"DONE rationale: {n_ok} written, {len(failed)} failed, {time.time() - t0:.0f}s")
 
 
 if __name__ == "__main__":
