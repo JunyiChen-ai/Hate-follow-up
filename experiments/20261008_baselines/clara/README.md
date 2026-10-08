@@ -44,8 +44,13 @@ from the model's generation_config (as HF `generate` applies them), served with 
 
 - Hash ban: the collator seeds each video's contrastive segment sampling with md5(video_id). The seed term is the
   index of the id in the sorted sample-id list instead; the md5 helpers are replaced by functions that raise.
-  vLLM runs with prefix caching and the multimodal processor cache off and explicit image ids, and a guard makes any
-  call to vLLM's content hasher fail.
+  vLLM runs with prefix caching and the multimodal processor cache off; requests are added with
+  `tokenization_kwargs=None` (vLLM's `LLM.generate` passes `{"truncation": False}`, which makes it key every image
+  by a content hash even when an id is given); a guard makes any call to vLLM's content hasher fail once the engine
+  is up (its start-up memory profiling keys synthetic dummy images only).
+- DeepSpeed is installed in the HateVideo env without a CUDA toolkit; accelerate imports it inside
+  `Trainer.__init__` and the import fails on a GPU node (Slurm 324). accelerate is told DeepSpeed is unavailable
+  (it is not used).
 - The packs store features in fp16; under `--bf16` autocast, `torch.cat` of two fp16 tensors in
   `FeatureProjector` raises ("Unexpected floating ScalarType in at::autocast::prioritize"). Features are upcast to
   fp32 when loaded (values unchanged).
@@ -78,7 +83,9 @@ bash experiments/20261008_baselines/clara/setup_envs.sh                         
 sbatch experiments/20261008_baselines/launch/clara_<machine>.sbatch <DS>      # rationale, OCR rest, embed, 2 x 3 trainings, eval
 ```
 
-Hosts: HateMM and HateClipSeg on uoa-lab3 (sc474398), DeHate on uoa-lab2 (sc474399).
+Hosts: HateMM and HateClipSeg: clips, frames and OCR (CPU) on uoa-lab3 (sc474398), copied to uoa-lab1 (sc474397)
+where the GPU stages ran (the lab3 GPU was held by a long job of another agent); DeHate entirely on uoa-lab2
+(sc474399).
 Caches: `data/clara_raw/<DS>/` (clips, frames, OCR), `data/clara_rationale/<DS>/Qwen/`, `data/clara_emb/<DS>/`.
 Outputs: `runs/20261008_baselines/clara{,_norationale}/<DS>/seed<k>/` (`run.log`, `config_snapshot.json`,
 `config.json`, `train_history.json`, `window_scores.json`, `predictions.jsonl`, `coverage.json`, `metrics.json`).
@@ -90,4 +97,21 @@ OCR: about 40 frames per video plus the window frames of test videos (about 40 p
 
 ## Results
 
-Pending (jobs queued 2026-10-08; see the coordinator's report).
+Weakly supervised (video-level labels), 8-s windows, exact cohorts; transcribed from
+`runs/20261008_baselines/{clara,clara_norationale}/<DS>/seed<k>/metrics.json` (summary:
+`runs/20261008_baselines/sage_clara_summary.json`).
+
+| corpus | variant | seed | frame ROC-AUC | frame PR-AUC | within-video ROC-AUC |
+|---|---|---|---|---|---|
+| HateClipSeg (118) | CLARA | 2025 / 234 / 3407 | .5441 / .5430 / .5367 | .5154 / .5161 / .5180 | .5048 / .5022 / .5079 |
+| HateClipSeg | CLARA | mean (sd) | .5413 (.0040) | .5165 (.0013) | .5050 (.0028) |
+| HateClipSeg | w/o rationale | 2025 / 234 / 3407 | .5360 / .5410 / .5350 | .5117 / .5147 / .5072 | .5233 / .5271 / .5192 |
+| HateClipSeg | w/o rationale | mean (sd) | .5373 (.0032) | .5112 (.0037) | .5232 (.0039) |
+
+HateClipSeg: uoa-lab1, Slurm 324, 2026-10-08 18:28-19:41 (rationale 394 videos in 50 min). On the p11 val split
+(34 hateful / 5 normal) every run predicts all videos hateful from the first epoch (val accuracy .8718), so early
+stopping (patience 10 on val accuracy) keeps the epoch-1 checkpoint in all six runs; this is the published selection
+rule applied to this split. Coverage 118 / 118 videos, 3591 windows, no fallback.
+
+HateMM: rationale (1068 videos, 1.8 h) and embeddings done in Slurm 324; its training failed on the DeepSpeed
+import (fixed) and is resubmitted as Slurm 326 (training only). DeHate: Slurm 318 (uoa-lab2) running.
