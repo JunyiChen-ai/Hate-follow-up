@@ -262,3 +262,5 @@ Conclusion:
 Cost (actual, both corpora, LOCAL features from R1 proofs):
 - E reading: 18.3 min. Native visual read: 7.3 min.
 - The 0.5 fps single-frame vision encoding is extra: at most 3.9 min in R1, which also includes saliency.
+
+**2026-10-09 disk cleanup (user-approved):** `runs/20261007_m1_streamingtom/r1_full_main/proof/` (143 GB of per-frame audit tensors) was deleted on sc474397 and sc474398. Records, predictions, metrics and analyses are kept. The R1 strict CPU replay and `local_controls.py` (which read LOCAL features from these proofs) can no longer run as written; a rerun must recompute the single-frame vision features.

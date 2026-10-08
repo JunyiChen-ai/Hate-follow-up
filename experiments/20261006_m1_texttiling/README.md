@@ -192,3 +192,5 @@ CompleteR2 whole333/237+ROOT matchingruntime strictaudio/source/compiler/nativea
 Postwhole error_analysis.py --revision2 readsall333 R2raw+fixedr6 base/optimized andrespective4fps testGT throughcanonicalhelpers, outputs runs/r2_full_main_error_analysis/. No source/scoring/fitting/threshold import. Preserve allnegative/positive/source/parse/word/UNKNOWN/cost evidence;37fullmechanismpriority, no retrospectivecurve mixture/newcorpus rules.
 
 R2 actualpostwhole rawpairedwithin V/S/max HMM0/−.011346450/−.000013696;HCS0/−.000078915/+.002527946. Allnonzero pairedCI95contains0; no significance/mechanism claim. Removinguncompiledfallback didnotexplainrawSweakness; compiledsourceaugmentation alsoneedsdiagnosis. Actualreadpaths/allraw/final/GT/scope andpervideo/orderingdiagnostics runs/r2_full_main_error_analysis/{summary,per_video}.json, nevermethodinputs. Nextrevision remainsundeclared; preserveR1dualwithin andallR2negativeevidence/sourcecosts.
+
+**2026-10-09 disk cleanup (user-approved):** `runs/20261006_m1_texttiling/r{1,2}_full_main/proof/` (28 GB of audit tensors) was deleted on sc474397. Records, predictions, metrics and analyses are kept.
