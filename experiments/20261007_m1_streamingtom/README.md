@@ -222,3 +222,43 @@ Reading:
   separated yet.
 - The swaps are not additive: the decoder is fitted on the whole corpus. On HateMM the covered-only set is above full
   control #1.
+
+### Decomposition results (2026-10-08; development-selected)
+
+Run sc474397 / Slurm 315, 53:13, exit 0:0 (smoke Slurm 304 PASS first). `local_controls_main_analysis/alignment.json`
+PASS on all 333 videos:
+- native reads equal r6;
+- `no_remote_replay` reproduces control #1 exactly in every window and in all six metrics;
+- B (`custom_native`) equals the native visual read exactly in all 7359 windows (maximum |difference| 0.0);
+- E has no role text and the same time labels and images as control #1 in every covered window.
+
+Sources `local_controls_main_decoded/<arm>/metrics.json`; steps and verdicts `local_controls_analysis/summary.json`.
+
+| | HateMM | HateClipSeg |
+|---|---|---|
+| r6 | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 |
+| B `custom_native` | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 |
+| E `local_clean` | .8978 / .6905 / .7644 | .7373 / .6906 / .6669 |
+| control #1 | .9003 / .6952 / .7655 | .7384 / .6911 / .6572 |
+
+| step | HateMM | HateClipSeg | verdict (declared) |
+|---|---|---|---|
+| code path, B − r6 | 0 / 0 / 0 | 0 / 0 / 0 | no effect (bit-identical reads) |
+| frames, E − B | +.0006 / −.0037 / +.0136 | +.0205 / +.0195 / +.0296 | supported: within ≥ .01 in both corpora, no loss beyond noise |
+| role text, #1 − E | +.0025 / +.0047 / +.0011 | +.0011 / +.0005 / −.0097 | within noise |
+
+Conclusion:
+- The gain of control #1 over r6 comes from the window's own LOCAL frames.
+- The R1 attention code changes nothing.
+- The leftover role text has no effect beyond the noise floor. It is close to the floor on HateMM PR (+.0047) and
+  HateClipSeg within (−.0097).
+- E (r6 plus LOCAL frames with time labels, no role text) against r6:
+  - HateMM: +.0007 / −.0037 / +.0136;
+  - HateClipSeg: +.0205 / +.0195 / +.0296;
+  - within ≥ .01 in both corpora, every loss inside the noise floor.
+- Not yet separated: more frames per window versus frames placed next to the window's question (see the error
+  analysis above). DeHate not run. E is an input change (rule 5); adoption is the user's decision.
+
+Cost (actual, both corpora, LOCAL features from R1 proofs):
+- E reading: 18.3 min. Native visual read: 7.3 min.
+- The 0.5 fps single-frame vision encoding is extra: at most 3.9 min in R1, which also includes saliency.

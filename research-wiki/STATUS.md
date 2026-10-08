@@ -1,7 +1,8 @@
 # 当前研究状态
 
-截至 **2026-10-08 04:00 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-08 16:30 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
 
+- **StreamingTOM39 #1 的涨点分解（2026-10-08，用户要求确认涨点来源）**：同一作业逐项只改一处，sc474397/Slurm 315，核对全 PASS（#1 重跑逐值复现）。换注意力代码（B）与 r6 在 7359 个窗口逐值相同，六项差 0；去掉多余的记忆说明文字，差异在噪声内；加入本窗 0.5 fps 帧（E − B）HMM +.0006/−.0037/+.0136、HCS +.0205/+.0195/+.0296，按声明的门成立。即 #1 的涨点来自本窗帧。干净版本 E（r6 + 本窗帧 + 时间标注）相对 r6：HMM .8978/.6905/.7644，HCS .7373/.6906/.6669，within 两语料均 ≥ .01、其余在噪声内。误差分析：涨点主要出在 r6 原本已有帧的窗口，未分开"帧更多"和"帧紧挨问题"。表 `runs/20261007_m1_streamingtom/local_controls_analysis/summary.json`，各臂 `local_controls_main_decoded/<arm>/metrics.json`。E 属输入改动（规则 5），是否采用待用户裁定；DeHate 未跑；正式方法仍为 r6_bma。
 - **StreamingTOM39 机制对照 1–3（2026-10-08，用户指示跑 1、2、3）**：三个对照完整 333 均已跑完并通过逐视频核对（重建输入与 R1 逐值相同，replay 臂复现 R1 全部六项）。去掉远处记忆（no_remote）、改成时间上最近 4 帧（nearest）、改成均匀选 token（uniform），相对 R1 都没有任何一项下降 ≥ .01，三个部件都不成立，候选 39 不晋级。R1 相对 r6 的涨点全部来自"每个 8 秒窗加入本窗 0.5 fps 原始帧"：no_remote 对 r6 为 HMM +.0032/+.0010/+.0148，HCS +.0216/+.0201/+.0199。这是输入改动（规则 5，本身不算 novelty），是否采用待用户裁定。表与门 `runs/20261007_m1_streamingtom/controls_analysis/summary.json`，各臂权威 `controls_{dualpath,uniform}_main_decoded/<arm>/metrics.json`，细节 `experiments/20261007_m1_streamingtom/README.md` 末节。正式方法仍为 r6_bma；DeHate 未跑。
 
 - 正式方法仍为 **r6_bma**，累计归档 **31** 项，研究目标未完成。用户最新指示为“跑完这一轮实验停下”：StreamingTOM39 / Slurm242 与 VTimeCoT35 C / Slurm238 的完整333、ROOT回传、严格验证及统一评测均已完成，自主迭代已停止；不启动新实验、修订或消融，未更新 Overleaf。
