@@ -103,15 +103,30 @@ Weakly supervised (video-level labels), 8-s windows, exact cohorts; transcribed 
 
 | corpus | variant | seed | frame ROC-AUC | frame PR-AUC | within-video ROC-AUC |
 |---|---|---|---|---|---|
+| HateMM (215) | CLARA | 2025 / 234 / 3407 | .8753 / .8755 / .8657 | .6377 / .6336 / .6208 | .5439 / .5335 / .5478 |
+| HateMM | CLARA | mean (sd) | .8722 (.0056) | .6307 (.0088) | .5417 (.0074) |
+| HateMM | w/o rationale | 2025 / 234 / 3407 | .5405 / .5679 / .5476 | .2735 / .2883 / .2759 | .5705 / .5526 / .5282 |
+| HateMM | w/o rationale | mean (sd) | .5520 (.0142) | .2792 (.0079) | .5504 (.0212) |
 | HateClipSeg (118) | CLARA | 2025 / 234 / 3407 | .5441 / .5430 / .5367 | .5154 / .5161 / .5180 | .5048 / .5022 / .5079 |
 | HateClipSeg | CLARA | mean (sd) | .5413 (.0040) | .5165 (.0013) | .5050 (.0028) |
 | HateClipSeg | w/o rationale | 2025 / 234 / 3407 | .5360 / .5410 / .5350 | .5117 / .5147 / .5072 | .5233 / .5271 / .5192 |
 | HateClipSeg | w/o rationale | mean (sd) | .5373 (.0032) | .5112 (.0037) | .5232 (.0039) |
+
+The w/o-rationale check shows where CLARA's pooled score comes from on HateMM: the shared video-level rationale
+tokens lift pooled ROC-AUC from .55 to .87 and PR-AUC from .28 to .63, while within-video ROC-AUC stays at
+.54-.55 either way. The rationale is identical for all windows of a video, so it ranks videos, not moments.
+
+HateMM: rationale (1068 videos, 1.8 h) and embeddings in Slurm 324 on uoa-lab1; training in Slurm 324 failed on the
+DeepSpeed import (fixed), and the six trainings then ran on the uoa-lab1 CPU (`clara_train.py --cpu`, bf16 autocast on
+CPU, all settings unchanged; `runs/20261008_baselines/clara/train_cpu_HateMM_lab1.log`) because no GPU slot was free
+under the per-user 2-GPU limit. Selected epochs (val accuracy): CLARA 12 / 14 / 23 (.851 / .860 / .869), w/o rationale
+4 / 8 / 2 (.664 / .673 / .664). Coverage 215 / 215 videos, 3768 windows, no fallback; 2 train videos without an
+audio stream skipped as in the authors' extractor.
 
 HateClipSeg: uoa-lab1, Slurm 324, 2026-10-08 18:28-19:41 (rationale 394 videos in 50 min). On the p11 val split
 (34 hateful / 5 normal) every run predicts all videos hateful from the first epoch (val accuracy .8718), so early
 stopping (patience 10 on val accuracy) keeps the epoch-1 checkpoint in all six runs; this is the published selection
 rule applied to this split. Coverage 118 / 118 videos, 3591 windows, no fallback.
 
-HateMM: rationale (1068 videos, 1.8 h) and embeddings done in Slurm 324; its training failed on the DeepSpeed
-import (fixed) and is resubmitted as Slurm 326 (training only). DeHate: Slurm 318 (uoa-lab2) running.
+DeHate: Slurm 318 on uoa-lab2, started 2026-10-08 19:40 (rationale about 5 s/video for 6499 videos, then the OCR
+not yet done by the parallel CPU pass, embeddings, six trainings, evaluation); not finished at the time of writing.
