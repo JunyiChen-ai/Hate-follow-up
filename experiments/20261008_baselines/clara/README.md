@@ -63,8 +63,11 @@ from the model's generation_config (as HF `generate` applies them), served with 
   median 1870 characters, no run to the 2048-token cap) and transcripts were shorter than earlier ones, so neither
   output length nor text length was the cause. Fix: requests are admitted only when prompt + 2048 new tokens fit the
   KV cache not reserved by running requests (no preemption can occur), step B is queued as soon as step A finishes,
-  and frames are decoded only on admission. Inputs, prompts, sampling and seeds are unchanged; the 896 rationales of
-  Slurm 318 are kept and the job resumed from them (Slurm 328).
+  and frames are decoded only on admission. Large videos (step-A prompt + 2048 > half the cache; 690 of the 4465 left
+  at the switch) run one at a time while small ones fill the remaining cache, so they are not starved. Inputs,
+  prompts, sampling and seeds are unchanged; finished rationales are kept and each restart resumes from them
+  (Slurm 318: 896 videos; Slurm 328, first fix: 1138 more at 2.2-2.6 s/video, small frames; Slurm 329 from 06:30
+  on 2026-10-09: large videos at about 29 s/video).
 - Whisper clips of one sample are encoded in a batch (same per-clip arithmetic). The Qwen3-Embedding text variants
   are not computed (unused by the bert configuration). OCR runs only on the frames that enter the embeddings.
 - `dataloader_num_workers` 8 -> 4; the per-microbatch MoE / GVT diagnostic JSONL logs are not written.
