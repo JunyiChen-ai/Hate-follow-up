@@ -54,6 +54,17 @@ from the model's generation_config (as HF `generate` applies them), served with 
 - The packs store features in fp16; under `--bf16` autocast, `torch.cat` of two fp16 tensors in
   `FeatureProjector` raises ("Unexpected floating ScalarType in at::autocast::prioritize"). Features are upcast to
   fp32 when loaded (values unchanged).
+- Rationale throughput on DeHate (2026-10-09). Many DeHate videos are 720p-1080p vertical; at native resolution
+  (the authors' processor setting, unchanged) 20 frames give 17.6k-40.8k image tokens per prompt (HateMM /
+  HateClipSeg frames: about 6k), against a 55k-token KV cache on the 5090. vLLM v1 admits requests whose prompts
+  fit and, when the cache runs out during decoding, silently preempts a request and recomputes it from zero; with
+  several large prompts this repeated (Slurm 318: 4 s/video on small frames, then 37, 90, 98 and 185 s/video per
+  64-video batch; image-token throughput fell from 2.5k to 0.25k tokens/s). Generation lengths were normal (step A
+  median 1870 characters, no run to the 2048-token cap) and transcripts were shorter than earlier ones, so neither
+  output length nor text length was the cause. Fix: requests are admitted only when prompt + 2048 new tokens fit the
+  KV cache not reserved by running requests (no preemption can occur), step B is queued as soon as step A finishes,
+  and frames are decoded only on admission. Inputs, prompts, sampling and seeds are unchanged; the 896 rationales of
+  Slurm 318 are kept and the job resumed from them (Slurm 328).
 - Whisper clips of one sample are encoded in a batch (same per-clip arithmetic). The Qwen3-Embedding text variants
   are not computed (unused by the bert configuration). OCR runs only on the frames that enter the embeddings.
 - `dataloader_num_workers` 8 -> 4; the per-microbatch MoE / GVT diagnostic JSONL logs are not written.
