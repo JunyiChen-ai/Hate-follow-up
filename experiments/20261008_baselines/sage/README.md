@@ -90,6 +90,8 @@ sbatch experiments/20261008_baselines/launch/sage_<machine>.sbatch <DS>   # trai
 ```
 
 Hosts: HateMM and HateClipSeg on uoa-lab1 (sc474397), DeHate on uoa-lab2 (sc474399).
+Caches: `data/sage_frames16/<DS>/` (train/val frames), `data/sage_frames16_win8/<DS>/` (test windows; deleted on
+uoa-lab1 after scoring to free disk, rebuilt by `prep` in about 5 min), `data/wav16k_mono/<DS>/`.
 Outputs: `runs/20261008_baselines/sage/<DS>/seed<k>/` (`run.log` first line = host, `config_snapshot.yaml`,
 `config.json`, `train_history.json`, `predictions.jsonl`, `coverage.json`, `metrics.json` from
 `src/eval/evaluate_four_datasets.py`); window scores of all seeds in `runs/20261008_baselines/sage/<DS>/infer/`.
@@ -101,14 +103,25 @@ Weakly supervised (video-level labels), 8-s windows, exact cohorts; transcribed 
 
 | corpus | seed | selected epoch (val macro-F1) | frame ROC-AUC | frame PR-AUC | within-video ROC-AUC |
 |---|---|---|---|---|---|
+| HateMM (215) | 2025 | 20 (.8173) | .7504 | .5272 | .6198 |
+| HateMM | 234 | 9 (.8073) | .7326 | .4998 | .6045 |
+| HateMM | 3407 | 8 (.8203) | .7087 | .4833 | .6136 |
+| HateMM | mean (sd) | | .7306 (.0209) | .5035 (.0222) | .6126 (.0077) |
+| HateClipSeg (118) | 2025 | 13 (.8412) | .5460 | .5060 | .5125 |
+| HateClipSeg | 234 | 14 (.8615) | .5428 | .5018 | .5226 |
+| HateClipSeg | 3407 | 6 (.8116) | .5471 | .5215 | .5117 |
+| HateClipSeg | mean (sd) | | .5453 (.0022) | .5098 (.0104) | .5156 (.0061) |
 | DeHate (1151) | 2025 | 18 (.6388) | .5867 | .1058 | .5563 |
 | DeHate | 234 | 29 (.6364) | .5759 | .1027 | .5588 |
 | DeHate | 3407 | 8 (.5834) | .6283 | .1290 | .5943 |
 | DeHate | mean (sd) | | .5970 (.0277) | .1125 (.0144) | .5698 (.0212) |
+
+HateMM and HateClipSeg: uoa-lab1 (sc474397), Slurm 305, 2026-10-08 13:29-14:54 (the first attempt, Slurm 293, ran
+out of GPU memory in the first batch; see the attention fix above). Coverage: HateMM 215 / 215 videos, 3768
+windows, 22 F1 tail windows; HateClipSeg 118 / 118, 3591 windows, 11 F1 tail windows; no F2.
 
 DeHate: uoa-lab2 (sc474399), Slurm 299, 2026-10-08 06:27-13:19. Seed 3407's training loss became NaN at epoch 11 (no
 gradient clipping in the release); the authors' rule keeps the last checkpoint with a better val macro-F1 (epoch 8).
 Coverage: 1151 / 1151 videos, 14,375 windows, 82 F1 tail windows (all last windows of a video, < 16 frames), no F2,
 no clamped frames, every video has audio.
 
-HateMM / HateClipSeg: pending (Slurm 305 on uoa-lab1, queued behind the per-user 2-GPU limit).
