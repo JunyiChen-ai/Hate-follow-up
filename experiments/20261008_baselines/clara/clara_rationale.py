@@ -80,7 +80,6 @@ def main():
 
     def _no_hash(*a, **k):
         raise RuntimeError("content hashing is not allowed (CLAUDE.md hash ban)")
-    H.MultiModalHasher.hash_kwargs = staticmethod(_no_hash)
     from vllm import LLM, SamplingParams
     from transformers import AutoProcessor
 
@@ -115,6 +114,9 @@ def main():
                   enable_prefix_caching=False, mm_processor_cache_gb=0,
                   limit_mm_per_prompt={"image": 20, "video": 0}, seed=0, enforce_eager=True, max_num_seqs=16)
     log(f"vLLM loaded: {MODEL}, max_model_len {max_len}")
+    # Engine start-up profiles memory with synthetic dummy images, which vLLM keys internally; the guard is armed
+    # after start-up, so no frame of ours can be hashed (requests carry request-id item ids, caches are off).
+    H.MultiModalHasher.hash_kwargs = staticmethod(_no_hash)
 
     def request(v, images, prompt):
         msgs = [{"role": "user", "content": [{"type": "image"} for _ in images] + [{"type": "text", "text": prompt}]}]
