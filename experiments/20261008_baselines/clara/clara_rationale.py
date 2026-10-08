@@ -160,19 +160,30 @@ def main():
                          "n_frames": len(imgs), "trans_truncated": trunc}
         live = [v for v in chunk if inputs[v] is not None]
 
+        def run(reqs, pars):
+            """LLM.generate always passes tokenization_kwargs={"truncation": False}, which makes vLLM key every image
+            by a content hash even with an explicit id. Requests are added with tokenization_kwargs=None instead
+            (the tokenizer's default is no truncation, so the token ids are the same) and the engine is run as
+            LLM.generate does."""
+            rids = []
+            for r, p in zip(reqs, pars):
+                rid = str(next(llm.request_counter))
+                llm.llm_engine.add_request(rid, r, p, tokenization_kwargs=None)
+                rids.append(rid)
+            done = {o.request_id: o for o in llm._run_engine(use_tqdm=False)}
+            return [done[r] for r in rids]
+
         def gen(step, vs, prompt_of):
             """Batched generate; if the batch fails, retry one by one so one bad video cannot stop the rest."""
             try:
-                outs = llm.generate([request(v, inputs[v]["images"], prompt_of(v)) for v in vs],
-                                    [params(step, v) for v in vs], use_tqdm=False)
+                outs = run([request(v, inputs[v]["images"], prompt_of(v)) for v in vs], [params(step, v) for v in vs])
                 return {v: o.outputs[0].text.strip() for v, o in zip(vs, outs)}
             except Exception as e:  # noqa: BLE001
                 log(f"  batch step {step} failed ({e!r}); one by one")
                 res = {}
                 for v in vs:
                     try:
-                        o = llm.generate([request(v, inputs[v]["images"], prompt_of(v))], [params(step, v)],
-                                         use_tqdm=False)[0]
+                        o = run([request(v, inputs[v]["images"], prompt_of(v))], [params(step, v)])[0]
                         res[v] = o.outputs[0].text.strip()
                     except Exception as e2:  # noqa: BLE001
                         failed[v] = f"step {step}: {e2!r}"
