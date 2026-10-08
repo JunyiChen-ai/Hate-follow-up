@@ -100,6 +100,16 @@ def main():
     SS.stable_hash_str = _no_hash
     DSET._stable_int_from_str = _no_hash
 
+    # DeepSpeed is installed in the HateVideo env but has no CUDA toolkit (CUDA_HOME) on the lab nodes; accelerate
+    # imports it inside Trainer.__init__ just to recognise wrapped models and the import fails on a GPU node.
+    # DeepSpeed is not used here, so accelerate is told it is unavailable.
+    import accelerate.accelerator as _AA
+    import accelerate.utils as _AU
+    import accelerate.utils.imports as _AUI
+    import accelerate.utils.other as _AUO
+    for _m in (_AA, _AU, _AUI, _AUO):
+        if hasattr(_m, "is_deepspeed_available"):
+            _m.is_deepspeed_available = lambda: False
     import main as CM
     import torch
     # The packs store features in fp16 (extract_video_emb.py OUT_DTYPE). Under run_clara.sh's --bf16 autocast,
