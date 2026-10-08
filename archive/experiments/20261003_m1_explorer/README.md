@@ -702,3 +702,5 @@ R3保留HCS最强within .663234，但HMM PR损失.005334超过容许值；R4保�
 初版+三次修订已耗尽，整族归档为累计第18项，不另起R5重置预算。
 条件式uniform/distance/fixed4/mismatch/verdict_replay未运行全量GPU，
 因为主门未过；审查PASS与smoke不等于消融通过。正式r6保持，继续新的完整M1方法。
+
+**2026-10-09 disk cleanup (user-approved, category A):** acquired-frame image copies runs/20261003_m1_explorer/*/acquired_frames/ were deleted on sc474397. Predictions, metrics, traces and analyses are kept.

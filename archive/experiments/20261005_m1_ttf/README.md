@@ -145,3 +145,5 @@ visual tokens，非首锚200/112、零token来源块593/222，所有文字和ima
 对应native1.15950636468911倍；峰值17.84/17.56GiB。阶段计时不含审计缓存写入、
 序列化及配对native V，不宣称部署端到端墙钟或作者算法零成本。
 全部development-selected；报告和来源 `r1_full_main_analysis/{summary,alignment,per_video}.json`。
+
+**2026-10-09 disk cleanup (user-approved, category A):** the derived cache data/temporal_token_fusion (with its PROVENANCE.md) was deleted on sc474397. Run outputs and metrics under runs/ are kept.

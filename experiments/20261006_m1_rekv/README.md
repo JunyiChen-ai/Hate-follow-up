@@ -259,3 +259,5 @@ Necessaryindependentfactorialresult-to-claim complete, runs/factorial_claim_revi
 ActualHL0 additionalwhole333processing3540.249417s (~59.00min),standalone4056.234722s (~67.60min),actual58551LM+29228vision,peak18.098144GiB. IncludesfreshH0rebuild/nativechecks/H0identity/HL0 extraquery; source/decoder/nativeinputacquisition debt andactual1:12:12allocation/ROOTstrictvalidation/returnI/O scopes remainseparate. Authorityhistory_local_main_analysis/alignment.json andpipeline_attempt_0001.json, not a claim of end-to-end efficiency or statistically faster/equivalentmethod.
 
 **2026-10-09 disk cleanup (user-approved):** the `proof/` directories of `r1_full_main`, `controls_main_{selection,time,history}` and `history_local_main` (about 103 GB of per-frame KV audit tensors) were deleted on sc474397 and sc474398. Records, predictions, metrics and analyses are kept; strict CPU replay of these runs is no longer possible.
+
+**2026-10-09 disk cleanup (user-approved, category A):** smoke-run audit tensors runs/20261006_m1_rekv/*smoke*/proof/ were deleted on sc474397.

@@ -206,3 +206,5 @@ word MAP与比例不同约27.6%/31.4%，仅输入描述，不能代替时间正�
 本轮打分后读取test GT `data/gt_4fps/{HateMM,HateClipSeg}.npz`，配对原始/解码预测，
 及上述summary/per_video，发现最终收益小于.01且HMM PR退化。唯一设计决策是按事前门归档，
 继续先前已提出并独立审查的候选21完整语义聚类树；未根据GT修改本R1常数或计算路径。
+
+**2026-10-09 disk cleanup (user-approved, category A):** the derived cache data/acoustic_path_support (with its PROVENANCE.md) was deleted on sc474397. Run outputs and metrics under runs/ are kept.

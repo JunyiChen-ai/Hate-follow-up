@@ -738,3 +738,5 @@ inputs/outputs local. Three control sets are only prepared/independentCPU-code
 PASS, not control results. Next independentcandidate24 may start because
 candidate23's actualfixed5 cannot exercise its typed-program mechanism and
 requires an explicitly new interface before any main. Formalr6 unchanged.
+
+**2026-10-09 disk cleanup (user-approved, category A):** the derived cache data/temporal_speech_lattice (with its PROVENANCE.md) was deleted on sc474397. Run outputs and metrics under runs/ are kept.

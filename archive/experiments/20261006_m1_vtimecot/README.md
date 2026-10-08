@@ -157,3 +157,5 @@ Actual source10531.649624s (174.53min, includes source decode), paired model/sou
 Rule9: no>=.01 gain, so archive as candidate31 with this negative result; no C scientific revision or mechanism controls. The user's latest instruction is to finish the already-running round and stop, so do not move to another candidate. Formal method remains r6_bma, original research goal not complete.
 
 **2026-10-09 disk cleanup (user-approved):** the derived cache `data/temporal_time_tools_C/` (33 GB, including its PROVENANCE.md) was deleted on sc474397. Run outputs and metrics under `runs/` are kept.
+
+**2026-10-09 disk cleanup (user-approved, category A):** the derived cache data/temporal_time_tools and data/temporal_time_tools_B (with its PROVENANCE.md) was deleted on sc474397. Run outputs and metrics under runs/ are kept.

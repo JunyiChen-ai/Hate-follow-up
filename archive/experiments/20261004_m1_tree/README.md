@@ -783,3 +783,5 @@ Initial+3 revisions exhausted under rule9: archive candidate21, retain separate
 R1/R2 positive findings and all canonical results, no cherry-picked hybrid row.
 Continue independently reviewed candidate22 temporal speech-lattice reading.
 The performance and mechanism goals remain unmet.
+
+**2026-10-09 disk cleanup (user-approved, category A):** the derived cache data/semantic_cluster_tree (with its PROVENANCE.md) was deleted on sc474397. Run outputs and metrics under runs/ are kept.
