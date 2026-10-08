@@ -14,7 +14,8 @@ Generation: Qwen/Qwen3-VL-8B-Instruct, bf16, temperature 0.2, top_p 0.9, max 204
 repetition penalty 1.0 come from the model's generation_config, which HF `generate` (the authors' call) applies.
 Served with vLLM instead of HF generate for throughput. Prefix caching and the multimodal processor cache are off
 and every image gets an explicit id, so vLLM computes no content hash of the frames (hash ban, CLAUDE.md); a guard
-makes any call to vLLM's MultiModalHasher fail. Per-request sampling seed = 1000 * step + index of the video in the
+makes any call to vLLM's MultiModalHasher fail once the engine is up (start-up memory profiling keys synthetic dummy
+images only). Per-request sampling seed = 1000 * step + index of the video in the
 sorted id list (no hash-derived seed).
 Title / description: DeHate `DeHate_labels.csv` `title` / `desc`; HateMM and HateClipSeg have none ("N/A", the
 authors' value for a missing field). Transcription: Whisper large-v3 `text` ("N/A" when empty).
@@ -183,6 +184,8 @@ def main():
         live_b = [v for v in live if v in step_a]
         raw_bs = gen(2, live_b, lambda v: A.prompt_step_b_tagged(step_a[v], inputs[v]["title"], inputs[v]["desc"],
                                                                  inputs[v]["trans"]))
+        if live and len(failed) == len(live):  # a systematic error, not a bad video: stop instead of writing errors
+            raise RuntimeError(f"every video of the chunk failed, e.g. {next(iter(failed.items()))}")
         for v in failed:
             (out_dir / f"{v}_rationale.json").write_text(json.dumps({"video_id": v, "error": failed[v]}) + "\n")
         for v, raw_b in raw_bs.items():
