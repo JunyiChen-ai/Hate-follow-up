@@ -130,6 +130,7 @@ def main():
     argv = run_clara_args(ds, hf_out, args.seed, mode)
     if args.cpu or args.cpu_smoke:
         argv = argv + ["--use_cpu", "true"]
+    if args.cpu_smoke:
         argv[argv.index("--num_train_epochs") + 1] = "2"
     (rd / "config_snapshot.json").write_text(json.dumps({"argv": argv, "method": method}, indent=1) + "\n")
     training_args, data_args = HfArgumentParser((TrainingArguments, DataArguments)).parse_args_into_dataclasses(argv)
