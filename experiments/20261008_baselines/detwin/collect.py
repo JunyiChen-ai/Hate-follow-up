@@ -49,8 +49,7 @@ def main():
     for r in out["rows"]:
         a = r["mean_sd"]
         print(f"{r['method']:18s} {r['dataset']:12s} seeds={r['n_seeds']} "
-              + " ".join(f"{k.split('_')[0] if k != 'within_video_macro_ROC_AUC' else 'within'}="
-                         f"{a[k]['mean']:.4f}±{a[k]['sd']:.4f}" for k in METRICS))
+              + " ".join(f"{n}={a[k]['mean']:.4f}±{a[k]['sd']:.4f}" for n, k in zip(("ROC", "PR", "within"), METRICS)))
     print(f"written {path}")
 
 
