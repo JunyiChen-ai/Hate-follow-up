@@ -92,3 +92,74 @@ of the probed windows. The pilot rule (none above 95 % or below 5 %) is not trig
 declared. Plumbing check `runs/20261010_m1_grounded_adjacent/smoke_analysis/plumbing_summary.json` PASS: native
 reads equal r6, and the adjacent margin equals the stored `adjacent_native` read bit for bit (max |Δz| 0 over 76
 windows). Peak 19.5 GiB; about 2 generated tokens per probe.
+
+## Full run (2026-10-10, sc474397 / Slurm 354, `SCOPE=both`: fixed five, in-job plumbing check, then 333)
+
+Binding (`runs/20261010_m1_grounded_adjacent/main_analysis/alignment.json`, PASS): native reads equal r6 in every
+window; the adjacent read equals the stored `adjacent_native` read exactly in all 5096 covered windows (max |Δz| 0);
+decisions re-derived from the stored replies. Acceptance 60.7 % (HateMM) / 66.1 % (HateClipSeg); probe answered
+`none` in 87.2 % / 83.8 %, cited a shown frame in 12.7 % / 16.2 %; 1 parse failure (HateMM, 2738 probes); about 2
+generated tokens per probe. Every cited number was a shown frame's time (349 / 376 citations, all inside the
+window). Time for 333 videos: native reads 305 s + 247 s; adjacent read plus probe 337 s + 280 s, so the probe adds
+about 5.6 min on top of the adjacent read's 4.7 min. Peak 19.5 GiB; job 20 min.
+
+Sole evaluator + fixed r6 (`runs/20261010_m1_grounded_adjacent/analysis/summary.json`; metrics in
+`main_decoded/<arm>/metrics.json`):
+
+| arm | acceptance HMM / HCS | HateMM ROC / PR / within | HateClipSeg ROC / PR / within |
+|---|---|---|---|
+| r6_bma | – | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 |
+| accept_all (= `adjacent_native`, replay exact) | 1.00 / 1.00 | .8970 / .6938 / .7732 | .7252 / .6771 / .6501 |
+| grounded (candidate 41) | 0.61 / 0.66 | .8977 / .6969 / .7717 | .7240 / .6762 / .6487 |
+| random_0 (rate matched) | 0.61 / 0.66 | .8968 / .6926 / .7652 | .7226 / .6768 / .6512 |
+| random_1 (rate matched) | 0.61 / 0.66 | .8965 / .6926 / .7656 | .7216 / .6746 / .6425 |
+| inverted | 0.39 / 0.34 | .8964 / .6913 / .7555 | .7186 / .6729 / .6393 |
+
+Declared gates:
+- Performance vs r6: PASS (within +.0209 / +.0113, no loss) — the same gain `adjacent_native` already had.
+- Mechanism vs accept_all: within −.0015 / −.0014, pooled within ±.003: **not supported**.
+- Against random acceptance at the same rate: within +.0065 / −.0025 (seed 0) and +.0061 / +.0062 (seed 1); does
+  not beat random in both corpora (floor .01). Inverted rule: within +.0047 / +.0019 vs r6, −.0177 / −.0108 vs
+  accept_all, so the rule's rejected moves do contain most of the harm it was supposed to remove — see below for
+  why that does not turn into a gain.
+
+## Test error analysis (rule 10, 2026-10-10)
+
+Files read: `runs/20261010_m1_grounded_adjacent/main/records` (traces with probe replies), `data/gt_4fps/*.npz`,
+decoded predictions of the offline rules under `runs/20261010_m1_grounded_adjacent/error_analysis/decoded/`,
+`runs/20260926_twolevel/r6_bma/predictions.jsonl`, and the 2026-10-10 selection-analysis oracle
+`runs/20261007_m1_streamingtom/selection_analysis/decoded/adjacent_native__oracle_help/predictions.jsonl`. Scripts
+`error_analysis.py`, `error_analysis_mixed.py`; outputs `error_analysis/{summary.json,within_eligible.json}`,
+logs `error_analysis_run.log`, `error_analysis_mixed_run.log`. Window label = any positive 4 fps GT frame in the
+window; "toward the label" = the visual margin moves up on a positive window or down on a negative one (the r6
+decoder reads z_visual and z_speech as separate conditions, so the visual direction is the relevant one).
+
+Findings:
+1. Over the whole corpus the probe does carry label information, but at the video level. Among up moves on
+   HateMM, windows where the probe cites a shown frame are positive in 60 %, windows where it says `none` in 24 %
+   (HateClipSeg 73 % vs 57 %). The `none` answers sit mostly in all-negative videos.
+2. The within metric only uses the 84 / 100 videos that contain both labels. There, 65–77 % of the covered windows
+   in every cell are positive and the probe barely separates them: up moves are positive in 67 % (`none`) vs 75 %
+   (shown) on HateMM and 65 % vs 77 % on HateClipSeg; down moves 65 % vs 80 % and 57 % vs 77 %. So inside these
+   videos the grounded rule rejects 378 / 620 up-`none` moves that go toward the label in 68 % / 65 % of cases,
+   and accepts 541 / 1007 down-`none` moves that go away from it in 64 % / 57 %. Weighted by |Δz|, the moves it
+   accepts are 57 % helpful on HateMM against 60 % for accepting everything.
+3. Per-video decoded within, grounded minus accept_all: 18 videos better / 20 worse (HateMM), 40 / 35
+   (HateClipSeg), means −.0015 / −.0014, single videos move by up to ±.18. accept_all minus r6 itself is 30 better /
+   30 worse on HateMM (mean +.0224): the macro within is driven by a few videos either way.
+4. Headroom check in the same videos: accepting only the visual moves toward the label gives +.0307 / +.0348 over
+   accept_all (45 better / 5 worse on HateMM); accepting by the direction of the fused max(V, S) gives only
+   +.0030 / +.0171, because moves that change V but not the max still reach the decoder. The headroom is
+   window-level inside hateful videos; the probe's reply does not carry that information.
+5. Other label-free rules on the same reads (decoded within vs r6, HateMM / HateClipSeg): accept only down moves
+   +.0169 / +.0051; only up moves +.0152 / +.0128; down-and-`none` only +.0163 / +.0046; up-and-cited only
+   +.0059 / +.0091; random at the down-move rate +.0198 / +.0117 and +.0155 / +.0015. None is above accept_all
+   (+.0224 / +.0128); undecoded (raw window margins) the picture is the same (`error_analysis/<rule>/metrics.json`).
+
+Design decision: no revision run. The one revision the analysis suggests — ask the probe for the most violating
+frame of the whole video instead of only the shown frames, so that the answer is relative to the other windows —
+re-tests a signal this model has already failed on: its whole-video citations localized within videos at
+.580 / .526 (GLR §7) and .571 / .506 (HVL E0), near chance. Candidate 41's own contribution over its control
+(accept_all) is within noise on both corpora; the ≥ .01 within gain over r6 belongs to the adjacent read that was
+already known. Recommendation: archive under rule 9 (no gain of the mechanism); whether to spend the 3 revisions
+is the user's decision. The adjacent read itself remains an input change (rule 5), adoption still the user's call.
