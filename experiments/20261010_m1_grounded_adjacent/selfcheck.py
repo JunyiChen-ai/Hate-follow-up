@@ -89,7 +89,7 @@ def main():
                     assert t['adjacent'] is not None and t['generated']==SPEC['max_new_tokens'] and isinstance(t['reply'],str)
                     v,z,g=t['native_visual'],t['adjacent'],t['grounded'];acc=(z>v and g) or (z<=v and not g)
                     assert t['accepted']==acc and t['final']==(z if acc else v) and z!=v
-                    assert g==any(abs(x-u)<=SPEC['match_tolerance'] for x in t['numbers'] for u in t['shown_times'])
+                    assert g==any(abs(x-u)<=SPEC['match_tolerance']+1e-9 for x in t['numbers'] for u in t['shown_times'])
                 for name,key in (('accept_all','adjacent'),('grounded','final')):
                     assert [w['z_visual'] for w in b['predictions'][name]['extra']['windows']]==[t[key] for t in tr]
                 c=b['checks'];assert c['covered']==3 and c['actual_forwards']==b['predictions']['base']['calls']+6+c['generated_tokens'] and c['actual_vision']==4

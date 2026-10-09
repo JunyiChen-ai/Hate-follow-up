@@ -63,7 +63,7 @@ def prediction(row,ctx,visual,speech,seconds,name):
 
 def parse(reply,shown_times):
     numbers=[float(x) for x in NUMBER.findall(reply)]
-    cited=[t for t in shown_times if any(abs(x-t)<=SPEC['match_tolerance'] for x in numbers)]
+    cited=[t for t in shown_times if any(abs(x-t)<=SPEC['match_tolerance']+1e-9 for x in numbers)]  # +1e-9: labels round .x5 up (18.55 -> [t=18.6s])
     return dict(numbers=numbers,cited=cited,grounded=bool(cited),says_none='none' in reply.lower(),parse_failure=not numbers and 'none' not in reply.lower())
 
 

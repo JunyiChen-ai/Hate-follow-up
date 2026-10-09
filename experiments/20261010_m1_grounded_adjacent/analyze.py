@@ -62,11 +62,11 @@ def prepare(smoke):
             if t['shown_times']:
                 v=t['native_visual'];z=t['adjacent'];assert za==z and zg==t['final']
                 g=t['grounded'];acc=(z>v and g) or (z<=v and not g);assert t['accepted']==acc and t['final']==(z if acc else v)
-                assert g==any(abs(x-u)<=SPEC['match_tolerance'] for x in t['numbers'] for u in t['shown_times'])
+                assert g==any(abs(x-u)<=SPEC['match_tolerance']+1e-9 for x in t['numbers'] for u in t['shown_times'])
                 d=abs(z-st['adjacent_native']['z']);s['replay_abs'].append(d);s['replay_exact']+=d==0.
                 s['covered']+=1;s['accepted']+=acc;s['grounded']+=g;s['says_none']+=t['says_none'];s['parse_failures']+=t['parse_failure']
                 s['up']+=z>v;s['down']+=z<=v;s['accepted_up']+=acc and z>v;s['accepted_down']+=acc and z<=v
-                s['numbers']+=bool(t['numbers']);s['cited_inside']+=bool(t['cited']);s['generated'].append(t['generated'])
+                s['numbers']+=bool(t['numbers']);s['cited_inside']+=any(w['start']<=x<w['end'] for x in t['numbers']);s['generated'].append(t['generated'])
             else:assert t['adjacent'] is None and t['accepted'] is None and za==zg==t['native_visual']==t['final'] and st['adjacent_native'] is None
             s['windows']+=1
         c=b['checks'];s['videos']+=1;s['peak_GiB']=max(s['peak_GiB'],c['peak_GiB']);s['seconds']['native']+=c['times']['prefix']+c['times']['native_visual']+c['times']['native_speech'];s['seconds']['adjacent_probe']+=c['times']['adjacent_probe']
@@ -120,8 +120,9 @@ def report():
     W='within_video_macro_ROC_AUC';within_noise=lambda d:all(abs(d[ds][k])<FLOOR[k] for ds in DATASETS for k in METRICS)
     perf=dict(no_loss=all(steps['grounded_vs_r6'][ds][k]>-FLOOR[k] for ds in DATASETS for k in METRICS),common=[k for k in METRICS if all(steps['grounded_vs_r6'][ds][k]>=.01 for ds in DATASETS)])
     perf['PASS']=bool(perf['no_loss'] and perf['common'])
-    d=steps['grounded_vs_accept_all'];both=all(d[ds][W]>=.01 for ds in DATASETS);one=any(d[ds][W]>=.01 for ds in DATASETS);noloss=all(d[ds][k]>-FLOOR[k] for ds in DATASETS for k in METRICS)
-    mech='supported' if both else 'partial' if (one and noloss) else 'not supported'
+    d=steps['grounded_vs_accept_all'];both=all(d[ds][W]>=.01 for ds in DATASETS);gained=[ds for ds in DATASETS if d[ds][W]>=.01]
+    other_ok=all(d[ds][k]>-FLOOR[k] for ds in DATASETS if ds not in gained for k in METRICS)  # README: no loss beyond noise in the other corpus
+    mech='supported' if both else 'partial' if (gained and other_ok) else 'not supported'
     beats_random=all(steps[f'grounded_vs_random_{s}'][ds][W]>FLOOR[W] for s in (0,1) for ds in DATASETS)
     result=dict(scope='development-selected; declared in README before the run; sole evaluator, fixed r6',metrics={a:{ds:{k:m[a][ds][k] for k in METRICS} for ds in DATASETS} for a in m},
         sources={'r6':'runs/20260926_twolevel/r6_bma/metrics.json','adjacent_native':'runs/20261007_m1_streamingtom/placement_controls_main_decoded/adjacent_native/metrics.json',**{a:str((decoded/a/'metrics.json').relative_to(ROOT)) for a in ARMS}},
