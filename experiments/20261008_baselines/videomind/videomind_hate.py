@@ -33,10 +33,10 @@ segments inside its clip [s1, e1] (the proposal widened by half its length on ea
 the clip edges (lf_common.span_text = src/video_inputs.py window_text) and timed from the clip start (the verifier
 sees only the clip). Segments: data/asr_whisper_large_v3/<DS>/timestamped_chunks.jsonl, untimed chunks kept as in
 qwen3_text (lf_common.transcript_segments). Lines are kept in time order up to SUB_CAP = 2048 tokens of the Qwen2-VL
-tokenizer; later lines are dropped and counted (cap fixed before any run from the transcript lengths: it holds the
-whole transcript of more than 99 % of cohort videos). No speech: "Subtitles: (no speech)". Everything else (query,
-frames, proposals, verifier top 5, frame score) is unchanged. Outputs: runs/20261008_baselines/videomind_av/<DS>/,
-method name "videomind_av".
+tokenizer: the line that crosses the cap keeps its first tokens, later lines are dropped, and both are counted (cap
+fixed before any run from the transcript lengths: it holds the whole transcript of more than 99 % of cohort videos).
+No speech: "Subtitles: (no speech)". Everything else (query, frames, proposals, verifier top 5, frame score) is
+unchanged. Outputs: runs/20261008_baselines/videomind_av/<DS>/, method name "videomind_av".
 """
 from __future__ import annotations
 
@@ -84,16 +84,20 @@ def subtitle_block(tokenizer, segs, t1, t2):
         piece = L.span_text([(s, e, text)], t1, t2)
         if piece:
             lines.append("[%.1f-%.1fs] %s" % (lo - t1, hi - t1, piece))
-    kept, used = [], 0
+    kept, used, n_whole = [], 0, 0
     for ln in lines:
-        n = len(tokenizer.encode(ln + "\n", add_special_tokens=False))
-        if used + n > SUB_CAP:
+        ids = tokenizer.encode(ln + "\n", add_special_tokens=False)
+        if used + len(ids) > SUB_CAP:                   # the line that crosses the cap keeps its first tokens
+            rest = tokenizer.decode(ids[:SUB_CAP - used]).strip()
+            if rest:
+                kept.append(rest)
             break
         kept.append(ln)
-        used += n
+        used += len(ids)
+        n_whole += 1
     block = ("Subtitles:\n" + "\n".join(kept)) if kept else "Subtitles: " + L.NO_SPEECH
-    return block, {"lines": len(lines), "kept": len(kept), "tokens": len(tokenizer.encode(block,
-                                                                                         add_special_tokens=False))}
+    return block, {"lines": len(lines), "whole_lines": n_whole, "truncated": n_whole < len(lines),
+                   "tokens": len(tokenizer.encode(block, add_special_tokens=False))}
 
 
 def with_subtitles(prompt, block):
@@ -345,11 +349,11 @@ def cmd_raster(args):
         if "subtitles" in r:
             g = r["subtitles"]["grounder"]
             stats.setdefault("sub_grounder_tokens", []).append(g["tokens"])
-            stats.setdefault("sub_grounder_truncated", []).append(int(g["kept"] < g["lines"]))
-            stats.setdefault("sub_grounder_no_speech", []).append(int(g["kept"] == 0))
+            stats.setdefault("sub_grounder_truncated", []).append(int(g["truncated"]))
+            stats.setdefault("sub_grounder_no_speech", []).append(int(g["lines"] == 0))
             for v in r["subtitles"]["verifier"]:
-                stats.setdefault("sub_verifier_truncated", []).append(int(v["kept"] < v["lines"]))
-                stats.setdefault("sub_verifier_no_speech", []).append(int(v["kept"] == 0))
+                stats.setdefault("sub_verifier_truncated", []).append(int(v["truncated"]))
+                stats.setdefault("sub_verifier_no_speech", []).append(int(v["lines"] == 0))
         intervals = [[float(s), float(e), float(p)] for (s, e), p in zip(r["verified"], r["probs"])]
         rows[vid] = L.row(method, ds, vid, dur, curve, "intervals", CODE_PATH, intervals=intervals,
                           extra={"n_proposals": r["n_proposals"], "n_verified": len(r["probs"]),
