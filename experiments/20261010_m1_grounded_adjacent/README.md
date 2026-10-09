@@ -83,3 +83,12 @@ s, so 5096 windows about 20 to 35 min. Whole run about 40 to 50 min on one 5090,
 Code `grounded.py` (reading), `analyze.py` (binding checks, offline controls, sole evaluator + fixed r6, report),
 CPU fixture check `selfcheck.py`; launch `launch/lab1.sbatch`, `launch/lab2.sbatch`, `launch/lab3.sbatch`
 (`SCOPE=smoke|main|both`). Outputs `runs/20261010_m1_grounded_adjacent/`.
+
+## Pilot on the fixed five (2026-10-10, sc474397 / Slurm 353; no GT read)
+
+76 probed windows: replies well formed (`[t=11.9s]`, `t=49.9s`, `none`), 0 parse failures; `none` in 84 %
+(HateMM 81 %, HateClipSeg 88 %), a shown frame cited in 16 %; acceptance 75 %; the adjacent read moved up in 30 %
+of the probed windows. The pilot rule (none above 95 % or below 5 %) is not triggered, so the probe text stays as
+declared. Plumbing check `runs/20261010_m1_grounded_adjacent/smoke_analysis/plumbing_summary.json` PASS: native
+reads equal r6, and the adjacent margin equals the stored `adjacent_native` read bit for bit (max |Δz| 0 over 76
+windows). Peak 19.5 GiB; about 2 generated tokens per probe.
