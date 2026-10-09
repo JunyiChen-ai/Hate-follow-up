@@ -293,7 +293,7 @@ windows that have the arm's frames changes, every other window keeps the native 
   (`standalone_native`) and compared with the cached V; its token ids must equal the cached conversation's.
 - Code: `placement_controls.py` (reading), `placement_analyze.py` (binding checks, sole evaluator + fixed r6 decoder,
   report), CPU fixture check `placement_selfcheck.py`. Launch `launch/placement_lab3.sbatch` (`SCOPE=smoke`, then
-  `SCOPE=main`) on sc474398; `launch/placement_lab1.sbatch` is the same job for sc474397. Output
+  `SCOPE=main`) on sc474398; `launch/placement_lab1.sbatch` and `launch/placement_lab2.sbatch` are the same job for sc474397 / sc474399 (queued on all three on 2026-10-09 because every lab GPU was held by baseline training under the two-GPU-per-user quota; the first to start runs, the others are cancelled). Output
   `runs/20261007_m1_streamingtom/placement_controls_{smoke,main}/`; analysis `STAGE=prepare|evaluate|report bash
   launch/run_placement_analysis.sh`; table `runs/20261007_m1_streamingtom/placement_analysis/summary.json`.
 
