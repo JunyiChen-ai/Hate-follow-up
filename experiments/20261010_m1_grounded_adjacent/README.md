@@ -47,8 +47,13 @@ Constants: 16 new tokens; .05 s match tolerance; the probe text above. Nothing e
   nothing is generated to verify; the probe does not see the model's answer (fresh user turn) and only accepts
   or rejects a score change.
 - Attributor (2026-10-02): attribution over cached values; Grounder (2026-10-02): access restriction; candidate
-  27 verification (never run): factual re-observation before measurement; Provenance 25: entity graph. None
-  accepts or rejects a window read by the model's own cited frame.
+  27 verification (never run): factual re-observation before measurement; Provenance 25: entity graph; Interval
+  Witness 26 (`archive/experiments/20261005_m1_interval_witness`): cited frame witnesses for factual fields, not
+  for a window score. None accepts or rejects a window read by the model's own cited frame.
+
+Independent proposal review (rule 4, 2026-10-10): PASS, `docs/reviews/20261010_m1_grounded_adjacent_proposal.md`.
+Advisory from the review: this model's own citations localized near chance in HVL E0 and GLR section 7, so the
+random-acceptance control is the decisive test.
 
 ## Inputs and cost
 
