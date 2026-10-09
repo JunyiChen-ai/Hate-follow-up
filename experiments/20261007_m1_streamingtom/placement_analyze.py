@@ -34,7 +34,7 @@ def prepare(smoke):
             p=b['predictions'][a];assert untimed(p)==untimed(preds[a][key]) and curve_ok(p,float(row['duration']))
             assert p['extra']['z_video']==b['base']['extra']['z_video'] and p['extra']['stance']==b['base']['extra']['stance']
             assert [w.get('z_speech') for w in p['extra']['windows']]==[w.get('z_speech') for w in b['base']['extra']['windows']]
-        frames=b['frames'];native_times=b['native']['frame_times'];assert len(native_times)==SPEC['native_frames']
+        frames=b['frames'];native_times=b['native']['frame_times'];assert 0<len(native_times)<=SPEC['native_frames']
         for t,w,nw,ew in zip(b['traces'],windows,b['base']['extra']['windows'],stored[key]['extra']['windows']):
             assert t['i']==w['i'] and t['bounds']==[w['start'],w['end']] and t['native_visual']==nw['z_visual']
             local=t['LOCAL'];assert local==[i for i,f in enumerate(frames) if w['start']<=f['time']<w['end']]
@@ -48,7 +48,7 @@ def prepare(smoke):
                     elif a=='adjacent_local':assert x['labels']==[NATIVE_LABEL.format(time=frames[i]['time']) for i in local] and len(x['image_counts'])==len(local)
                     elif a=='adjacent_native':assert x['labels']==[NATIVE_LABEL.format(time=v) for v in t['native_inside']] and len(x['image_counts'])==len(t['native_inside'])
                     else:
-                        assert x['images']==SPEC['native_frames']+len(local) and len(x['inserted_positions'])==len(local) and len(x['image_counts'])==x['images']
+                        assert x['images']==len(native_times)+len(local) and len(x['inserted_positions'])==len(local) and len(x['image_counts'])==x['images']
                         s['prefix_local_tokens'].append(x['tokens'])
                 else:assert t[a] is None and z==t['native_visual']
             # Stored E (local_controls_main) per window: equal to this record's copy; replay distance accumulated.
@@ -85,6 +85,7 @@ def report():
     decoded=EXP/'placement_controls_main_decoded'
     m={'r6':metric(ROOT/'runs/20260926_twolevel/r6_bma/metrics.json'),'local_clean':metric(EXP/'local_controls_main_decoded/local_clean/metrics.json')}
     for a in ARMS:m[a]=metric(decoded/a/'metrics.json')
+    binding=json.loads((EXP/'placement_controls_main_analysis/alignment.json').read_text())['datasets']
     def diff(x,y):return {ds:{k:m[x][ds][k]-m[y][ds][k] for k in METRICS} for ds in DATASETS}
     steps=dict(replay=diff('local_clean_replay','local_clean'),wording=diff('adjacent_local','local_clean'),position=diff('adjacent_local','prefix_local'),
         more_frames_only=diff('prefix_local','r6'),adjacency_only=diff('adjacent_native','r6'),adjacent_local_vs_r6=diff('adjacent_local','r6'))
@@ -98,6 +99,7 @@ def report():
         metrics={a:{ds:{k:m[a][ds][k] for k in METRICS} for ds in DATASETS} for a in m},
         sources={'r6':'runs/20260926_twolevel/r6_bma/metrics.json','local_clean':'runs/20261007_m1_streamingtom/local_controls_main_decoded/local_clean/metrics.json',
             **{a:str((decoded/a/'metrics.json').relative_to(ROOT)) for a in ARMS}},steps=steps,
+        per_window={ds:{k:binding[ds][k] for k in ('replay_max_abs','replay_mean_abs','replay_exact','covered_local','covered_native','standalone_native_max_abs','prefix_local_tokens_mean','prefix_local_tokens_max','seconds','peak_GiB')} for ds in DATASETS},
         verdicts=dict(replay_within_noise=within_noise(steps['replay']),wording_within_noise=within_noise(steps['wording']),position=position,
             more_frames_only=supported(steps['more_frames_only']),adjacency_only=supported(steps['adjacency_only']),adjacent_local_vs_r6=supported(steps['adjacent_local_vs_r6'])))
     out=EXP/'placement_analysis';out.mkdir(exist_ok=True);(out/'summary.json').write_text(json.dumps(result,indent=2)+'\n')

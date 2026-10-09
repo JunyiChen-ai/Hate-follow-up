@@ -308,6 +308,12 @@ metric loses beyond the floor):
 - adjacency without new frames: `adjacent_native` − r6, supported or not.
 - Nothing is promoted by this run; E stays an input change (rule 5). DeHate is not part of this run.
 
+Independent code review (rule 6, 2026-10-09, before the run): one BLOCKER, the job and analysis assumed 20 native
+frames while HateClipSeg `bit_AxrVklzh9Cyf` has 18 in `data/frames_k20` (as in r6); fixed to use the video's own
+count. Record `docs/reviews/20261009_m1_streamingtom_placement_controls_code.md`. CPU fixture check
+`runs/20261007_m1_streamingtom/placement_cpu_checks/summary.json` PASS (standalone native read within 4e-7 of the
+cached read in FP32).
+
 Planned cost: `adjacent_local` and `local_clean_replay` about E's 18 min each; `adjacent_native` less (fewer windows,
 one to three images); `prefix_local` one full prefill per covered window, about 24 M prefix tokens plus the LOCAL
 image tokens over both corpora, estimated 1 to 1.5 h on a 5090. Measured times go in the records.

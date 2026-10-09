@@ -109,7 +109,7 @@ def standalone_margin(j,frames,segments,history,question):
 def read(j,row,segments,reference):
     begin=tick(j);first=j.forward_calls;vision=j.vision_calls
     if j.device.type=='cuda':torch.cuda.reset_peak_memory_stats()
-    _,frames=frames_for(row);native=frame_paths(row['dataset'],row['video_id'],SPEC['native_frames']);assert len(native)==SPEC['native_frames']
+    _,frames=frames_for(row);native=frame_paths(row['dataset'],row['video_id'],SPEC['native_frames']);assert 0<len(native)<=SPEC['native_frames']  # one HateClipSeg video has 18 frames, as in r6
     stamp=tick(j);cache,ctx=build(j,native,segments)
     times=dict(prefix=tick(j)-stamp,native_visual=0.,native_speech=0.,standalone_native=0.,**{a:0. for a in ARMS})
     windows=windows_for(row,segments);visual=[];speech=[]
