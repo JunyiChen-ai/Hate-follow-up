@@ -61,11 +61,17 @@ is resubmitted unchanged.
 
 ## Runs
 
-| corpus | host | job | status |
-|---|---|---|---|
-| DeHate (1151) | lab-server (sc448960) | 289, then 296 | running: segmentation since 2026-10-08 03:52 NZDT at about 48 decoded frames/s (about 20 h projected), then scoring (about 11 h projected); the 1-day limit stops 289, and the queued job 296 resumes it |
-| HateMM (215) | lab-server | 296 | queued after DeHate (same job) |
-| HateClipSeg (118) | lab-server | 296 | queued after HateMM (same job) |
+| corpus | host | job | segmentation (GPU h) | scoring (GPU h) | raster + evaluation |
+|---|---|---|---|---|---|
+| DeHate (1151) | lab-server (sc448960) | 289 (stopped by the 1-day limit during scoring), 296 | 2026-10-08 03:42–23:52 (20.2) | 2026-10-08 23:52 – 10-09 03:42 in 289, 03:42–10:49 in 296 (10.9) | uoa-lab1, 2026-10-09 17:51 |
+| HateMM (215) | lab-server | 296 | 2026-10-09 10:49–16:41 (5.9) | 16:41–20:09 (3.5) | uoa-lab1, 2026-10-09 20:16 |
+| HateClipSeg (118) | lab-server | 296 (stopped by the 1-day limit after 69 videos of scoring), 348 (resumed, `eventvad_labserver.sbatch HateClipSeg`, unchanged) | 2026-10-09 20:09 – 10-10 01:57 (5.8) | 01:57–03:43 in 296, 07:37–09:01 in 348 (3.2) | uoa-lab1, 2026-10-10 09:10 |
+
+Total about 49 GPU hours (RTX 5090). Outputs were copied to uoa-lab1 with `rsync -a` (no checksum) and rastered there
+with the HateVideo env: `python experiments/20261008_baselines/eventvad/eventvad_4fps.py raster --dataset <DS>`.
+Slurm logs: `runs/20261008_baselines/eventvad/slurm_{289,296,348}.out`. Job 348 ran with commit 94f977c, whose
+visual-only path is the same as 296's commit 571d074 (the transcript flag is off by default; the prompt string is
+identical).
 
 A first DeHate job (283/284) used the paper preset (alpha 0.75, gamma 0.6); it was cancelled after 11 videos when the
 coordinator fixed the released constants. Its outputs are kept in
@@ -73,7 +79,18 @@ coordinator fixed the released constants. Its outputs are kept in
 
 ## Results
 
-None yet.
+Canonical evaluator (`src/eval/evaluate_four_datasets.py`), exact cohorts; pooled frame ROC-AUC / pooled frame PR-AUC
+/ within-video macro ROC-AUC. Source: `runs/20261008_baselines/eventvad/<DS>/metrics.json` (uoa-lab1).
+
+| corpus | ROC / PR / within | videos | frames | within defined on | events | parse A / B / C (rule C = unparsed, 0.0) | frames under rule C | F2 videos |
+|---|---|---|---|---|---|---|---|---|
+| HateMM | .5444 / .2735 / .5073 | 215 | 116,975 | 84 | 4,421 | 2,624 / 1,795 / 2 | 53 | 0 |
+| HateClipSeg | .5382 / .5073 / .5066 | 118 | 113,002 | 99 | 4,197 | 2,433 / 1,763 / 1 | 14 | 0 |
+| DeHate | .5130 / .0829 / .5037 | 1151 | 441,345 | 222 | 16,087 | 8,707 / 7,373 / 7 | 122 | 0 |
+
+Rule A splits into the legacy parser's `sentence` / `trailing_number` statuses and the added `ratio` rule (HateMM
+1,445 / 1,096 / 83; HateClipSeg 1,347 / 980 / 106; DeHate 5,264 / 3,264 / 179); per-corpus counts are in
+`<DS>/raster_stats.json`.
 
 ## Transcript (audio-visual) variant, 2026-10-09
 
