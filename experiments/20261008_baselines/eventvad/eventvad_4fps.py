@@ -30,8 +30,18 @@ prompt, features; see DESIGN_EVENTVAD.md there). Those modules are imported unch
   6. Fallback F2 for a video that fails as a whole (decode error): constant curve at the median frame score of the
      scored videos of the corpus. More than 1 % F2 stops the corpus.
 
+Transcript (audio-visual) variant, `--transcript` on `score`, `raster` and `prompts` (default off; 2026-10-09): the
+scoring prompt of each event starts with the line "Speech during this segment: <text>", where <text> is the Whisper
+large-v3 transcript of the event's time span [s/fps, e/fps) (data/asr_whisper_large_v3/<DS>/timestamped_chunks.jsonl;
+untimed chunks kept as in qwen3_text/text_llm.py; span text by src/video_inputs.py `window_text`; whitespace
+collapsed; "(no speech)" when empty; the longest whole-word prefix of at most 512 tokens of the model's tokenizer).
+Everything else is the visual-only run's: the events of runs/20261008_baselines/eventvad/<DS>/events.jsonl (not
+recomputed), the 16 frames, the nine rules in the anomaly slot, greedy decoding, rules A/B/C. Outputs go to
+runs/20261008_baselines/eventvad_av/<DS>/; method name "eventvad_av".
+
 Stages: `segment` (GPU: CLIP + RAFT), `score` (GPU: VideoLLaMA2.1-7B-16F), `raster` (CPU; writes predictions.jsonl
-and calls src/eval/evaluate_four_datasets.py). `segment` and `score` append one line per video and skip videos
+and calls src/eval/evaluate_four_datasets.py), `prompts` (CPU; prints the transcript-variant prompts of the first
+--limit videos, writes nothing). `segment` and `score` append one line per video and skip videos
 already recorded without an error, so a job killed by the partition's 1-day limit resumes when resubmitted.
 """
 from __future__ import annotations
@@ -54,6 +64,8 @@ BASELINES = os.path.dirname(EV)
 for _p in (BASE, EV, BASELINES):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+if REPO not in sys.path:
+    sys.path.append(REPO)                          # for src.video_inputs (appended: shadows nothing)
 
 import lf_common as L                              # noqa: E402
 import boundary as bnd                             # noqa: E402
@@ -63,10 +75,16 @@ import prompt as pmod                              # noqa: E402
 import video_io                                    # noqa: E402
 
 METHOD = "eventvad"
+METHOD_AV = "eventvad_av"
 OUT_ROOT = os.path.join(REPO, "runs", "20261008_baselines", "eventvad")
+OUT_ROOT_AV = os.path.join(REPO, "runs", "20261008_baselines", "eventvad_av")
 CODE_PATH = "experiments/20261008_baselines/eventvad/eventvad_4fps.py"
 EXTRACT_SUFFIX = "\nTherefore, the final score is"
 UNPARSED_FILL = 0.0
+ASR_DIR = os.path.join(REPO, "data", "asr_whisper_large_v3")
+SPEECH_PREFIX = "Speech during this segment: "
+NO_SPEECH = "(no speech)"                 # run_plan.md 1.3 F1, the empty-input text of the LLM prompts
+SPEECH_CAP_TOKENS = 512                   # fixed before any run (README); about 0.1 % of events exceed it
 
 
 def first_existing(*paths):
@@ -83,8 +101,8 @@ DEFAULT_RAFT = first_existing(os.path.join(REPO, ".cache/checkpoints/raft/raft-t
 DEFAULT_CLIP = first_existing(os.path.join(REPO, ".cache/clip/ViT-B-16.pt"), "~/.cache/clip/ViT-B-16.pt")
 
 
-def out_dir(ds):
-    return os.path.join(OUT_ROOT, ds)
+def out_dir(ds, transcript=False):
+    return os.path.join(OUT_ROOT_AV if transcript else OUT_ROOT, ds)
 
 
 def done_ids(path):
@@ -367,46 +385,129 @@ HATE_RULES = (
 )
 
 
-def build_prompt():
+def build_prompt(speech=None):
     """The reconstructed Figure 2 prompt (prompt.py, `paper` arm) with the hate rules in its anomaly slot: the
     #Question line is followed by the definition of an anomaly as content violating any of the rules; the
-    #Question and #Instruction sentences are unchanged."""
+    #Question and #Instruction sentences are unchanged. Transcript variant: `speech` (the event's span text, or
+    NO_SPEECH) goes on one line before the question; with speech=None the prompt is the visual-only one."""
     question = (pmod.PAPER_QUESTION + " An anomaly is content that violates any of the following rules:\n"
                 + "\n".join(HATE_RULES))
-    return "#Question: %s\n#Instruction: %s" % (question, pmod.PAPER_INSTRUCTION)
+    body = "#Question: %s\n#Instruction: %s" % (question, pmod.PAPER_INSTRUCTION)
+    if speech is None:
+        return body
+    return SPEECH_PREFIX + speech + "\n" + body
+
+
+def load_speech_segments(ds, man):
+    """video id -> [(start, end, text)] Whisper large-v3 segments of the cohort videos. Untimed chunks are kept as in
+    qwen3_text/text_llm.py `load_segments` (run_plan.md 1.3): a missing start is the previous segment's end, a
+    missing end the next chunk's start (if later) or the video duration. Videos without a row have no segment."""
+    out = {}
+    with open(os.path.join(ASR_DIR, ds, "timestamped_chunks.jsonl")) as fh:
+        for line in fh:
+            r = json.loads(line)
+            v = r["video_id"]
+            if v not in man:
+                continue
+            ch = r.get("chunks") or []
+            segs, prev_end = [], 0.0
+            for i, c in enumerate(ch):
+                st = c.get("start")
+                en = c.get("end")
+                st = float(st) if st is not None else prev_end
+                if en is None:
+                    nxt = next((float(x["start"]) for x in ch[i + 1:] if x.get("start") is not None), None)
+                    en = nxt if nxt is not None and nxt > st else man[v]["duration"]
+                en = float(en)
+                segs.append((st, en, c.get("text") or ""))
+                prev_end = max(prev_end, en)
+            out[v] = segs
+    return out
+
+
+def speech_text(segments, t1, t2, n_tokens, cap=SPEECH_CAP_TOKENS):
+    """Transcript of [t1, t2] (src/video_inputs.py window_text: proportional word slicing of the Whisper segments),
+    whitespace collapsed; NO_SPEECH if empty; the longest whole-word prefix with at most `cap` tokens
+    (n_tokens(text) counts the model's tokens). Returns (text, tokens, truncated)."""
+    import src.video_inputs as vi
+    if not os.path.abspath(vi.__file__).startswith(REPO + os.sep):
+        raise RuntimeError("src.video_inputs resolved to %s, not this repo" % vi.__file__)
+    text = " ".join(vi.window_text(segments, t1, t2).split())
+    if not text:
+        return NO_SPEECH, 0, False
+    n = n_tokens(text)
+    if n <= cap:
+        return text, n, False
+    words = text.split()
+    lo, hi = 0, len(words)                      # largest k with n_tokens(words[:k]) <= cap
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if n_tokens(" ".join(words[:mid])) <= cap:
+            lo = mid
+        else:
+            hi = mid - 1
+    text = " ".join(words[:lo])
+    if not text:
+        return NO_SPEECH, 0, True
+    return text, n_tokens(text), True
 
 
 def cmd_score(args):
     import score_events as sev                     # load_model (SigLIP sdpa patch E1), collect_event_frames (E6)
     cfg = cfgmod.config_from_args(args)
-    dest = out_dir(args.dataset)
+    av = args.transcript
+    dest = out_dir(args.dataset, av)
     L.start_run_log(dest)
-    ev_path = os.path.join(dest, "events.jsonl")
+    ev_path = os.path.join(out_dir(args.dataset), "events.jsonl")     # the variant reuses the visual-only events
     sc_path = os.path.join(dest, "event_scores.jsonl")
-    events_by_id = {v: r for v, r in load_jsonl_ok(ev_path).items() if not r.get("error")}
+    seg_rows = load_jsonl_ok(ev_path)
+    if av and not args.limit:
+        missing = [v for v in L.cohort(args.dataset) if v not in seg_rows]
+        if missing:
+            print("FAILED: the visual-only segmentation of %s lacks %d cohort videos (e.g. %s); finish it first" % (
+                args.dataset, len(missing), missing[:3]), flush=True)
+            return 1
+    events_by_id = {v: r for v, r in seg_rows.items() if not r.get("error")}
     man = L.manifest(args.dataset)
     ids = [v for v in L.cohort(args.dataset) if v in events_by_id]
     if args.limit:
         ids = ids[:args.limit]
     done = done_ids(sc_path)
     todo = [v for v in ids if v not in done]
-    instruct = build_prompt()
-    print("%s score: %d videos with events, %d done, %d to do (%d events)" % (
-        args.dataset, len(ids), len(done), len(todo), sum(len(events_by_id[v]["events"]) for v in todo)), flush=True)
+    instruct = build_prompt(speech="<text>" if av else None)
+    speech = load_speech_segments(args.dataset, man) if av else None
+    print("%s score%s: %d videos with events, %d done, %d to do (%d events)" % (
+        args.dataset, " (transcript variant)" if av else "", len(ids), len(done), len(todo),
+        sum(len(events_by_id[v]["events"]) for v in todo)), flush=True)
     print("prompt:\n%s\nextraction suffix: %r" % (instruct, EXTRACT_SUFFIX), flush=True)
+    if av:
+        print("transcripts: %d of %d cohort videos have Whisper segments; cap %d tokens" % (
+            sum(1 for v in ids if speech.get(v)), len(ids), args.speech_cap_tokens), flush=True)
     if not todo:
         return 0
     model, processor, tokenizer = sev.load_model(args.model, "sdpa")
     from videollama2 import mm_infer
     import torch
+
+    def n_tokens(text):
+        return len(tokenizer.encode(text, add_special_tokens=False))
+    conf = {"dataset": args.dataset, "arm": "paper_reconstructed_with_hate_rules",
+            "prompt_note": "prompt reconstructed (release has the placeholder string 'prompt')",
+            "prompt": instruct, "extraction_suffix": EXTRACT_SUFFIX,
+            "extraction_max_new_tokens": 8, "model": args.model, "attn_implementation": "sdpa",
+            "max_new_tokens": args.max_new_tokens, "do_sample": False,
+            "frames_per_event": cfg.frames_per_event, "unparsed_fill": UNPARSED_FILL,
+            "code_version": L.git_version(), "started": time.strftime("%Y-%m-%d %H:%M:%S")}
+    if av:
+        conf.update(arm="paper_reconstructed_with_hate_rules_plus_transcript", events=ev_path,
+                    transcript=os.path.join(ASR_DIR, args.dataset, "timestamped_chunks.jsonl"),
+                    transcript_rule="Whisper segments (untimed chunks kept as qwen3_text/text_llm.py); span "
+                                    "[s/fps, e/fps) text by src/video_inputs.py window_text; whitespace collapsed; "
+                                    "'%s' if empty; longest whole-word prefix of <= %d tokens of the model "
+                                    "tokenizer" % (NO_SPEECH, args.speech_cap_tokens),
+                    speech_cap_tokens=args.speech_cap_tokens)
     with open(os.path.join(dest, "score_config.json"), "w") as fh:
-        json.dump({"dataset": args.dataset, "arm": "paper_reconstructed_with_hate_rules",
-                   "prompt_note": "prompt reconstructed (release has the placeholder string 'prompt')",
-                   "prompt": instruct, "extraction_suffix": EXTRACT_SUFFIX,
-                   "extraction_max_new_tokens": 8, "model": args.model, "attn_implementation": "sdpa",
-                   "max_new_tokens": args.max_new_tokens, "do_sample": False,
-                   "frames_per_event": cfg.frames_per_event, "unparsed_fill": UNPARSED_FILL,
-                   "code_version": L.git_version(), "started": time.strftime("%Y-%m-%d %H:%M:%S")}, fh, indent=2)
+        json.dump(conf, fh, indent=2)
     started, n_ev, n_extract = time.time(), 0, 0
     with open(sc_path, "a") as out:
         for k, vid in enumerate(todo, 1):
@@ -417,8 +518,15 @@ def cmd_score(args):
             t0 = time.time()
             try:
                 pr = video_io.probe(man[vid]["video_path"], cfg)
+                spans = [None] * len(events)
+                if av:
+                    fps = float(meta["decode_fps"])
+                    spans = [speech_text(speech.get(vid, []), a / fps, b / fps, n_tokens, args.speech_cap_tokens)
+                             for a, b in events]
                 for idx, frames in sev.collect_event_frames(pr, events, cfg.frames_per_event):
                     tensor = processor["video"](frames)
+                    if av:
+                        instruct = build_prompt(speech=spans[idx][0])
                     with torch.autocast("cuda", dtype=torch.float16), torch.no_grad():
                         text = mm_infer(tensor, instruct, model=model, tokenizer=tokenizer, do_sample=False,
                                         modal="video", max_new_tokens=args.max_new_tokens)
@@ -433,6 +541,9 @@ def cmd_score(args):
                     rec["events"][idx] = {"start": events[idx][0], "end": events[idx][1], "score": score,
                                           "score_raw": raw, "parse_status": status, "range_rule": rule,
                                           "text": text, "extraction": ext}
+                    if av:
+                        rec["events"][idx].update(speech=spans[idx][0], speech_tokens=spans[idx][1],
+                                                  speech_truncated=spans[idx][2])
                     n_ev += 1
                 missing = [i for i, e in enumerate(rec["events"]) if e is None]
                 if missing:
@@ -453,13 +564,17 @@ def cmd_score(args):
 # ============================================================================ stage 3: 4 fps + evaluation
 def cmd_raster(args):
     ds = args.dataset
-    dest = out_dir(ds)
+    av = args.transcript
+    method = METHOD_AV if av else METHOD
+    dest = out_dir(ds, av)
     L.start_run_log(dest)
     man = L.manifest(ds)
     scores = load_jsonl_ok(os.path.join(dest, "event_scores.jsonl"))
-    segs = load_jsonl_ok(os.path.join(dest, "events.jsonl"))
+    segs = load_jsonl_ok(os.path.join(out_dir(ds), "events.jsonl"))
     rows, stats = {}, {"parse_status": {}, "range_rule": {}, "n_events": 0, "n_unparsed_filled": 0,
                        "frames_unparsed_filled": 0, "frames_total": 0}
+    if av:
+        stats.update(n_events_no_speech=0, n_events_speech_truncated=0, speech_tokens_max=0)
     for vid in L.cohort(ds):
         dur = man[vid]["duration"]
         n = L.n_frames(dur)
@@ -470,8 +585,10 @@ def cmd_raster(args):
         elif rec.get("error"):
             err = rec["error"]
         if err:
-            rows[vid] = L.row(METHOD, ds, vid, dur, [], "events", CODE_PATH, error=err)
+            rows[vid] = L.row(method, ds, vid, dur, [], "events", CODE_PATH, error=err)
             continue
+        if av and [[e["start"], e["end"]] for e in rec["events"]] != (segs.get(vid) or {}).get("events"):
+            raise RuntimeError("%s: scored events differ from the visual-only events.jsonl" % vid)
         fps = float(rec["decode_fps"])
         starts = [e["start"] / fps for e in rec["events"]]
         ends = [e["end"] / fps for e in rec["events"]]
@@ -482,11 +599,15 @@ def cmd_raster(args):
         for e in rec["events"]:
             stats["parse_status"][e["parse_status"]] = stats["parse_status"].get(e["parse_status"], 0) + 1
             stats["range_rule"][e["range_rule"]] = stats["range_rule"].get(e["range_rule"], 0) + 1
+            if av:
+                stats["n_events_no_speech"] += int(e["speech"] == NO_SPEECH)
+                stats["n_events_speech_truncated"] += int(bool(e["speech_truncated"]))
+                stats["speech_tokens_max"] = max(stats["speech_tokens_max"], int(e["speech_tokens"]))
         stats["n_events"] += len(rec["events"])
         stats["n_unparsed_filled"] += int(filled.sum())
         stats["frames_unparsed_filled"] += int(fill_curve.sum())
         stats["frames_total"] += n
-        rows[vid] = L.row(METHOD, ds, vid, dur, curve, "events", CODE_PATH,
+        rows[vid] = L.row(method, ds, vid, dur, curve, "events", CODE_PATH,
                           extra={"n_events": len(rec["events"]), "decode_fps": fps,
                                  "n_unparsed_filled": int(filled.sum()),
                                  "n_extracted": sum(e["parse_status"] == "extracted" for e in rec["events"])},
@@ -504,7 +625,9 @@ def cmd_raster(args):
         print("STOP: %d F2 videos > 1%% of %d" % (len(failed), len(rows)))
         return 1
     with open(os.path.join(dest, "config.json"), "w") as fh:
-        json.dump({"method": METHOD, "dataset": ds, "code": CODE_PATH, "code_version": L.git_version(),
+        json.dump({"method": method, "dataset": ds, "code": CODE_PATH, "code_version": L.git_version(),
+                   "events": os.path.relpath(os.path.join(out_dir(ds), "events.jsonl"), REPO),
+                   "transcript_variant": bool(av),
                    "cohort": "runs/20261008_baselines/cohort/%s.txt" % ds,
                    "segment_config": "segment_config.json", "score_config": "score_config.json",
                    "native_unit": "EventVAD events on the min(native, 30) fps decoded stream",
@@ -512,13 +635,36 @@ def cmd_raster(args):
                    "parse_rules": "A legacy parser + ratio; B answer extraction; C fill %.1f" % UNPARSED_FILL,
                    "fallback_F2": "median frame score of scored videos", "date": time.strftime("%Y-%m-%d")},
                   fh, indent=2)
-    L.finalize(ds, list(rows.values()), dest, METHOD)
+    L.finalize(ds, list(rows.values()), dest, method)
+    return 0
+
+
+def cmd_prompts(args):
+    """CPU check of the transcript variant: prints the prompts of the first --limit videos' events (tokenizer only,
+    no model, no output file)."""
+    from transformers import AutoTokenizer
+    tok = AutoTokenizer.from_pretrained(args.model)
+
+    def n_tokens(text):
+        return len(tok.encode(text, add_special_tokens=False))
+    man = L.manifest(args.dataset)
+    speech = load_speech_segments(args.dataset, man)
+    evs = {v: r for v, r in load_jsonl_ok(os.path.join(out_dir(args.dataset), "events.jsonl")).items()
+           if not r.get("error")}
+    ids = [v for v in L.cohort(args.dataset) if v in evs][:args.limit or 2]
+    for vid in ids:
+        fps = float(evs[vid]["decode_fps"])
+        for k, (a, b) in enumerate(evs[vid]["events"]):
+            text, n, cut = speech_text(speech.get(vid, []), a / fps, b / fps, n_tokens, args.speech_cap_tokens)
+            print("=== %s event %d [%.2f, %.2f) s: %d speech tokens%s" % (vid, k, a / fps, b / fps, n,
+                                                                       " (truncated)" if cut else ""))
+            print(build_prompt(speech=text))
     return 0
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("stage", choices=("segment", "score", "raster", "selftest"))
+    ap.add_argument("stage", choices=("segment", "score", "raster", "prompts", "selftest"))
     ap.add_argument("--dataset", choices=L.DATASETS)
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--limit", type=int, default=None)
@@ -528,6 +674,9 @@ def main(argv=None):
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--max-new-tokens", type=int, default=2048)
+    ap.add_argument("--transcript", action="store_true",
+                    help="transcript (audio-visual) variant of score/raster/prompts; outputs in eventvad_av/<DS>/")
+    ap.add_argument("--speech-cap-tokens", type=int, default=SPEECH_CAP_TOKENS)
     cfgmod.add_config_args(ap)
     ap.set_defaults(preset="upstream")      # released code constants (coordinator 2026-10-08), see README
     args = ap.parse_args(argv)
@@ -535,7 +684,11 @@ def main(argv=None):
         return selftest()
     if not args.dataset:
         ap.error("--dataset is required")
-    return {"segment": cmd_segment, "score": cmd_score, "raster": cmd_raster}[args.stage](args)
+    if args.stage == "prompts":
+        args.transcript = True
+    if args.transcript and args.stage == "segment":
+        ap.error("--transcript reuses the visual-only segmentation; run segment without it")
+    return {"segment": cmd_segment, "score": cmd_score, "raster": cmd_raster, "prompts": cmd_prompts}[args.stage](args)
 
 
 def selftest():
@@ -556,6 +709,19 @@ def selftest():
         good = (got is None and want is None) or (got is not None and want is not None and abs(got - want) < 1e-9)
         ok &= good
         print("%s extract %r -> %r" % ("PASS" if good else "FAIL", text, got))
+    good = build_prompt() == build_prompt(None) and build_prompt().startswith("#Question: ") and \
+        build_prompt("hi there").startswith(SPEECH_PREFIX + "hi there\n#Question: ") and \
+        build_prompt("x").endswith(build_prompt())
+    ok &= good
+    print("%s prompt: visual-only unchanged, speech line before the question" % ("PASS" if good else "FAIL"))
+    segs = [(0.0, 4.0, " a b c d"), (4.0, 6.0, " e  f"), (10.0, 12.0, "")]
+    ntok = lambda t: len(t.split())                                   # noqa: E731  (word count as token count)
+    for (t1, t2, cap), want in [((0.0, 2.0, 512), ("a b", 2, False)), ((3.0, 6.0, 512), ("d e f", 3, False)),
+                                ((0.0, 6.0, 4), ("a b c d", 4, True)), ((7.0, 12.0, 512), (NO_SPEECH, 0, False))]:
+        got = speech_text(segs, t1, t2, ntok, cap)
+        good = got == want
+        ok &= good
+        print("%s speech_text [%s, %s] cap %d -> %r" % ("PASS" if good else "FAIL", t1, t2, cap, got))
     curve = L.units_to_4fps([0.0, 1.5], [1.5, 2.0], [0.1, 0.9], 10)
     good = np.allclose(curve, [0.1] * 6 + [0.9] * 4)
     ok &= good

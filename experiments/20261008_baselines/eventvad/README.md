@@ -74,3 +74,55 @@ coordinator fixed the released constants. Its outputs are kept in
 ## Results
 
 None yet.
+
+## Transcript (audio-visual) variant, 2026-10-09
+
+User decision 2026-10-09: the label-free baselines must see both the picture and the speech. This variant gives
+EventVAD's scorer the transcript of each event's time span. Mechanism hypothesis: none; this is a comparison row
+(EventVAD + speech).
+
+**What changes.** Only the scoring prompt. The first line of the user turn (after VideoLLaMA2's video token) is the
+event's transcript; the rest is the visual-only prompt unchanged:
+
+```
+Speech during this segment: <text>
+#Question: Are there any obvious or potential anomalies in the video? An anomaly is content that violates any of the following rules:
+1. Encourage violence against groups based on protected status
+...
+9. Deny or minimize major violent events
+#Instruction: Let's think step by step to judge the anomaly of the video. Finally, output the anomaly score based on the thinking process.
+```
+
+**What stays the same.** The events (read from the visual-only `runs/20261008_baselines/eventvad/<DS>/events.jsonl`,
+not recomputed; the raster stage checks that every scored event equals that file's), the 16 frames per event,
+greedy decoding with at most 2048 new tokens, parsing rules A/B/C (rule B's extraction call uses the same prompt,
+transcript included), the 4 fps rasterisation, F2.
+
+**Transcript.**
+- Source: `data/asr_whisper_large_v3/<DS>/timestamped_chunks.jsonl` (Whisper large-v3 segments). Untimed chunks are
+  kept as in `../qwen3_text/text_llm.py`: a missing start is the previous segment's end; a missing end is the next
+  chunk's start (if later) or the video duration (run_plan.md §1.3).
+- Span: event `[s, e)` in decoded frames = seconds `[s/fps, e/fps)`; text by `src/video_inputs.py` `window_text`
+  (the Reader's helper: segments inside the span whole, segments crossing it sliced proportionally at word
+  boundaries); runs of whitespace collapsed to one space.
+- Empty span: `(no speech)` (run_plan.md §1.3 F1).
+- Cap: **512 tokens** of the model's own tokenizer (Qwen2), fixed before any run: the longest whole-word prefix that
+  fits. Chosen from the model's context (VideoLLaMA2.1 was trained with 4,096 tokens; 16 frames plus the prompt and up
+  to 2,048 answer tokens must fit) and checked against the input only: span lengths of the visual-only events
+  (HateMM median 13 tokens, 99th percentile 172; DeHate 13 / 165) put about 0.1 % of events above 512. No result was
+  looked at; the number is not tuned.
+
+**Code.** `eventvad_4fps.py score --transcript` / `raster --transcript` (default off: the visual-only path is
+unchanged; its prompt equals the one in the DeHate run's `score_config.json`). Outputs:
+`runs/20261008_baselines/eventvad_av/<DS>/` (`event_scores.jsonl` with each event's `speech`, `speech_tokens`,
+`speech_truncated`; `score_config.json`; `raster_stats.json` with no-speech and truncated event counts;
+`predictions.jsonl`, `coverage.json`, `metrics.json`; method name `eventvad_av`). CPU check of the prompts without a
+model: `eventvad_4fps.py prompts --dataset HateMM --limit 1`.
+
+```bash
+# on the GPU machine, repo root, after git pull (lab-server: *_labserver.sbatch; uoa-lab1: *_lab1.sbatch)
+mkdir -p runs/20261008_baselines/eventvad_av
+sbatch experiments/20261008_baselines/launch/eventvad_av_labserver.sbatch HateMM HateClipSeg DeHate
+# on uoa-lab1 after rsync of runs/20261008_baselines/eventvad_av/<DS>/:
+python3 experiments/20261008_baselines/eventvad/eventvad_4fps.py raster --transcript --dataset <DS>
+```
