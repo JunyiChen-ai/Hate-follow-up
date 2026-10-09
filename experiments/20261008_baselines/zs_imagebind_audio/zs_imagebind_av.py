@@ -191,8 +191,22 @@ def stage_extract_image(a, log) -> int:
         p = find_video(root, v)
         return v, p, (decode_frames(p) if p is not None else None)
 
+    def prefetched(pool):
+        """Decoded videos in order, at most 2 x decoders ahead of the GPU (bounded memory)."""
+        q, it = [], iter(todo)
+        for v in it:
+            q.append(pool.submit(load, v))
+            if len(q) >= 2 * a.decoders:
+                break
+        while q:
+            r = q.pop(0).result()
+            nxt = next(it, None)
+            if nxt is not None:
+                q.append(pool.submit(load, nxt))
+            yield r
+
     with ThreadPoolExecutor(max_workers=a.decoders) as pool:
-        for k, (v, p, frames) in enumerate(pool.map(load, todo), 1):
+        for k, (v, p, frames) in enumerate(prefetched(pool), 1):
             if p is None:
                 stats["missing_file"].append(v)
                 log(f"[MISS] {v}")
