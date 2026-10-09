@@ -35,8 +35,10 @@ the same user turn; instruction unchanged). The span of window i is [16 i, 16 (i
 decoded frame rate, i.e. the native frames the window is mapped to; its text is lf_common.span_text (the Whisper
 large-v3 segments of data/asr_whisper_large_v3/<DS>/timestamped_chunks.jsonl cut by src/video_inputs.py window_text;
 untimed chunks kept as in qwen3_text). An empty span gives "Subtitles: (no speech)". The span text is capped at
-AV_TEXT_CAP = 256 tokens of the embedder's tokenizer (first 256 kept), which keeps video + text under the embedder's
-max_length of 8192 tokens. Text pools, whitening, temperature, smoothing and frame mapping are unchanged. Outputs go to
+AV_TEXT_CAP = 128 tokens of the embedder's tokenizer (first 128 kept): a window's video part takes up to about 7,990
+tokens (64 frames + timestamps), so the cap keeps video + text under the embedder's max_length of 8192 tokens, where
+the processor would cut the end of the sequence; each video's longest input is recorded (extract_meta max_tokens).
+Text pools, whitening, temperature, smoothing and frame mapping are unchanged. Outputs go to
 runs/20261008_baselines/prism_av/<DS>/, method name "prism_av".
 """
 from __future__ import annotations
@@ -59,7 +61,7 @@ METHOD = "prism"
 OUT_ROOT = os.path.join(REPO, "runs", "20261008_baselines", "prism")
 METHOD_AV = "prism_av"
 OUT_ROOT_AV = os.path.join(REPO, "runs", "20261008_baselines", "prism_av")
-AV_PREFIX, AV_TEXT_CAP = "Subtitles: ", 256
+AV_PREFIX, AV_TEXT_CAP = "Subtitles: ", 128
 CODE_PATH = "experiments/20261008_baselines/prism/prism_hate.py"
 DESC_PATH = os.path.join(HERE, "hate_descriptions.json")
 SAMPLE_INTERVAL, WINDOW_SIZE, WINDOW_STRIDE = 16, 7, 1
@@ -243,6 +245,7 @@ def cmd_extract(args):
                         inputs = nxt.result()
                         if j + 1 < len(batches):                   # CPU preprocessing of the next batch overlaps
                             nxt = pool.submit(window_inputs, emb, frames, cache, batches[j + 1], texts)
+                        rec["max_tokens"] = max(rec.get("max_tokens", 0), int(inputs["attention_mask"].sum(1).max()))
                         with torch.no_grad():
                             embs.append(embed_inputs(emb, inputs).float().cpu())
                     arr = torch.cat(embs).numpy().astype(np.float32)
