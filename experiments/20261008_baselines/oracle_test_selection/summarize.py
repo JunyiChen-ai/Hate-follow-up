@@ -172,7 +172,8 @@ def main():
             d.append(f"{rr['max_abs_delta']:.4f} ({rr['checkpoint']})" if rr else "n/a")
         L.append(f"| {r['label']} | {r['dataset']} | {'; '.join(d)} |")
     (O.ORACLE / "oracle_table.md").write_text("\n".join(L) + "\n")
-    print("\n".join(L[13:13 + 2 + len(rows)]))
+    i = next(k for k, x in enumerate(L) if x.startswith("| method | corpus | current"))
+    print("\n".join(L[i:i + 2 + len(rows)]))
 
 
 if __name__ == "__main__":
