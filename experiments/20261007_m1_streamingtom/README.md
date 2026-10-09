@@ -266,3 +266,48 @@ Cost (actual, both corpora, LOCAL features from R1 proofs):
 **2026-10-09 disk cleanup (user-approved):** `runs/20261007_m1_streamingtom/r1_full_main/proof/` (143 GB of per-frame audit tensors) was deleted on sc474397 and sc474398. Records, predictions, metrics and analyses are kept. The R1 strict CPU replay and `local_controls.py` (which read LOCAL features from these proofs) can no longer run as written; a rerun must recompute the single-frame vision features.
 
 **2026-10-09 disk cleanup (user-approved, category A):** runs/20261007_m1_streamingtom/r1_full_smoke/proof/ and the controls vectors/ directories (retrieval vectors used only for the completed binding checks) were deleted on sc474397. controls_analyze.py prepare for the uniform job can no longer be rerun as written.
+
+## Separating "more frames inside the window" from "frames next to the question" (declared 2026-10-09, before the run)
+
+User question 2026-10-09: the decomposition above left two explanations of the LOCAL-frame gain unseparated: the window
+now has more frames inside it (information), or those frames sit right before the window's question (placement). Four
+arms separate them. All share the fresh native prefix of r6 and r6's G, own stance and S; only the visual read of
+windows that have the arm's frames changes, every other window keeps the native V (as E does):
+
+| arm | frames added | where | label text |
+|---|---|---|---|
+| r6 | none | | |
+| E `local_clean` (stored, `local_controls_main`) | the window's LOCAL 0.5 fps frames | right before the question | `Actual LOCAL source at 12.000 seconds.` |
+| `local_clean_replay` | same as E | same as E | same as E; re-read through the model's own forward with fresh vision (the R1 proofs are deleted) |
+| `adjacent_local` | the same LOCAL frames | right before the question | `[t=12.0s]`, the prefix frames' own label |
+| `prefix_local` | the same LOCAL frames | inserted into the prefix frame list in time order (native frame first on a tie); the question is r6's plain question | `[t=12.0s]` |
+| `adjacent_native` | none new: the prefix frames whose time falls inside the window are shown again | right before the question | `[t=6.5s]` |
+
+- `prefix_local` cannot share the KV cache: each covered window is one standalone forward of the whole conversation
+  (prefix with 20 + k frames and the intro stating that count, transcript, rules, whole-video question, the native
+  stance answer, window question). The whole-video question is not re-asked; G and S stay native.
+- Windows without LOCAL frames keep the native V in the three LOCAL arms (7 windows, as E). `adjacent_native`
+  changes only windows with at least one of the 20 prefix frames inside (HateMM 2738 / 3768, HateClipSeg 2358 /
+  3591, from the coverage analysis above).
+- Numeric floor of the no-cache path: for one window per video, r6's exact input is run as one standalone forward
+  (`standalone_native`) and compared with the cached V; its token ids must equal the cached conversation's.
+- Code: `placement_controls.py` (reading), `placement_analyze.py` (binding checks, sole evaluator + fixed r6 decoder,
+  report), CPU fixture check `placement_selfcheck.py`. Launch `launch/placement_lab3.sbatch` (`SCOPE=smoke`, then
+  `SCOPE=main`) on sc474398; `launch/placement_lab1.sbatch` is the same job for sc474397. Output
+  `runs/20261007_m1_streamingtom/placement_controls_{smoke,main}/`; analysis `STAGE=prepare|evaluate|report bash
+  launch/run_placement_analysis.sh`; table `runs/20261007_m1_streamingtom/placement_analysis/summary.json`.
+
+Declared readings (pooled noise floor .005, within .01; "supported" = one metric gains ≥ .01 in both corpora and no
+metric loses beyond the floor):
+- implementation: `local_clean_replay` − E inside the floor on all six; the per-window max |Δz| is reported.
+- label wording: `adjacent_local` − E. Inside the floor on all six = no effect.
+- position, same frames and labels: `adjacent_local` − `prefix_local`. Inside the floor on all six = position does
+  not matter and the gain is from having the window's own frames. Supported for `adjacent_local` = placement next
+  to the question contributes. Supported for `prefix_local` = the prefix placement is better. Otherwise mixed.
+- more frames without adjacency: `prefix_local` − r6, supported or not.
+- adjacency without new frames: `adjacent_native` − r6, supported or not.
+- Nothing is promoted by this run; E stays an input change (rule 5). DeHate is not part of this run.
+
+Planned cost: `adjacent_local` and `local_clean_replay` about E's 18 min each; `adjacent_native` less (fewer windows,
+one to three images); `prefix_local` one full prefill per covered window, about 24 M prefix tokens plus the LOCAL
+image tokens over both corpora, estimated 1 to 1.5 h on a 5090. Measured times go in the records.
