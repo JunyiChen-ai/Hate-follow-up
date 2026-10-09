@@ -58,3 +58,7 @@ Seed mean ± sd (n − 1) over seeds 2025 / 234 / 3407, transcribed from `runs/2
 Hosts: uoa-lab1 (sc474397), Slurm 291, 2026-10-08. Selected epochs (seeds 2025 / 234 / 3407), from each seed's `train_meta.json`: BERT HateMM 50/2/7, HCS 22/32/49, DeHate 21/29/34; wav2vec2 HateMM 50/50/50, HCS 42/49/38, DeHate 45/45/50; CLIP HateMM 38/31/50, HCS 50/50/46, DeHate 23/24/26. wav2vec2 on HateMM always takes the last epoch, so 50 epochs at lr 1e-4 may under-train it; the recipe is kept fixed across rows by design.
 
 Coverage: every cohort video scored with a finite value on every GT frame (`coverage.json`); tail padding at most 3 frames on HateMM, 28 on HCS, 237 on DeHate (one DeHate video whose feature rows end at the audio length).
+
+## Change for oracle test selection (2026-10-09)
+
+`train_mil.py` `run_seed` takes an optional `epoch_hook` (default None, behaviour unchanged). `oracle_test_selection/retrain.py` passes a hook that scores the test cohort after every epoch with `predict` (eval mode, no random draw, so the training trajectory is the same). Used only by `../oracle_test_selection/` (checkpoint and branch chosen on TEST labels, an upper bound for the baselines; see that README). The rows above are unchanged.

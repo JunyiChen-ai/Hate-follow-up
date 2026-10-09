@@ -57,3 +57,7 @@ Seed mean ± sd (n − 1) over seeds 2025 / 234 / 3407, transcribed from `runs/2
 | DSANet score_align | DeHate | 0.6655 ± 0.0117 | 0.1398 ± 0.0098 | 0.5229 ± 0.0096 | 0.6766/0.1467/0.5245; 0.6666/0.1442/0.5316; 0.6532/0.1286/0.5126 | sc474398 |
 
 Host: uoa-lab3 (sc474398), Slurm 290, 2026-10-08 (results rsynced to uoa-lab1 without the model checkpoints, which stay on uoa-lab3).
+
+## Change for oracle test selection (2026-10-09)
+
+`scripts/reproduction_baselines/dsanet/train.py` accepts `--save-every-epoch` (default off): it also writes `model_eNN.pth` after every completed epoch. Saving draws no random number, so training is unchanged. Used only by `../oracle_test_selection/` (checkpoint and branch chosen on TEST labels, an upper bound for the baselines; see that README). The rows above are unchanged.

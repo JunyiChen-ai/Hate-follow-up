@@ -144,3 +144,7 @@ rule applied to this split. Coverage 118 / 118 videos, 3591 windows, no fallback
 
 DeHate: Slurm 318 on uoa-lab2, started 2026-10-08 19:40 (rationale about 5 s/video for 6499 videos, then the OCR
 not yet done by the parallel CPU pass, embeddings, six trainings, evaluation); not finished at the time of writing.
+
+## Change for oracle test selection (2026-10-09)
+
+`clara_train.py` accepts `--save-every-epoch` (default off): a callback saves the weights at each epoch end (right before that epoch's evaluation and checkpoint), and after the normal run, which is unchanged, each epoch's weights score the test windows through the same `trainer.predict` path (`epochs/eNN.json`). Used only by `../oracle_test_selection/` (checkpoint and branch chosen on TEST labels, an upper bound for the baselines; see that README). The rows above are unchanged.

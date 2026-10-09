@@ -53,3 +53,7 @@ Seed mean ± sd (n − 1) over seeds 2025 / 234 / 3407, transcribed from `runs/2
 | VadCLIP score_mlp | DeHate | 0.6276 ± 0.0150 | 0.1167 ± 0.0122 | 0.4619 ± 0.0047 | 0.6396/0.1301/0.4566; 0.6108/0.1061/0.4644; 0.6326/0.1139/0.4648 | sc474398 |
 
 Host: uoa-lab3 (sc474398), Slurm 290, 2026-10-08 (results rsynced to uoa-lab1 without the model checkpoints, which stay on uoa-lab3 under the same paths). The VadCLIP rows have the largest seed spread on HateMM (sd .04): with a fixed last epoch and no selection, seeds vary more.
+
+## Change for oracle test selection (2026-10-09)
+
+`scripts/reproduction_baselines/vadclip/train.py` accepts `--save-every-epoch` (default off): it also writes `model_eNN.pth` after every epoch. Saving draws no random number, so training is unchanged. Used only by `../oracle_test_selection/` (checkpoint and branch chosen on TEST labels, an upper bound for the baselines; see that README). The rows above are unchanged.

@@ -101,6 +101,8 @@ def build_parser():
     p.add_argument("--num-workers", default=4, type=int)
     p.add_argument("--limit-videos", default=0, type=int, help="debug only")
     p.add_argument("--select", default="last", choices=("last", "val"))
+    p.add_argument("--save-every-epoch", action="store_true",
+                   help="also write model_eNN.pth (non-CLIP weights) after every epoch (oracle_test_selection)")
     # architecture: upstream xd_option.py defaults (classes 7 -> 2)
     p.add_argument("--classes-num", default=2, type=int)
     p.add_argument("--embed-dim", default=512, type=int)
@@ -223,6 +225,9 @@ def train(args):
             break
         if args.select == "val" and ap is not None and ap > best_ap:
             best_ap, best_epoch, best_state = ap, e + 1, copy.deepcopy(model.state_dict())
+        if args.save_every_epoch:  # saving draws no random number, so training is unchanged
+            torch.save({k: v for k, v in model.state_dict().items() if not k.startswith("clipmodel.")},
+                       out_dir / f"model_e{e + 1:02d}.pth")
     if args.select == "val":
         if best_state is None:
             raise RuntimeError("no validation-selected state")

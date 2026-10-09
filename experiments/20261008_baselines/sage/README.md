@@ -125,3 +125,6 @@ gradient clipping in the release); the authors' rule keeps the last checkpoint w
 Coverage: 1151 / 1151 videos, 14,375 windows, 82 F1 tail windows (all last windows of a video, < 16 frames), no F2,
 no clamped frames, every video has audio.
 
+## Change for oracle test selection (2026-10-09)
+
+`sage_run.py train` accepts `--save-every-epoch` (default off): it also writes `epochs/eNN.pth` after every epoch. Saving draws no random number. The per-epoch checkpoints are scored by `oracle_test_selection/sage_epochs.py`, which reads the same window inputs as `cmd_infer`. Used only by `../oracle_test_selection/` (checkpoint and branch chosen on TEST labels, an upper bound for the baselines; see that README). The rows above are unchanged.

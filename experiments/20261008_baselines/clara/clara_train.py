@@ -70,6 +70,9 @@ def main():
     ap.add_argument("--rationale-mode", default="both", choices=["both", "none"])
     ap.add_argument("--cpu-smoke", action="store_true", help="debug on CPU (bf16 autocast on CPU), 2 epochs")
     ap.add_argument("--cpu", action="store_true", help="train on CPU (bf16 autocast on CPU), all settings unchanged")
+    ap.add_argument("--save-every-epoch", action="store_true",
+                    help="oracle_test_selection: keep every epoch's weights and, after the normal run, "
+                         "write each epoch's test window scores to epochs/eNN.json")
     args = ap.parse_args()
     ds, mode = args.dataset, args.rationale_mode
     method_dir = "clara" if mode == "both" else "clara_norationale"
@@ -146,6 +149,18 @@ def main():
     trainer = CM.build_trainer(model=model, training_args=training_args, train_dataset=train_ds,
                                eval_dataset=eval_ds, data_collator=collator, compute_metrics=CM.compute_metrics)
     trainer.add_callback(CM.SetEpochCallback(collator))
+    state_dir = rd / "epoch_states"
+    if args.save_every_epoch:
+        # oracle_test_selection (2026-10-09): on_epoch_end runs right before the epoch's evaluation and checkpoint,
+        # so the saved weights are the ones that checkpoint holds; saving draws no random number.
+        from transformers import TrainerCallback
+
+        class _SaveEveryEpoch(TrainerCallback):
+            def on_epoch_end(self, targs, state, control, model=None, **kw):
+                state_dir.mkdir(parents=True, exist_ok=True)
+                torch.save(model.state_dict(), state_dir / f"e{int(round(state.epoch)):02d}.pt")
+
+        trainer.add_callback(_SaveEveryEpoch())
     tr = trainer.train()
     ev = trainer.evaluate()
     log(f"train done: {json.dumps(tr.metrics)}")
@@ -175,6 +190,23 @@ def main():
                        "inputs": "per window: clips of the window's Whisper segments, frames at the video's own "
                                  "40-frame sampling rate (<= 40), window audio, OCR, video-level rationale"},
                log=log)
+    if args.save_every_epoch:
+        # After the normal run (its outputs above are unchanged): score the test windows with every epoch's
+        # weights, the same trainer.predict path and softmax as above; then drop the weights.
+        (rd / "epochs").mkdir(exist_ok=True)
+        for sp in sorted(state_dir.glob("e*.pt")):
+            trainer.model.load_state_dict(torch.load(sp, map_location="cpu"))
+            lg = np.asarray(trainer.predict(test_ds).predictions, dtype=np.float64)
+            pe = np.exp(lg - lg.max(1, keepdims=True))
+            pe = (pe / pe.sum(1, keepdims=True))[:, 1]
+            we = {}
+            for sid, pj in zip(ids, pe):
+                v, j = sid.rsplit("__w", 1)
+                we.setdefault(v, {})[int(j)] = float(pj)
+            (rd / "epochs" / f"{sp.stem}.json").write_text(
+                json.dumps({v: [d[j] for j in sorted(d)] for v, d in we.items()}) + "\n")
+            sp.unlink()
+            log(f"per-epoch test scores {sp.stem}")
     log("DONE clara")
 
 

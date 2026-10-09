@@ -92,7 +92,10 @@ def predict(model, ids, feats, device, bs=16):
     return frames, video
 
 
-def run_seed(args, seed, out, log):
+def run_seed(args, seed, out, log, epoch_hook=None):
+    """epoch_hook (default None = unchanged behaviour): called as epoch_hook(epoch, model, test_ids, feats, device)
+    after each epoch's validation step; used only by oracle_test_selection/ to score the test cohort per epoch.
+    predict() runs in eval mode with no random draw, so the hook does not change the training trajectory."""
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
@@ -125,6 +128,8 @@ def run_seed(args, seed, out, log):
         _, vs = predict(model, va, feats, device)
         ap = float(fec.average_precision(np.array([vs[v] for v in va]), yv))
         history.append({"epoch": epoch, "loss": tot / n, "val_video_ap": ap})
+        if epoch_hook is not None:
+            epoch_hook(epoch, model, te, feats, device)
         if ap > best_ap:
             best_ap, best_epoch, best_state = ap, epoch, copy.deepcopy(model.state_dict())
     model.load_state_dict(best_state)

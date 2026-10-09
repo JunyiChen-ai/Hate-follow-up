@@ -156,6 +156,11 @@ def train(args):
         if args.select == "val" and val_ap is not None and val_ap > best_ap:
             best_ap, best_epoch = val_ap, e + 1
             best_state = copy.deepcopy(model.state_dict())
+        if getattr(args, "save_every_epoch", False):
+            # oracle_test_selection (2026-10-09): keep every epoch's weights so the test cohort can be
+            # scored per epoch afterwards; saving draws no random number, so training is unchanged.
+            torch.save(model.state_dict(),
+                       os.path.join(out_dir, "model_e%02d.pth" % (e + 1)))
 
     if args.select == "val" and best_state is not None:
         model.load_state_dict(best_state)
@@ -183,7 +188,12 @@ def train(args):
 
 
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # --save-every-epoch (default off): also write model_eNN.pth after every epoch
+    save_every_epoch = "--save-every-epoch" in argv
+    argv = [a for a in argv if a != "--save-every-epoch"]
     args = option.resolve(option.build_parser().parse_args(argv))
+    args.save_every_epoch = save_every_epoch
     train(args)
     return 0
 

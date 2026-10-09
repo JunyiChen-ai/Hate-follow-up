@@ -139,6 +139,9 @@ def main(argv=None):
     ap.add_argument("--run-test", action="store_true",
                     help="run frozen-checkpoint inference on the test split; "
                          "leave off during validation tuning")
+    ap.add_argument("--save-every-epoch", action="store_true",
+                    help="also write epoch_states/eNNN.pt after every epoch "
+                         "(oracle_test_selection, 2026-10-09; default off)")
     args = ap.parse_args(argv)
 
     torch.manual_seed(args.seed)
@@ -203,6 +206,11 @@ def main(argv=None):
             best_ap, best_epoch = val_ap, epoch
             best_state = {k: v.detach().cpu().clone()
                           for k, v in model.state_dict().items()}
+        if args.save_every_epoch:
+            # saving draws no random number, so training is unchanged
+            os.makedirs(os.path.join(out_dir, "epoch_states"), exist_ok=True)
+            torch.save(model.state_dict(),
+                       os.path.join(out_dir, "epoch_states", "e%03d.pt" % epoch))
         if epoch % 10 == 0 or epoch == 1:
             print("  epoch %3d  loss %.4f (mil %.4f smooth %.4f contrast "
                   "%.4f)  val AP %.4f  %.0fs"

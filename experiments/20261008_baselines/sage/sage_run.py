@@ -395,6 +395,10 @@ def cmd_train(args):
             best = m["macro_f1"]
             torch.save({"epoch": ep + 1, "model_state_dict": model.state_dict(), "best_f1": best}, ckpt)
             rec["saved"] = True
+        if args.save_every_epoch:  # oracle_test_selection: every epoch's weights (no random draw)
+            (out / "epochs").mkdir(exist_ok=True)
+            torch.save({"epoch": ep + 1, "model_state_dict": model.state_dict()},
+                       out / "epochs" / f"e{ep + 1:02d}.pth")
         log(json.dumps(rec))
         scheduler.step()
     (out / "train_history.json").write_text(json.dumps(hist, indent=1) + "\n")
@@ -501,6 +505,8 @@ def main():
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--smoke", action="store_true", help="debug: 4 train / 4 val videos, 1 epoch")
+    ap.add_argument("--save-every-epoch", action="store_true",
+                    help="train: also write epochs/eNN.pth after every epoch (oracle_test_selection)")
     args = ap.parse_args()
     {"prep": cmd_prep, "train": cmd_train, "infer": cmd_infer}[args.cmd](args)
 

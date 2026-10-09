@@ -63,3 +63,7 @@ Seed mean ± sd (n − 1) over seeds 2025 / 234 / 3407, transcribed from `runs/2
 | AVadCLIP score_mlp | DeHate | 0.6419 ± 0.0345 | 0.1385 ± 0.0231 | 0.5057 ± 0.0172 | 0.6031/0.1219/0.5144; 0.6539/0.1288/0.5167; 0.6688/0.1649/0.4859 | sc474397 |
 
 Host: uoa-lab1 (sc474397), Slurm 291, 2026-10-08. Every cohort video scored on every GT frame (`coverage.json`).
+
+## Change for oracle test selection (2026-10-09)
+
+`avadclip_port.py train` accepts `--save-every-epoch` (default off): it also writes `model_eNN.pth` (non-CLIP weights, as the final save) after every epoch. Saving draws no random number. Used only by `../oracle_test_selection/` (checkpoint and branch chosen on TEST labels, an upper bound for the baselines; see that README). The rows above are unchanged.

@@ -64,3 +64,7 @@ HCS hyper-parameter and epoch choices carry little information. Coverage: every 
 
 Earlier rows replaced: the leaked HCS number (`runs/20260829_omsl_v6/multihateloc_frozen_current4fps_v1_metrics.json`)
 and the HateMM DMS-branch single-seed row must not be used.
+
+## Change for oracle test selection (2026-10-09)
+
+`scripts/reproduction_baselines/multihateloc/train.py` accepts `--save-every-epoch` (default off): it also writes `epoch_states/eNNN.pt` after every epoch. Saving draws no random number. For the DeHate retraining, the DeHate ImageNet-ViT and VGGish rows were copied into `data/weaksup_1fps/` (addendum in its PROVENANCE.md). Used only by `../oracle_test_selection/` (checkpoint and branch chosen on TEST labels, an upper bound for the baselines; see that README). The rows above are unchanged.
