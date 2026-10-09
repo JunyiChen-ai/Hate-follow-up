@@ -75,13 +75,18 @@ def local_path(path):
     return path
 
 
+CAMPUS_DATA = "/data/jehc223"          # raw-video root on the campus servers (CLAUDE.md: /data/jehc223/<dataset>/)
+
+
 def resolve_video(ds, vid, manifest_path):
     """The manifest path mapped to this machine; if it is absent (HateClipSeg's manifest points at a removed
-    pilot directory), the raw-video location of CLAUDE.md, ~/data/<dataset>/{videos,video,test}/<id>.<ext>."""
+    pilot directory), the raw-video location of CLAUDE.md, ~/data/<dataset>/{videos,video,test}/<id>.<ext> on the
+    lab machines, /data/jehc223/<dataset>/{videos,video,test}/<id>.<ext> on the campus servers."""
     cand = [local_path(manifest_path)]
-    for sub in ("videos", "video", "test"):
-        for ext in (".mp4", ".webm", ".mkv"):
-            cand.append(os.path.join(os.path.expanduser("~/data"), ds, sub, vid + ext))
+    for root in (os.path.expanduser("~/data"), CAMPUS_DATA):
+        for sub in ("videos", "video", "test"):
+            for ext in (".mp4", ".webm", ".mkv"):
+                cand.append(os.path.join(root, ds, sub, vid + ext))
     for c in cand:
         if os.path.isfile(c):
             return c
@@ -104,6 +109,50 @@ def manifest(ds):
 def n_frames(duration):
     """Curve length on the 4 fps grid (run_plan.md 1.2)."""
     return int(math.ceil(duration * RATE - 1e-9))
+
+
+# ----------------------------------------------------------------------------- transcripts (audio-visual variants)
+ASR_DIR = os.path.join(REPO, "data", "asr_whisper_large_v3")
+NO_SPEECH = "(no speech)"
+
+
+def transcript_segments(ds, durations=None):
+    """video_id -> [(start, end, text)] from data/asr_whisper_large_v3/<ds>/timestamped_chunks.jsonl (Whisper
+    large-v3 segments, the transcript the Reader and the Qwen baselines read).
+
+    Untimed chunks are kept (run_plan.md 1.3), with the rule of qwen3_text/text_llm.py `load_segments`: a missing
+    start takes the previous chunk's end (0 for the first), a missing end takes the next chunk's start if that is
+    later, else the video duration (test manifest). Videos without a row get an empty list."""
+    dur = durations if durations is not None else {v: m["duration"] for v, m in manifest(ds).items()}
+    out = {v: [] for v in dur}
+    with open(os.path.join(ASR_DIR, ds, "timestamped_chunks.jsonl")) as fh:
+        for line in fh:
+            r = json.loads(line)
+            v = r["video_id"]
+            if v not in dur:
+                continue
+            ch = r.get("chunks") or []
+            segs, prev_end = [], 0.0
+            for i, c in enumerate(ch):
+                s, e = c.get("start"), c.get("end")
+                s = float(s) if s is not None else prev_end
+                if e is None:
+                    nxt = next((float(x["start"]) for x in ch[i + 1:] if x.get("start") is not None), None)
+                    e = nxt if nxt is not None and nxt > s else dur[v]
+                e = float(e)
+                segs.append((s, e, c.get("text") or ""))
+                prev_end = max(prev_end, e)
+            out[v] = segs
+    return out
+
+
+def span_text(segments, t1, t2):
+    """Transcript of [t1, t2] s: src/video_inputs.py `window_text` (segments sliced proportionally at word
+    boundaries), stripped. Empty string when nothing is spoken in the span."""
+    if REPO not in sys.path:
+        sys.path.insert(0, REPO)
+    from src.video_inputs import window_text
+    return " ".join(window_text(segments, t1, t2).split())
 
 
 def gt_lengths(ds):

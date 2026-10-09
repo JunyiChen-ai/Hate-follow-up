@@ -27,6 +27,17 @@ frames [16i, 16i+16)) and leaves the last 6 sample positions unscored. Here wind
 [16 i, 16 (i + 7)), and a native frame takes the mean smoothed score of the windows that cover it. Frames after the
 last covered frame (fewer than 16 native frames) hold the last value. 4 fps frame j takes the native frame at
 (j + 0.5) / 4 s. Videos with fewer than 7 samples (fewer than 97 native frames) have no window: plan F2 (median).
+
+Transcript (audio-visual) variant, `--av` (2026-10-09; default off, the visual-only run is unchanged): each window
+is embedded as ONE input item made of the same 7 frames plus the text "Subtitles: <transcript of the window's time
+span>" (the release's Qwen3VLEmbedder.format_model_input(video=..., text=...), which puts the text after the video in
+the same user turn; instruction unchanged). The span of window i is [16 i, 16 (i + 7)) native frames divided by the
+decoded frame rate, i.e. the native frames the window is mapped to; its text is lf_common.span_text (the Whisper
+large-v3 segments of data/asr_whisper_large_v3/<DS>/timestamped_chunks.jsonl cut by src/video_inputs.py window_text;
+untimed chunks kept as in qwen3_text). An empty span gives "Subtitles: (no speech)". The span text is capped at
+AV_TEXT_CAP = 256 tokens of the embedder's tokenizer (first 256 kept), which keeps video + text under the embedder's
+max_length of 8192 tokens. Text pools, whitening, temperature, smoothing and frame mapping are unchanged. Outputs go to
+runs/20261008_baselines/prism_av/<DS>/, method name "prism_av".
 """
 from __future__ import annotations
 
@@ -46,6 +57,9 @@ import lf_common as L                                            # noqa: E402
 
 METHOD = "prism"
 OUT_ROOT = os.path.join(REPO, "runs", "20261008_baselines", "prism")
+METHOD_AV = "prism_av"
+OUT_ROOT_AV = os.path.join(REPO, "runs", "20261008_baselines", "prism_av")
+AV_PREFIX, AV_TEXT_CAP = "Subtitles: ", 256
 CODE_PATH = "experiments/20261008_baselines/prism/prism_hate.py"
 DESC_PATH = os.path.join(HERE, "hate_descriptions.json")
 SAMPLE_INTERVAL, WINDOW_SIZE, WINDOW_STRIDE = 16, 7, 1
@@ -53,6 +67,33 @@ INSTRUCTION = "Represent the video content for anomaly detection."
 NORMAL_PREFIX = "Video footage of "
 ANOM_PREFIX = "Real-world video footage of anomalous event: "
 TEMP_B, SIGMA, REG_LAMBDA, TEXT_BATCH = 0.2, 16, 0.01, 16
+
+
+def out_root(args):
+    return OUT_ROOT_AV if getattr(args, "av", False) else OUT_ROOT
+
+
+def method_name(args):
+    return METHOD_AV if getattr(args, "av", False) else METHOD
+
+
+def window_texts(tokenizer, segs, starts, n_native, fps):
+    """--av: the text item of each window. Window i spans native frames [16 i, 16 (i + 7)) (clipped to the video),
+    i.e. [16 i / fps, 16 (i + 7) / fps) s; its transcript (lf_common.span_text) capped at AV_TEXT_CAP tokens,
+    prefixed with "Subtitles: "; "(no speech)" when empty. Returns (texts, n_with_speech, n_capped)."""
+    texts, n_speech, n_capped = [], 0, 0
+    for i in starts:
+        a = SAMPLE_INTERVAL * i * WINDOW_STRIDE
+        b = min(n_native, SAMPLE_INTERVAL * (i * WINDOW_STRIDE + WINDOW_SIZE))
+        t = L.span_text(segs, a / fps, b / fps)
+        if t:
+            n_speech += 1
+            ids = tokenizer.encode(t, add_special_tokens=False)
+            if len(ids) > AV_TEXT_CAP:
+                t = tokenizer.decode(ids[:AV_TEXT_CAP]).strip()
+                n_capped += 1
+        texts.append(AV_PREFIX + (t if t else L.NO_SPEECH))
+    return texts, n_speech, n_capped
 
 
 def load_embedder(model_dir, dtype="bfloat16"):
@@ -99,10 +140,12 @@ def frame_cache(emb, frames):
                                         antialias=True).float()
 
 
-def window_inputs(emb, frames, cache, starts):
-    """Qwen3VLEmbedder._preprocess_inputs for a batch of windows, reading the per-frame cache."""
+def window_inputs(emb, frames, cache, starts, texts=None):
+    """Qwen3VLEmbedder._preprocess_inputs for a batch of windows, reading the per-frame cache. texts (--av): the
+    window's text item, keyed by window start."""
     rel = np.linspace(0, WINDOW_SIZE - 1, emb.num_frames, dtype=int)[:emb.max_frames]
-    convs = [emb.format_model_input(video=frames[i:i + WINDOW_SIZE], instruction=INSTRUCTION) for i in starts]
+    convs = [emb.format_model_input(video=frames[i:i + WINDOW_SIZE], text=texts[i] if texts else None,
+                                    instruction=INSTRUCTION) for i in starts]
     text = emb.processor.apply_chat_template(convs, add_generation_prompt=True, tokenize=False)
     n = len(rel)
     videos = [cache[i + rel] for i in starts]
@@ -120,23 +163,25 @@ def embed_inputs(emb, inputs):
     return F.normalize(emb._pooling_last(out["last_hidden_state"], out["attention_mask"]), p=2, dim=-1)
 
 
-def check_fast_path(emb, frames, starts):
+def check_fast_path(emb, frames, starts, texts=None):
     """True if the cached path gives the release path's processor inputs exactly."""
     import torch
-    convs = [emb.format_model_input(video=frames[i:i + WINDOW_SIZE], instruction=INSTRUCTION) for i in starts]
+    convs = [emb.format_model_input(video=frames[i:i + WINDOW_SIZE], text=texts[i] if texts else None,
+                                    instruction=INSTRUCTION) for i in starts]
     ref = emb._preprocess_inputs(convs)
-    new = window_inputs(emb, frames, frame_cache(emb, frames), starts)
+    new = window_inputs(emb, frames, frame_cache(emb, frames), starts, texts)
     return set(ref) == set(new) and all(torch.equal(ref[k], new[k]) for k in ref)
 
 
 def cmd_extract(args):
     import torch
     ds = args.dataset
-    dest = os.path.join(OUT_ROOT, ds)
+    dest = os.path.join(out_root(args), ds)
     fdir = os.path.join(dest, "features")
     os.makedirs(fdir, exist_ok=True)
     L.start_run_log(dest)
     man = L.manifest(ds)
+    segs = L.transcript_segments(ds, {v: m["duration"] for v, m in man.items()}) if args.av else None
     ids = L.cohort(ds)
     if args.limit:
         ids = ids[:args.limit]
@@ -159,7 +204,14 @@ def cmd_extract(args):
                    "window_size": WINDOW_SIZE, "window_stride": WINDOW_STRIDE, "instruction": INSTRUCTION,
                    "embedder_max_pixels": 600 * 1000, "batch": args.batch,
                    "preprocessing": "per-frame cache (frame_cache) + prefetch of the next batch", "code_version": L.git_version(),
+                   "av": ({"text_item": AV_PREFIX + "<transcript of [16 i, 16 (i + 7)) native frames / fps>",
+                           "empty": AV_PREFIX + L.NO_SPEECH, "text_cap_tokens": AV_TEXT_CAP,
+                           "transcripts": "data/asr_whisper_large_v3/%s/timestamped_chunks.jsonl" % ds,
+                           "span_text": "lf_common.span_text (src/video_inputs.py window_text)",
+                           "untimed_chunks": "kept; end <- next start or duration; start <- previous end"}
+                          if args.av else None),
                    "started": time.strftime("%Y-%m-%d %H:%M:%S")}, fh, indent=2)
+    texts_out = open(os.path.join(dest, "window_texts.jsonl"), "a") if args.av else None
     t_start, n_win = time.time(), 0
     with open(meta_path, "a") as out:
         for k, vid in enumerate(todo, 1):
@@ -177,20 +229,28 @@ def cmd_extract(args):
                 rec.update(n_native_frames=total, native_fps=fps, n_samples=len(frames))
                 starts = list(range(0, len(frames) - WINDOW_SIZE + 1, WINDOW_STRIDE))
                 rec["n_windows"] = len(starts)
+                texts = None
+                if args.av:
+                    tl, n_sp, n_cap = window_texts(emb.processor.tokenizer, segs.get(vid, []), starts, total, fps)
+                    texts = dict(zip(starts, tl))
+                    rec.update(n_segments=len(segs.get(vid, [])), n_windows_speech=n_sp, n_windows_capped=n_cap)
                 if starts:
                     embs = []
                     cache = frame_cache(emb, frames)
                     batches = [starts[b:b + args.batch] for b in range(0, len(starts), args.batch)]
-                    nxt = pool.submit(window_inputs, emb, frames, cache, batches[0])
+                    nxt = pool.submit(window_inputs, emb, frames, cache, batches[0], texts)
                     for j in range(len(batches)):
                         inputs = nxt.result()
                         if j + 1 < len(batches):                   # CPU preprocessing of the next batch overlaps
-                            nxt = pool.submit(window_inputs, emb, frames, cache, batches[j + 1])
+                            nxt = pool.submit(window_inputs, emb, frames, cache, batches[j + 1], texts)
                         with torch.no_grad():
                             embs.append(embed_inputs(emb, inputs).float().cpu())
                     arr = torch.cat(embs).numpy().astype(np.float32)
                     np.save(os.path.join(fdir, vid + ".npy"), arr)
                     n_win += len(arr)
+                    if texts_out:
+                        texts_out.write(json.dumps({"video_id": vid, "texts": [texts[i] for i in starts]}) + "\n")
+                        texts_out.flush()
             except Exception as exc:                                       # noqa: BLE001
                 rec["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:500])
                 torch.cuda.empty_cache()
@@ -205,6 +265,8 @@ def cmd_extract(args):
                 k, len(todo), vid, rec.get("n_windows"), rec["wall_s"], n_win / max(el, 1e-9),
                 (len(todo) - k) * el / k / 60, ("  ERROR " + rec["error"][:200]) if rec.get("error") else ""),
                 flush=True)
+    if texts_out:
+        texts_out.close()
     print("EXTRACT_DONE %s %.1f min" % (ds, (time.time() - t_start) / 60), flush=True)
     return 0
 
@@ -275,7 +337,8 @@ def windows_to_native(scores, n_native):
 
 def cmd_score(args):
     ds = args.dataset
-    dest = os.path.join(OUT_ROOT, ds)
+    dest = os.path.join(out_root(args), ds)
+    method = method_name(args)
     L.start_run_log(dest)
     man = L.manifest(ds)
     with open(DESC_PATH) as fh:
@@ -294,13 +357,13 @@ def cmd_score(args):
         n = L.n_frames(dur)
         r = meta.get(vid)
         if r is None or r.get("error"):
-            rows[vid] = L.row(METHOD, ds, vid, dur, [], "windows", CODE_PATH, error=(r or {}).get("error", "no row"))
+            rows[vid] = L.row(method, ds, vid, dur, [], "windows", CODE_PATH, error=(r or {}).get("error", "no row"))
             continue
         if r.get("transcoded"):
             stats["transcoded"].append(vid)
         if not r["n_windows"]:
             stats["no_window"].append(vid)
-            rows[vid] = L.row(METHOD, ds, vid, dur, [], "windows", CODE_PATH,
+            rows[vid] = L.row(method, ds, vid, dur, [], "windows", CODE_PATH,
                               error="fewer than %d sampled frames (%d native frames)" % (WINDOW_SIZE,
                                                                                         r["n_native_frames"]))
             continue
@@ -311,7 +374,7 @@ def cmd_score(args):
         stats["windows"] += len(s)
         fps = r["native_fps"]
         idx = np.clip(np.floor((np.arange(n) + 0.5) / L.RATE * fps).astype(int), 0, len(native) - 1)
-        rows[vid] = L.row(METHOD, ds, vid, dur, native[idx], "windows", CODE_PATH,
+        rows[vid] = L.row(method, ds, vid, dur, native[idx], "windows", CODE_PATH,
                           extra={"n_windows": len(s), "native_fps": fps, "n_native_frames": r["n_native_frames"],
                                  "transcoded": bool(r.get("transcoded"))}, calls=len(s))
     med, failed = L.apply_f2(rows, ds)
@@ -326,7 +389,9 @@ def cmd_score(args):
             fh.write("F2 %s: %s\n" % (vid, why))
     print(json.dumps({k: v for k, v in summary.items() if k != "f2"}, indent=1))
     with open(os.path.join(dest, "config.json"), "w") as fh:
-        json.dump({"method": METHOD, "dataset": ds, "code": CODE_PATH, "code_version": L.git_version(),
+        json.dump({"method": method, "dataset": ds, "code": CODE_PATH, "code_version": L.git_version(),
+                   "variant_input": ("frames + text item 'Subtitles: <window transcript>' in one input (--av); see "
+                                     "extract_config.json" if args.av else "frames only"),
                    "descriptions": "experiments/20261008_baselines/prism/hate_descriptions.json",
                    "prefixes": [NORMAL_PREFIX, ANOM_PREFIX], "temp_b": TEMP_B, "sigma_windows": SIGMA,
                    "reg_lambda": REG_LAMBDA, "variant": "M6 PRISM (Full)", "extract_config": "extract_config.json",
@@ -359,13 +424,21 @@ def cmd_check(args):
             self.processor = Qwen3VLProcessor.from_pretrained(path, padding_side="right")
     emb = TextOnly(args.model)
     man = L.manifest(args.dataset)
+    segs = L.transcript_segments(args.dataset, {v: m["duration"] for v, m in man.items()}) if args.av else None
     ok = True
     for vid in L.cohort(args.dataset)[:args.limit or 2]:
-        frames, _, _ = read_samples(man[vid]["video_path"])
+        frames, total, fps = read_samples(man[vid]["video_path"])
         n = len(frames) - WINDOW_SIZE + 1
+        texts = None
+        if args.av:
+            texts = dict(zip(range(n), window_texts(emb.processor.tokenizer, segs.get(vid, []), list(range(n)),
+                                                    total, fps)[0]))
         for starts in ([0, 1, 2, 3], list(range(max(0, n - 3), n))):
-            same = check_fast_path(emb, frames, starts)
+            same = check_fast_path(emb, frames, starts, texts)
             ok &= same
+            if args.av:
+                lens = window_inputs(emb, frames, frame_cache(emb, frames), starts, texts)["attention_mask"].sum(1)
+                print(vid, [texts[i] for i in starts], "tokens", lens.tolist(), flush=True)
             print(vid, starts, "identical" if same else "DIFFERENT", flush=True)
     print("CHECK_OK" if ok else "CHECK_FAILED")
     return 0 if ok else 1
@@ -373,9 +446,9 @@ def cmd_check(args):
 
 def cmd_eval(args):
     ds = args.dataset
-    dest = os.path.join(OUT_ROOT, ds)
+    dest = os.path.join(out_root(args), ds)
     rows = [json.loads(l) for l in open(os.path.join(dest, "scored_rows.jsonl"))]
-    L.finalize(ds, rows, dest, METHOD)
+    L.finalize(ds, rows, dest, method_name(args))
     return 0
 
 
@@ -387,6 +460,8 @@ def main():
     ap.add_argument("--model", default=None, help="Qwen3-VL-Embedding-2B snapshot directory")
     ap.add_argument("--dtype", default="bfloat16")
     ap.add_argument("--batch", type=int, default=8)
+    ap.add_argument("--av", action="store_true", help="transcript (audio-visual) variant: frames + window "
+                    "transcript in one input item; outputs under runs/20261008_baselines/prism_av/")
     args = ap.parse_args()
     return {"extract": cmd_extract, "score": cmd_score, "eval": cmd_eval, "check": cmd_check}[args.stage](args)
 
