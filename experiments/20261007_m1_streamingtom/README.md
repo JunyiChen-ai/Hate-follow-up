@@ -371,3 +371,75 @@ extraction; `adjacent_local` / replay +13.4 / +14.7 min plus the 0.5 fps extract
 
 Files read: predictions of every arm, r6 and E, and the run records (no GT outside the sole evaluator). No
 design was changed. Nothing is promoted; which input to adopt, if any, is the user's decision. DeHate not run.
+
+### Error analysis: can a label-free rule pick the windows that need the extra read? (2026-10-10; development, not a gate)
+
+User question 2026-10-10: the extra frames probably do not help in every window; can the windows that need them be
+found without labels, so that only part of the windows is re-read and most of the gain is kept (about +.009
+within on HateMM would be enough)? The same idea was tried as candidate 18 Explorer (2026-10-03/04,
+`archive/experiments/20261003_m1_explorer/README.md`): entropy-gated acquisition of 2 to 4 new frames next to the
+question, HateMM within +.0091 at R4, and the gate fired in 7344 of 7359 windows, so it did not select.
+
+Simulation with the reads already in hand (`selection_analysis.py`, no GPU): for each arm, the arm's visual read is
+taken only in the windows a rule selects and r6's read elsewhere; speech, G and stance stay r6's; sole evaluator
+and fixed r6 decoder. Rules use only quantities known before the extra read: native visual margin v, native speech
+margin s, number of prefix frames inside the window. `random_q50_*` are size-matched random controls (two
+seeds). `oracle_help` selects with the test labels (window positive if any GT frame in it is positive; selected when
+the arm moved z toward that label): a ceiling for selection, never a method. Files read: `placement_controls_main`
+records, `local_controls_main/local_clean` predictions, `data/gt_4fps` (evaluator and oracle only). Outputs
+`runs/20261007_m1_streamingtom/selection_analysis/{summary.json,<arm>__<rule>/,decoded/}`.
+
+| arm | rule | changed windows HMM / HCS | HateMM gain vs r6 ROC / PR / within | HateClipSeg gain vs r6 |
+|---|---|---|---|---|
+| adjacent_native | full | 0.73 / 0.66 | -0.0001 / -0.0004 / +0.0224 | +0.0084 / +0.0061 / +0.0128 |
+|  | unc_abs_1 | 0.06 / 0.07 | +0.0005 / +0.0002 / +0.0095 | +0.0012 / +0.0007 / +0.0012 |
+|  | unc_abs_2 | 0.12 / 0.13 | +0.0005 / +0.0010 / +0.0079 | +0.0029 / +0.0015 / +0.0093 |
+|  | unc_abs_3 | 0.18 / 0.21 | -0.0001 / -0.0014 / +0.0034 | +0.0042 / +0.0024 / +0.0136 |
+|  | unc_q50 | 0.36 / 0.33 | -0.0006 / -0.0011 / +0.0167 | +0.0045 / +0.0046 / +0.0104 |
+|  | top_q50 | 0.36 / 0.32 | +0.0003 / -0.0002 / +0.0105 | +0.0054 / +0.0031 / +0.0054 |
+|  | disagree | 0.24 / 0.24 | -0.0007 / -0.0022 / +0.0075 | +0.0051 / +0.0029 / +0.0123 |
+|  | random_q50_0 | 0.36 / 0.32 | -0.0003 / +0.0002 / +0.0096 | +0.0044 / +0.0047 / +0.0121 |
+|  | random_q50_1 | 0.35 / 0.32 | -0.0007 / -0.0025 / +0.0140 | +0.0046 / +0.0025 / +0.0054 |
+|  | oracle_help | 0.38 / 0.36 | +0.0064 / +0.0165 / +0.0531 | +0.0216 / +0.0185 / +0.0475 |
+| local_clean | full | 1.00 / 1.00 | +0.0006 / -0.0037 / +0.0136 | +0.0205 / +0.0195 / +0.0296 |
+|  | unc_abs_1 | 0.08 / 0.10 | +0.0003 / -0.0011 / +0.0082 | +0.0050 / +0.0056 / +0.0054 |
+|  | unc_abs_2 | 0.16 / 0.20 | +0.0008 / -0.0040 / +0.0151 | +0.0087 / +0.0088 / +0.0109 |
+|  | unc_abs_3 | 0.24 / 0.30 | +0.0008 / -0.0044 / +0.0039 | +0.0126 / +0.0108 / +0.0204 |
+|  | unc_q50 | 0.49 / 0.49 | -0.0009 / -0.0053 / +0.0208 | +0.0107 / +0.0123 / +0.0132 |
+|  | top_q50 | 0.49 / 0.49 | +0.0004 / -0.0006 / +0.0099 | +0.0085 / +0.0050 / +0.0072 |
+|  | disagree | 0.30 / 0.36 | +0.0000 / -0.0005 / +0.0095 | +0.0092 / +0.0088 / +0.0200 |
+|  | empty | 0.27 / 0.34 | -0.0003 / -0.0031 / +0.0017 | +0.0067 / +0.0065 / +0.0145 |
+|  | covered | 0.73 / 0.66 | +0.0008 / -0.0004 / +0.0233 | +0.0144 / +0.0136 / +0.0156 |
+|  | random_q50_0 | 0.49 / 0.49 | +0.0003 / -0.0014 / +0.0215 | +0.0106 / +0.0115 / +0.0167 |
+|  | random_q50_1 | 0.49 / 0.49 | +0.0001 / -0.0030 / +0.0056 | +0.0109 / +0.0106 / +0.0189 |
+|  | oracle_help | 0.51 / 0.57 | +0.0098 / +0.0234 / +0.0673 | +0.0413 / +0.0382 / +0.0900 |
+| prefix_local | full | 1.00 / 1.00 | +0.0013 / +0.0020 / +0.0132 | +0.0099 / +0.0101 / +0.0145 |
+|  | unc_abs_1 | 0.08 / 0.10 | +0.0004 / -0.0000 / +0.0057 | +0.0026 / +0.0033 / +0.0025 |
+|  | unc_abs_2 | 0.16 / 0.20 | +0.0004 / +0.0000 / +0.0114 | +0.0041 / +0.0048 / +0.0057 |
+|  | unc_abs_3 | 0.24 / 0.30 | +0.0001 / +0.0004 / +0.0093 | +0.0068 / +0.0073 / +0.0109 |
+|  | unc_q50 | 0.49 / 0.49 | +0.0003 / +0.0004 / +0.0092 | +0.0068 / +0.0068 / +0.0093 |
+|  | top_q50 | 0.49 / 0.49 | +0.0010 / +0.0012 / +0.0029 | +0.0039 / +0.0027 / +0.0067 |
+|  | disagree | 0.30 / 0.36 | +0.0004 / +0.0015 / +0.0123 | +0.0036 / +0.0035 / +0.0085 |
+|  | empty | 0.27 / 0.34 | +0.0001 / +0.0019 / +0.0098 | +0.0037 / +0.0030 / +0.0035 |
+|  | covered | 0.73 / 0.66 | +0.0014 / +0.0007 / +0.0166 | +0.0075 / +0.0077 / +0.0078 |
+|  | random_q50_0 | 0.49 / 0.49 | +0.0010 / +0.0028 / +0.0117 | +0.0058 / +0.0066 / +0.0060 |
+|  | random_q50_1 | 0.49 / 0.49 | +0.0003 / +0.0013 / +0.0077 | +0.0060 / +0.0059 / +0.0130 |
+|  | oracle_help | 0.59 / 0.57 | +0.0068 / +0.0142 / +0.0409 | +0.0227 / +0.0216 / +0.0609 |
+
+Reading:
+- The user's premise holds, strongly. Selecting only the windows where the change moves toward the label (oracle)
+  gives within +.053 / +.048 (`adjacent_native`) and +.067 / +.090 (E), two to four times the full arm, and the
+  pooled metrics move too. About half of the changed windows move the wrong way.
+- None of the label-free rules finds those windows. On HateMM within, every rule lands inside the band of the two
+  size-matched random subsets (random 50 %: +.0096 / +.0140 for `adjacent_native`, +.0056 / +.0215 for E), and the
+  two random seeds themselves differ by .005 to .016, so a partial-application number below about .015 cannot be
+  read as a rule working. No rule beats random on both corpora.
+- Partial application keeps a proportional part of the gain: `adjacent_native` on the least-confident half of each
+  video's windows (36 % / 33 % of windows) gives within +.0167 / +.0104, above the user's +.009 target on HateMM,
+  but random halves give +.0096 / +.0121 and +.0140 / +.0054, so this is dilution, not selection.
+- The only structural rule with a consistent sign is coverage, and it is corpus-specific: on HateMM, LOCAL frames
+  in windows that already hold a prefix frame give within +.0233 (above the full +.0136, so the empty windows
+  hurt there), on HateClipSeg the empty windows carry half the gain (+.0145 of +.0296).
+- Conclusion: the headroom is in telling helpful from harmful changes, and the pre-read signals (confidence, rank,
+  speech disagreement, coverage) do not carry that information. A rule would have to use the content of the extra
+  read itself. Nothing changed in the method; no selection rule is adopted.
