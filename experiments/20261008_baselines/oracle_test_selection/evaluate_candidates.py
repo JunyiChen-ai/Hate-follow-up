@@ -172,7 +172,8 @@ def evaluate_seed(method, ds, seed, force=False):
     if (sd / "eval").exists():
         shutil.rmtree(sd / "eval")
     cands, chunk, chunk_frames, n_chunk = [], [], 0, 0
-    frames_per = sum(C.gt_lengths(corpus)[v] for v in C.split_ids(corpus, "test"))
+    gt_len = C.gt_lengths(corpus)
+    frames_per = sum(gt_len[v] for v in C.split_ids(corpus, "test"))
 
     def flush():
         nonlocal chunk, chunk_frames, n_chunk
