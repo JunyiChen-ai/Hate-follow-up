@@ -32,6 +32,7 @@ Stages
   text           CPU or GPU: transcript-window embeddings -> p(hateful) per window, all three corpora
                  (runs/20261008_baselines/zs_imagebind_av/<DS>/transcript_windows.jsonl)
   score          CPU: combine + exact-cohort finalisation -> runs/20261008_baselines/zs_imagebind_av/<DS>/
+                 (`--modalities vision` or `vision,audio`: comparison rows -> <DS>/modalities_<set>/)
 No labels are read.
 """
 from __future__ import annotations
@@ -298,12 +299,17 @@ def load_text_windows(path: Path) -> dict[str, dict[int, float]]:
 def stage_score(a, log) -> int:
     text = np.load(TEXT_EMB)
     rc = 0
+    use = set(a.modalities.split(","))
+    full = use == {"vision", "audio", "transcript"}
     for ds in a.datasets:
         out = OUT_ROOT / ds
+        tw = load_text_windows(out / "transcript_windows.jsonl") if "transcript" in use else {}
+        if not full:   # comparison rows (one modality or a pair), kept apart from the reported AV row
+            out = out / ("modalities_" + "_".join(m for m in ("vision", "audio", "transcript") if m in use))
+            out.mkdir(parents=True, exist_ok=True)
         dlog = ec.RunLog(out / "run.log", append=True)
         (out / "run.pid").write_text(f"{os.getpid()}\n")
         dlog(f"stage score; code {CODE_PATH} ({ec.code_version()}); command {' '.join(sys.argv)}")
-        tw = load_text_windows(out / "transcript_windows.jsonl")
         dur, lens = ec.durations(ds), ec.gt_lengths(ds)
         curves, extra, fail = {}, {}, {}
         tot = {"frames": 0, "frames_with_transcript": 0, "videos_without_speech": 0, "videos_without_vision": 0,
@@ -312,7 +318,9 @@ def stage_score(a, log) -> int:
             T = max(lens[v], ec.curve_length(dur[v]))
             mods, ex = [], {}
             vp = IMAGE_DIR[ds] / f"{v}.npy"
-            if vp.exists() and np.load(vp, mmap_mode="r").shape[0] > 0:
+            if "vision" not in use:
+                pass
+            elif vp.exists() and np.load(vp, mmap_mode="r").shape[0] > 0:
                 pv = p_hateful(np.load(vp), text)
                 mods.append(ec.broadcast_to_4fps(pv, FPS, T))
                 ex["vision_samples"] = int(len(pv))
@@ -322,7 +330,9 @@ def stage_score(a, log) -> int:
                 tot["videos_without_vision"] += 1
                 ex["vision"] = "absent (no decodable video stream)"
             ap = AUDIO_DIR[ds] / f"{v}.npy"
-            if ap.exists():
+            if "audio" not in use:
+                pass
+            elif ap.exists():
                 pa = p_hateful(np.load(ap), text)
                 mods.append(ec.broadcast_to_4fps(pa, AUDIO_RATE, T))
                 ex["audio_samples"] = int(len(pa))
@@ -330,10 +340,7 @@ def stage_score(a, log) -> int:
                 tot["audio_tail_hold"] += ex["audio_tail_hold"]
             else:
                 ex["audio"] = "absent"
-            if not mods:
-                fail[v] = "no vision and no audio embedding"
-                continue
-            num = np.sum(mods, axis=0)
+            num = np.sum(mods, axis=0) if mods else np.zeros(T)
             cnt = np.full(T, float(len(mods)))
             win = tw.get(v, {})
             if win:
@@ -348,9 +355,12 @@ def stage_score(a, log) -> int:
                 tot["videos_without_speech"] += 1
                 ex["frames_with_transcript"] = 0
             tot["frames"] += T
+            if not (cnt > 0).all():   # only possible without vision and audio: frames with no modality
+                fail[v] = "frames with no available modality"
+                continue
             curves[v] = num / cnt
             extra[v] = ex
-        rep = ec.finalize("zs_imagebind_av", ds, out, curves, native_rate=FPS, code_path=CODE_PATH, log=dlog,
+        rep = ec.finalize("zs_imagebind_av" + ("" if full else "_" + "_".join(sorted(use))), ds, out, curves, native_rate=FPS, code_path=CODE_PATH, log=dlog,
                           extra=extra, failures=fail, notes=tot,
                           config={"variant": "ImageBind-Huge zero-shot, vision + audio + transcript, text pair "
                                              "['normal', 'hateful']",
@@ -360,6 +370,7 @@ def stage_score(a, log) -> int:
                                   "transcript": "Whisper large-v3 text of the 8 s window [8w, 8w+8) containing the "
                                                 "frame; ImageBind text encoder, OpenAI-CLIP truncation to 77 tokens; "
                                                 "windows: transcript_windows.jsonl",
+                                  "modalities": sorted(use),
                                   "score": "mean over available modalities of p(hateful) = softmax(unit(e) @ t.T)",
                                   "grid": "native 4 fps; audio clip floor(i/8); window floor(i/32); tails hold"})
         rc |= 0 if rep.get("exact_test_set") else 6
@@ -376,6 +387,9 @@ def main() -> int:
                     help="directory holding <video_id>.mp4 (extract-image: DeHate; verify-image: HateMM)")
     ap.add_argument("--out-dir", default=str(IMAGE_DIR["DeHate"]), help="extract-image output directory")
     ap.add_argument("--cpu", action="store_true", help="text stage: force CPU")
+    ap.add_argument("--modalities", default="vision,audio,transcript",
+                    help="score stage: modalities to average (default all three = the reported row; any other set "
+                         "is a comparison row written to <DS>/modalities_<set>/)")
     a = ap.parse_args()
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
     log = ec.RunLog(OUT_ROOT / "run.log", append=True)
