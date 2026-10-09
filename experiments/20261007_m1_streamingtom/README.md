@@ -317,3 +317,57 @@ cached read in FP32).
 Planned cost: `adjacent_local` and `local_clean_replay` about E's 18 min each; `adjacent_native` less (fewer windows,
 one to three images); `prefix_local` one full prefill per covered window, about 24 M prefix tokens plus the LOCAL
 image tokens over both corpora, estimated 1 to 1.5 h on a 5090. Measured times go in the records.
+
+### Results (2026-10-10; development-selected)
+
+Run sc474399 / Slurm 344 (`SCOPE=both`: the fixed five, the in-job plumbing check PASS, then the full 333), 1:47
+wall, exit 0; the lab3 / lab1 copies (343 / 345) were cancelled when 344 started. Binding
+`placement_controls_main_analysis/alignment.json` PASS on all 333 videos: native reads equal r6 exactly; the
+standalone conversation tokenizes as the cached one in every video; the arms change only the declared windows
+(LOCAL arms 7352 / 7359 windows, `adjacent_native` 5096 / 7359). Metrics
+`placement_controls_main_decoded/<arm>/metrics.json`; table, verdicts and per-window numbers
+`placement_analysis/summary.json`.
+
+| arm | HateMM ROC / PR / within (84) | HateClipSeg ROC / PR / within (99) |
+|---|---|---|
+| r6 | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 |
+| E `local_clean` (stored) | .8978 / .6905 / .7644 | .7373 / .6906 / .6669 |
+| `local_clean_replay` | .8976 / .6899 / .7638 | .7374 / .6907 / .6649 |
+| `adjacent_local` | .8977 / .6887 / .7690 | .7383 / .6893 / .6637 |
+| `prefix_local` | .8985 / .6963 / .7640 | .7267 / .6812 / .6518 |
+| `adjacent_native` | .8970 / .6938 / .7732 | .7252 / .6771 / .6501 |
+
+| declared reading | HateMM | HateClipSeg | verdict |
+|---|---|---|---|
+| implementation, replay − E | −.0001 / −.0006 / −.0006 | +.0001 / +.0001 / −.0020 | inside the floor |
+| wording, `adjacent_local` − E | −.0001 / −.0018 / +.0045 | +.0010 / −.0013 / −.0032 | inside the floor |
+| position, `adjacent_local` − `prefix_local` | −.0008 / −.0076 / +.0049 | +.0116 / +.0081 / +.0119 | mixed: adjacent better on all three in HCS; HMM PR beyond the floor the other way |
+| more frames only, `prefix_local` − r6 | +.0013 / +.0020 / +.0132 | +.0099 / +.0101 / +.0145 | supported (within both; no loss) |
+| adjacency only, `adjacent_native` − r6 | −.0001 / −.0004 / +.0224 | +.0084 / +.0061 / +.0128 | supported (within both; no loss) |
+| `adjacent_local` − r6 | +.0006 / −.0056 / +.0182 | +.0215 / +.0182 / +.0264 | within both, but HMM PR −.0056 is beyond the floor |
+
+Per window (no labels): the replay differs from the stored E by mean 0.33 / max 3.7 logit (k images in one vision
+call against E's single-frame features), Spearman .998, no mean shift; the no-cache standalone read of r6's own
+input differs from the cached read by mean 0.16 / max 1.4. The LOCAL label wording raises z by 0.6 (HMM) / 0.9
+(HCS) on average against the `[t=..s]` label without changing the ordering.
+
+Reading, why the LOCAL frames help:
+- Both causes are real and each is sufficient on its own for the within gain.
+- Placement. r6's question tells the model to use only the frames whose timestamps fall inside the window, which
+  it has to find among the 20 prefix frames by their labels. Showing the in-window prefix frames again right
+  before the question, with no new image, gives within +.022 on HateMM (the largest within gain of any arm
+  there) and +.013 on HateClipSeg.
+- Information. Putting the 0.5 fps frames into the prefix frame list (about 4 per window instead of 1.1 on
+  HateMM / 0.66 on HateClipSeg; 27% / 34% of windows have no prefix frame inside) gives within +.013 / +.015 and,
+  on HateClipSeg only, pooled +.010 / +.010. HateClipSeg videos are longer (240 s against 136 s), so 20 frames
+  are sparser there and extra frames carry more.
+- The two do not add on HateMM: E and `adjacent_local` (within +.014 / +.018) stay below adjacency alone
+  (+.022). On HateClipSeg they stack (E: pooled +.02, within +.030).
+- No arm moves the pooled HateMM metrics; video-level ranking there stays with G.
+
+Cost (measured, 333 videos, both corpora): native visual read 3.6 min; `adjacent_native` +4.7 min with no new
+extraction; `adjacent_local` / replay +13.4 / +14.7 min plus the 0.5 fps extraction; `prefix_local` +57.2 min
+(one prefill of 3.8 k tokens on average, 6354 max, per window); peak 18.0 GiB; whole job 107.5 min.
+
+Files read: predictions of every arm, r6 and E, and the run records (no GT outside the sole evaluator). No
+design was changed. Nothing is promoted; which input to adopt, if any, is the user's decision. DeHate not run.
