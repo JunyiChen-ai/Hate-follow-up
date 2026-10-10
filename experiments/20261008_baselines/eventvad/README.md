@@ -143,3 +143,34 @@ sbatch experiments/20261008_baselines/launch/eventvad_av_labserver.sbatch HateMM
 # on uoa-lab1 after rsync of runs/20261008_baselines/eventvad_av/<DS>/:
 python3 experiments/20261008_baselines/eventvad/eventvad_4fps.py raster --transcript --dataset <DS>
 ```
+
+**Runs.** lab-server (sc448960), one RTX 5090, env `.cache/envs/eventvad`, commit 94f977c (the code of a9ce487), one
+job per corpus, submitted 2026-10-10 01:58 NZDT and queued behind other users' jobs:
+
+| corpus | job | scoring | GPU h |
+|---|---|---|---|
+| HateMM | 349 | 2026-10-10 09:01–12:46 | 3.75 |
+| HateClipSeg | 350 | 2026-10-10 12:46–16:31 | 3.75 |
+| DeHate | 351 | 2026-10-10 16:31 – 10-11 06:04 | 13.5 |
+
+Total 21.0 GPU hours (no segmentation: the visual-only events were reused). Scoring took longer than the visual-only
+scoring because the answers are longer (median answer 905 / 953 / 880 characters on HateMM / HateClipSeg / DeHate,
+against 609 / 686 / 519 without the transcript). Outputs were copied to uoa-lab1 with `rsync -a` and rastered there
+(HateVideo env): `python experiments/20261008_baselines/eventvad/eventvad_4fps.py raster --transcript --dataset <DS>`.
+Slurm logs: `runs/20261008_baselines/eventvad_av/slurm_{349,350,351}.out`. No video failed (0 error rows, 0 F2).
+
+**Results.** Canonical evaluator, exact cohorts; pooled frame ROC-AUC / pooled frame PR-AUC / within-video macro
+ROC-AUC. Source: `runs/20261008_baselines/eventvad_av/<DS>/metrics.json` (uoa-lab1); the visual-only row is the
+Results table above.
+
+| corpus | visual-only | with transcript | videos | events | events with "(no speech)" | transcript cut at 512 tokens | parse A / B / C (rule C = unparsed, 0.0) | frames under rule C | F2 videos |
+|---|---|---|---|---|---|---|---|---|---|
+| HateMM | .5444 / .2735 / .5073 | .6188 / .3636 / .5678 | 215 | 4,421 | 493 | 5 | 3,451 / 931 / 39 | 1,028 | 0 |
+| HateClipSeg | .5382 / .5073 / .5066 | .5448 / .5097 / .5228 | 118 | 4,197 | 599 | 5 | 3,175 / 979 / 43 | 895 | 0 |
+| DeHate | .5130 / .0829 / .5037 | .5349 / .0853 / .5052 | 1151 | 16,087 | 1,899 | 15 | 12,771 / 3,210 / 106 | 2,535 | 0 |
+
+Frames, and videos on which within is defined, are the visual-only run's (HateMM 116,975 / 84, HateClipSeg
+113,002 / 99, DeHate 441,345 / 222). Rule C fires more often with the transcript (188 events in total against 10):
+166 of these 188 answers give the score as "N/A" (for example on the black frames of hate_video_114), and rule B's
+continuation is a word, not a number (starting with "Low" 157 times, "N/A" 30 times, "High" once). The declared fill 0.0 is
+applied unchanged.
