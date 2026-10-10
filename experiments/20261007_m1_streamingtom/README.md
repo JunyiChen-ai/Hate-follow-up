@@ -443,3 +443,41 @@ Reading:
 - Conclusion: the headroom is in telling helpful from harmful changes, and the pre-read signals (confidence, rank,
   speech disagreement, coverage) do not carry that information. A rule would have to use the content of the extra
   read itself. Nothing changed in the method; no selection rule is adopted.
+
+## Combination simulation (2026-10-11, user question "how do we still get the gain out of a dynamic mechanism")
+
+`combination_analysis.py`, no GPU: the five stored reads per window (native v; adjacent_native a in covered
+windows; adjacent_local l; prefix_local p; local_clean E) from `placement_controls_main/records`, speech / G /
+stance unchanged, sole evaluator + fixed r6 decoder. Rules: averages and the median of the reads; "accept a change
+only when two (three) independent reads moved the same way from v" (`agree_*`, with the accepted value either one
+read or their mean); a neighbour rule (accept a_i when its direction matches the net direction of the adjacent
+reads in windows i−1, i+1); size-matched random controls for each agreement rule; the visual-direction oracle for a
+and for l. Outputs `runs/20261007_m1_streamingtom/combination_analysis/{summary.json,<rule>/,decoded/}`.
+Files read: the records above, `data/gt_4fps` (evaluator and oracle only), `runs/20260926_twolevel/r6_bma/metrics.json`.
+
+Within gain vs r6, HateMM / HateClipSeg (pooled changes are in the summary; none above the single full reads):
+
+| rule | within | matched random (two seeds) |
+|---|---|---|
+| full a / l / p / E | +.0224 / +.0128, +.0182 / +.0264, +.0132 / +.0145, +.0136 / +.0296 | – |
+| mean of all five reads; median | +.0215 / +.0212; +.0219 / +.0199 | – |
+| mean of the four extra reads (no v) | +.0195 / +.0241 | – |
+| agree_al (a if l agrees; accepted 82 % / 77 %) | +.0244 / +.0155 | +.0218 / +.0100, +.0176 / +.0028 |
+| agree_alp (a if l and p agree; 57 % / 56 %) | +.0146 / +.0193 | +.0198 / +.0063, +.0110 / −.0002 |
+| agree_lp (l if p agrees; 69 % / 72 %) | +.0121 / +.0278 | +.0196 / +.0197, +.0127 / +.0192 |
+| agree_lpE_mean | +.0161 / +.0268 | – |
+| neighbour_a | +.0264 / +.0092 | – |
+| oracle_a; oracle_l (labels) | +.0531 / +.0475; +.0692 / +.0862 | – |
+
+Reading:
+- Averaging five reads of the same window does not beat the best single read on either corpus (HateMM +.0215 vs
+  a's +.0224; HateClipSeg +.0212 vs E's +.0296). The reads are not independent noise around a common value; they
+  share the model's belief about the window, so combining them removes nothing.
+- No agreement or neighbour rule is .01 above the best full read, and none is .01 above both of its random
+  controls in both corpora (agree_al is +.002 / +.003 over full a; agree_lp is below random on HateMM).
+- The oracle's gain is not a headroom that a label-free rule could reach: choosing per window, by the label, which
+  of two correlated reads to keep injects label information into the score (it would also "gain" if the second
+  read were pure noise). Together with the pre-read rules (selection_analysis, 2026-10-10) and the citation probe
+  (candidate 41), every label-free way of deciding per window whether to take the extra read — before the read,
+  from the model's own citation, from agreement between reads, from the neighbours — stays inside the random band.
+  What gains is the input itself: the full reads with window-local frames.
