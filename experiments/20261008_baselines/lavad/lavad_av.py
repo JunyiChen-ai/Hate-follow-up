@@ -124,6 +124,17 @@ def visual_curve(ds: str, vid: str) -> Path:
     return VISUAL_RUN / "curves" / ds / f"{vid}.npz"
 
 
+def elsewhere(ds: str) -> str:
+    """A corpus runs whole on one machine. `runs/20261008_baselines/lavad_av/elsewhere_<DS>.txt` on a machine marks
+    that the corpus is scored on another machine: every stage here skips it (and says so)."""
+    p = RUN_DIR / f"elsewhere_{ds}.txt"
+    if p.exists():
+        msg = p.read_text().strip()
+        print(f"SKIP {ds}: {msg}", flush=True)
+        return msg or "marked elsewhere"
+    return ""
+
+
 def write_json(path: Path, obj) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -254,6 +265,8 @@ def refined_curve(scores: dict[int, float], refined: dict, step: int = 1) -> tup
 def stage_check_reuse(a) -> int:
     rc = 0
     for ds in a.datasets:
+        if elsewhere(ds):
+            continue
         res = {"n": 0, "identical": 0, "missing": 0, "max_abs_diff": 0.0, "nan_pattern_diff": 0, "mismatch": []}
         for v in ec.cohort(ds):
             sp, rp, cp = visual_file(ds, "score", v), visual_file(ds, "refined", v), visual_curve(ds, v)
@@ -301,6 +314,9 @@ def stage_lengths(a) -> int:
 
 
 def stage_score(a) -> int:
+    a.datasets = [ds for ds in a.datasets if not elsewhere(ds)]
+    if not a.datasets:
+        return 0
     from lavad_chain import SCORE_RE, Scorer
     sc = Scorer(a.batch_size)
     pb = PromptBuilder(sc.tok)
@@ -351,6 +367,8 @@ def stage_score(a) -> int:
 def stage_curves(a) -> int:
     rc = 0
     for ds in a.datasets:
+        if elsewhere(ds):
+            continue
         out_dir = RUN_DIR / "curves" / ds
         out_dir.mkdir(parents=True, exist_ok=True)
         st = Counter()
@@ -382,6 +400,8 @@ def stage_finalize(a) -> int:
     from finalize import fill_nearest     # lavad/finalize.py: F3 rule of the visual-only run
     rc = 0
     for ds in a.datasets:
+        if elsewhere(ds):
+            continue
         out = RUN_DIR / ds
         out.mkdir(parents=True, exist_ok=True)
         log = ec.RunLog(out / "run.log")
