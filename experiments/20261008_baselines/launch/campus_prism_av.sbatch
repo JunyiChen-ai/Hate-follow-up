@@ -19,6 +19,10 @@ export XDG_CACHE_HOME=$R/.cache/xdg CUDA_CACHE_PATH=$R/.cache/nv TRITON_CACHE_DI
   MPLCONFIGDIR=$R/.cache/mpl TORCH_HOME=$R/.cache/torch TMPDIR=$R/.cache/tmp PYTHONUNBUFFERED=1
 mkdir -p "$XDG_CACHE_HOME" "$CUDA_CACHE_PATH" "$TRITON_CACHE_DIR" "$MPLCONFIGDIR" "$TORCH_HOME" "$TMPDIR"
 PY=$R/.cache/envs/prism/bin/python              # torch 2.8.0+cu128, transformers 4.57.1, qwen-vl-utils 0.0.14
+# ffmpeg for lf_common.transcode_h264 (videos decord cannot open; 2 HateClipSeg webm files): uoa-campus3 has no system
+# ffmpeg, so a separate env holds conda-forge ffmpeg 6.1 (launch/campus_prism_env.sh); uoa-lab3 used /usr/bin/ffmpeg 6.1.1.
+export PATH=$R/.cache/envs/ffmpeg/bin:$PATH
+command -v ffmpeg >/dev/null || { echo "FAILED no ffmpeg"; exit 1; }
 MODEL=$(ls -d $HF_HOME/hub/models--Qwen--Qwen3-VL-Embedding-2B/snapshots/* | head -1)
 echo "host $(hostname) job ${SLURM_JOB_ID:-} start $(date '+%F %T') commit $(git log -1 --format=%h) model $MODEL"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv,noheader -i "${CUDA_VISIBLE_DEVICES:-0}" || true

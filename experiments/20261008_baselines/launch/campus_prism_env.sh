@@ -27,4 +27,9 @@ echo "machine $MACHINE host $(hostname) start $(date -Is) commit $(git rev-parse
 diff <(grep -v -E '^(torch|torchvision)==' "$C") <(grep -v -E '^(torch|torchvision)==' runs/_setup_$MACHINE/prism_env_freeze.txt) \
   && echo "package versions identical to uoa-lab3 (torch/torchvision checked by the import line above)" \
   || echo "WARNING: package versions differ from uoa-lab3 (diff above)"
+# ffmpeg for lf_common.transcode_h264 (no system ffmpeg on uoa-campus3; added 2026-10-10 after two HateClipSeg webm
+# files failed with FileNotFoundError: 'ffmpeg'). Separate env so the PRISM env stays as built.
+F=$R/.cache/envs/ffmpeg
+[ -x "$F/bin/ffmpeg" ] || "$CONDA" create -y -p "$F" -c conda-forge --override-channels "ffmpeg=6.1"
+"$F/bin/ffmpeg" -version | head -1
 echo ENV_DONE $(date -Is)

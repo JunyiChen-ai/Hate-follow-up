@@ -5,11 +5,13 @@
 # From the repo root on uoa-lab3:
 #   sbatch --export=ALL,DATASETS=DeHate experiments/20261008_baselines/launch/prism_av_lab3.sbatch
 # Extraction is resumable per video. Evaluation runs on uoa-lab1 after rsync (prism_hate.py eval --av).
+# 8 CPUs (not 4): with 4 the transcript variant was CPU-bound on uoa-lab3 (370 % CPU, 1.9-2.1 windows/s on the first
+# DeHate videos against 2.1-3.0 for the visual-only run on the same videos; job 352, 2026-10-10).
 #SBATCH --job-name=prism-av
 #SBATCH --partition=local-sc474398
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32000M
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=48000M
 #SBATCH --output=runs/20261008_baselines/prism_av/slurm_%j.out
 set -uo pipefail
 REPO=$HOME/Hate-follow-up
