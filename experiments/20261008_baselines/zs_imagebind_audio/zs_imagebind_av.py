@@ -27,7 +27,8 @@ learned logit scale, |t| = 100): p = softmax over (normal, hateful) of unit(e) @
               only in a window with speech). No corpus statistic, no label.
 
 Stages
-  verify-image   GPU: re-extract the image channel of 5 HateMM cohort videos, compare with the campaign cache
+  verify-image   re-extract the image channel of a few videos and compare with reference embeddings (default: 5
+                 HateMM cohort videos vs the campaign cache; --cpu: float32 on the CPU)
   extract-image  GPU: DeHate test videos (manifest, 1341) -> --out-dir (default data/imagebind_image_4fps/DeHate)
   text           CPU or GPU: transcript-window embeddings -> p(hateful) per window, all three corpora
                  (runs/20261008_baselines/zs_imagebind_av/<DS>/transcript_windows.jsonl)
@@ -113,14 +114,17 @@ def decode_frames(path: Path):
 
 
 class VisionEncoder:
-    def __init__(self, batch: int):
+    """Campaign setting: cuda, float16. device="cpu" (float32) is used only by the verification stage."""
+
+    def __init__(self, batch: int, device: str = "cuda"):
         import torch
         from imagebind.models.imagebind_model import ModalityType
-        self.torch = torch
-        self.model = load_model("cuda", "float16")
+        self.torch, self.device = torch, device
+        self.dtype = torch.float16 if device == "cuda" else torch.float32
+        self.model = load_model(device, "float16" if device == "cuda" else "float32")
         self.MT = ModalityType
-        self.mean = torch.tensor(MEAN, device="cuda", dtype=torch.float16).view(1, 3, 1, 1)
-        self.std = torch.tensor(STD, device="cuda", dtype=torch.float16).view(1, 3, 1, 1)
+        self.mean = torch.tensor(MEAN, device=device, dtype=self.dtype).view(1, 3, 1, 1)
+        self.std = torch.tensor(STD, device=device, dtype=self.dtype).view(1, 3, 1, 1)
         self.batch = batch
 
     def __call__(self, frames: np.ndarray) -> np.ndarray:
@@ -128,8 +132,8 @@ class VisionEncoder:
         out = []
         with torch.no_grad():
             for i in range(0, len(frames), self.batch):
-                x = torch.from_numpy(np.ascontiguousarray(frames[i:i + self.batch])).to("cuda")
-                x = x.permute(0, 3, 1, 2).to(torch.float16).div_(255.0)
+                x = torch.from_numpy(np.ascontiguousarray(frames[i:i + self.batch])).to(self.device)
+                x = x.permute(0, 3, 1, 2).to(self.dtype).div_(255.0)
                 x = (x - self.mean) / self.std
                 e = self.model({self.MT.VISION: x})[self.MT.VISION]
                 out.append(e.float().cpu().numpy())
@@ -152,14 +156,23 @@ def atomic_save(d: Path, vid: str, arr: np.ndarray) -> None:
 
 
 def stage_verify_image(a, log) -> int:
-    enc = VisionEncoder(a.batch)
+    """Re-extract a few videos and compare with reference embeddings: by default 5 HateMM cohort videos against
+    the campaign cache; with --verify-dataset DeHate --verify-ref-dir <dir>, DeHate videos against another
+    extraction (e.g. the uoa-campus2 A100 output). --cpu runs ImageBind in float32 on the CPU."""
+    dev = "cpu" if a.cpu else "cuda"
+    enc = VisionEncoder(a.batch, dev)
     text = np.load(TEXT_EMB)
     root = Path(a.video_root)
+    ds = a.verify_dataset
+    ref_dir = Path(a.verify_ref_dir) if a.verify_ref_dir else IMAGE_DIR[ds]
+    ids = a.verify_ids.split(",") if a.verify_ids else ec.cohort(ds)[:5]
+    ffv = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True).stdout.split("\n")[0]
+    log(f"verify-image {ds} on {dev}; reference {ref_dir}; {ffv}")
     res, ok = {}, True
-    for v in ec.cohort("HateMM")[:5]:
-        p, ref_p = find_video(root, v), IMAGE_DIR["HateMM"] / f"{v}.npy"
+    for v in ids:
+        p, ref_p = find_video(root, v), ref_dir / f"{v}.npy"
         if p is None or not ref_p.exists():
-            res[v] = {"skipped": "no video or no campaign embedding"}
+            res[v] = {"skipped": "no video or no reference embedding"}
             continue
         mine = enc(decode_frames(p)).astype(np.float32)
         ref = np.load(ref_p).astype(np.float32)
@@ -171,9 +184,11 @@ def stage_verify_image(a, log) -> int:
         ok &= len(mine) == len(ref) and float(cos.mean()) > 0.99
         log(f"VERIFY {v} {json.dumps(res[v])}")
     ok &= sum("mean_cos" in r for r in res.values()) >= 3
-    out = OUT_ROOT / "verify_image.json"
-    out.write_text(json.dumps({"ok": bool(ok), "host": os.uname().nodename, "videos": res}, indent=2) + "\n")
-    log(f"VERIFY {'PASSED' if ok else 'FAILED'} (same frame count and mean cosine > 0.99 on HateMM cohort videos)")
+    ffs = ffv.split()[2] if len(ffv.split()) > 2 else "unknown"
+    out = OUT_ROOT / f"verify_image_{ds}_{os.uname().nodename.split('.')[0]}_{dev}_ffmpeg-{ffs}.json"
+    out.write_text(json.dumps({"ok": bool(ok), "host": os.uname().nodename, "device": dev, "ffmpeg": ffv,
+                               "reference": str(ref_dir), "videos": res}, indent=2) + "\n")
+    log(f"VERIFY {'PASSED' if ok else 'FAILED'} (same frame count and mean cosine > 0.99 on {ds} videos) -> {out}")
     return 0 if ok else 4
 
 
@@ -400,7 +415,10 @@ def main() -> int:
     ap.add_argument("--video-root", default=str(Path.home() / "data/DeHate/test"),
                     help="directory holding <video_id>.mp4 (extract-image: DeHate; verify-image: HateMM)")
     ap.add_argument("--out-dir", default=str(IMAGE_DIR["DeHate"]), help="extract-image output directory")
-    ap.add_argument("--cpu", action="store_true", help="text stage: force CPU")
+    ap.add_argument("--cpu", action="store_true", help="text / verify-image stage: run on the CPU (float32)")
+    ap.add_argument("--verify-dataset", default="HateMM", choices=DATASETS)
+    ap.add_argument("--verify-ref-dir", default="", help="verify-image: reference embeddings (default IMAGE_DIR)")
+    ap.add_argument("--verify-ids", default="", help="verify-image: comma-separated ids (default first 5 cohort)")
     ap.add_argument("--modalities", default="vision,audio,transcript",
                     help="score stage: modalities to average (default all three = the reported row; any other set "
                          "is a comparison row written to <DS>/modalities_<set>/)")
