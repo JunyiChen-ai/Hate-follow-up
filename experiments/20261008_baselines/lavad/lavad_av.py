@@ -313,10 +313,29 @@ def stage_lengths(a) -> int:
     return 0
 
 
+def hold_then_reexec() -> None:
+    """While runs/20261008_baselines/lavad_av/hold_score.txt exists on this machine, wait (the GPU job keeps its
+    allocation while the prompt is being fixed); when it is removed, restart this process so that it runs the code
+    then on disk. Gives up after 6 h."""
+    hold = RUN_DIR / "hold_score.txt"
+    if not hold.exists():
+        return
+    print(f"HOLD score: {hold} exists ({hold.read_text().strip()}); waiting", flush=True)
+    t0 = time.time()
+    while hold.exists():
+        if time.time() - t0 > 6 * 3600:
+            print("FAILED hold not released within 6 h", flush=True)
+            raise SystemExit(10)
+        time.sleep(60)
+    print(f"HOLD released after {(time.time() - t0) / 60:.1f} min; restarting with the code on disk", flush=True)
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+
 def stage_score(a) -> int:
     a.datasets = [ds for ds in a.datasets if not elsewhere(ds)]
     if not a.datasets:
         return 0
+    hold_then_reexec()
     from lavad_chain import SCORE_RE, Scorer
     sc = Scorer(a.batch_size)
     pb = PromptBuilder(sc.tok)
