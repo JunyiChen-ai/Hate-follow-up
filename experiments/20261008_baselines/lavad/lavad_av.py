@@ -6,12 +6,20 @@ changed; this file only adds a new scoring stage, the curves and the finalisatio
 What changes against the visual-only port
   * Stage 04b (LLM scoring) only. Llama-2-13b-chat (NF4, greedy, max_seq_len 512, batch 48; `lavad_chain.Scorer`,
     unchanged) now reads
-      system  "Based on this platform's hate speech policy, the following types of content are prohibited:" + the
-              9 rules of hate_query.md section 1 + LAVAD's rating question with the anomaly description replaced
-              ("... and 1 denoting a scene with content that violates any of the above rules?") + LAVAD's verbatim
-              format instruction (one number of the list [0, 0.1, ..., 1.0], begin with '[' and end with ']').
+      system  spvl.py's SYSTEM_MESSAGE ("You are a content moderation analyst. Answer based strictly on observable
+              evidence.") + "Based on this platform's hate speech policy, the following types of content are
+              prohibited:" + the 9 rules of hate_query.md section 1 + LAVAD's rating question with the anomaly
+              description replaced ("... and 1 denoting a scene with content that violates any of the above
+              rules?") + LAVAD's verbatim format instruction (one number of the list [0, 0.1, ..., 1.0], begin
+              with '[' and end with ']').
       user    "<temporal summary of the clip>.\n\nSpeech in this clip: <Whisper text of the clip span>"
               (the summary turn is LAVAD's f"{summary}."; an empty span gives "(no speech)").
+      answer  starts with " [" (prefilled after [/INST], as LAVAD's format instruction asks), so the model writes
+              the number; the parsed text is " [" + generation.
+    Prompt version "moderator_prefill" (PROMPT_VERSIONS). Attempt 1 (version "rules": no system message, no
+    prefill) failed the exact-cohort F2 rule on HateMM: Llama-2 refused every centre of 11 of 215 videos ("I
+    apologize, but I cannot provide a rating ..."). A refusal pilot on 17 HateMM videos (no label read) gave 500
+    refused of 3,081 calls for "moderator" and 11 for "moderator_prefill".
     The clip span of centre c is LAVAD's 10 s window [max(c - 5, 0), min(c + 5, n)) seconds on the 1 fps grid
     (`lavad_chain.window_frames`), n = last centre + 1. Span text: `transcript_windows.Transcripts`.
   * Reused unchanged from the visual-only run of the same corpus (their inputs do not contain the scoring prompt):
@@ -38,6 +46,9 @@ Stages
   curves       CPU: 1 fps `base` / `raw` curves -> runs/20261008_baselines/lavad_av/curves/<DS>/<vid>.npz
   finalize     CPU: F3 (nearest scored sample), 1 fps -> 4 fps, exact-cohort check, canonical evaluator
                -> runs/20261008_baselines/lavad_av/<DS>/
+  all          score + curves + finalize, corpus by corpus
+Machine control files in runs/20261008_baselines/lavad_av/: elsewhere_<DS>.txt (skip a corpus scored on another
+machine), hold_score.txt (score waits, then restarts with the code on disk), after_hold.json (what it restarts as).
 No labels are read.
 """
 from __future__ import annotations
@@ -106,7 +117,8 @@ PROMPT_VERSIONS = {
     "moderator": (SYSTEM_MESSAGE + "\n\n" + SYSTEM_PROMPT, ""),
     "moderator_prefill": (SYSTEM_MESSAGE + "\n\n" + SYSTEM_PROMPT, " ["),
 }
-DEFAULT_PROMPT_VERSION = "rules"
+# 2026-10-11: "moderator_prefill" after the refusal pilot (attempt 1 with "rules" failed the F2 rule on HateMM)
+DEFAULT_PROMPT_VERSION = "moderator_prefill"
 SPEECH_LABEL = "Speech in this clip:"
 
 
@@ -337,8 +349,17 @@ def hold_then_reexec() -> None:
             print("FAILED hold not released within 6 h", flush=True)
             raise SystemExit(10)
         time.sleep(60)
-    print(f"HOLD released after {(time.time() - t0) / 60:.1f} min; restarting with the code on disk", flush=True)
-    os.execv(sys.executable, [sys.executable] + sys.argv)
+    argv = [sys.executable] + sys.argv
+    plan = RUN_DIR / "after_hold.json"
+    if plan.exists():   # e.g. {"stage": "all", "datasets": ["HateClipSeg", "DeHate"]}
+        cfg = json.loads(plan.read_text())
+        argv = [sys.executable, os.path.abspath(sys.argv[0]), cfg["stage"], "--datasets", *cfg["datasets"]]
+        if "--batch-size" in sys.argv:
+            argv += ["--batch-size", sys.argv[sys.argv.index("--batch-size") + 1]]
+        plan.rename(plan.with_suffix(".used.json"))
+    print(f"HOLD released after {(time.time() - t0) / 60:.1f} min; restarting with the code on disk: "
+          f"{' '.join(argv[1:])}", flush=True)
+    os.execv(sys.executable, argv)
 
 
 def make_scorer(batch_size: int, prefill: str):
@@ -526,9 +547,26 @@ def stage_finalize(a) -> int:
     return rc
 
 
+def stage_all(a) -> int:
+    """score, curves and finalize, one corpus after the other."""
+    import copy
+    rc = 0
+    for ds in a.datasets:
+        b = copy.copy(a)
+        b.datasets = [ds]
+        for f in (stage_score, stage_curves, stage_finalize):
+            r = f(b)
+            rc |= r
+            if r:
+                print(f"FAILED {f.__name__} {ds} rc={r}", flush=True)
+                break
+        print(f"ALL_DONE {ds} {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
+    return rc
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["check-reuse", "lengths", "score", "curves", "finalize"])
+    ap.add_argument("stage", choices=["check-reuse", "lengths", "score", "curves", "finalize", "all"])
     ap.add_argument("--datasets", nargs="+", default=list(DATASETS), choices=DATASETS)
     ap.add_argument("--batch-size", type=int, default=48)
     ap.add_argument("--limit", type=int, default=0, help="lengths stage: first N videos")
@@ -540,7 +578,7 @@ def main() -> int:
     print(f"lavad_av {a.stage} host {os.uname().nodename} {time.strftime('%Y-%m-%d %H:%M:%S')} code {CODE_PATH} "
           f"({ec.code_version()}) datasets {a.datasets}", flush=True)
     return {"check-reuse": stage_check_reuse, "lengths": stage_lengths, "score": stage_score,
-            "curves": stage_curves, "finalize": stage_finalize}[a.stage](a)
+            "curves": stage_curves, "finalize": stage_finalize, "all": stage_all}[a.stage](a)
 
 
 if __name__ == "__main__":
