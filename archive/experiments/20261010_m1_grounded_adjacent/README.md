@@ -1,3 +1,5 @@
+**归档第 32 项（2026-10-11）：主运行"先加帧再按模型引用决定是否采纳"与修订 1"先原生读、按模型对窗内帧位置 / 依据帧的回答决定是否补帧"都未过声明的门：六个选窗都没有在两语料上比六个同规模随机对照高 .01，主选窗低于全量读数；模型的回答不含窗口级信息。保留的正向数字属于输入改动（紧挨 / 本窗帧读数）。脚本内 `ROOT=parents[2]` 以 `experiments/` 下的位置为准，归档后重跑需调整。**
+
 # M1 candidate 41: grounded acceptance of adjacent-frame reads
 
 Declared 2026-10-10 before implementation and before any GPU run. User decision 2026-10-10: a per-window
@@ -238,3 +240,53 @@ in-window frame in 14 % / 26 %, `none` mostly where the native answer was No. Ne
 or below 5 %) is reached, so both probe texts stay as declared. Numbers within .05 s of a window bound appeared in
 11 of 158 windows (recorded as `bounds_echo`). Probes 0.27 s per window (both probes, about 7 + 2 generated
 tokens), so about 33 min for 7359 windows on top of r6's reads; peak 19.5 GiB.
+
+### Revision 1 full run (2026-10-11, sc474397 / Slurm 373, 333 videos, 44.5 min)
+
+Binding PASS (`probe_analysis/alignment.json`): native V and S equal r6 in all 7359 windows with the probes
+interleaved; in-window frame sets equal the placement records. Probes 0.29 s per window (1115 s + 993 s, about 9.5
++ 3.2 and 8.0 + 3.6 generated tokens), native reads 305 s + 247 s, peak 19.5 GiB, 0 parse failures.
+
+Probe answers (HateMM / HateClipSeg): probe A correct in 44 % / 44 % of all windows, 36 % / 44 % of the windows
+that contain a prefix frame, 67 % / 45 % of the windows that contain none. Among the wrong answers on HateMM: `none`
+although frames are inside 1025, extra frames listed 700, some frames missed 320. Rule A flags 56 % / 56 % of the
+windows. Probe B cites an in-window frame in 20 % / 19 %; rule B flags 80 % / 81 %, and flags 91 % / 93 % of the
+windows whose native answer was No against 43 % / 47 % of the Yes windows, i.e. it mostly tracks the sign of the
+native read. Numbers within .05 s of a window bound occur in 370 / 404 replies, but dropping them changes `flag_a`
+in only 36 / 17 windows (review finding 3).
+
+Declared report (`probe_analysis/summary.json`; metrics `probe_selection_decoded/<name>/metrics.json`). Within gain
+vs r6, HateMM / HateClipSeg; "above every random" = the selection's within minus the best of its six rate-matched
+random controls; gate = above every random by more than .01 in both corpora with no pooled loss beyond .005.
+
+| selection | flagged | within vs r6 | vs full arm | above every random | supported |
+|---|---|---|---|---|---|
+| rule A, arm a (primary) | 0.64 / 0.56 | +.0122 / +.0083 | −.0102 / −.0045 | −.0058 / −.0084 | no |
+| rule A, arm l | 0.56 / 0.56 | +.0196 / +.0194 | +.0014 / −.0070 | −.0004 / −.0083 | no |
+| rule A, arm E | 0.56 / 0.56 | +.0071 / +.0199 | −.0066 / −.0097 | −.0126 / −.0033 | no |
+| rule B, arm a | 0.72 / 0.71 | +.0183 / +.0038 | −.0042 / −.0089 | −.0005 / −.0122 | no |
+| rule B, arm l | 0.80 / 0.81 | +.0126 / +.0260 | −.0056 / −.0004 | −.0107 / −.0018 | no |
+| rule B, arm E | 0.80 / 0.81 | −.0029 / +.0274 | −.0166 / −.0022 | −.0221 / −.0017 | no |
+| full a / l / E | 1 / 1 | +.0224 / +.0128, +.0182 / +.0264, +.0136 / +.0296 | – | – | – |
+| oracle a / l / E (labels) | – | +.0531 / +.0475, +.0692 / +.0862, +.0673 / +.0900 | – | – | – |
+
+Random bands (within vs r6) for the primary: HateMM +.0082 to +.0180, HateClipSeg −.0001 to +.0167. Pooled
+metrics of every selection are within noise of r6 on HateMM and +.003 to +.014 on HateClipSeg (the full arms'
+own pooled gains, diluted). No selection is supported; the primary is below the full arm on both corpora.
+
+Test error analysis (rule 10; `probe_native_diagnostics.py`, `probe_analysis/diagnostics.json`; files read:
+`probe_main/records`, placement records, `data/gt_4fps`): the flags do not mark the windows where the extra read
+moves toward the label. Helpful rate (visual direction) of flagged vs unflagged windows, arm a: HateMM .543 vs
+.502, HateClipSeg .561 vs .544; within the videos the within metric uses: .548 vs .531 and .554 vs .551; arms l
+and E the same within .02. Rule B is inverted: flagged windows (no in-window citation) are less helpful than
+unflagged ones (.516 vs .593 HateMM, .517 vs .636 HateClipSeg in mixed videos). Post hoc (not declared; chosen
+after seeing these labelled diagnostics; `probe_native_posthoc.py`, `probe_posthoc/summary.json`): taking the extra
+read only where probe B cites an in-window frame (20 % to 29 % of windows) gives within +.0064 / +.0024 (a),
++.0144 / +.0081 (l), +.0129 / +.0079 (E), none above its six random controls by .01 in either corpus.
+
+Decision: revision 1 fails the declared gate. The model's statements about where the window's frames are and
+which frame it used carry no window-level information about the direction of the extra read, in line with the
+whole-corpus citation probe of the main run and with the earlier pre-read and agreement rules. Revisions 2 and 3
+are not spent: no remaining probe design has evidence behind it (the same model's citations localize near chance
+within videos, GLR §7 and HVL E0). Candidate 41 is archived under rule 9 as item 32. The adjacent and LOCAL frame
+reads themselves remain input changes (rule 5), adoption the user's decision.
