@@ -5,7 +5,7 @@ For each arm (adjacent_native, E = stored local_clean, prefix_local) and each se
 prediction takes the arm's visual read in the selected windows and r6's native read elsewhere (speech, G, stance
 unchanged), then goes through the sole evaluator and the fixed r6 decoder. Rules use only quantities available
 before the extra read (native visual margin v, native speech margin s, number of prefix frames inside the window).
-`random_q50_*` are size-matched random controls. `oracle_help` selects with the test labels (a window counts as
+`random_q50_*` are size-matched random controls (six seeds, independent per video). `oracle_help` selects with the test labels (a window counts as
 positive when any 4 fps GT frame in it is positive; selected when the arm moved z toward that label): a ceiling for
 selection, never a method. Diagnostics, not methods.
 """
@@ -59,7 +59,7 @@ def load():
     return videos
 
 
-def rules(video,arm,rng):
+def rules(video,arm,vi):
     W=video['win'];v=np.array([w['v'] for w in W]);absv=np.abs(v);n=len(W)
     half=max(1,n//2);order_unc=np.argsort(absv,kind='stable')[:half];order_top=np.argsort(-v,kind='stable')[:half]
     out={'full':[True]*n}
@@ -68,8 +68,8 @@ def rules(video,arm,rng):
     out['disagree']=[(w['s'] is not None) and ((w['v']>0)!=(w['s']>0)) for w in W]
     if arm!='adjacent_native':
         out['empty']=[w['inside']==0 for w in W];out['covered']=[w['inside']>=1 for w in W]
-    for seed in (0,1):
-        r=np.random.default_rng(seed);pick=set(r.choice(n,half,replace=False).tolist());out[f'random_q50_{seed}']=[i in pick for i in range(n)]
+    for seed in range(6):  # independent per video (review 2026-10-11: a generator re-created per video gave every video of the same length the same subset)
+        r=np.random.default_rng([seed,vi]);pick=set(r.choice(n,half,replace=False).tolist());out[f'random_q50_{seed}']=[i in pick for i in range(n)]
     out['oracle_help']=[((w['arms'][arm]-w['v'])>0)==bool(w['label']) and w['arms'][arm]!=w['v'] for w in W]
     return out
 
@@ -84,10 +84,10 @@ def evaluate(folder,name):
 
 
 def main():
-    OUT.mkdir(parents=True,exist_ok=True);videos=load();rng=np.random.default_rng(0)
+    OUT.mkdir(parents=True,exist_ok=True);videos=load()
     combos={};frac={}
     for arm in ARMS:
-        per_video=[rules(vd,arm,rng) for vd in videos];names=per_video[0].keys()
+        per_video=[rules(vd,arm,vi) for vi,vd in enumerate(videos)];names=per_video[0].keys()
         for rule in names:
             name=f'{arm}__{rule}';rows=[];sel={ds:[0,0] for ds in DATASETS}
             for vd,rr in zip(videos,per_video):

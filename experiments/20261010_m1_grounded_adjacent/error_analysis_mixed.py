@@ -58,7 +58,7 @@ def main():
             d=np.array([PV[a][ds][v]-PV[b][ds][v] for v in ids])
             comp[ds][f'{a}_minus_{b}']=dict(mean=float(d.mean()),improved=int((d>.001).sum()),worsened=int((d<-.001).sum()),unchanged=int((abs(d)<=.001).sum()),
                 largest=[(ids[i],round(float(d[i]),4)) for i in np.argsort(-abs(d))[:6]])
-    res=dict(scope='development-selected test error analysis (rule 10); within-eligible videos only',mixed_videos={ds:len(mixed[ds]) for ds in DATASETS},table_mixed=T,per_video_within=comp)
+    res=dict(scope='development-selected test error analysis (rule 10); within-eligible videos only',mixed_videos_in_gt={ds:len(mixed[ds]) for ds in DATASETS},mixed_videos_in_run={ds:len(PV['accept_all'][ds]) for ds in DATASETS},table_mixed=T,per_video_within=comp)
     (OUT/'within_eligible.json').write_text(json.dumps(res,indent=2)+'\n')
     for ds in DATASETS:
         print(ds,'mixed videos',len(mixed[ds]))

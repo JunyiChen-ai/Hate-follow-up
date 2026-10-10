@@ -74,12 +74,12 @@ def rules(vid):
     agree('agree_lp',('l','p'),None,lambda w:w['l']);agree('agree_lp_mean',('l','p'),None,lambda w:av(w['l'],w['p']))
     agree('agree_lpE_mean',('l','p','E'),None,lambda w:av(w['l'],w['p'],w['E']))
     # neighbour rule: accept a_i when its direction matches the net direction of the adjacent reads next to it
-    out=[]
+    out=[];flags=[]
     for i,w in enumerate(W):
         if w['a'] is None:out.append(w['v']);continue
         nb=[W[j]['a']-W[j]['v'] for j in (i-1,i+1) if 0<=j<n and W[j]['a'] is not None]
-        out.append(w['a'] if (not nb or sgn(sum(nb))==sgn(w['a']-w['v'])) else w['v'])
-    R['neighbour_a']=out
+        ok=(not nb) or sgn(sum(nb))==sgn(w['a']-w['v']);flags.append(ok);out.append(w['a'] if ok else w['v'])  # a covered window with no covered neighbour is accepted (as run 2026-10-11)
+    R['neighbour_a']=out;acc['neighbour_a']=flags
     R['oracle_a']=per(lambda w:w['a'] if w['a'] is not None and w['a']!=w['v'] and ((w['a']>w['v'])==bool(w['label'])) else w['v'])
     R['oracle_l']=per(lambda w:w['l'] if w['l'] is not None and w['l']!=w['v'] and ((w['l']>w['v'])==bool(w['label'])) else w['v'])
     for name in R:R[name]=[w['v'] if (x is None or not np.isfinite(x)) else x for x,w in zip(R[name],W)]  # a missing read keeps the native value
@@ -91,14 +91,14 @@ def main():
     # pass 1: rule values and acceptance rates per corpus
     per_video=[rules(v) for v in videos];rate={}
     for ds in DATASETS:
-        for name in ('agree_al','agree_alp','agree_lp'):
+        for name in ('agree_al','agree_alp','agree_lp','neighbour_a'):
             fl=[f for vid,(R,acc) in zip(videos,per_video) if vid['ds']==ds for f in acc[name]];rate[(ds,name)]=sum(fl)/max(1,len(fl))
     preds={}
     for vi,(vid,(R,acc)) in enumerate(zip(videos,per_video)):
         for name,vals in R.items():preds.setdefault(name,[]).append(hybrid(vid['base'],vals,f'm1_comb_{name}'))
         W=vid['win']
-        for name,cand in (('agree_al','a'),('agree_alp','a'),('agree_lp','l')):
-            for seed in (0,1):
+        for name,cand in (('agree_al','a'),('agree_alp','a'),('agree_lp','l'),('neighbour_a','a')):
+            for seed in range(6):  # six seeds (review 2026-10-11: two seeds cannot locate the random band)
                 rng=np.random.default_rng([seed,vi])
                 vals=[(w[cand] if (w[cand] is not None and rng.random()<rate[(vid['ds'],name)]) else w['v']) for w in W]
                 preds.setdefault(f'random_{name}_{seed}',[]).append(hybrid(vid['base'],vals,f'm1_comb_random_{name}_{seed}'))
@@ -111,7 +111,7 @@ def main():
         subprocess.run([PY,'experiments/20260926_twolevel/twolevel_r2.py','--run',str(folder),'--datasets',*DATASETS,'--noleak','--transform','nscore','--key','calib','--duration','bma','--bma-prior','length',
             '--min-windows','2','--bma-grid','6','--arm','m2','--out-root',str(OUT/'decoded'),'--tag',name],cwd=ROOT,check=True,stdout=subprocess.DEVNULL)
         return name
-    with ThreadPoolExecutor(6) as ex:
+    with ThreadPoolExecutor(8) as ex:
         for name in ex.map(run,list(preds)):print('EVAL',name,flush=True)
     r6=metric(ROOT/'runs/20260926_twolevel/r6_bma/metrics.json');M={name:metric(OUT/'decoded'/name/'metrics.json') for name in preds}
     res={name:dict(metrics={ds:{k:M[name][ds][k] for k in METRICS} for ds in DATASETS},gain_vs_r6={ds:{k:M[name][ds][k]-r6[ds][k] for k in METRICS} for ds in DATASETS}) for name in preds}

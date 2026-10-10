@@ -138,7 +138,7 @@ Findings:
 1. Over the whole corpus the probe does carry label information, but at the video level. Among up moves on
    HateMM, windows where the probe cites a shown frame are positive in 60 %, windows where it says `none` in 24 %
    (HateClipSeg 73 % vs 57 %). The `none` answers sit mostly in all-negative videos.
-2. The within metric only uses the 84 / 100 videos that contain both labels. There, 65–77 % of the covered windows
+2. The within metric only uses the 84 / 99 videos that contain both labels (100 HateClipSeg GT videos are mixed; one is not in the run). There, 65–77 % of the covered windows
    in every cell are positive and the probe barely separates them: up moves are positive in 67 % (`none`) vs 75 %
    (shown) on HateMM and 65 % vs 77 % on HateClipSeg; down moves 65 % vs 80 % and 57 % vs 77 %. So inside these
    videos the grounded rule rejects 378 / 620 up-`none` moves that go toward the label in 68 % / 65 % of cases,
@@ -163,3 +163,66 @@ re-tests a signal this model has already failed on: its whole-video citations lo
 (accept_all) is within noise on both corpora; the ≥ .01 within gain over r6 belongs to the adjacent read that was
 already known. Recommendation: archive under rule 9 (no gain of the mechanism); whether to spend the 3 revisions
 is the user's decision. The adjacent read itself remains an input change (rule 5), adoption still the user's call.
+
+## Revision 1 (declared 2026-10-11 before implementation and before any GPU run): probe before frames
+
+User clarification 2026-10-11: the intended mechanism was never "add frames everywhere, then decide whether to keep
+the result". It is: read every window natively first (r6, no extra frames); then one more operation on that
+native read decides, per window, whether this window gets its frames; only those windows are re-read. The
+candidate 41 main run tested the reversed order and is kept as a negative result above. This revision tests the
+intended order. It counts as revision 1 of 3 under rule 9.
+
+Why the model's own answer might mark the right windows: the placement controls showed that re-showing the
+window's prefix frames next to the question helps even though no new image is added, i.e. the model has trouble
+finding the in-window frames among the 20 by their time labels. If that failure is window-specific and visible
+in what the model says when asked where the window's frames are, the windows where it fails are the windows
+where re-showing should help; where it succeeds, re-showing changes nothing useful.
+
+Mechanism (exact, both corpora, same constants):
+1. r6 unchanged: prefix with 20 frames + full ASR + rules, G, own hard stance, per-window visual V and speech S
+   from the prefix cache. Nothing new is shown to the model.
+2. After the native visual read of window w (same cache, user turn kept, assistant header not kept; the model
+   does not see its own answer), probe A, text only:
+   `Which of the frames shown above have timestamps inside this window, from {start:.1f}s to {end:.1f}s? List
+   their timestamps exactly as labelled, separated by commas, or reply "none".`
+   Greedy, at most 48 new tokens. Numbers in the reply are matched to the prefix frame times (within .05 s +
+   1e-9, as before). The reply is correct when the matched set equals the set of prefix frames whose time lies in
+   [start, end) (an empty set is correct only if the reply contains "none" and no matched time). Window flagged
+   by rule A when the reply is not correct.
+3. Probe B, text only, on the same cache after the native read with the model's own hard answer appended as an
+   assistant turn ("Yes" if V > 0 else "No"): `Which single frame shown above did you base that answer on? Reply
+   with its timestamp exactly as labelled, or "none".` Greedy, at most 16 new tokens. Window flagged by rule B
+   when no matched time lies inside [start, end) (it cites a frame outside the window, cites nothing, or says
+   none).
+4. Flagged windows take the extra visual read; unflagged windows keep V. The extra reads are the ones already
+   stored for every window (`runs/20261007_m1_streamingtom/placement_controls_main/records`): arm a =
+   `adjacent_native` (exists only for windows with a prefix frame inside; other windows keep V whatever the
+   flag), arm l = `adjacent_local` (0.5 fps frames next to the question), arm E = `local_clean` (0.5 fps frames
+   in the prefix). The selection is therefore evaluated offline; the GPU job runs only r6's reads plus the two
+   probes. Fusion max(V, S), G, decoder: fixed r6.
+
+Constants: the two probe texts; 48 and 16 new tokens; .05 s match tolerance; the rule definitions above. No label
+enters steps 1 to 4. Cost: two text-only probes per window (about 270 question tokens re-encoded plus 45 to 50
+probe tokens each, and the generated tokens); estimated 0.2 to 0.4 s per window, 7359 windows, 25 to 50 min on
+one 5090 on top of r6's 9 min; peak under 20 GiB. In deployment arm a's own read costs 4.7 min for 333 videos, so
+with arm a the probes cost more than the read they would save: this revision tests accuracy (does the rule find
+the windows where the extra read helps), not cost.
+
+Declared gates and controls (before any run):
+- Pilot on the fixed five first, no GT read: if probe A is correct in more than 95 % or fewer than 5 % of the
+  windows, or probe B cites an in-window frame in more than 95 % or fewer than 5 %, the probe text is revised and
+  re-declared here before the 333 run. Binding: native V and S equal r6 in every window; the traces' in-window
+  frame sets equal the stored `native_inside` of the placement records.
+- Six selections are evaluated (rules A, B × arms a, l, E); primary = rule A on arm a. For each: within gain vs
+  r6, compared with (i) the full arm and (ii) six rate-matched random selections (independent per video, seeds
+  0 to 5, built offline from the same reads; the review of 2026-10-11 showed two seeds cannot locate the random
+  band). A selection is supported when its within is above all six random controls by more than .01 in both
+  corpora and no pooled metric is below r6 by more than .005 in either corpus. Reported alongside: flagged
+  fraction, probe statistics (correct rate, none rate, inside rate, parse failures, generated tokens, time), the
+  visual-direction oracle for reference. Six selections are tested, so a single selection meeting the gate on one
+  corpus only is not a result.
+- Everything development-selected; DeHate not part of this round.
+
+Code: `probe_native.py` (reading job), `probe_native_analyze.py` (binding, selections, controls, sole evaluator +
+fixed r6, report), `launch/lab{1,2,3}_probe.sbatch` (`SCOPE=smoke|main|both`). Outputs
+`runs/20261010_m1_grounded_adjacent/probe_{smoke,main}/`, analysis `probe_analysis/`.
