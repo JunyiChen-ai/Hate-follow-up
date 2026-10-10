@@ -398,8 +398,7 @@ records, `local_controls_main/local_clean` predictions, `data/gt_4fps` (evaluato
 |  | unc_q50 | 0.36 / 0.33 | -0.0006 / -0.0011 / +0.0167 | +0.0045 / +0.0046 / +0.0104 |
 |  | top_q50 | 0.36 / 0.32 | +0.0003 / -0.0002 / +0.0105 | +0.0054 / +0.0031 / +0.0054 |
 |  | disagree | 0.24 / 0.24 | -0.0007 / -0.0022 / +0.0075 | +0.0051 / +0.0029 / +0.0123 |
-|  | random_q50_0 | 0.36 / 0.32 | -0.0003 / +0.0002 / +0.0096 | +0.0044 / +0.0047 / +0.0121 |
-|  | random_q50_1 | 0.35 / 0.32 | -0.0007 / -0.0025 / +0.0140 | +0.0046 / +0.0025 / +0.0054 |
+|  | random_q50, six seeds, independent per video (range) | 0.35 / 0.32 | within +0.0076 to +0.0178 | within -0.0104 to +0.0082 |
 |  | oracle_help | 0.38 / 0.36 | +0.0064 / +0.0165 / +0.0531 | +0.0216 / +0.0185 / +0.0475 |
 | local_clean | full | 1.00 / 1.00 | +0.0006 / -0.0037 / +0.0136 | +0.0205 / +0.0195 / +0.0296 |
 |  | unc_abs_1 | 0.08 / 0.10 | +0.0003 / -0.0011 / +0.0082 | +0.0050 / +0.0056 / +0.0054 |
@@ -410,8 +409,7 @@ records, `local_controls_main/local_clean` predictions, `data/gt_4fps` (evaluato
 |  | disagree | 0.30 / 0.36 | +0.0000 / -0.0005 / +0.0095 | +0.0092 / +0.0088 / +0.0200 |
 |  | empty | 0.27 / 0.34 | -0.0003 / -0.0031 / +0.0017 | +0.0067 / +0.0065 / +0.0145 |
 |  | covered | 0.73 / 0.66 | +0.0008 / -0.0004 / +0.0233 | +0.0144 / +0.0136 / +0.0156 |
-|  | random_q50_0 | 0.49 / 0.49 | +0.0003 / -0.0014 / +0.0215 | +0.0106 / +0.0115 / +0.0167 |
-|  | random_q50_1 | 0.49 / 0.49 | +0.0001 / -0.0030 / +0.0056 | +0.0109 / +0.0106 / +0.0189 |
+|  | random_q50, six seeds, independent per video (range) | 0.49 / 0.49 | within +0.0038 to +0.0208 | within +0.0030 to +0.0199 |
 |  | oracle_help | 0.51 / 0.57 | +0.0098 / +0.0234 / +0.0673 | +0.0413 / +0.0382 / +0.0900 |
 | prefix_local | full | 1.00 / 1.00 | +0.0013 / +0.0020 / +0.0132 | +0.0099 / +0.0101 / +0.0145 |
 |  | unc_abs_1 | 0.08 / 0.10 | +0.0004 / -0.0000 / +0.0057 | +0.0026 / +0.0033 / +0.0025 |
@@ -422,18 +420,20 @@ records, `local_controls_main/local_clean` predictions, `data/gt_4fps` (evaluato
 |  | disagree | 0.30 / 0.36 | +0.0004 / +0.0015 / +0.0123 | +0.0036 / +0.0035 / +0.0085 |
 |  | empty | 0.27 / 0.34 | +0.0001 / +0.0019 / +0.0098 | +0.0037 / +0.0030 / +0.0035 |
 |  | covered | 0.73 / 0.66 | +0.0014 / +0.0007 / +0.0166 | +0.0075 / +0.0077 / +0.0078 |
-|  | random_q50_0 | 0.49 / 0.49 | +0.0010 / +0.0028 / +0.0117 | +0.0058 / +0.0066 / +0.0060 |
-|  | random_q50_1 | 0.49 / 0.49 | +0.0003 / +0.0013 / +0.0077 | +0.0060 / +0.0059 / +0.0130 |
+|  | random_q50, six seeds, independent per video (range) | 0.49 / 0.49 | within +0.0031 to +0.0111 | within +0.0027 to +0.0110 |
 |  | oracle_help | 0.59 / 0.57 | +0.0068 / +0.0142 / +0.0409 | +0.0227 / +0.0216 / +0.0609 |
 
 Reading:
 - The user's premise holds, strongly. Selecting only the windows where the change moves toward the label (oracle)
   gives within +.053 / +.048 (`adjacent_native`) and +.067 / +.090 (E), two to four times the full arm, and the
   pooled metrics move too. About half of the changed windows move the wrong way.
-- None of the label-free rules finds those windows. On HateMM within, every rule lands inside the band of the two
-  size-matched random subsets (random 50 %: +.0096 / +.0140 for `adjacent_native`, +.0056 / +.0215 for E), and the
-  two random seeds themselves differ by .005 to .016, so a partial-application number below about .015 cannot be
-  read as a rule working. No rule beats random on both corpora.
+- None of the label-free rules finds those windows. Against six size-matched random halves (independent per video;
+  controls corrected 2026-10-11 after the review in `docs/reviews/20261011_m1_selection_simulations_code.md`, the
+  earlier two-seed control repeated one subset per video length) the best rule, `unc_q50`, is inside the band on
+  HateMM for `adjacent_native` (+.0167 vs random up to +.0178) and .0001 above the band's maximum for E
+  (+.0208 vs +.0208); on HateClipSeg it is .0022 / inside above the band. The random halves themselves span
+  .008 to .018 within, so a partial-application number below about .02 cannot be read as a rule working. No rule
+  is above all six random halves by .01 on both corpora. Full numbers in `selection_analysis/summary.json`.
 - Partial application keeps a proportional part of the gain: `adjacent_native` on the least-confident half of each
   video's windows (36 % / 33 % of windows) gives within +.0167 / +.0104, above the user's +.009 target on HateMM,
   but random halves give +.0096 / +.0121 and +.0140 / +.0054, so this is dilution, not selection.
@@ -457,24 +457,25 @@ Files read: the records above, `data/gt_4fps` (evaluator and oracle only), `runs
 
 Within gain vs r6, HateMM / HateClipSeg (pooled changes are in the summary; none above the single full reads):
 
-| rule | within | matched random (two seeds) |
+| rule | within | matched random, six seeds independent per video (range; corrected 2026-10-11 after review) |
 |---|---|---|
 | full a / l / p / E | +.0224 / +.0128, +.0182 / +.0264, +.0132 / +.0145, +.0136 / +.0296 | – |
 | mean of all five reads; median | +.0215 / +.0212; +.0219 / +.0199 | – |
 | mean of the four extra reads (no v) | +.0195 / +.0241 | – |
-| agree_al (a if l agrees; accepted 82 % / 77 %) | +.0244 / +.0155 | +.0218 / +.0100, +.0176 / +.0028 |
-| agree_alp (a if l and p agree; 57 % / 56 %) | +.0146 / +.0193 | +.0198 / +.0063, +.0110 / −.0002 |
-| agree_lp (l if p agrees; 69 % / 72 %) | +.0121 / +.0278 | +.0196 / +.0197, +.0127 / +.0192 |
+| agree_al (a if l agrees; accepted 82 % / 77 %) | +.0244 / +.0155 | HMM +0.0076 to +0.0218; HCS +0.0028 to +0.0129 |
+| agree_alp (a if l and p agree; 57 % / 56 %) | +.0146 / +.0193 | HMM +0.0092 to +0.0198; HCS -0.0002 to +0.0168 |
+| agree_lp (l if p agrees; 69 % / 72 %) | +.0121 / +.0278 | HMM +0.0127 to +0.0239; HCS +0.0192 to +0.0332 |
 | agree_lpE_mean | +.0161 / +.0268 | – |
-| neighbour_a | +.0264 / +.0092 | – |
+| neighbour_a (accepted 0.78 / 0.75; isolated covered windows accepted) | +.0264 / +.0092 | HMM +0.0060 to +0.0197; HCS +0.0035 to +0.0137 |
 | oracle_a; oracle_l (labels) | +.0531 / +.0475; +.0692 / +.0862 | – |
 
 Reading:
 - Averaging five reads of the same window does not beat the best single read on either corpus (HateMM +.0215 vs
   a's +.0224; HateClipSeg +.0212 vs E's +.0296). The reads are not independent noise around a common value; they
   share the model's belief about the window, so combining them removes nothing.
-- No agreement or neighbour rule is .01 above the best full read, and none is .01 above both of its random
-  controls in both corpora (agree_al is +.002 / +.003 over full a; agree_lp is below random on HateMM).
+- No agreement or neighbour rule is .01 above the best full read, and none is .01 above all six of its random
+  controls in both corpora (agree_al +.0244 / +.0155 vs random maxima +.0218 / +.0129; neighbour_a +.0264 /
+  +.0092 vs +.0197 / +.0137; agree_lp is below random on HateMM).
 - The oracle's gain is not a headroom that a label-free rule could reach: choosing per window, by the label, which
   of two correlated reads to keep injects label information into the score (it would also "gain" if the second
   read were pure noise). Together with the pre-read rules (selection_analysis, 2026-10-10) and the citation probe

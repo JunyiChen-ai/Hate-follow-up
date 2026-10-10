@@ -226,3 +226,15 @@ Declared gates and controls (before any run):
 Code: `probe_native.py` (reading job), `probe_native_analyze.py` (binding, selections, controls, sole evaluator +
 fixed r6, report), `launch/lab{1,2,3}_probe.sbatch` (`SCOPE=smoke|main|both`). Outputs
 `runs/20261010_m1_grounded_adjacent/probe_{smoke,main}/`, analysis `probe_analysis/`.
+
+### Revision 1 pilot on the fixed five (2026-10-11, sc474397 / Slurm 372; no GT read)
+
+158 windows (76 with a prefix frame inside). Binding PASS (`probe_smoke_analysis/plumbing_summary.json`): native V
+and S equal r6 in every window; in-window frame sets equal the placement records' `native_inside`. Replies well
+formed (`2.4s, 7.1s`, `[t=21.4s], [t=26.1s]`, `none`), 0 parse failures. Probe A correct in 64 % / 39 % of all
+windows, but only 31 % / 35 % of the windows that do contain a prefix frame (the model lists a neighbouring frame,
+one frame too many, or `none`); uncovered windows are answered `none` correctly in 83 % / 45 %. Probe B cites an
+in-window frame in 14 % / 26 %, `none` mostly where the native answer was No. Neither pilot threshold (above 95 %
+or below 5 %) is reached, so both probe texts stay as declared. Numbers within .05 s of a window bound appeared in
+11 of 158 windows (recorded as `bounds_echo`). Probes 0.27 s per window (both probes, about 7 + 2 generated
+tokens), so about 33 min for 7359 windows on top of r6's reads; peak 19.5 GiB.
