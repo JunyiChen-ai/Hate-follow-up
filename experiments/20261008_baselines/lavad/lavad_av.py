@@ -133,7 +133,8 @@ def cut(words: list[str], k: int) -> str:
 
 # ------------------------------------------------------------------ paths ---
 def visual_file(ds: str, stage: str, vid: str) -> Path:
-    """Reused visual-only stage output (summary / refined / score) of the corpus."""
+    """Reused visual-only stage output (summary / refined / score) of the corpus. HateClipSeg / DeHate are read from
+    VISUAL_RUN (default runs/20261008_baselines/lavad; `--visual-run` points at a copy of the same files)."""
     if ds == "HateMM":
         return CAMPAIGN_WORK / ds / stage / f"{vid}.json"
     return VISUAL_RUN / "work" / stage / ds / f"{vid}.json"
@@ -520,10 +521,10 @@ def stage_finalize(a) -> int:
         stats = json.loads((RUN_DIR / f"refusal_stats_{ds}.json").read_text())
         reuse = {"HateMM": "Retrieval-hate campaign summaries + refined neighbours (uoa-lab2 RTX 5090, 2026-08), "
                            "data/retrieval_hate_repro/repro_lavad_work/HateMM/",
-                 "HateClipSeg": "runs/20261008_baselines/lavad/work/{summary,refined}/HateClipSeg/ "
-                                "(uoa-campus2 A100, Slurm 24602)",
-                 "DeHate": "runs/20261008_baselines/lavad/work/{summary,refined}/DeHate/ "
-                           "(uoa-campus2 A100, Slurm 24603)"}[ds]
+                 "HateClipSeg": f"{VISUAL_RUN.relative_to(ROOT)}/work/{{summary,refined}}/HateClipSeg/ "
+                                "(visual-only run on uoa-campus2 A100, Slurm 24602)",
+                 "DeHate": f"{VISUAL_RUN.relative_to(ROOT)}/work/{{summary,refined}}/DeHate/ "
+                           "(visual-only run on uoa-campus2 A100, Slurm 24603)"}[ds]
         rep = ec.finalize("lavad_av_base", ds, out, curves, native_rate=FPS, code_path=CODE_PATH, log=log,
                           extra=extra, failures=fail,
                           notes={"f3_native_samples": n_f3, "f3_videos": n_f3_videos,
@@ -573,7 +574,14 @@ def main() -> int:
     ap.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION, choices=list(PROMPT_VERSIONS))
     ap.add_argument("--pilot-ids", default="", help="score stage: only these ids, output to pilot/<version>/ "
                                                     "(refusal-rate pilot; no curves, no evaluation)")
+    ap.add_argument("--visual-run", default="", help="directory holding work/{summary,refined,score}/<DS>/ and "
+                                                     "curves/<DS>/ of the visual-only run (copy), instead of "
+                                                     "runs/20261008_baselines/lavad")
     a = ap.parse_args()
+    if a.visual_run:
+        global VISUAL_RUN
+        VISUAL_RUN = Path(a.visual_run).resolve()
+        print(f"visual-only inputs from {VISUAL_RUN}", flush=True)
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     print(f"lavad_av {a.stage} host {os.uname().nodename} {time.strftime('%Y-%m-%d %H:%M:%S')} code {CODE_PATH} "
           f"({ec.code_version()}) datasets {a.datasets}", flush=True)
