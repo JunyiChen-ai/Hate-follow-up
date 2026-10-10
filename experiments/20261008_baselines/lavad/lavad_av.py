@@ -98,6 +98,15 @@ CONTEXT_PROMPT_HATE = (
     "denoting a scene with content that violates any of the above rules?"
 )
 SYSTEM_PROMPT = CONTEXT_PROMPT_HATE + " " + FORMAT_PROMPT   # LAVAD joins context and format with one space
+# experiments/20260910_spvl/spvl.py SYSTEM_MESSAGE, the system message of the shared hate query's Yes/No family
+SYSTEM_MESSAGE = "You are a content moderation analyst. Answer based strictly on observable evidence."
+# prompt versions: system turn and the text the assistant turn is started with
+PROMPT_VERSIONS = {
+    "rules": (SYSTEM_PROMPT, ""),                                          # attempt 1 (2026-10-10)
+    "moderator": (SYSTEM_MESSAGE + "\n\n" + SYSTEM_PROMPT, ""),
+    "moderator_prefill": (SYSTEM_MESSAGE + "\n\n" + SYSTEM_PROMPT, " ["),
+}
+DEFAULT_PROMPT_VERSION = "rules"
 SPEECH_LABEL = "Speech in this clip:"
 
 
@@ -163,15 +172,16 @@ def load_tokenizer():
 
 
 class PromptBuilder:
-    def __init__(self, tok):
+    def __init__(self, tok, version: str = DEFAULT_PROMPT_VERSION):
         self.tok = tok
+        self.system, self.prefill = PROMPT_VERSIONS[version]
         self.limit = MAX_SEQ_LEN - ANSWER_RESERVE
         self.stats = Counter()
 
     def n_tokens(self, system: str, user: str) -> int:
         p = self.tok.apply_chat_template([{"role": "system", "content": system},
                                           {"role": "user", "content": user}],
-                                         tokenize=False, add_generation_prompt=True)
+                                         tokenize=False, add_generation_prompt=True) + self.prefill
         return len(self.tok(p, add_special_tokens=False)["input_ids"])
 
     def _fit(self, words: list[str], render) -> int:
@@ -179,7 +189,7 @@ class PromptBuilder:
         lo, hi = 0, len(words) - 1      # k = len(words) (nothing cut) was already tried by the caller
         while lo < hi:
             k = (lo + hi + 1) // 2
-            if self.n_tokens(SYSTEM_PROMPT, render(cut(words, k))) <= self.limit:
+            if self.n_tokens(self.system, render(cut(words, k))) <= self.limit:
                 lo = k
             else:
                 hi = k - 1
@@ -191,11 +201,11 @@ class PromptBuilder:
         Over the budget: the speech text keeps its first words that fit and ends in " ..."; only if the prompt
         with the speech cut to "..." is still too long, the summary is cut the same way (speech stays "...")."""
         user = user_turn(summary, speech)
-        n = self.n_tokens(SYSTEM_PROMPT, user)
+        n = self.n_tokens(self.system, user)
         self.stats["prompts"] += 1
         self.stats["with_speech"] += bool(speech)
         if n <= self.limit:
-            return (SYSTEM_PROMPT, user), n, 0
+            return (self.system, user), n, 0
         words = speech.split()
         dropped = 0
         if words:
@@ -204,17 +214,17 @@ class PromptBuilder:
             dropped = len(words) - k
             self.stats["speech_shortened"] += 1
             self.stats["speech_words_dropped"] += dropped
-        if self.n_tokens(SYSTEM_PROMPT, user) > self.limit:
+        if self.n_tokens(self.system, user) > self.limit:
             sw = summary.split()
             sp = cut(words, 0) if words else ""
             j = self._fit(sw, lambda s: user_turn(s.rstrip("."), sp)) if sw else 0
             user = user_turn(cut(sw, j).rstrip("."), sp)
             self.stats["summary_shortened"] += 1
             self.stats["summary_words_dropped"] += len(sw) - j
-        n2 = self.n_tokens(SYSTEM_PROMPT, user)
+        n2 = self.n_tokens(self.system, user)
         if n2 > self.limit:
             self.stats["over_limit_after_shortening"] += 1
-        return (SYSTEM_PROMPT, user), n2, dropped
+        return (self.system, user), n2, dropped
 
 
 def cohort_with_summary(ds: str) -> list[str]:
@@ -331,22 +341,52 @@ def hold_then_reexec() -> None:
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
+def make_scorer(batch_size: int, prefill: str):
+    """lavad_chain.Scorer; with a prefill, the assistant turn starts with that text (appended after [/INST]) and the
+    returned answer is prefill + generation, so LAVAD's `[x]` parse sees the whole answer."""
+    import torch
+    from lavad_chain import MAX_SEQ_LEN as MSL, Scorer
+
+    class PrefillScorer(Scorer):
+        @torch.inference_mode()
+        def _run(self, pairs):
+            prompts = [self.tok.apply_chat_template(
+                [{"role": "system", "content": s_}, {"role": "user", "content": u}],
+                tokenize=False, add_generation_prompt=True) + prefill for s_, u in pairs]
+            enc = self.tok(prompts, return_tensors="pt", padding=True, truncation=True, max_length=MSL - 1,
+                           add_special_tokens=False).to(self.model.device)
+            plen = enc["input_ids"].shape[1]
+            if plen >= MSL - 1:
+                self.n_trunc += len(prompts)
+            new = max(MSL - plen, 1)
+            out = self.model.generate(**enc, max_new_tokens=new, do_sample=False, pad_token_id=self.tok.pad_token_id)
+            return [(prefill + t).strip() for t in
+                    self.tok.batch_decode(out[:, plen:], skip_special_tokens=True)]
+
+    return PrefillScorer(batch_size) if prefill else Scorer(batch_size)
+
+
 def stage_score(a) -> int:
     a.datasets = [ds for ds in a.datasets if not elsewhere(ds)]
     if not a.datasets:
         return 0
     hold_then_reexec()
-    from lavad_chain import SCORE_RE, Scorer
-    sc = Scorer(a.batch_size)
-    pb = PromptBuilder(sc.tok)
-    print("SYSTEM PROMPT:\n" + SYSTEM_PROMPT, flush=True)
+    from lavad_chain import SCORE_RE
+    system, prefill = PROMPT_VERSIONS[a.prompt_version]
+    sc = make_scorer(a.batch_size, prefill)
+    pb = PromptBuilder(sc.tok, a.prompt_version)
+    work = WORK if not a.pilot_ids else RUN_DIR / "pilot" / a.prompt_version / "work"
+    print(f"PROMPT VERSION {a.prompt_version}; prefill {prefill!r}; output {work}\nSYSTEM PROMPT:\n" + system,
+          flush=True)
     for ds in a.datasets:
         tr = Transcripts(ds)
         ids = cohort_with_summary(ds)
+        if a.pilot_ids:
+            ids = [v for v in ids if v in set(a.pilot_ids.split(","))]
         missing = sorted(set(ec.cohort(ds)) - set(ids))
-        if missing:
+        if missing and not a.pilot_ids:
             print(f"!! {ds}: {len(missing)} cohort videos have no visual summary: {missing[:5]}", flush=True)
-        todo = [v for v in ids if not (WORK / "score" / ds / f"{v}.json").exists()]
+        todo = [v for v in ids if not (work / "score" / ds / f"{v}.json").exists()]
         print(f"PROGRESS score_av {ds} plan={len(todo)}/{len(ids)}", flush=True)
         t0, n, ncall, nref = time.time(), 0, 0, 0
         for vid in todo:
@@ -362,9 +402,9 @@ def stage_score(a) -> int:
                 else:
                     scores[c] = -1.0            # LAVAD's sentinel; masked, not interpolated
                     refusals[c] = o[:400]
-            write_json(WORK / "speech" / ds / f"{vid}.json", speech)
-            write_json(WORK / "score_refusals" / ds / f"{vid}.json", refusals)
-            write_json(WORK / "score" / ds / f"{vid}.json", scores)
+            write_json(work / "speech" / ds / f"{vid}.json", speech)
+            write_json(work / "score_refusals" / ds / f"{vid}.json", refusals)
+            write_json(work / "score" / ds / f"{vid}.json", scores)
             n += 1
             ncall += len(centers)
             nref += len(refusals)
@@ -374,10 +414,16 @@ def stage_score(a) -> int:
                       f"cachehit={sc.n_hit} trunc={sc.n_trunc} oom={sc.n_oom} "
                       f"{sc.n_gen / max(el, 1e-9):.2f} gen/s elapsed={el / 60:.1f}min "
                       f"eta={(len(todo) - n) * el / n / 60:.1f}min speech_shortened={pb.stats['speech_shortened']} summary_shortened={pb.stats['summary_shortened']}", flush=True)
-        st = {"dataset": ds, "videos_scored_now": n, "calls": ncall, "refusals": nref, **dict(pb.stats),
-              "gen": sc.n_gen, "cachehit": sc.n_hit, "trunc": sc.n_trunc, "oom": sc.n_oom,
-              "wall_min": round((time.time() - t0) / 60, 1)}
-        write_json(RUN_DIR / f"prompt_stats_{ds}.json", st)
+        st = {"dataset": ds, "prompt_version": a.prompt_version, "videos_scored_now": n, "calls": ncall,
+              "refusals": nref, **dict(pb.stats), "gen": sc.n_gen, "cachehit": sc.n_hit, "trunc": sc.n_trunc,
+              "oom": sc.n_oom, "wall_min": round((time.time() - t0) / 60, 1)}
+        if a.pilot_ids:   # per-video refusal shares of the pilot (no label read)
+            st["per_video"] = {}
+            for v in ids:
+                sv = json.loads((work / "score" / ds / f"{v}.json").read_text())
+                st["per_video"][v] = {"centres": len(sv), "refused": sum(x < 0 for x in sv.values())}
+            st["videos_all_refused"] = sum(r["refused"] == r["centres"] for r in st["per_video"].values())
+        write_json((work.parent if a.pilot_ids else RUN_DIR) / f"prompt_stats_{ds}.json", st)
         print(f"[done] score_av {ds} {json.dumps(st)}", flush=True)
         pb.stats.clear()
     return 0
@@ -463,7 +509,9 @@ def stage_finalize(a) -> int:
                                  "tail_hold_frames_total": n_tail, "refusal_stats": stats},
                           config={"variant": "LAVAD-AV base (stage-06 refined score; scoring prompt = hate rules, "
                                              "user turn = temporal summary + speech transcript of the clip span)",
-                                  "system_prompt": SYSTEM_PROMPT,
+                                  "prompt_version": a.prompt_version,
+                                  "system_prompt": PROMPT_VERSIONS[a.prompt_version][0],
+                                  "assistant_prefill": PROMPT_VERSIONS[a.prompt_version][1],
                                   "user_turn": user_turn("<temporal summary>", "<Whisper text of [max(c-5,0), "
                                                          "min(c+5,n)) s, or (no speech)>"),
                                   "reused_from_visual_run": reuse,
@@ -484,6 +532,9 @@ def main() -> int:
     ap.add_argument("--datasets", nargs="+", default=list(DATASETS), choices=DATASETS)
     ap.add_argument("--batch-size", type=int, default=48)
     ap.add_argument("--limit", type=int, default=0, help="lengths stage: first N videos")
+    ap.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION, choices=list(PROMPT_VERSIONS))
+    ap.add_argument("--pilot-ids", default="", help="score stage: only these ids, output to pilot/<version>/ "
+                                                    "(refusal-rate pilot; no curves, no evaluation)")
     a = ap.parse_args()
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     print(f"lavad_av {a.stage} host {os.uname().nodename} {time.strftime('%Y-%m-%d %H:%M:%S')} code {CODE_PATH} "
