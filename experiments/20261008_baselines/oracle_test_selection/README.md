@@ -98,14 +98,15 @@ python experiments/20261008_baselines/oracle_test_selection/evaluate_candidates.
 python experiments/20261008_baselines/oracle_test_selection/summarize.py
 ```
 
-## 6. Results (state of 2026-10-09 21:10; SAGE pending)
+## 6. Results (complete, 2026-10-12)
 
 TEST-selected upper bound for the baselines. Cells: pooled frame ROC-AUC / pooled frame PR-AUC / within-video macro
 ROC-AUC, mean over seeds 2025 / 234 / 3407. Transcribed from
-`runs/20261008_baselines/oracle_test_selection/oracle_table.md` (built by `summarize.py` from each seed's
-`candidates.json`, whose numbers are the evaluator's `metrics.json` outputs); sd, the chosen candidate per seed and
-the reproduction check are in that file and in `oracle_summary.json`. "current" = the existing val / last / authors'
-row, unchanged (CLARA DeHate: the run of Slurm 329, finished 2026-10-09 19:53, outputs copied from uoa-lab2).
+`runs/20261008_baselines/oracle_test_selection/oracle_table.md`, written 2026-10-11 05:56 by `summarize.py` from each
+seed's `candidates.json`. The numbers in those files are the evaluator's `metrics.json` outputs. The sd, the chosen
+candidate per seed and the reproduction check are in `oracle_table.md` and `oracle_summary.json`. "current" = the
+existing val / last / authors' row, unchanged. CLARA DeHate "current" = the run of Slurm 329 (finished
+2026-10-09 19:53), whose outputs were copied from uoa-lab2.
 
 | method | corpus | current (val / last) | oracle B (headline) | oracle A (per metric) | candidates per seed |
 |---|---|---|---|---|---|
@@ -130,35 +131,46 @@ row, unchanged (CLARA DeHate: the run of Slurm 329, finished 2026-10-09 19:53, o
 | MultiHateLoc (reimpl.) | HateMM | 0.7441 / 0.4946 / 0.6228 | **0.7733 / 0.5361 / 0.6273** | 0.7832 / 0.5449 / 0.6340 | 606/606/606 |
 | MultiHateLoc (reimpl.) | HateClipSeg | 0.5185 / 0.4787 / 0.4983 | **0.5650 / 0.5284 / 0.5189** | 0.5674 / 0.5296 / 0.5262 | 186/186/186 |
 | MultiHateLoc (reimpl.) | DeHate | 0.6102 / 0.1289 / 0.5420 | **0.6416 / 0.1622 / 0.5408** | 0.6457 / 0.1633 / 0.5730 | 186/186/186 |
-| SAGE (8-s windows) | HateMM | 0.7306 / 0.5035 / 0.6126 | **pending** | pending | -/-/- |
-| SAGE (8-s windows) | HateClipSeg | 0.5453 / 0.5098 / 0.5156 | **pending** | pending | -/-/- |
-| SAGE (8-s windows) | DeHate | 0.5970 / 0.1125 / 0.5698 | **pending** | pending | -/-/- |
+| SAGE (8-s windows) | HateMM | 0.7306 / 0.5035 / 0.6126 | **0.7716 / 0.5355 / 0.6307** | 0.7756 / 0.5355 / 0.6547 | 124/124/124 |
+| SAGE (8-s windows) | HateClipSeg | 0.5453 / 0.5098 / 0.5156 | **0.5621 / 0.5291 / 0.5245** | 0.5633 / 0.5320 / 0.5344 | 124/124/124 |
+| SAGE (8-s windows) | DeHate | 0.5970 / 0.1125 / 0.5698 | **0.6272 / 0.1334 / 0.5930** | 0.6287 / 0.1347 / 0.5947 | 124/124/124 |
 | CLARA (8-s windows) | HateMM | 0.8722 / 0.6307 / 0.5417 | **0.8706 / 0.6283 / 0.5754** | 0.8754 / 0.6346 / 0.5767 | 16/25/18 |
 | CLARA (8-s windows) | HateClipSeg | 0.5413 / 0.5165 / 0.5050 | **0.5820 / 0.5408 / 0.5139** | 0.5846 / 0.5424 / 0.5226 | 12/12/12 |
 | CLARA (8-s windows) | DeHate | 0.7738 / 0.1943 / 0.4774 | **0.7766 / 0.2047 / 0.5050** | 0.7809 / 0.2086 / 0.5181 | 39/22/22 |
 
-5182 candidates evaluated so far, none invalid. Oracle B picks a current-run checkpoint for only 2 of the 72 seed
-runs (DSANet HateMM seed 234, AVadCLIP DeHate seed 3407); every other pick is a retrained epoch.
+All 81 seed runs (9 methods × 3 corpora × 3 seeds) are evaluated: 6,298 candidates, none invalid.
+Oracle B picks a current-run checkpoint for 3 of the 81 seed runs: DSANet HateMM seed 234, AVadCLIP DeHate seed
+3407 and SAGE DeHate seed 3407. Every other pick is a retrained epoch.
 
 Reading the table:
 - Oracle B is the selection the paper uses: one checkpoint and branch per seed, chosen on test labels. Oracle A is
   higher by construction, because its three metrics may come from three different candidates.
-- Within one seed, oracle B's mean of the three metrics is never below the current mean, because the current
-  checkpoint is itself a candidate. A single metric can still drop below the current number. For example,
-  wav2vec2 + MIL on HateMM has pooled ROC-AUC .6847 under B against .6919 current.
-- Branch changes chosen by B: VadCLIP HateMM uses score_mlp; DSANet uses score_align (except one HateMM seed);
-  AVadCLIP uses score_mlp; MultiHateLoc HateMM uses score_dms. The per-seed choices are in `oracle_table.md`.
+- Within each seed, oracle B's mean of the three metrics is never below the current mean, because the current
+  checkpoint is itself a candidate (checked on all 81 seed runs). A single metric can still drop below the current
+  number. For example, wav2vec2 + MIL on HateMM has pooled ROC-AUC .6847 under B against .6919 current.
+- Branch changes chosen by B:
+  - VadCLIP HateMM: score_mlp.
+  - DSANet: score_align, except one HateMM seed.
+  - AVadCLIP: score_mlp.
+  - MultiHateLoc HateMM: score_dms.
+  - SAGE HateMM: the audio expert's head.
+  - SAGE HateClipSeg: the text expert's head for 2 of 3 seeds.
+  - SAGE DeHate: the text, fusion and audio heads, one seed each.
+  The per-seed choices are in `oracle_table.md`.
 
 ## 7. Run record
 
 | step | host | job | wall time |
 |---|---|---|---|
-| MIL ×3, VadCLIP, DSANet, AVadCLIP, MultiHateLoc (all corpora), CLARA HateClipSeg | uoa-lab1 (sc474397) | Slurm 331, 18:20-19:55 | 1.58 GPU-h (its two SAGE tasks failed at start: the lab1 HF cache no longer held the SAGE encoders) |
+| MIL ×3, VadCLIP, DSANet, AVadCLIP, MultiHateLoc (all corpora), CLARA HateClipSeg | uoa-lab1 (sc474397) | Slurm 331, 2026-10-09 18:20-19:55 | 1.58 GPU-h (its two SAGE tasks failed at start: the lab1 HF cache no longer held the SAGE encoders) |
 | CLARA HateMM (CPU, as the current run) | uoa-lab1 | setsid nohup (`cpu/cpu_chain.sh`), 18:22-18:47 | CPU only |
 | SAGE test-window frames HateMM / HateClipSeg (`sage_run.py prep`) | uoa-lab1 | same CPU chain | 2 min CPU |
 | CLARA DeHate | uoa-lab2 (sc474399) | Slurm 339, 20:05-20:52 | 0.79 GPU-h |
-| SAGE DeHate (train 3 seeds, score all epochs) | uoa-lab3 (sc474398) | Slurm 340, from 20:05 | running; about 5.8 h training + 2.5 h scoring expected (Slurm 332 failed at start: lab3 lacked `data/asr_whisper_large_v3/DeHate/all_splits_chunks.jsonl`, copied from uoa-lab2) |
-| SAGE HateClipSeg, HateMM | uoa-lab1 | Slurm 341, from 20:52 | running; about 3 h expected |
+| SAGE HateClipSeg, HateMM (train 3 seeds each, score every epoch) | uoa-lab1 | Slurm 341, 20:52-23:30 | 2.63 GPU-h (scoring 38 min HateClipSeg, 40 min HateMM) |
+| SAGE DeHate (train 3 seeds, score every epoch) | uoa-lab3 (sc474398) | Slurm 340, 2026-10-09 20:05 - 10-10 04:26 | 8.35 GPU-h (training about 1 h 55 min per seed, scoring 2 h 33 min). Slurm 332 had failed at start: lab3 lacked `data/asr_whisper_large_v3/DeHate/all_splits_chunks.jsonl`, copied from uoa-lab2 |
+
+Total: 13.35 GPU-h, all on RTX 5090 lab nodes. The SAGE outputs were rsynced to uoa-lab1, then evaluated and
+summarized on 2026-10-11.
 
 Inputs added for these runs:
 - `data/weaksup_1fps/{vit_b16_imagenet_1fps,vggish_1s}/dehate/`: the DeHate MultiHateLoc rows (addendum in that
@@ -177,20 +189,27 @@ three metrics):
 - DSANet: ≤ .019 (GPU non-determinism compounds over 10 epochs).
 - CLARA: .006 to .038 on every corpus, both on CPU (HateMM) and on GPU. Its bf16 training is not run-to-run
   deterministic, and the HateMM CPU retraining already differs at epoch 1.
-- SAGE HateClipSeg: identical for the first 3 epochs, then drifts (GPU non-determinism); current seed 2025 selected
-  epoch 13, the retraining epoch 12. The current SAGE DeHate seed 2025 ran with a different data loader (README of
-  `../sage/`), so its trajectory cannot be reproduced.
+- SAGE: .006 to .048.
+  - The retraining is identical to the current run for the first epochs (HateClipSeg seed 2025: 3 epochs), then
+    drifts through GPU non-determinism, so the authors' rule picks other epochs.
+  - The current DeHate seed 2025 ran with a different data loader (`../sage/README.md`).
+  - The current DeHate seed 3407 diverged (NaN loss from epoch 11; its rule kept epoch 8). The retraining did not
+    diverge, and its rule picks epoch 25.
 
 In every case the current run's selected checkpoint is itself a candidate, so the oracle pool always contains it.
 
-## 8. Remaining steps (when Slurm 340 and 341 finish)
+SAGE re-scoring check (`sage/<DS>/score_epochs/check.json`). `sage_epochs.py` re-scores the current selected
+checkpoints, and the result is compared with the current run's saved window scores.
+- Max absolute difference per window: ≤ .0007 on HateClipSeg; .0145 / .0011 / .0005 on HateMM (seeds 2025 / 234 /
+  3407); .012 / .41 / .004 on DeHate.
+- The .41 is a single window (video VuuBynihhPrQ, seed 234). On DeHate, 8 of 14,375 windows of that seed differ by
+  more than .01.
+- The three metrics of the re-scored current checkpoints differ from the current `metrics.json` by at most .0003.
+- Neither model nor inputs changed between the two scorings: the checkpoints predate the current inference, and the
+  window frames, wavs and transcripts are copies. The differences are GPU numerical noise, which a few windows near
+  the decision boundary amplify.
 
-```bash
-cd ~/Hate-follow-up                    # uoa-lab1
-rsync -a uoa-lab3:Hate-follow-up/runs/20261008_baselines/oracle_test_selection/ runs/20261008_baselines/oracle_test_selection/
-source ~/miniconda3/bin/activate HateVideo
-python experiments/20261008_baselines/oracle_test_selection/evaluate_candidates.py --workers 6
-python experiments/20261008_baselines/oracle_test_selection/summarize.py
-```
-Check `runs/20261008_baselines/oracle_test_selection/sage/<DS>/score_epochs/check.json`. The current checkpoints'
-fusion scores, re-scored by `sage_epochs.py`, should match the current window scores up to GPU rounding.
+## 8. Status
+
+Complete. Every method × corpus × seed has its candidates evaluated and summarized. Rerunning `summarize.py`
+reproduces `oracle_table.md` and `oracle_summary.json`.
