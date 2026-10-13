@@ -45,7 +45,7 @@ def check(name):
     assert cfg["GT_read"] is False
     r6 = records(R6_RAW)
     out = {ds: dict(videos=0, windows=0, speech_prop_matches_r6=0, aligned_status={}, aligned_differs=0, aligned_windows=0, local_windows=0,
-                    standalone=[], audio_tokens=[], seconds={}, peak_GiB=0.0, derangement_ok=0) for ds in DATASETS}
+                    standalone=[], audio_tokens=[], seconds={}, peak_GiB=0.0, derangement_ok=0, audio_short_videos={}) for ds in DATASETS}
     preds = {arm: records(root / arm / "predictions.jsonl") for arm in ARMS}
     for ds in DATASETS:
         for path in sorted((root / "records" / ds).glob("*.json")):
@@ -59,6 +59,9 @@ def check(name):
             for k, v in b["checks"]["times"].items():
                 s["seconds"][k] = s["seconds"].get(k, 0.0) + v
             st = b["checks"]["aligned_status"]
+            short = b["traces"][-1]["bounds"][1] - b["checks"]["audio_samples"] / 16000.0 if b["traces"] else 0.0
+            if short > 0.1:
+                s["audio_short_videos"][path.stem] = round(short, 3)
             s["aligned_status"][str(st)] = s["aligned_status"].get(str(st), 0) + 1
             ref = r6[key]["extra"]["windows"]
             assert len(ref) == len(b["traces"]) == b["checks"]["windows"]

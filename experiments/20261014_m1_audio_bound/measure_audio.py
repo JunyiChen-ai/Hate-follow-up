@@ -187,8 +187,8 @@ def read(j, row, video_index, segments, words, verify):
                   actual_forwards=j.forward_calls - first[0], actual_audio=j.audio_calls - first[1], actual_vision=j.vision_calls - first[2],
                   peak_GiB=torch.cuda.max_memory_allocated() / 2 ** 30, pipeline_seconds=tick(j) - begin, audio_samples=int(len(wav)),
                   aligned_status=None if words is None else words["status"])
-    expected = 1 + 2 + n * 3 + sum(t["visual_local"] is not None for t in traces) + sum(t["speech_prop"] is not None for t in traces) + sum(t["speech_aligned"] is not None for t in traces)
-    assert checks["actual_forwards"] == expected, (checks["actual_forwards"], expected)
+    expected = 1 + 2 + n * 4 + sum(t["visual_local"] is not None for t in traces) + sum(t["speech_prop"] is not None for t in traces) + sum(t["speech_aligned"] is not None for t in traces)
+    assert checks["actual_forwards"] == expected, (checks["actual_forwards"], expected)  # prefix + stance (3), per window visual_native + 3 audio reads, plus the optional local / prop / aligned reads
     assert checks["actual_audio"] == 3 * n and checks["actual_vision"] == 1 + sum(t["visual_local"] is not None for t in traces)
     diagnostic = None
     if verify:  # standalone forwards (no cache) for the first window with local frames and speech, every branch kind

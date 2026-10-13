@@ -84,12 +84,12 @@ Is THIS window one of the segments where speech that violates the above rules oc
 Answer "Yes" or "No".
 ```
 
-`speech_prop` and `speech_aligned` use the r6 wording `Judge only what is spoken in this window: {text}` with
-`(no speech)` when the slice is empty. `visual_local` / `visual_native` use the r6 visual wording (and the
+`speech_prop` and `speech_aligned` use the r6 wording `Judge only what is spoken in this window: {text}`; an
+empty slice gives no speech read for that window (None, as in r6), so z falls back to the visual read. `visual_local` / `visual_native` use the r6 visual wording (and the
 `adjacent_local` label format for the local frames).
 
 Audio clip: the video's audio track decoded once per video with ffmpeg to 16 kHz mono PCM, cut to `[start, end)`,
-no padding, given as a waveform to the processor (the Omni audio encoder emits 12.5 tokens / s: at most 100 tokens
+given as a waveform to the processor (the Omni audio encoder emits 13 tokens / s: an 8 s clip is 104 tokens
 per clip). Windows whose track is silent still get their clip.
 
 `speech_swap`: window `i` gets the clip of window `π(i)`, `π` a derangement from `numpy.random.default_rng([1,
@@ -153,7 +153,9 @@ Checks, all recorded under `runs/20261014_m1_audio_bound/smoke/`:
 1. For the first video of each corpus and every branch type, the cached-branch margin equals a standalone forward
    of the full conversation (|Δ| ≤ 1e-3) and the token ids agree (the seam check of r6).
 2. `speech_prop` text equals r6's window text byte for byte; the `r6_inputs` prefix text equals the r6 prefix text.
-3. Audio clips: sample count = (end − start) × 16000 ± 1, clip order = window order, `speech_swap` permutation is a
+3. Audio clips: sample count = (end − start) × 16000 ± 1 except where the decoded track is shorter than the manifest
+   duration (the last window is then cut short and zero-padded to at least 400 samples; `analyze.py --stage check` lists
+   the videos whose track is more than 0.1 s short), clip order = window order, `speech_swap` permutation is a
    derangement.
 4. `GT_read is False` in every record; no label file is opened by the scorer.
 5. Peak memory and seconds per branch, to confirm the cost estimate below before the full run.

@@ -221,6 +221,7 @@ class OmniJudge:
             return self.margins_fp32(h[None])[0]
         finally:
             cache.crop(n)
+            assert cache.get_seq_length() == n, (cache.get_seq_length(), n)
 
     def branch_media_margin(self, cache, enc, logical_start):
         """Yes/No log-odds after a suffix with images / audio (`enc` from `encode`); the cache is restored."""
@@ -231,6 +232,7 @@ class OmniJudge:
             return self.margins_fp32(h[None])[0], int(rel.max()) + 1
         finally:
             cache.crop(n)
+            assert cache.get_seq_length() == n, (cache.get_seq_length(), n)
 
     @torch.no_grad()
     def plain_margin(self, text, image_files=(), audios=()):
