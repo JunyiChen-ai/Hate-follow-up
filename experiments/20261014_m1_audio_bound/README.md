@@ -176,3 +176,23 @@ track, one prefix and two branch forwards per window (visual local + audio) — 
 2026-10-14: the diagnosis files (`runs/20261014_within_diagnosis/`), the Whisper chunk files of hate_video_283,
 _139, _132 and bit_6aHW6jocI9kJ, five window-centre frames of silent positive windows, and the follow-up speech AUC
 split in §4. These informed the hypothesis and the choice of controls. No constant was chosen from them.
+
+## 9. Rule-4 review outcome and additions (2026-10-14)
+
+`docs/reviews/20261014_m1_audio_bound_novelty.md`: PASS. Closest prior work: TANDEM (2601.11178; trained with
+RL, Qwen2-Audio-7B hears 30 s chunks, Qwen2.5-VL-7B sees frames; its Table 2 also lists a zero-shot
+Qwen3-Omni-30B-A3B-Thinking span baseline on HateMM), LELA (training-free, speech as Whisper text), An et al.
+2408.06065 (audio-only span model trained on synthetic data). Advisories adopted:
+
+- Claims never to be made: first raw-audio or omni-LLM use for hateful video localization; first label-free
+  Qwen3-Omni on HateMM; audio-LM toxicity without ASR; "tone-based hate". Effect (b) is worded only as "beyond the
+  aligned text". TANDEM is cited as a trained reference.
+- Rule 14(f) (strongest label-free comparator with the same model): the strongest label-free comparator in the
+  table (T3AL) has no MLLM, so "T3AL with Qwen3-Omni" does not exist. If the candidate passes the performance gate,
+  the same-model comparator will be the zero-shot whole-video span output of Qwen3-Omni (the TANDEM Table 2
+  baseline) rerun under this repository's evaluator with a declared span-to-frame rule (frames inside a predicted
+  span = 1, outside = 0, ties broken by the video-level Yes/No log-odds); otherwise it is not run. `r6_inputs` is
+  the current method with the same model.
+- Extra records in the full run (diagnostic, not gates): the audio read on ASR-silent windows split by gold; a
+  second swap partner = the neighbouring window (`i+1`, last window takes `i−1`) in addition to the random
+  derangement; the fraction of windows whose aligned slice differs from the proportional slice.
