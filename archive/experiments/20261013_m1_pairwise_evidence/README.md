@@ -1,5 +1,7 @@
 # M1 candidate 42: evidence-bound pairwise comparison of windows
 
+**归档（2026-10-13，第 33 项）**：两窗帧并排的比较式读取没有超过同样帧的逐点读取（within −.0099 / −.0033；`l + u` +.0017 / −.0068），HateClipSeg 上连最一致的边也只与逐点读数持平；配对比较这一族（时间戳引用版 PWC 与本次展示帧版）在该模型上关闭。`ROOT=parents[2]` 以 experiments/ 位置为准。
+
 Status: declared 2026-10-13 before any GPU run (user instruction 2026-10-13: "run the proposal, and do not stop thinking
 about improvements if it fails"). Development-selected (rule 10). Fixed r6 reads, fixed r6 decoder, sole evaluator.
 
@@ -141,3 +143,86 @@ proceed to the 333 with the declared wording. Noted for the reading of the resul
 (s ≈ +2 log-odds; the symmetrisation removes it), and on the long HateMM video `hate_video_114` (79 windows,
 158 edges) it answers C in 66 % of the comparisons with swap agreement .54. Cost projection from 0.2 s per
 comparison: HateMM about 50 min, HateClipSeg about 48 min, plus the native reads.
+
+## Full run (2026-10-13; HateMM 215 on sc474397 / Slurm 407, HateClipSeg 118 on sc474399 / Slurm 408; development-selected)
+
+Binding (`runs/20261013_m1_pairwise_evidence/main_analysis/alignment.json`, PASS on all 333): the job's native reads
+equal r6's predictions (z_video, every window's V and S, score_curve) and the placement records per window; `full_l`
+composed from the stored reads decodes to the `adjacent_local` metrics exactly. Comparisons: HateMM 7423 edges /
+14 846 forwards, HateClipSeg 7182 / 14 362, all with images; comparison time 48.2 / 48.0 min per corpus (0.19 s per
+forward), native reads 5.1 / 4.1 min, peak 17.8 / 17.5 GiB. Swap agreement .601 / .669; mean pC .485 / .312;
+P(A) .316 / .426 against P(B) .198 / .262 (position preference s = +1.66 / +2.61 log-odds, removed by the
+symmetrisation); mean |l_ij| 4.30 / 6.32.
+
+Metrics (sole evaluator, fixed r6 decoder; `runs/20261013_m1_pairwise_evidence/analysis/summary.json`):
+
+| arm | HateMM ROC / PR / within | HateClipSeg ROC / PR / within |
+|---|---|---|
+| r6 | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 |
+| `full_l` (pointwise, same frames; = `adjacent_local`) | .8977 / .6887 / .7690 | .7383 / .6893 / .6637 |
+| `cmp_order` (primary: ordering from the comparisons only) | .8989 / .6950 / .7591 | .7384 / .6871 / .6605 |
+| `cmp_sum` (secondary: `l + u`) | .8969 / .6931 / .7707 | .7394 / .6866 / .6570 |
+
+| reading | `cmp_order` | `cmp_sum` |
+|---|---|---|
+| within vs r6 | +.0083 / +.0231 | +.0199 / +.0196 |
+| pooled vs r6 (ROC, PR) | +.0018, +.0008 / +.0216, +.0161 | −.0002, −.0011 / +.0225, +.0155 |
+| within vs `full_l` (mechanism gate, ≥ +.01 both) | **−.0099 / −.0033** | **+.0017 / −.0068** |
+| permutation band, within vs r6 (six seeds) | −.0158 to +.0009 / −.0518 to −.0124 | +.0101 to +.0255 / −.0078 to +.0094 |
+| above every seed | +.0074 / +.0355 | −.0056 / +.0102 |
+| rule 8 vs r6 | FAIL (no metric ≥ .01 in both corpora) | PASS (within) |
+| mechanism | not supported | not supported |
+
+Reading per the declaration: the primary fails both gates. The secondary passes the performance gate against r6, but
+not the mechanism gate: it is `full_l` plus a term that changes within by +.0017 / −.0068, inside its permutation band
+on HateMM. The comparisons do carry ordering information (the primary is far above its permuted versions, +.007 /
++.036), but less than the pointwise read with the same frames already carries.
+
+Diagnostics (rule 10, labels read in `report` only; graph edges whose two windows carry different labels):
+
+| | HateMM (901 pairs, 75 videos) | HateClipSeg (1996 pairs, 96 videos) |
+|---|---|---|
+| accuracy of the comparison `sign(l_ij)` | .630 | .554 |
+| `sign(l_i − l_j)` (same frames, pointwise) | .586 | .575 |
+| `sign(v_i − v_j)` / `sign(E_i − E_j)` / `sign(a_i − a_j)` | .592 / .597 / .616 | .563 / .584 / .556 |
+| gain of the comparison over `l`, 95 % interval over videos | +.044 [−.010, +.104] | −.021 [−.055, +.010] |
+| both windows fused-positive under r6: comparison / `l` | .578 / .516 (531 pairs) | .520 / .540 (661 pairs) |
+| Spearman(u, l) inside videos | .39 (197 videos) | .57 (118) |
+| within-video SD of u / of l | 3.56 / 2.70 | 5.56 / 4.10 |
+
+## Test error analysis after the run (rule 10, 2026-10-13; `error_analysis.py`, `runs/20261013_m1_pairwise_evidence/error_analysis/summary.json`)
+
+Files read: the main records, the decoded predictions of `full_l` / `cmp_order` / `cmp_sum` / `cmp_order_d1`,
+`data/gt_4fps`, the placement records. Findings:
+
+- Reliability does not predict benefit. Decoded per-video within on the within videos, split at the median swap
+  agreement: HateMM above the median (40 videos, agreement .83) `cmp_order − full_l` = −.0132, at or below (44, .30)
+  −.0069; HateClipSeg +.0027 / −.0089. The videos where the model compares consistently are not where the
+  comparison ordering helps.
+- Edge quality: on HateMM the comparison beats `l` on consistent edges (.675 vs .612, 508 pairs) and on low-pC edges
+  (.666 vs .624); on HateClipSeg even consistent edges are only equal (.582 vs .580) and inconsistent edges are at
+  chance (.482). So on HateClipSeg no edge filtering can lift the comparison above the pointwise read.
+- Temporal distance: comparisons between neighbouring windows are useless. Gap 1: swap agreement .42 / .51, accuracy
+  .48 / .42 on label-different pairs (pointwise `l` .48 / .54); gap > 5: agreement .57 / .73, accuracy .667 / .560
+  (`l` .608 / .580). Adjacent windows look alike and the model answers inconsistently; only distant pairs are
+  compared reliably. This rules out a "difference between consecutive windows" reading for this model.
+- Aggregated ordering before the decoder, all label-different window pairs of the within videos, macro over videos:
+  HateMM u .629, l .588, v .652, l+u .610; HateClipSeg u .570, l .608, v .566, l+u .603. With the max(V, S) fusion:
+  HateMM r6 .745, `full_l` .719, `cmp_order` .711; HateClipSeg `full_l` .654, `cmp_sum` .652, r6 .631, `cmp_order`
+  .628. On HateMM the window-level accuracies order the arms the opposite way from the decoded within (r6 highest
+  before decoding, lowest after), so differences of this size at the window level are not what the decoded metric
+  reflects; on HateClipSeg the comparison is below the pointwise read at every level.
+- Graph density: half the edges (distance-1 ring only, `cmp_order_d1`) gives within +.0098 / +.0161 against
+  +.0083 / +.0231 for the full graph; doubling the edges would not change the HateMM picture.
+
+## Decision (2026-10-13)
+
+The comparison does not add within-video ordering information beyond the pointwise read with the same frames: on
+HateClipSeg it is below that read at the edge level, at the aggregated level and after decoding, even on its most
+consistent edges; on HateMM it is at most equal and loses after decoding. Together with PWC (timestamp-referenced
+comparison, 2026-09-12) this closes the pairwise family for this model under both evidence presentations: H2 holds.
+No comparison-side revision can reach +.01 over `full_l` on HateClipSeg (its best edges are equal to `l`), so the
+three rule-9 revisions are not spent. The candidate is archived (item 33); `cmp_sum`'s passing of the performance
+gate is the frame input change already measured as `adjacent_local`, not the comparison, and is not credited.
+What the run adds for the next step: neighbouring windows cannot be told apart by this model (no difference reading),
+distant pairs can; the model's within-video relative judgements and its absolute ones carry the same information.
