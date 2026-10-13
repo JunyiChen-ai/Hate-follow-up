@@ -74,9 +74,11 @@ def aligned_words(dataset):
     return out
 
 
-def aligned_slice(rec, t1, t2):
+def aligned_slice(rec, t1, t2, fallback):
+    """Words whose midpoint lies in [t1, t2); when the video has no alignment (`no_text`, `failed`, missing) the
+    proportional slice is used instead (README §2) and the record's `aligned_status` says so."""
     if rec is None or rec["status"] != "aligned":
-        return None
+        return fallback
     return " ".join(w["w"] for w in rec["words"] if t1 <= (w["s"] + w["e"]) / 2 < t2)
 
 
@@ -158,7 +160,7 @@ def read(j, row, video_index, segments, words, verify):
     traces = []
     for i, (t1, t2) in enumerate(wins):
         body = window_text(segments, t1, t2)
-        abody = aligned_slice(words, t1, t2)
+        abody = aligned_slice(words, t1, t2, body)
         local = [(NATIVE_LABEL.format(time=t), p) for t, p in frames if t1 <= t < t2]
         trace = dict(i=i, bounds=[t1, t2], text_prop=body, text_aligned=abody, local_times=[t for t, _ in frames if t1 <= t < t2],
                      swap=swap[i], nbr=nbr[i])

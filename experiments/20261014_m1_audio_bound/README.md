@@ -196,3 +196,24 @@ Qwen3-Omni-30B-A3B-Thinking span baseline on HateMM), LELA (training-free, speec
 - Extra records in the full run (diagnostic, not gates): the audio read on ASR-silent windows split by gold; a
   second swap partner = the neighbouring window (`i+1`, last window takes `i−1`) in addition to the random
   derangement; the fraction of windows whose aligned slice differs from the proportional slice.
+
+## 10. Implementation notes (2026-10-14, before the smoke)
+
+- Code: `omni_judge.py` (Qwen3-Omni thinker with the r6 conversation layout, one prefix cache per video, branches
+  restored with `crop`, explicit 3-D rope positions for every suffix; audio tokens 13 per second: an 8 s clip is 104
+  tokens, a 3 s clip 39), `measure_audio.py` (per-video records and per-arm predictions in the r6 schema),
+  `analyze.py` (binding checks, fixed r6_bma decode, gates), `extract_audio.py`, `align_words.py`,
+  `launch/lab1_align.sbatch`, `launch/campus3_run.sbatch`. CPU plumbing of the conversation (prefix text and image
+  tokens 91 per frame as r6, verdict suffix, audio and image suffixes, rope positions) was checked on sc474397 with
+  the processor and the thinker's own `get_rope_index` before any GPU run.
+- Inputs: `data/audio16k/` (ffmpeg, 16 kHz mono; `PROVENANCE.md`), `data/asr_whisper_aligned/` (MMS_FA forced
+  alignment, Slurm 410 on sc474397: HateMM 208 aligned / 5 without text / 2 failed where Whisper's repeated text is
+  longer than the audio, HateClipSeg 118 aligned; median word 0.14 / 0.18 s, 10 % / 7 % of words shorter than 40 ms;
+  `PROVENANCE.md`). Videos without an alignment use the proportional slice for `speech_aligned` and are counted.
+  The window's 0.5 fps frames are read from the validated cache `data/temporal_retrieved_kv/` (2026-10-07) without
+  re-decoding the video. A clip shorter than 400 samples (25 ms) is zero-padded to 400.
+- Machine: uoa-campus3 (foscsmlprd03), conda env `HateVLM` under `/data/jehc223/home/miniconda3` (torch 2.11.0+cu128,
+  transformers 5.15.1, the versions of the lab `HateVLM` env), model weights under the repository's `.cache/hf`
+  (66 GB), one H200 per job. Smoke: `SMOKE=1 DATASET="HateMM HateClipSeg" NAME=smoke`; main: one job per corpus.
+- Reviewer's extra control `audio_nbr` (the neighbouring window's clip) is measured alongside the random
+  derangement `audio_swap`; `audio_nbr` is diagnostic, `audio_swap` is the M1 gate.
