@@ -218,6 +218,15 @@ track, one prefix and two branch forwards per window (visual local + audio) — 
 _139, _132 and bit_6aHW6jocI9kJ, five window-centre frames of silent positive windows, and the follow-up speech AUC
 split in §4. These informed the hypothesis and the choice of controls. No constant was chosen from them.
 
+- 2026-10-14 (after the main runs): read `runs/20261014_m1_audio_bound/main_decoded/<arm>/metrics.json`,
+  `main_raw/<arm>/metrics.json`, `runs/20260926_twolevel/r6_bma/metrics.json`,
+  `runs/20261007_m1_streamingtom/placement_controls_main_decoded/adjacent_local/{metrics.json,predictions.jsonl}`;
+  `error_analysis.py` read `data/gt_4fps/{HateMM,HateClipSeg}.npz` (`y4`) against the window reads in
+  `main/records/` and the decoded curves of every arm. Findings in §11 (window-level AUC per branch, silent windows,
+  concentration of the gain). Diagnostic decodes with the video verdict swapped between the audio arm and r6
+  (`main_decoded_diag/`). Design change from these reads: none to candidate 43; the follow-up control of §11
+  (aligned slice under the Qwen3-VL reader) was declared from the aligned − prop result and the reader attribution.
+
 ## 9. Rule-4 review outcome and additions (2026-10-14)
 
 `docs/reviews/20261014_m1_audio_bound_novelty.md`: PASS. Closest prior work: TANDEM (2601.11178; trained with
@@ -258,3 +267,78 @@ Qwen3-Omni-30B-A3B-Thinking span baseline on HateMM), LELA (training-free, speec
   (66 GB), one H200 per job. Smoke: `SMOKE=1 DATASET="HateMM HateClipSeg" NAME=smoke`; main: one job per corpus.
 - Reviewer's extra control `audio_nbr` (the neighbouring window's clip) is measured alongside the random
   derangement `audio_swap`; `audio_nbr` is diagnostic, `audio_swap` is the M1 gate.
+
+## 11. Results (2026-10-14, development-selected; uoa-campus2 Slurm 24812 HateMM / 24813 HateClipSeg, one A100 80 GB each, about 2 h each)
+
+Records `runs/20261014_m1_audio_bound/main/` (merged from `main_HateMM`, `main_HateClipSeg`; 215 + 118 videos, 3768 +
+3591 windows), `main_analysis/checks.json` CHECK_PASS (proportional slice present exactly where r6 had a speech read,
+every swap a derangement, no label read), metrics `main_decoded/<arm>/metrics.json` (fixed r6_bma time level) and
+`main_raw/<arm>/metrics.json` (window reads alone), table `main_analysis/table.txt`, gates `main_analysis/summary.json`.
+
+| arm (time level r6_bma) | HateMM ROC / PR / within | HateClipSeg ROC / PR / within |
+|---|---|---|
+| r6_bma (current method) | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 |
+| adjacent_local (r6 + in-window frames, Qwen3-VL; `runs/20261007_m1_streamingtom/placement_controls_main_decoded/adjacent_local/metrics.json`) | .8977 / .6887 / .7690 | .7383 / .6893 / .6637 |
+| **audio** (visual_local + speech_audio) | **.9043 / .7125 / .8107** | .6919 / .6622 / **.6693** |
+| text_aligned | .8998 / .6941 / .7883 | .6887 / .6622 / .6661 |
+| text_prop | .9002 / .7004 / .7760 | .6890 / .6619 / .6408 |
+| audio_swap (deranged clips) | .9009 / .6974 / .6584 | .6873 / .6539 / .5817 |
+| audio_nbr (neighbour clip) | .9035 / .7104 / .7452 | .6905 / .6601 / .6473 |
+| r6_inputs (Omni reader, r6 inputs) | .9000 / .7016 / .7699 | .6726 / .6461 / .6292 |
+
+Window reads alone (no time level), audio: HateMM .8562 / .6619 / .7350, HateClipSeg .7089 / .6658 / .6406; the other
+arms are in `main_analysis/table.txt`.
+
+**Gates (§3).** Performance: within +.060 / +.032 (both ≥ .01) but HateClipSeg pooled ROC −.025 and PR −.009 are
+losses beyond the floor → **performance gate fails**. M1 binding (audio − audio_swap within) +.152 / +.088 → passes;
+the deranged clips fall below r6_bma on both corpora, so the audio content is read for its own window, not as
+context. M2 hearing (audio − text_aligned within) +.022 / +.003 → fails on HateClipSeg (passes on HateMM alone).
+aligned − prop within +.012 / +.025 → passes. Reader swap (r6_inputs − r6_bma) within +.019 / −.008 (not below
+−.02), but pooled ROC −.044 on HateClipSeg. Declared reading: **binding by alignment only** — the aligned-text variant
+carries the HateClipSeg gain and the audio reader is not needed there; on HateMM the audio read adds +.022 within
+beyond the aligned text. The same-model comparator of §9 (zero-shot whole-video span output) was not run because the
+performance gate failed.
+
+**Where the HateClipSeg pooled loss comes from (diagnostic decodes, `main_decoded_diag/`, `diag_keyswap/README.txt`).**
+Swapping the video verdict: the audio arm with Qwen3-VL's verdict stays at .696 / .651 / .669 (loss persists); r6's
+window reads with the Omni verdict fall to .640 / .608 / .638. So the Omni verdict is worse than Qwen3-VL's on
+HateClipSeg, but the arm's pooled loss comes mainly from the window reads: with identical inputs (text_prop vs
+adjacent_local) the Omni reader is −.049 ROC / −.027 PR / −.023 within on HateClipSeg and +.003 / +.012 / +.007 on HateMM.
+
+**Error analysis (rule 10, `error_analysis.py` → `main_analysis/error_analysis.{json,txt}`; test GT read, §8).**
+- Window-level AUC within video (mean over videos with both classes). HateMM: speech_audio .787, speech_aligned .687,
+  speech_prop .656, visual_local .578, speech_swap .503 (chance), speech_nbr .590. HateClipSeg: speech_aligned .636,
+  speech_audio .628, speech_prop .599, visual_local .596, swap .509, nbr .538. On HateMM the audio read is a far better
+  window-level speech read than any text slice; on HateClipSeg it equals the aligned slice.
+- ASR-silent windows (the silent-positive error class of the 2026-10-14 diagnosis). HateMM: 329 windows (8.7 %), 46
+  gold-positive in 13 videos; AUC of the audio read on these windows .848 against .633 for the visual fallback the text
+  arms use; silent positives' rank percentile within video .58 (audio) vs .51 (text_aligned) vs .29 (text_prop).
+  HateClipSeg: 450 silent windows (12.5 %), 210 gold-positive (47 %) in 48 videos; audio read .662 vs visual fallback
+  .690 — the silent positives there are visual (HateClipSeg's gold is offensive content, not speech), and hearing
+  silence does not help.
+- Concentration of the within gain (decoded curves, per video, 84 / 99 videos defined for every arm). HateMM
+  audio − r6_bma mean +.060 but median +.003, 51 % of videos improved: +.170 on the 12 videos with a silent positive,
+  +.309 on the 5 speech-poor videos, +.093 on the 47 videos outside the edge-annotation structure vs +.018 on the 37
+  edge-structure videos; audio − adjacent_local +.042. HateClipSeg audio − r6_bma +.032 (median +.016, 54 %
+  improved), audio − adjacent_local +.006; text_aligned − text_prop +.025 on every group; text_prop − adjacent_local
+  −.023 (the reader, not the inputs).
+- Alignment vs proportional slice: the two slices differ in 92 % / 94 % of windows; aligned − prop within +.012 /
+  +.025 decoded, +.031 / +.037 at the window level.
+
+**Disposition.** Not promoted: the performance gate fails on HateClipSeg pooled metrics and the failure is the
+reader (Qwen3-Omni ranks HateClipSeg frames across videos worse than Qwen3-VL-8B with the same inputs), not the
+mechanism. Two effects survive the controls: (a) the aligned word slice beats the proportional slice on both corpora
+(+.012 / +.025 within under the Omni reader); (b) hearing the window's audio beats the aligned text on HateMM only
+(+.022 within; +.10 window AUC; the silent-positive class). Rule 9: an improvement exists, so the candidate is
+modified and continued rather than archived.
+
+**Follow-up control (declared 2026-10-14 09:30 before its run; `measure_vl_aligned.py`, uoa-lab1 Slurm 411, one
+RTX 5090).** Effect (a) under the r6 reader: the aligned slice replaces the proportional slice in the r6 speech read
+of Qwen3-VL-8B; the visual reads are the stored ones. Arms: `vl_text_aligned` = max(adjacent_local's visual_local
+read, aligned speech read), compared with adjacent_local; `vl_r6_aligned` = max(r6's native visual read, aligned speech
+read), compared with r6_bma. Same time level, same evaluator. Replay check: the proportional speech read recomputed on
+the first two videos per corpus equals r6's stored read up to kernel numerics. Reading: `vl_text_aligned` within ≥
+adjacent_local + .01 on both corpora with no pooled loss beyond the floor → the aligned slice is a reader-independent
+input improvement and goes to the user as an adoptable change of the r6 inputs (with the frames); otherwise the
+alignment gain is specific to the Omni reader. Output `runs/20261014_m1_audio_bound/vl_aligned/`,
+`vl_aligned_decoded/<arm>/metrics.json`, `vl_aligned_raw/<arm>/metrics.json`.
