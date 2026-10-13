@@ -8,7 +8,7 @@
 # SCOPE=smoke | main ; DATASETS="HateMM HateClipSeg" (default both). The smoke must pass compare_analyze --stage prepare --smoke before main.
 set -euo pipefail
 cd /home/jehc223/Hate-follow-up
-export PATH=/home/jehc223/Hate-follow-up/.cache/envs/HateVLM/bin:$PATH
+source /home/jehc223/miniconda3/bin/activate HateVLM
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 export HF_HOME=/home/jehc223/Hate-follow-up/.cache/hf
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false
