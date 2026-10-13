@@ -342,3 +342,22 @@ adjacent_local + .01 on both corpora with no pooled loss beyond the floor → th
 input improvement and goes to the user as an adoptable change of the r6 inputs (with the frames); otherwise the
 alignment gain is specific to the Omni reader. Output `runs/20261014_m1_audio_bound/vl_aligned/`,
 `vl_aligned_decoded/<arm>/metrics.json`, `vl_aligned_raw/<arm>/metrics.json`.
+
+**Follow-up control outcome (uoa-lab1 Slurm 411, 6 minutes for both corpora; `runs/20261014_m1_audio_bound/vl_aligned/`,
+metrics `vl_aligned_decoded/<arm>/metrics.json`, window reads `vl_aligned_raw/<arm>/metrics.json`).** Replay check:
+the proportional speech read recomputed on the first two videos per corpus equals r6's stored read exactly (max
+|Δ| = 0; the dense Qwen3-VL cached path is deterministic). The aligned slice changes which windows get a speech read
+in 11 % / 18 % of windows (HateMM 216 proportional-only, 209 aligned-only of 3768; HateClipSeg 325 / 322 of 3591).
+
+| arm (Qwen3-VL-8B reader, time level r6_bma) | HateMM ROC / PR / within | HateClipSeg ROC / PR / within | vs its reference |
+|---|---|---|---|
+| vl_r6_aligned = r6 native visual + aligned speech | .8991 / .6949 / .7677 | .7150 / .6794 / .6664 | vs r6_bma +.002 / +.001 / **+.017**; −.002 / +.008 / **+.029** |
+| vl_text_aligned = adjacent_local visual + aligned speech | .9005 / .6973 / .7799 | .7351 / .6942 / .6866 | vs adjacent_local +.003 / +.009 / **+.011**; −.003 / +.005 / **+.023** |
+
+Reading as declared: within ≥ +.01 on both corpora with no pooled loss beyond the floor, for both arms → **the aligned
+word slice is a reader-independent input improvement**, not an Omni effect. Against the current method r6_bma the
+frames + aligned slice configuration is +.003 / +.003 / +.029 on HateMM and +.018 / +.023 / +.049 on HateClipSeg (no
+metric down, within up ≥ .01 on both), which meets the form of the rule-8 promotion gate; it is an input change of the
+r6 reads (like the in-window frames, whose adoption is the user's decision), not a new mechanism, and the HateMM within
+step over adjacent_local (+.011) sits at the noise floor. Candidate 43 proper (the Omni reader hearing the window) is
+not promoted; its surviving finding is the HateMM hearing gain on ASR-silent windows, left open.
