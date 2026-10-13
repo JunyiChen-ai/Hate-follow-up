@@ -94,7 +94,7 @@ def prepare(smoke):
             s['edges']+=1;s['pC']+=[p1,p2];s['abs_l'].append(abs(e['l_ij']));s['s'].append(e['s_ij']);s['nonzero_l']+=e['l_ij']!=0
             for lp in (e['lp_ij'],e['lp_ji']):
                 p=np.exp(np.asarray(lp));p=p/p.sum();s['pA'].append(p[0]);s['pB'].append(p[1])
-            if d1!=0 and d2!=0:s['swap_defined']+=1;s['swap_agree']+=np.sign(d1)==-np.sign(d2)
+            if d1!=0 and d2!=0:s['swap_defined']+=1;s['swap_agree']+=int(np.sign(d1)==-np.sign(d2))
         c=b['checks'];assert c['edges']==len(edges) and c['actual_forwards']==base['calls']+2*len(edges) and c['actual_vision']==1+c['comparisons_with_images']
         s['videos']+=1;s['windows']+=n;s['comparisons_with_images']+=c['comparisons_with_images'];s['covered_local']+=c['covered_local'];s['peak_GiB']=max(s['peak_GiB'],c['peak_GiB'])
         for k in s['seconds']:s['seconds'][k]+=c['times'][k]

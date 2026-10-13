@@ -117,3 +117,27 @@ Outputs: `runs/20261013_m1_pairwise_evidence/{smoke,main}/records/<ds>/<vid>.jso
 `runs/20261007_m1_streamingtom/placement_controls_main/records` (frames, stored reads; no labels),
 `runs/20260926_glr/base_gridA/predictions.jsonl` (r6 reads for binding), `data/gt_4fps/*.npz` (sole evaluator and the
 `report` diagnostics only).
+
+## Pilot on the fixed five (2026-10-13, sc474397 / Slurm 406; no GT read)
+
+Reading job complete for the five videos (158 windows, 316 edges, 632 comparisons, all with images); plumbing asserts
+held (forward and vision counts, native V equal to the placement records per window, A/B/C first-token sets disjoint:
+A {32, 64, 264, 362}, B {33, 65, 293, 425}, C {34, 66, 272, 356}); `prepare --smoke` PASS after one fix in the
+analysis only (a numpy integer in the JSON summary; the reading job is unchanged). Numbers
+(`runs/20261013_m1_pairwise_evidence/smoke_analysis/plumbing_summary.json`):
+
+| | HateMM (3 videos, 192 edges) | HateClipSeg (2 videos, 124 edges) |
+|---|---|---|
+| swap agreement (sign of d flips with the order; edges with d ≠ 0) | .599 | .766 |
+| mean pC | .554 | .173 |
+| letter marginals P(A) / P(B) | .328 / .118 | .490 / .337 |
+| mean position preference s = (d_ij + d_ji)/2 | +1.82 | +2.65 |
+| mean \|l_ij\| | 3.03 | 7.54 |
+| seconds per comparison forward | 0.21 | 0.20 |
+| peak memory | 17.8 GiB | 17.2 GiB |
+
+Pilot rule (declared above, on the pilot edges together): swap agreement 210 / 316 = .66 ≥ .6, mean pC .40 ≤ .8 →
+proceed to the 333 with the declared wording. Noted for the reading of the results: the model prefers position A
+(s ≈ +2 log-odds; the symmetrisation removes it), and on the long HateMM video `hate_video_114` (79 windows,
+158 edges) it answers C in 66 % of the comparisons with swap agreement .54. Cost projection from 0.2 s per
+comparison: HateMM about 50 min, HateClipSeg about 48 min, plus the native reads.
