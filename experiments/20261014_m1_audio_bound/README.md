@@ -186,6 +186,21 @@ measurement stands; |A−S| much larger than both floors → the cached path is 
 bug fixed first. The HateMM main run (job 24812) was submitted alongside the check to keep the GPU busy; it is only
 kept if the check reads "numerics".
 
+**Numerics check outcome (job 24811, `runs/20261014_m1_audio_bound/verify_cache/summary.json`): numerics.** Mean
+absolute difference in log-odds across all windows (hate_video_1, 12 windows / bit_0EHvMSiEHVoc, 29 windows):
+
+| branch kind | A vs S (cached vs standalone) | A vs B (two prefill chunkings) | S vs S2 (two standalone batch shapes) | A vs R |
+|---|---|---|---|---|
+| visual_native text | .254 / .120 | .251 / .110 | .243 / .143 | 0 / 0 |
+| speech_audio | .353 / .189 | .244 / .178 | .426 / .213 | 0 / 0 |
+
+The standalone forward itself moves by as much as the cached-vs-standalone gap when only the batch shape changes, and
+the cached path is deterministic (A = R). So the gap is bf16 mixture-of-experts numerics, not a cache or position
+error; the measurement path is faithful and the main runs proceed. Consequence worth stating with the results: a
+single window read of this reader carries about ±.1–.4 log-odds of kernel-shape noise, the same for every arm
+(Spearman between two numerically equivalent reads of one video .8–.98 for text, .62–.97 for audio on these two
+videos). The declared 1e-3 tolerance was wrong for this reader; it is replaced by this floor comparison.
+
 ## 7. Cost
 
 Per video: one prefix (about 2.4 k text tokens + 20 × 91 image tokens, as r6) and 6 branch forwards per window
