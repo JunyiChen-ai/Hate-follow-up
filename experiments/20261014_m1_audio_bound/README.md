@@ -163,13 +163,37 @@ Checks, all recorded under `runs/20261014_m1_audio_bound/smoke/`:
 Full run: one Slurm job per corpus on uoa-campus3 (H200 143 GB; the model needs about 70 GB in bf16), inside the
 campus budget of two jobs; records rsynced back before any STATUS update.
 
+**Smoke outcome (2026-10-14, uoa-campus2 Slurm job 24810, one A100 80 GB; campus3's queue was held behind four jobs,
+so the full run also goes to campus2).** Five videos, 158 windows; `analyze.py --stage check` on
+`runs/20261014_m1_audio_bound/smoke/` → `smoke_analysis/checks.json`, CHECK_PASS. Checks 2–5 hold: the proportional
+slice is present exactly where r6 had a speech read (158/158), the aligned slice differs from the proportional one in
+92 % / 94 % of windows, every swap is a derangement, 8 s clips give 104 audio tokens (the short last windows 3–35),
+no track shorter than the manifest duration by more than 0.1 s, `GT_read` false everywhere, peak 61.4 GiB, about 2.1 s
+of GPU time per window for all seven branches (0.25 visual_native, 0.42 visual_local, 0.21 speech_prop, 0.21
+speech_aligned, 0.32 each audio branch) plus 1–6 s per prefix. The rule-6 code review (`docs/reviews/
+20261014_m1_audio_bound_code.md`) found one blocker before the smoke, a wrong forward-count formula that would have
+stopped every video; fixed in d359ba8, the smoke ran on the fixed code.
+
+Check 1 did **not** hold as declared: the cached-branch margin and the standalone forward differ by 0.04–0.55
+log-odds (per video max .55 / .23 / .18 / .32 / .13), on text branches as much as on audio and image branches, with
+the token ids equal. The 1e-3 tolerance was carried over from the dense Qwen3-VL seam check; a mixture-of-experts
+model in bf16 can route tokens to different experts when the kernel shapes change, so the tolerance may simply be
+wrong for this reader. `verify_cache.py` (campus2 job 24811, declared before its run) settles it on two smoke videos,
+all windows, two branch kinds (visual_native text, speech_audio): A cached on the normal prefix, B cached on a
+prefix prefilled in two chunks, S standalone, S2 standalone with the sequence duplicated along the batch, R = A
+repeated. Reading: |A−S| of the same size as |A−B| and |S−S2| → numerics, the cached path is faithful and the
+measurement stands; |A−S| much larger than both floors → the cached path is wrong, the main runs are cancelled and the
+bug fixed first. The HateMM main run (job 24812) was submitted alongside the check to keep the GPU busy; it is only
+kept if the check reads "numerics".
+
 ## 7. Cost
 
 Per video: one prefix (about 2.4 k text tokens + 20 × 91 image tokens, as r6) and 6 branch forwards per window
 (two visual, four speech), each a few hundred tokens on the cache; audio encoding of one 8 s clip per window twice
 (own and swapped). With 3 B active parameters on an H200, the estimate is 0.15–0.3 s per branch forward: 7359
 windows × 6 × 0.25 s ≈ 3 h for both corpora plus prefixes and model load; declared budget 4 h of H200 time per
-corpus pair (confirmed on the smoke run). One-off: model download (about 70 GB), audio decoding (CPU, minutes),
+corpus pair. Measured on the smoke (A100 80 GB, §6): 2.1 s per window for all seven branches, i.e. about 4.3 h for
+both corpora on one A100, run as one job per corpus (about 2 h each); peak memory 61.4 GiB. One-off: model download (about 70 GB), audio decoding (CPU, minutes),
 forced alignment (uoa-lab1 Slurm, under 15 min of GPU). On a new video the method needs: ASR as now, the audio
 track, one prefix and two branch forwards per window (visual local + audio) — the same count as `adjacent_local`.
 
