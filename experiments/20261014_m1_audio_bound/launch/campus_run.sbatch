@@ -4,11 +4,13 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --output=runs/20261014_m1_audio_bound/slurm_%j.out
-# Usage (on uoa-campus3, repo root): DATASET=HateMM NAME=main_HateMM sbatch experiments/20261014_m1_audio_bound/launch/campus3_run.sbatch
+# Usage (on uoa-campus2 or uoa-campus3, repo root): DATASET=HateMM NAME=main_HateMM sbatch experiments/20261014_m1_audio_bound/launch/campus_run.sbatch
+#        campus3 (H200) has its miniconda under /data/jehc223/home, campus2 (A100 80G) under /data/jehc223; chosen by hostname
 #        smoke: SMOKE=1 DATASET="HateMM HateClipSeg" NAME=smoke sbatch ...
 set -euo pipefail
 cd /data/jehc223/Hate-follow-up
-source /data/jehc223/home/miniconda3/bin/activate HateVLM
+case $(hostname) in foscsmlprd03*) CONDA=/data/jehc223/home/miniconda3;; *) CONDA=/data/jehc223/miniconda3;; esac
+source $CONDA/bin/activate HateVLM
 export HF_HOME=/data/jehc223/Hate-follow-up/.cache/hf
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=8 PYTORCH_ALLOC_CONF=expandable_segments:True

@@ -203,7 +203,7 @@ Qwen3-Omni-30B-A3B-Thinking span baseline on HateMM), LELA (training-free, speec
   restored with `crop`, explicit 3-D rope positions for every suffix; audio tokens 13 per second: an 8 s clip is 104
   tokens, a 3 s clip 39), `measure_audio.py` (per-video records and per-arm predictions in the r6 schema),
   `analyze.py` (binding checks, fixed r6_bma decode, gates), `extract_audio.py`, `align_words.py`,
-  `launch/lab1_align.sbatch`, `launch/campus3_run.sbatch`. CPU plumbing of the conversation (prefix text and image
+  `launch/lab1_align.sbatch`, `launch/campus_run.sbatch` (campus2 A100 80G or campus3 H200, conda path chosen by hostname). CPU plumbing of the conversation (prefix text and image
   tokens 91 per frame as r6, verdict suffix, audio and image suffixes, rope positions) was checked on sc474397 with
   the processor and the thinker's own `get_rope_index` before any GPU run.
 - Inputs: `data/audio16k/` (ffmpeg, 16 kHz mono; `PROVENANCE.md`), `data/asr_whisper_aligned/` (MMS_FA forced
