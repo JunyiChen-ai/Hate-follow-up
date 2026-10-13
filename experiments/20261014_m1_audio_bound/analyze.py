@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Candidate 43 analysis on sc474397 (CPU): STAGE=check | evaluate | report  (README §3 gates, §6 checks).
+"""Candidate 43 analysis on sc474397 (CPU): STAGE=merge | check | evaluate | report  (README §3 gates, §6 checks).
+
+merge:    --from main_HateMM main_HateClipSeg --name main: one-corpus runs combined into one run folder.
 
 check:    every record of runs/20261014_m1_audio_bound/<name>/records: GT_read False, derangement, the proportional
           text slice present exactly where r6 had a speech read, standalone-vs-cached margins, audio token counts,
@@ -37,6 +39,34 @@ def records(path):
 
 def metric(path):
     return {d["dataset"]: d for d in json.loads(Path(path).read_text())["per_dataset"]}
+
+
+def merge(name, sources):
+    """Combine one-corpus runs (one Slurm job per corpus, CLAUDE.md dispatch rule) into <name>: records copied per
+    corpus, per-arm predictions concatenated in source order, config from the first source with the corpus list and
+    the source folders recorded."""
+    import shutil
+    root = EXP / name
+    assert not root.exists(), root
+    cfgs = [json.loads((EXP / s / "config.json").read_text()) for s in sources]
+    keys = [k for k in cfgs[0] if k not in ("date", "command", "host", "datasets")]
+    assert all(c[k] == cfgs[0][k] for c in cfgs for k in keys), "source runs differ in configuration"
+    datasets = [d for c in cfgs for d in c["datasets"]]
+    assert sorted(datasets) == sorted(DATASETS), datasets
+    (root / "records").mkdir(parents=True)
+    for src, c in zip(sources, cfgs):
+        for ds in c["datasets"]:
+            shutil.copytree(EXP / src / "records" / ds, root / "records" / ds)
+    for arm in ARMS:
+        (root / arm).mkdir()
+        lines = "".join((EXP / src / arm / "predictions.jsonl").read_text() for src in sources)
+        (root / arm / "predictions.jsonl").write_text(lines)
+        (root / arm / "config.json").write_text(json.dumps({**cfgs[0], "arm": arm, "datasets": datasets, "merged_from": list(sources)}, indent=2) + "\n")
+    (root / "config.json").write_text(json.dumps({**cfgs[0], "datasets": datasets, "merged_from": list(sources),
+                                                   "merged_hosts": [c["host"] for c in cfgs]}, indent=2) + "\n")
+    for src in sources:
+        shutil.copy(EXP / src / "run.log", root / f"run_{src}.log")
+    print("MERGED", name, "from", sources, "records", {ds: len(list((root / "records" / ds).glob("*.json"))) for ds in DATASETS}, flush=True)
 
 
 def check(name):
@@ -173,11 +203,14 @@ def report(name):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=("check", "evaluate", "report"), required=True)
+    ap.add_argument("--stage", choices=("merge", "check", "evaluate", "report"), required=True)
+    ap.add_argument("--from", dest="sources", nargs="+", help="merge: one-corpus run folders in corpus order")
     ap.add_argument("--name", required=True)
     ap.add_argument("--arm")
     a = ap.parse_args()
-    if a.stage == "check":
+    if a.stage == "merge":
+        merge(a.name, a.sources)
+    elif a.stage == "check":
         check(a.name)
     elif a.stage == "evaluate":
         assert a.arm in ARMS
