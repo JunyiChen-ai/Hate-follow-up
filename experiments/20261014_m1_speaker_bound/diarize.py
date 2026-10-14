@@ -31,6 +31,16 @@ def load_pipeline(name, device):
     import torch
     from pyannote.audio import Pipeline
 
+    # pyannote 3.3.2 checkpoints hold a few non-tensor globals; torch >= 2.6 refuses them under weights_only=True.
+    # The checkpoints come from pyannote's official gated repositories, so full unpickling is accepted here.
+    _orig_load = torch.load
+
+    def _load(*args, **kwargs):
+        kwargs["weights_only"] = False
+        return _orig_load(*args, **kwargs)
+
+    torch.load = _load
+
     tok = hf_token()
     try:
         pipe = Pipeline.from_pretrained(name, token=tok)
