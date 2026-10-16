@@ -110,11 +110,20 @@ def main():
 
     def direction(X, mask, labels):
         d = X[mask & labels].mean(0) - X[mask & ~labels].mean(0)
-        return d / d.norm(dim=-1, keepdim=True)
+        nrm = d.norm(dim=-1, keepdim=True)
+        return torch.where(nrm > 0, d / nrm.clamp_min(1e-12), torch.zeros_like(d))   # a constant point (e.g. the last token at the embedding output) gives a zero direction
+
+    def direction_norm(d):
+        nrm = d.norm(dim=-1, keepdim=True)
+        return torch.where(nrm > 0, d / nrm.clamp_min(1e-12), torch.zeros_like(d))
 
     def aucs_of(X, d, mask, labels):
         proj = (X * d[None]).sum(-1)
-        return [float(roc_auc_score(labels[mask].numpy(), proj[mask, l].numpy())) for l in range(L)], proj
+        out = []
+        for l in range(L):
+            p = proj[mask, l].numpy()
+            out.append(.5 if (not np.isfinite(p).all()) or np.ptp(p) == 0 else float(roc_auc_score(labels[mask].numpy(), p)))
+        return out, proj
 
     validity = {}
     for name, X in (("body", body), ("last", last)):
@@ -145,10 +154,17 @@ def main():
                 for c in carrier[fit].unique().tolist():      # permute the protected labels among the 32 fillers of each fit carrier
                     idx = torch.nonzero(fit & (carrier == c))[:, 0]
                     lab[idx] = prot[idx][torch.randperm(len(idx), generator=g)]
-                ds_ = direction(X, fit, lab)
+                ds_raw = direction(X, fit, lab)
+                cos_raw = [float((d[l] * ds_raw[l]).sum()) for l in range(L)]
+                # README §2: a within-carrier label permutation still leaves a random share of protected terms on each side, so
+                # the raw shuffled direction keeps a topic component of random sign; the control removes it and re-normalises
+                ds_ = ds_raw - (ds_raw * d).sum(-1, keepdim=True) * d
+                ds_ = direction_norm(ds_)
                 torch.save(ds_.contiguous(), DATA / f"directions_shuf{k}.pt")
                 a_s, _ = aucs_of(X, ds_, test, prot)
-                shuf[f"shuf{k}"] = dict(auc_test_per_layer=a_s, max_auc_test=max(a_s), cos_with_topic=[float((d[l] * ds_[l]).sum()) for l in range(L)])
+                a_raw, _ = aucs_of(X, ds_raw, test, prot)
+                shuf[f"shuf{k}"] = dict(auc_test_per_layer=a_s, max_auc_test=max(a_s), min_auc_test=min(a_s), cos_with_topic=[float((d[l] * ds_[l]).sum()) for l in range(L)],
+                                        raw_cos_with_topic=cos_raw, raw_auc_test_per_layer=a_raw)
             validity["shuffled_controls"] = shuf
         logging.info("%s: best layer %d test AUC %.4f; term-held-out best %.4f; attack-carrier test best %.4f (layers 0..%d: %s)", name, best, aucs[best],
                      max(aucs_terms), max(aucs_test_attack), L - 1, " ".join(f"{a:.2f}" for a in aucs))
@@ -164,7 +180,8 @@ def main():
         f"float32 tensors ({L} x hidden), one unit vector per residual point (embedding output + 36 decoder-layer outputs), "
         "= normalised mean(protected) - mean(non-protected) over the even-indexed non-hostile carriers, residual averaged over the sentence "
         "tokens inside the speech question (body) or taken at the last position (last). directions_body_all_carriers.pt: the same with the "
-        "hostile carriers included (diagnostic). directions_shuf{k}.pt: controls with the protected labels permuted within each fit carrier (seeds 0-4). "
+        "hostile carriers included (diagnostic). directions_shuf{k}.pt: controls with the protected labels permuted within each fit carrier (seeds 0-4), "
+        "then orthogonalised against the topic direction per layer and re-normalised. "
         "Validity on the odd-indexed carriers: "
         f"runs/20261017_m1_topic_removal/directions/validity.json.\n")
     logging.info("D1 %s; C46_DIR_DONE", "PASS" if validity["D1"]["PASS"] else "FAIL")
