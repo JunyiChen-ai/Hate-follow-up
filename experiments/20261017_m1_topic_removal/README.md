@@ -1,7 +1,7 @@
 # 候选 46：读窗前去掉"话题"方向（topic-direction removal at read time）
 
 声明日期 2026-10-17（NZDT），主机 sc474397（uoa-lab1）。自主迭代第 2 个候选（第 1 个候选 45 已归档）。
-本文件 §2 的常数、方向构造、门全部在任何运行之前写下。**状态：已声明，待规则 4 审查。**
+本文件 §2 的常数、方向构造、门全部在任何运行之前写下。**状态：规则 4 审查 PASS（2026-10-17，`docs/reviews/20261017_m1_topic_removal_novelty.md`）；按其建议改了拟合集、对照与词表（上面已注明）；跑方向提取中。**
 
 ## 1. 机制与来源
 
@@ -36,47 +36,56 @@ GT `data/gt_4fps/<语料>.npz` 只在预检分析与评测里读。
 - 载体句 40 条，每条一个槽 `{G}`，覆盖中性报道 8、称赞 4、攻击 8、提问 4、转述 4、反驳 4、日常 8（§3 文件里逐条列出）。
 - 填充词两组各 16 个：**受保护群体**（种族、宗教、民族、国籍、性别、性取向、残障：Black people、white people、Jews、
   Muslims、Christians、Asians、Mexicans、immigrants、Arabs、gay people、trans people、women、disabled people、Indians、
-  Africans、Hispanics）与**非受保护群体**（accountants、tourists、teenagers、landlords、vegans、gamers、politicians、
-  customers、drivers、lawyers、influencers、neighbours、students、bankers、cyclists、managers）。40 × 32 = 1280 句。
+  Africans、Hispanics）与**非受保护群体**（accountants、tourists、commuters、landlords、vegans、gamers、politicians、
+  car dealers、delivery drivers、lawyers、influencers、neighbours、students、bankers、football fans、office workers）。
+  40 × 32 = 1280 句。（规则 4 审查建议后、运行前改动：teenagers 换成 commuters，年龄在多数政策里也是受保护属性；
+  非受保护组加入四个两词短语，与受保护组的五个 "X people" 平衡。）
 - 每句放进与读窗相同的提问框架：文字前缀（系统消息、规则、阅读指令、转录 = `[0.0s-8.0s] 句子`，无帧、无立场轮）+
   `yesno_question(0, 1, 0.0, 8.0, 句子, "speech")`，一次前向。在嵌入输出和 36 个解码层输出（共 37 个位置）记录
   **句子 token 位置的平均残差**（主，`body`）和**答案位置的残差**（只报告，`last`）。
-- 方向 û_l = normalize(mean_受保护 − mean_非受保护)，每层一个，用**偶数序号载体句**（20 条 × 32）算；
-  **奇数序号载体句**留作检验。存 `data/topic_direction/qwen3vl8b/{directions_body.pt, directions_last.pt, bank.json,
-  PROVENANCE.md}`（37 × 4096 fp32 各 0.6 MB，是方法常数，不是审计张量）。
-- 随机对照方向：5 组，每组 37 个各自独立的单位高斯随机向量（种子 0–4），同样的消除流程。
+- 方向 û_l = normalize(mean_受保护 − mean_非受保护)，每层一个，用**偶数序号、非攻击的载体句**（16 条 × 32 = 512 句）算；
+  8 条攻击载体句（序号 12–19）不进拟合：它们换上受保护群体就从"敌意"变成"违规"，会把"违规"混进话题方向（规则 4 审查
+  建议后、运行前定下）。**奇数序号载体句**（20 条 × 32，含 4 条攻击句）留作检验。
+  存 `data/topic_direction/qwen3vl8b/{directions_body.pt, directions_last.pt, directions_body_all_carriers.pt,
+  directions_shuf0..4.pt, bank.json, PROVENANCE.md}`（37 × 4096 fp32 各 0.6 MB，是方法常数，不是审计张量）。
+- **对照方向（匹配构造）**：把每条拟合载体句的 32 个填充词的受保护标签随机打乱（种子 0–4），用同样的均值差公式得到
+  5 组"打乱标签"方向，构造噪声相同、不含话题。另加 1 组单位高斯随机方向（种子 0）只作参考：4096 维里随机方向几乎
+  不改变任何东西，不是有力的对照。
 
 ### 读窗时的消除
 - 对语音分支的前向（窗头 + 本窗文本 + 提问 + 助手回合头，即缓存之后新进的全部 token）在嵌入输出和每个解码层输出上
   挂 hook：h ← h − (h·û_l)û_l，作用于该前向的全部位置、全部 37 层。前缀缓存不改；画面分支不改；整片裁定不改。
   读数 = 消除后的 Yes/No 对数几率 `z_speech_abl`。读完 `cache.crop` 回滚、rope 偏移恢复（同 `src/stance_cache.margin`）。
-- 同一窗另读 5 次随机方向消除 `z_speech_rand[k]`（对照）。前 2 个视频 / 语料另回放一次无消除的 r6 语音读数作核对。
+- 同一窗另读 5 次打乱标签方向消除 `z_shuf[k]`（对照）和 1 次高斯随机方向消除 `z_rand[0]`（参考）。前 2 个视频 / 语料
+  另回放一次无消除的 r6 语音读数作核对。
 
 ### 接入方法的方式（预检通过后才做）
 - `z_speech_abl` 取代语音链的发射（`z_speech`）；`z_visual` 不变；视频键 K = z_video + 窗 `z` 均值**保持 r6 的值**
   （与候选 45 相同，`z` 原样取 r6）。M2 参数与 r6_bma 完全相同（`twolevel_r2.py --noleak --transform nscore --key calib
   --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2`）；M3 不变。
 - 原始 `score_curve` = max(z_visual, z_speech_abl)（两者本来同量纲，不需要仿射），只供原始读数表。
-- 消融：语音链换回 r6 的判断读数（= r6_bma）；随机方向消除（= 对照）。
+- 消融：语音链换回 r6 的判断读数（= r6_bma）；打乱标签方向消除（= 对照）。
 - 新视频代价：与 r6 相同的调用次数（语音分支多了 37 个投影，可忽略）；方向是一次性常数。
 
 ### 预检（规则 10：读 test GT 做分析；一次 GPU 运行同时供预检与完整解码）
 - 窗集合、标签、窗级 within 的定义与候选 45 相同：within 可计视频（84 / 99），有文本的窗，正窗 = 仇恨帧占比 ≥ .5，
   负窗 = 0，其余不计；每个同时有正负窗的视频一个窗级 ROC-AUC，再对视频平均。所有分数在同一批窗上算。
 - **D1 方向成立**（不读 GT）：奇数载体句上，`body` 投影在最佳层把受保护 / 非受保护分开的 AUC ≥ .95；逐层 AUC 全部报告。
+  另报告（不设门）：只用一半填充词拟合、在另一半填充词 × 检验载体句上的 AUC（方向是否只记住了词）；攻击载体句与
+  非攻击载体句分开的检验 AUC；含攻击句拟合的方向与主方向的逐层余弦；打乱标签方向的检验 AUC（应接近 .5）。
   不过 → 方向不成立，不跑读窗。
 - **D2 判断还在**：消除后语音读数在全部有干净标签的文本窗上的**合并**窗级 AUC（所有视频，不分视频）
   ≥ r6 `z_speech` 的合并 AUC − .05，两语料。不过 → 去掉话题后模型判不了，归档。
-- **D3 主门**：`z_speech_abl` 的窗级 within ≥ r6 `z_speech` 的窗级 within + .02，两语料；且 5 组随机方向的窗级 within
-  均值 ≤ `z_speech_abl` − .02，两语料。
+- **D3 主门**：`z_speech_abl` 的窗级 within ≥ r6 `z_speech` 的窗级 within + .02，两语料；且 5 组打乱标签方向的窗级 within
+  均值 ≤ `z_speech_abl` − .02，两语料。高斯随机方向的 within 只报告。
 - 报告（不设门）：`z_speech_abl` 与 `z_speech` 的 Spearman；窗文本的群体词命中数（受保护填充词表）与 `body` 投影
   幅度的 Spearman；按正负窗分的读数均值；`last` 方向版本的 D1。
 - **决策**：D1、D2、D3 两语料都过 → 接入，固定 r6_bma 解码，按规则 8 对 r6_bma 判六项（任一项不下降超过噪声下限，
   至少一项两语料 ≥ +.01；机制主张要求那一项是 within）；任一不过 → 记录数字，归档为"预检未过"，不做修订。
 
 ### 代价
-- 方向：1280 次短文本前向，约 2 分钟。读窗：每视频一次前缀预填充（同 r6），每个有文本的窗 1 次消除读 + 5 次随机对照读
-  （约 6.6 千窗 × 6 × 0.05 s ≈ 35 分钟）+ 回放核对；两语料一个作业约 1 小时，一张 RTX 5090。
+- 方向：1280 次短文本前向，约 2 分钟。读窗：每视频一次前缀预填充（同 r6），每个有文本的窗 1 次消除读 + 5 次打乱标签
+  对照读 + 1 次高斯参考读（约 6.6 千窗 × 7 × 0.05 s ≈ 40 分钟）+ 回放核对；两语料一个作业约 1 小时，一张 RTX 5090。
 
 ## 3. 怎么跑
 - 环境 `.cache/envs/HateVLM`。方向（GPU，Slurm 内）：`sbatch experiments/20261017_m1_topic_removal/launch/lab1_directions.sbatch`

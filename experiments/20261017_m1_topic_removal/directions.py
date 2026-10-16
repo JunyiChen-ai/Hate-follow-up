@@ -23,12 +23,13 @@ from sklearn.metrics import roc_auc_score
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from topic_bank import CARRIERS, NON_PROTECTED, PROTECTED, sentences  # noqa: E402
+from topic_bank import ATTACK, CARRIERS, NON_PROTECTED, PROTECTED, sentences  # noqa: E402
 from src.mllm_judge import MODEL, Judge, yesno_question  # noqa: E402
 
 OUT = ROOT / "runs/20261017_m1_topic_removal/directions"
 DATA = ROOT / "data/topic_direction/qwen3vl8b"
 D1_GATE = .95
+N_SHUF = 5
 
 
 class Recorder:
@@ -79,7 +80,7 @@ def main():
     bank = sentences()
     import transformers
     cfg = dict(host=socket.gethostname(), date=time.strftime("%Y-%m-%d"), model=MODEL, sentences=len(bank), carriers=len(CARRIERS),
-               protected=PROTECTED, non_protected=NON_PROTECTED, fit="even-indexed carriers", test="odd-indexed carriers", d1_gate=D1_GATE,
+               protected=PROTECTED, non_protected=NON_PROTECTED, fit="even-indexed non-attack carriers", test="odd-indexed carriers", attack_carriers=sorted(ATTACK), n_shuffled=N_SHUF, d1_gate=D1_GATE,
                torch=torch.__version__, transformers=transformers.__version__, source="experiments/20261017_m1_topic_removal/directions.py; 2026-10-17")
     (OUT / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
     torch.manual_seed(0)
@@ -100,23 +101,59 @@ def main():
         if k % 200 == 0:
             logging.info("%d/%d %.0fs  body tokens %d  %s", k, len(bank), time.perf_counter() - t0, len(idx), s["text"][:60])
     rec.remove()
-    fit = torch.tensor([s["split"] == "fit" for s in bank])
+    even = torch.tensor([s["split"] == "fit" for s in bank])
+    attack = torch.tensor([s["attack"] for s in bank])
     prot = torch.tensor([s["protected"] == 1 for s in bank])
-    result, validity = {}, {}
+    half = torch.tensor([s["term_half"] for s in bank])
+    carrier = torch.tensor([s["carrier"] for s in bank])
+    fit, test = even & ~attack, ~even                      # README §2: hostile carriers never enter the fit
+
+    def direction(X, mask, labels):
+        d = X[mask & labels].mean(0) - X[mask & ~labels].mean(0)
+        return d / d.norm(dim=-1, keepdim=True)
+
+    def aucs_of(X, d, mask, labels):
+        proj = (X * d[None]).sum(-1)
+        return [float(roc_auc_score(labels[mask].numpy(), proj[mask, l].numpy())) for l in range(L)], proj
+
+    validity = {}
     for name, X in (("body", body), ("last", last)):
-        d = X[fit & prot].mean(0) - X[fit & ~prot].mean(0)
-        d = d / d.norm(dim=-1, keepdim=True)
+        d = direction(X, fit, prot)
         torch.save(d.contiguous(), DATA / f"directions_{name}.pt")
-        proj = (X * d[None]).sum(-1)                           # (sentences, layers)
-        aucs = [float(roc_auc_score(prot[~fit].numpy(), proj[~fit, l].numpy())) for l in range(L)]
-        aucs_fit = [float(roc_auc_score(prot[fit].numpy(), proj[fit, l].numpy())) for l in range(L)]
+        aucs, proj = aucs_of(X, d, test, prot)
+        aucs_fit, _ = aucs_of(X, d, fit, prot)
+        aucs_test_attack, _ = aucs_of(X, d, test & attack, prot)
+        aucs_test_plain, _ = aucs_of(X, d, test & ~attack, prot)
         best = int(np.argmax(aucs))
-        validity[name] = dict(auc_test_per_layer=aucs, auc_fit_per_layer=aucs_fit, best_layer=best, best_auc_test=aucs[best],
-                              PASS=bool(aucs[best] >= D1_GATE), mean_proj_test={"protected": float(proj[~fit & prot].mean()),
-                                                                                "non_protected": float(proj[~fit & ~prot].mean())})
-        result[name] = d
-        logging.info("%s: best layer %d test AUC %.4f (layers 0..%d: %s)", name, best, aucs[best], L - 1, " ".join(f"{a:.2f}" for a in aucs))
-    validity["D1"] = dict(gate=D1_GATE, primary="body", PASS=validity["body"]["PASS"], layers=L, seconds=time.perf_counter() - t0)
+        # term-held-out check: fit on one half of the terms (fit carriers), test on the other half (test carriers)
+        d_half = direction(X, fit & half, prot)
+        aucs_terms, _ = aucs_of(X, d_half, test & ~half, prot)
+        # all-even-carrier direction (attack carriers included): diagnostic only
+        d_all = direction(X, even, prot)
+        aucs_all, _ = aucs_of(X, d_all, test, prot)
+        cos_all = [float((d[l] * d_all[l]).sum()) for l in range(L)]
+        validity[name] = dict(auc_test_per_layer=aucs, auc_fit_per_layer=aucs_fit, auc_test_attack_carriers=aucs_test_attack,
+                              auc_test_non_attack_carriers=aucs_test_plain, best_layer=best, best_auc_test=aucs[best], PASS=bool(aucs[best] >= D1_GATE),
+                              term_held_out_auc_per_layer=aucs_terms, all_carrier_direction_auc_test=aucs_all, cos_fit_vs_all_carrier=cos_all,
+                              mean_proj_test={"protected": float(proj[test & prot].mean()), "non_protected": float(proj[test & ~prot].mean())})
+        if name == "body":
+            torch.save(d_all.contiguous(), DATA / "directions_body_all_carriers.pt")
+            shuf = {}
+            for k in range(N_SHUF):
+                g = torch.Generator().manual_seed(k)
+                lab = prot.clone()
+                for c in carrier[fit].unique().tolist():      # permute the protected labels among the 32 fillers of each fit carrier
+                    idx = torch.nonzero(fit & (carrier == c))[:, 0]
+                    lab[idx] = prot[idx][torch.randperm(len(idx), generator=g)]
+                ds_ = direction(X, fit, lab)
+                torch.save(ds_.contiguous(), DATA / f"directions_shuf{k}.pt")
+                a_s, _ = aucs_of(X, ds_, test, prot)
+                shuf[f"shuf{k}"] = dict(auc_test_per_layer=a_s, max_auc_test=max(a_s), cos_with_topic=[float((d[l] * ds_[l]).sum()) for l in range(L)])
+            validity["shuffled_controls"] = shuf
+        logging.info("%s: best layer %d test AUC %.4f; term-held-out best %.4f; attack-carrier test best %.4f (layers 0..%d: %s)", name, best, aucs[best],
+                     max(aucs_terms), max(aucs_test_attack), L - 1, " ".join(f"{a:.2f}" for a in aucs))
+    validity["D1"] = dict(gate=D1_GATE, primary="body", PASS=validity["body"]["PASS"], layers=L, fit_sentences=int(fit.sum()), test_sentences=int(test.sum()),
+                          seconds=time.perf_counter() - t0)
     (OUT / "validity.json").write_text(json.dumps(validity, indent=2) + "\n")
     (DATA / "bank.json").write_text(json.dumps(dict(carriers=CARRIERS, protected=PROTECTED, non_protected=NON_PROTECTED, n=len(bank)), indent=2) + "\n")
     (DATA / "PROVENANCE.md").write_text(
@@ -125,8 +162,10 @@ def main():
         f"(candidate 46, README §2). Model {MODEL} (bf16, sdpa). Input: the synthetic bank in bank.json "
         f"({len(bank)} sentences = 40 carriers x 32 group terms; no dataset text, no labels). directions_body.pt / directions_last.pt: "
         f"float32 tensors ({L} x hidden), one unit vector per residual point (embedding output + 36 decoder-layer outputs), "
-        "= normalised mean(protected) - mean(non-protected) over the even-indexed carriers, residual averaged over the sentence "
-        "tokens inside the speech question (body) or taken at the last position (last). Validity on the odd-indexed carriers: "
+        "= normalised mean(protected) - mean(non-protected) over the even-indexed non-hostile carriers, residual averaged over the sentence "
+        "tokens inside the speech question (body) or taken at the last position (last). directions_body_all_carriers.pt: the same with the "
+        "hostile carriers included (diagnostic). directions_shuf{k}.pt: controls with the protected labels permuted within each fit carrier (seeds 0-4). "
+        "Validity on the odd-indexed carriers: "
         f"runs/20261017_m1_topic_removal/directions/validity.json.\n")
     logging.info("D1 %s; C46_DIR_DONE", "PASS" if validity["D1"]["PASS"] else "FAIL")
 

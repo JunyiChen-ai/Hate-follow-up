@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Candidate 46 CPU stage (README §2). Stages:
   precheck            D2 / D3 on the records (reads test GT: rule 10) -> <name>_precheck/{summary.json,per_video.json,table.txt}
-  predictions --arm   predictions.jsonl of one arm (abl, rand0..rand4): z_speech := the arm's read, z_visual and the key term z from r6
+  predictions --arm   predictions.jsonl of one arm (abl, shuf0..shuf4, rand0): z_speech := the arm's read, z_visual and the key term z from r6
   decode --arm        unified evaluator on the raw curve + fixed r6_bma time level -> <name>_raw/<arm>, <name>_decoded/<arm>
   report              six numbers of every decoded arm against r6_bma with the rule-8 gates -> <name>_report/summary.json
 """
@@ -17,7 +17,7 @@ import numpy as np
 from scipy.stats import spearmanr
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import ARMS, EXP, N_RAND, R6_BMA, ROOT, VALIDITY, WINDOW_S, stored_r6  # noqa: E402
+from common import ARMS, EXP, N_RAND, N_SHUF, R6_BMA, ROOT, VALIDITY, WINDOW_S, stored_r6  # noqa: E402
 from src.video_inputs import fixed_windows  # noqa: E402
 from src.window_level import auc, gold, mean, window_label, within_by_video, within_eligible  # noqa: E402
 
@@ -37,7 +37,9 @@ def records(name, ds):
 
 
 def arm_score(t, arm):
-    return t["z_abl"] if arm == "abl" else t["z_rand"][int(arm[4:])]
+    if arm == "abl":
+        return t["z_abl"]
+    return t["z_shuf"][int(arm[4:])] if arm.startswith("shuf") else t["z_rand"][int(arm[4:])]
 
 
 def window_rows(name, ds, gt, eligible_only):
@@ -58,6 +60,8 @@ def window_rows(name, ds, gt, eligible_only):
             row = dict(video_id=vid, i=t["i"], label=label, frac=frac, z_speech=t["z_speech_r6"], abl=t["z_abl"],
                        group_hits=sum(w in GROUP_TERMS for w in words), word_count=len(words),
                        proj_best=None if best is None else t["proj_topic"][best])
+            for k in range(N_SHUF):
+                row[f"shuf{k}"] = t["z_shuf"][k]
             for k in range(N_RAND):
                 row[f"rand{k}"] = t["z_rand"][k]
             rows.append(row)
@@ -71,35 +75,37 @@ def precheck(name):
         gt = gold(ds)
         rows_all = window_rows(name, ds, gt, eligible_only=False)
         rows = window_rows(name, ds, gt, eligible_only=True)
-        scores = ["z_speech", "abl"] + [f"rand{k}" for k in range(N_RAND)]
+        scores = ["z_speech", "abl"] + [f"shuf{k}" for k in range(N_SHUF)] + [f"rand{k}" for k in range(N_RAND)]
         per = {k: within_by_video(rows, k) for k in scores}
         w = {k: mean(per[k].values()) for k in scores}
+        w["shuf_mean"] = float(np.mean([w[f"shuf{k}"] for k in range(N_SHUF)]))
         w["rand_mean"] = float(np.mean([w[f"rand{k}"] for k in range(N_RAND)]))
         n_def = {k: sum(v is not None for v in per[k].values()) for k in scores}
         pooled = {k: auc([r["label"] for r in rows_all], [r[k] for r in rows_all]) for k in ("z_speech", "abl")}
+        pooled["shuf_mean"] = float(np.mean([auc([r["label"] for r in rows_all], [r[f"shuf{k}"] for r in rows_all]) for k in range(N_SHUF)]))
         pooled["rand_mean"] = float(np.mean([auc([r["label"] for r in rows_all], [r[f"rand{k}"] for r in rows_all]) for k in range(N_RAND)]))
         rho = float(spearmanr([r["z_speech"] for r in rows], [r["abl"] for r in rows]).statistic)
-        rho_rand = [float(spearmanr([r["z_speech"] for r in rows], [r[f"rand{k}"] for r in rows]).statistic) for k in range(N_RAND)]
+        rho_rand = [float(spearmanr([r["z_speech"] for r in rows], [r[f"shuf{k}"] for r in rows]).statistic) for k in range(N_SHUF)]
         proj_ok = all(r["proj_best"] is not None for r in rows)
         rho_proj = float(spearmanr([r["group_hits"] for r in rows_all], [r["proj_best"] for r in rows_all]).statistic) if proj_ok else None
         by_label = {k: {str(l): float(np.mean([r[k] for r in rows if r["label"] == l])) for l in (0, 1)} for k in ("z_speech", "abl")}
         d2 = pooled["abl"] >= pooled["z_speech"] - D2_DROP
         d3a = w["abl"] >= w["z_speech"] + D3_MARGIN
-        d3b = w["rand_mean"] <= w["abl"] - D3_MARGIN
+        d3b = w["shuf_mean"] <= w["abl"] - D3_MARGIN
         summary[ds] = dict(videos_eligible=len({r["video_id"] for r in rows}), windows=len(rows), positives=int(sum(r["label"] for r in rows)),
                            windows_all_videos=len(rows_all), within=w, videos_defined=n_def, pooled_window_auc=pooled,
-                           spearman_abl_vs_z_speech=rho, spearman_rand_vs_z_speech=rho_rand, spearman_group_hits_vs_proj=rho_proj,
+                           spearman_abl_vs_z_speech=rho, spearman_shuf_vs_z_speech=rho_rand, spearman_group_hits_vs_proj=rho_proj,
                            mean_by_label=by_label,
                            gates=dict(D2_judgment_survives=dict(pooled_abl=pooled["abl"], pooled_z_speech=pooled["z_speech"], max_drop=D2_DROP, PASS=bool(d2)),
-                                      D3_within=dict(abl=w["abl"], z_speech=w["z_speech"], rand_mean=w["rand_mean"], margin=D3_MARGIN,
+                                      D3_within=dict(abl=w["abl"], z_speech=w["z_speech"], shuf_mean=w["shuf_mean"], rand_mean=w["rand_mean"], margin=D3_MARGIN,
                                                      beats_judgment=bool(d3a), beats_random=bool(d3b), PASS=bool(d3a and d3b))))
         per_video[ds] = per
         lines.append(f"[{ds}] eligible videos {summary[ds]['videos_eligible']}, windows {len(rows)} (pos {summary[ds]['positives']}); all-video windows {len(rows_all)}")
-        for k in scores + ["rand_mean"]:
+        for k in scores + ["shuf_mean", "rand_mean"]:
             lines.append(f"  window-level within {k:10s} {w[k]:.4f}" + (f"  (videos {n_def[k]})" if k in n_def else ""))
-        lines.append(f"  pooled window AUC: z_speech {pooled['z_speech']:.4f}  abl {pooled['abl']:.4f}  rand_mean {pooled['rand_mean']:.4f}")
-        lines.append(f"  Spearman abl vs z_speech {rho:+.3f}; rand vs z_speech {np.mean(rho_rand):+.3f}; group-term hits vs topic projection {rho_proj if rho_proj is None else round(rho_proj, 3)}")
-        lines.append(f"  D2 {'PASS' if d2 else 'FAIL'}; D3 beats judgment {d3a}, beats random {d3b} -> {'PASS' if d3a and d3b else 'FAIL'}")
+        lines.append(f"  pooled window AUC: z_speech {pooled['z_speech']:.4f}  abl {pooled['abl']:.4f}  shuf_mean {pooled['shuf_mean']:.4f}  rand_mean {pooled['rand_mean']:.4f}")
+        lines.append(f"  Spearman abl vs z_speech {rho:+.3f}; shuf vs z_speech {np.mean(rho_rand):+.3f}; group-term hits vs topic projection {rho_proj if rho_proj is None else round(rho_proj, 3)}")
+        lines.append(f"  D2 {'PASS' if d2 else 'FAIL'}; D3 beats judgment {d3a}, beats shuffled-label controls {d3b} -> {'PASS' if d3a and d3b else 'FAIL'}")
     d1 = None if validity is None else validity["D1"]["PASS"]
     decision = bool(d1) and all(summary[ds]["gates"]["D2_judgment_survives"]["PASS"] and summary[ds]["gates"]["D3_within"]["PASS"] for ds in DATASETS)
     summary["decision"] = dict(D1=d1, D1_best_layer=None if validity is None else validity["body"]["best_layer"],

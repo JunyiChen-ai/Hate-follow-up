@@ -1,6 +1,6 @@
 """Synthetic sentence bank for the topic direction of candidate 46 (README §2). Researcher-authored, no dataset text,
-no labels. 40 carriers x (16 protected + 16 non-protected group terms) = 1280 sentences. Even-indexed carriers build the
-direction, odd-indexed carriers test it."""
+no labels. 40 carriers x (16 protected + 16 non-protected group terms) = 1280 sentences. Even-indexed non-attack carriers
+build the direction, odd-indexed carriers (all kinds) test it; term_half splits the terms for the term-held-out check."""
 
 CARRIERS = [
     # neutral / reporting (8)
@@ -53,8 +53,10 @@ CARRIERS = [
 ]
 PROTECTED = ["Black people", "white people", "Jews", "Muslims", "Christians", "Asians", "Mexicans", "immigrants",
              "Arabs", "gay people", "trans people", "women", "disabled people", "Indians", "Africans", "Hispanics"]
-NON_PROTECTED = ["accountants", "tourists", "teenagers", "landlords", "vegans", "gamers", "politicians", "customers",
-                 "drivers", "lawyers", "influencers", "neighbours", "students", "bankers", "cyclists", "managers"]
+NON_PROTECTED = ["accountants", "tourists", "commuters", "landlords", "vegans", "gamers", "politicians", "car dealers",
+                 "delivery drivers", "lawyers", "influencers", "neighbours", "students", "bankers", "football fans", "office workers"]
+ATTACK = set(range(12, 20))      # the eight hostile carriers: their violation status changes with protectedness, so they are
+                                 # left out of the direction fit (README §2) and only used as held-out test material
 assert len(CARRIERS) == 40 and len(PROTECTED) == len(NON_PROTECTED) == 16
 
 
@@ -69,7 +71,8 @@ def sentences():
     for ci, c in enumerate(CARRIERS):
         for label, terms in ((1, PROTECTED), (0, NON_PROTECTED)):
             for t in terms:
-                out.append(dict(carrier=ci, split="fit" if ci % 2 == 0 else "test", protected=label, term=t, text=fill(c, t)))
+                out.append(dict(carrier=ci, split="fit" if ci % 2 == 0 else "test", attack=ci in ATTACK, protected=label, term=t,
+                                term_half=(PROTECTED + NON_PROTECTED).index(t) % 16 < 8, text=fill(c, t)))
     return out
 
 

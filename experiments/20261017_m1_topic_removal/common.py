@@ -16,9 +16,11 @@ DIRECTIONS = ROOT / "data/topic_direction/qwen3vl8b/directions_body.pt"
 VALIDITY = EXP / "directions/validity.json"
 WINDOW_S = 8.0
 NATIVE_FRAMES = 20
-N_RAND = 5
-ARMS = ["abl"] + [f"rand{k}" for k in range(N_RAND)]
-IMPLEMENTATION = "candidate 46 topic-direction removal: directional ablation of the synthetic-bank topic direction at every residual point of the speech branch; 5 random-direction controls; 2026-10-17"
+N_SHUF = 5
+N_RAND = 1
+SHUF = lambda k: ROOT / f"data/topic_direction/qwen3vl8b/directions_shuf{k}.pt"  # noqa: E731
+ARMS = ["abl"] + [f"shuf{k}" for k in range(N_SHUF)] + [f"rand{k}" for k in range(N_RAND)]
+IMPLEMENTATION = "candidate 46 topic-direction removal v2: directional ablation of the synthetic-bank topic direction (non-hostile carriers) at every residual point of the speech branch; 5 label-shuffled controls + 1 Gaussian control; 2026-10-17"
 
 
 def selected_rows(datasets, smoke):

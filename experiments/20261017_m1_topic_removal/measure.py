@@ -2,7 +2,8 @@
 """Candidate 46 stage 2 (README §2): speech reads with the topic direction removed from the residual stream.
 Per video the r6 stance cache is rebuilt (prefix + verdict, untouched by the hooks); per window with speech the r6 speech
 question is read (a) with the topic direction projected out at the embedding output and every decoder-layer output of the
-branch forward (z_abl), and (b) five times with random unit directions instead (z_rand[k], seeds 0-4). The mean projection
+branch forward (z_abl), and (b) with each of five label-shuffled directions from the same bank (z_shuf[k], the matched control) and (c) with one Gaussian
+random unit direction per layer (z_rand[0], seed 0). The mean projection
 of the branch residuals onto the topic direction per layer is kept for the report. First two videos per corpus also replay
 the plain r6 speech read as a check. Visual reads come from the stored r6 run. GPU inside Slurm only; no label file read.
 Output: runs/20261017_m1_topic_removal/<name>/{records/<ds>/<vid>.json, run.log, run.pid, config.json}.
@@ -19,7 +20,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import DIRECTIONS, EXP, IMPLEMENTATION, N_RAND, NATIVE_FRAMES, WINDOW_S, selected_rows, stored_r6  # noqa: E402
+from common import DIRECTIONS, EXP, IMPLEMENTATION, N_RAND, N_SHUF, NATIVE_FRAMES, SHUF, WINDOW_S, selected_rows, stored_r6  # noqa: E402
 from src.mllm_judge import MODEL, Judge, yesno_question  # noqa: E402
 from src.stance_cache import build, margin  # noqa: E402
 from src.video_inputs import fixed_windows, frame_paths, load_asr, window_text  # noqa: E402
@@ -93,7 +94,7 @@ def main():
     (out / "run.pid").write_text(str(os.getpid()))
     import transformers
     cfg = dict(host=socket.gethostname(), date=time.strftime("%Y-%m-%d"), model=MODEL, implementation=IMPLEMENTATION, directions=str(DIRECTIONS.relative_to(DIRECTIONS.parents[3])),
-               n_random=N_RAND, random_seeds=list(range(N_RAND)), ablated_points="embedding output + every decoder-layer output, all positions of the branch forward",
+               n_shuffled=N_SHUF, n_random=N_RAND, random_seeds=list(range(N_RAND)), ablated_points="embedding output + every decoder-layer output, all positions of the branch forward",
                window_seconds=WINDOW_S, native_frames=NATIVE_FRAMES, GT_read=False, smoke=a.smoke, datasets=a.datasets, torch=torch.__version__,
                transformers=transformers.__version__, seed=0, command="python -u " + " ".join(sys.argv), source="experiments/20261017_m1_topic_removal/measure.py; 2026-10-17")
     (out / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
@@ -107,6 +108,11 @@ def main():
     topic = torch.load(DIRECTIONS).float()
     assert topic.shape == (L, H) and torch.isfinite(topic).all() and torch.allclose(topic.norm(dim=-1), torch.ones(L), atol=1e-4), topic.shape
     topic = topic.to(j.device)
+    shuf = []
+    for k in range(N_SHUF):
+        d = torch.load(SHUF(k)).float()
+        assert d.shape == (L, H) and torch.isfinite(d).all(), SHUF(k)
+        shuf.append(d.to(j.device))
     rand = [random_directions(L, H, k, j.device) for k in range(N_RAND)]
     replay_videos = {ds: [x["video_id"] for x in rows if x["dataset"] == ds][:2] for ds in a.datasets}
     done = 0
@@ -134,6 +140,7 @@ def main():
                 q = yesno_question(i, n, t1, t2, body, "speech")
                 z, proj = read(j, cache, ctx, q, abl, topic)
                 t["z_abl"], t["proj_topic"] = z, [round(p, 4) for p in proj]
+                t["z_shuf"] = [read(j, cache, ctx, q, abl, S)[0] for S in shuf]
                 t["z_rand"] = [read(j, cache, ctx, q, abl, R)[0] for R in rand]
                 if vid in replay_videos[ds]:
                     zp = margin(j, cache, ctx, q)
@@ -150,11 +157,11 @@ def main():
         path.write_text(json.dumps(bundle, allow_nan=False) + "\n")
         done += 1
         ex = [t for t in traces if "z_abl" in t]
-        logging.info("%d/%d %s/%s windows=%d speech=%d %.0fs stance=%s/%s replay_max_abs=%s  mean z_speech %.2f -> z_abl %.2f (rand %.2f)",
+        logging.info("%d/%d %s/%s windows=%d speech=%d %.0fs stance=%s/%s replay_max_abs=%s  mean z_speech %.2f -> z_abl %.2f (shuf %.2f, rand %.2f)",
                      ordinal, len(rows), ds, vid, n, bundle["speech_windows"], secs, ctx["stance"], bundle["stance_r6"],
                      None if bundle["replay_max_abs"] is None else round(bundle["replay_max_abs"], 4),
                      sum(t["z_speech_r6"] for t in ex) / max(1, len(ex)), sum(t["z_abl"] for t in ex) / max(1, len(ex)),
-                     sum(sum(t["z_rand"]) / N_RAND for t in ex) / max(1, len(ex)))
+                     sum(sum(t["z_shuf"]) / N_SHUF for t in ex) / max(1, len(ex)), sum(sum(t["z_rand"]) / N_RAND for t in ex) / max(1, len(ex)))
         del cache
     logging.info("DONE coverage=%d/%d", done, len(rows))
 
