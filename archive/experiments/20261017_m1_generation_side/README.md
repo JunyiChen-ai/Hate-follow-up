@@ -1,8 +1,10 @@
 # 候选 45：生成侧读数（generation-side reading）— 复述阻力与最小合规改写
 
+**归档第 35 项（2026-10-17）：预检未过声明的门。窗级 within（HateMM / HateClipSeg）复述阻力 .541 / .504、最小改写量 .585 / .518，都低于 r6 的语音判断读数 .726 / .606，也低于脏话词表对照 .618 / .541；模型照抄仇恨句子不迟疑，改写把最露骨的仇恨窗原样返回。固定 r6_bma 解码 within −.04 至 −.06。不接入，不修订。**
+
 声明日期 2026-10-17（NZDT），主机 sc474397（uoa-lab1）。用户 2026-10-17 指示进入自主迭代，目标是 M1 的机制级 novelty；
 M2 / M3 只允许为配合 M1 做小幅修改。本文件 §2 的常数、分数定义、门全部在任何运行之前写下。
-**状态：规则 4 审查 PASS（2026-10-17），实现中；冒烟后跑完整 333。**
+**状态：完整 333 已跑，预检未过，归档（见顶部与 §5）。**
 
 ## 1. 机制与来源
 
@@ -112,7 +114,7 @@ M2 / M3 只允许为配合 M1 做小幅修改。本文件 §2 的常数、分数
 
 ## 3. 怎么跑
 - 环境 `.cache/envs/HateVLM`（torch 2.11.0+cu128，transformers 5.15.1，与候选 43 的 Qwen3-VL 对照相同）。
-- 读取（GPU，只在 Slurm 内）：`sbatch experiments/20261017_m1_generation_side/launch/lab1_measure.sbatch`
+- 读取（GPU，只在 Slurm 内；目录归档后路径为 archive/experiments/…）：`sbatch experiments/20261017_m1_generation_side/launch/lab1_measure.sbatch`
   （`SMOKE=1` 为 5 个冒烟视频）→ `runs/20261017_m1_generation_side/main/{records/<语料>/<vid>.json, run.log, config.json}`，
   完成标记 `C45_MEASURE_DONE`。
 - 预检与解码（CPU，conda `HateVideo`）：`python experiments/20261017_m1_generation_side/analyze.py --stage precheck`
@@ -134,7 +136,64 @@ M2 / M3 只允许为配合 M1 做小幅修改。本文件 §2 的常数、分数
   被接着写成整句（"ALEKSANDRA"→"ALEKSANDRA KUZNETSKAYA © BF-WATCH TV 2021"），Levenshtein 版给 1.0。
   由此在完整运行前改了两处定义：body 压空白；B 的主分数改为 LCS 版（见 §2）。A 的假设在冒烟里已经看起来不成立，
   仍按声明跑完整 333 并过门，作为正式记录。
-- （预检运行后填写：读了哪些文件、发现了什么、影响了哪个决定。）
+- 2026-10-17 07:18 `analyze.py --stage precheck`（sc474397，CPU）读取 `data/gt_4fps/{HateMM,HateClipSeg}.npz` test 的帧标签，
+  给 within 可计视频的有文本窗打正负标签（§2 规则），算各分数的窗级 within、与 `z_speech` 的 Spearman、三个不用模型的
+  对照和随机对照；另读 `main/records/` 看高改动的负窗和原样返回的正窗（§5 例子）。发现见 §5；受影响的决定：两条读法都
+  不接入方法，候选 45 归档，不做修订。固定 r6_bma 解码（`main_decoded/`）只作记录，不改变决定。
 
-## 5. 结果与去向
-- （待填。）
+## 5. 结果与去向（2026-10-17；development-selected）
+
+**运行。** sc474397（uoa-lab1）Slurm 488，commit 3b9e61d，333/333，墙钟 49 分 42 秒（HateMM 1716 s：A 130 s、B 1494 s；
+HateClipSeg 1261 s：A 112 s、B 1095 s；其余为前缀预填充），峰值显存 20.2 GiB；有文本窗 3439 / 3141。回放的 r6 语音读数
+与存档逐值相同（4 个视频，最大差 0.0），立场 333/333 与 r6 一致。记录 `runs/20261017_m1_generation_side/main/records/`。
+
+**预检**（`main_precheck/{summary.json,table.txt,per_video.json}`；within 可计视频 84 / 99，有文本且标签干净的窗 1359 / 2420）：
+
+| 分数（窗级 within；括号内为与 z_speech 的 Spearman） | HateMM（57 个有正负窗的视频 / 1359 窗） | HateClipSeg（90 / 2420 窗） |
+|---|---|---|
+| r6 语音判断读数 z_speech | 0.7261 | 0.6055 |
+| A 复述阻力 copy_mean（主分数） | 0.5407（ρ +0.07） | 0.5036（ρ +0.05） |
+| A copy_max | 0.5540（ρ +0.10） | 0.4992（ρ +0.09） |
+| A first_loss | 0.5858（ρ +0.12） | 0.4988（ρ +0.13） |
+| A refuse_mass | 0.5510（ρ +0.26） | 0.4932（ρ +0.16） |
+| B 最小改写 edit_rate（主分数，LCS） | 0.5845（ρ +0.30） | 0.5181（ρ +0.23） |
+| B edit_lev（Levenshtein） | 0.5381（ρ +0.21） | 0.5322（ρ +0.17） |
+| 对照：脏话词表命中数 | 0.6182（ρ +0.56） | 0.5412（ρ +0.41） |
+| 对照：仇恨 n-gram 词表命中数 | 0.5784（ρ +0.51） | 0.5055（ρ +0.25） |
+| 对照：窗词数 | 0.6257（ρ +0.27） | 0.5035（ρ +0.30） |
+| 对照：均匀随机（10 次均值） | 0.5057 | 0.5031 |
+
+- 读法 A（copy_mean）：G1 过（ρ +0.07 / +0.05，门 < .80）；G2 不过（0.541 对 0.726 / 0.504 对 0.606，门 +.02）；G3 不过（最强对照 0.626 / 0.541，门 +.02）。
+- 读法 B（edit_rate）：G1 过（ρ +0.30 / +0.23，门 < .80）；G2 不过（0.585 对 0.726 / 0.518 对 0.606，门 +.02）；G3 不过（最强对照 0.626 / 0.541，门 +.02）。
+
+两条读法在两个语料上都低于 r6 的判断读数，也低于不用模型的脏话词表（HateMM 还低于窗词数）。按声明：不接入，归档，不修订。
+
+**固定 r6_bma 解码（只作记录；`main_decoded/<arm>/metrics.json`，原始读数 `main_raw/<arm>/metrics.json`，表 `main_report/summary.json`）。**
+视频键与 r6_bma 相同，只换语音链的发射：
+
+| 时序层 r6_bma 固定；语音链发射 = | HateMM ROC / PR / within | HateClipSeg ROC / PR / within |
+|---|---|---|
+| r6 语音判断读数（= r6_bma，当前方法） | 0.8971 / 0.6942 / 0.7508 | 0.7168 / 0.6711 / 0.6373 |
+| A copy_mean | 0.8951 / 0.6901 / 0.7102 | 0.7141 / 0.6685 / 0.5853 |
+| 　相对 r6_bma | -0.0020 / -0.0041 / -0.0405 | -0.0028 / -0.0025 / -0.0520 |
+| B edit_rate | 0.8959 / 0.6902 / 0.7059 | 0.7141 / 0.6696 / 0.5742 |
+| 　相对 r6_bma | -0.0012 / -0.0040 / -0.0449 | -0.0027 / -0.0015 / -0.0631 |
+
+
+两条读法 within 掉 .04–.06，pooled 在噪声内（视频键没变）。原始读数表（max(z_visual, s_aff)）：A .7065 / .3926 / .5753，
+.6506 / .5974 / .5471；B .7225 / .3777 / .5591，.6421 / .5652 / .5330。
+
+**为什么不成立（读 `main/records/`，规则 10）。**
+- A：模型对脏话和攻击句照抄不误，损失为 0（"fuck you"、"piece of shit"、"Retard"、"I fuck your mother"）。非零损失来自与内容
+  无关的地方：被切断处的句号、"him|self" 这类切分、芬兰语、重复串、乱码。A 的 copy_mean 按窗标签分：HateMM 负窗 0.121、正窗 0.031（方向反了：仇恨窗抄得更顺）；HateClipSeg 0.106 / 0.106。
+  第一个位置上几乎没有拒绝倾向。所以"复述阻力"在这个读取器上不存在。
+- B：改写是局部词替换，但针对的是粗口和政治敏感词，不是仇恨行为：非仇恨窗里 "shut the fuck" → "shut up"、"Help! Help!" →
+  "Please! Please!"、"Donald Trump's election victory" → "Joe Biden's election victory"；而最露骨的仇恨窗原样返回
+  （"Being black is a sin. Let's rid the world of all the shitskins."、"hate niggers. I hate Jews. And I can't fucking wait
+  until we lynch every single fuckin' one of you."、"curb stomp a nigger and skull fuck a Jew." 全部 edit_rate = 0）。
+  B 的改写与原话词序列相同的窗 50% / 55%；edit_rate 按标签分：负窗 0.042、正窗 0.058 / 0.048、0.049，几乎不分。
+- 两条读法与 z_speech 的 Spearman 都低（.05–.30），G1 形式上过，但这不是"新信息"，是"没有信息"。
+
+**去向。** 候选 45 按规则 9 归档为第 35 项，目录移至 `archive/experiments/20261017_m1_generation_side/`；方向表
+`research-wiki/DIRECTIONS.md` 加一行。生成侧行为（拒绝、复述阻力、改写量）这一族对本读取器关闭。正式方法仍为 r6_bma。
+2026-10-17 方向清单里剩下的是"推理时去掉话题方向再读"，作为下一个候选单独声明。
