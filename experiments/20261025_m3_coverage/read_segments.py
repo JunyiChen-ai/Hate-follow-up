@@ -104,10 +104,13 @@ def read_video(j, row, segments, J, verify):
     return rec
 
 
+SEG_GATE_DZ = 1.0  # README §11.3 P0, amended after smoke run 883 (the shared src gate GATE_DZ = 3 is for other readers)
+
+
 def verify_bad(v):
     checks = [v["video"]] + v["segments"]
     return [f"{'video' if i == 0 else f'segment {i - 1}'}: {c}" for i, c in enumerate(checks)
-            if not c["seam_ok"] or c["dz"] >= GATE_DZ]
+            if not c["seam_ok"] or c["dz"] >= SEG_GATE_DZ]
 
 
 # ----------------------------------------------------------------------------------------------- CPU dry run
@@ -221,7 +224,7 @@ def main():
                                                "extended to the latest chunk end"},
                 "manifests": {ds: str(MANIFEST[ds].relative_to(ROOT)) for ds in args.datasets},
                 "reference_reads": {ds: str(REFERENCE[ds].relative_to(ROOT)) for ds in args.datasets},
-                "verify_gates": {"dz": GATE_DZ, "seam": "exact token equality"}, "n_videos": len(rows)})
+                "verify_gates": {"dz": SEG_GATE_DZ, "seam": "exact token equality"}, "n_videos": len(rows)})
     (out / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n")
     logging.info("videos %d  J %d", len(rows), args.J)
     path = out / "segments.jsonl"
