@@ -297,8 +297,9 @@ novelty / code review 各一个独立 agent）。本文件 §2–§4 的问题�
   - G2 消融：去掉量项，K = z_video（同样校准）。
   - 相对 r6 键的差（只报告）。
   - 诊断（不进方法）：C3 = 只用 s·q_v 不加 z_video；"相加"形 z_video + 窗均值 + s·q_v；HCS 只算仇恨类 GT；DeHate（G3）；
-    winonly 臂 K = z_video + s·mean(单窗读 z_w)（分开"互不可见"与"段长"两个因素；单窗读用旧 ASR 缓存
-    `runs/20260910_spvl/mllm/q3vl-8b/winonly`，报数时注明）。另报 ρ(q_v, 窗均值)、ρ(q_v, 时长)、ρ(logit p̂_v, 时长)
+    winonly 臂 K = z_video + s·mean(单窗读 z_w)（单窗读 `runs/20260910_spvl/mllm/q3vl-8b/winonly`：纯文本、没有帧、没有整段
+    转录、问的是窗问题、旧 ASR；它与逐段读的差别不只在段长，所以 C1 与它的差不能归因于段长，只作参照。code review 第二批
+    指出后修订）。另报 ρ(q_v, 窗均值)、ρ(q_v, 时长)、ρ(logit p̂_v, 时长)
     （规则 4 审查建议，`docs/reviews/20261025_m3_segment_presence_novelty.md`）。
   - 措辞：C1 也是 classify-and-count，区别是各段互不可见、单元更粗；group testing（Dorfman / Thompson）只是 C2 的来源。
 

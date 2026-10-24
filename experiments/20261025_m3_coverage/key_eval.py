@@ -12,6 +12,8 @@ gives the product forms. The CLI's own M2 output is compared with r6_bma's as a 
 
 Forms (s = the scalar, t(s) = s or logit(clip(s, 1e-4, 1 - 1e-4)) by --transform; scaling statistics per corpus over
 all its videos in the r6 run that have a value, label-free):
+  calib_scalar  key = a t(s) + b           t(s) alone with r6's two-Gaussian calibration fitted on it (no z_video;
+                                           candidate 49 diagnostic C3; scale-invariant, so s * q_v gives the same key)
   share_raw     key = t(s)                 no z_video, no calibration (candidate 47 A1 with s = logit E[c], A1-eta
                                            with s = eta; README section 2.2)
   replace       K' = z_video + g(s)        g = t(s) (--scale raw); sd(wm) / sd(t) * t (--scale sd; candidate 47 A2 /
@@ -55,7 +57,7 @@ CLI = ROOT / "experiments/20260926_twolevel/twolevel_r2.py"
 CLIP = 1e-4
 MIN_COVER = 0.9
 CLI_FORMS = ("replace", "add", "product_K", "product_zv", "verdict_only")
-ALL_FORMS = ("share_raw",) + CLI_FORMS + ("product_K_prob", "product_zv_prob")
+ALL_FORMS = ("share_raw", "calib_scalar") + CLI_FORMS + ("product_K_prob", "product_zv_prob")
 METRICS = ("frame_ROC_AUC", "frame_PR_AUC", "within_video_macro_ROC_AUC")
 
 
@@ -258,6 +260,13 @@ def evaluate_values(values, name, out, forms, how, scale, B, seed, log, datasets
     arms, checks = {}, {}
     if "share_raw" in forms:
         arms["share_raw"] = {k: maps["share"][k] for k in keys}
+    if "calib_scalar" in forms:                    # t(s) alone, r6's two-Gaussian calibration (explore_lib.key_mixture,
+        from explore_lib import key_mixture        # checked equal to twolevel_r2.key_calibration in explore_hurdle.py)
+        arms["calib_scalar"] = {}
+        for ds in datasets:
+            ks = [k for k in keys if k[0] == ds]
+            mx = key_mixture([maps["share"][k] for k in ks])
+            arms["calib_scalar"].update({k: mx["a"] * maps["share"][k] + mx["b"] for k in ks})
     for f in need_cli:
         ck = cli_keys(dirs[f])
         if set(ck) != kset:
@@ -328,7 +337,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--values", help="jsonl: dataset, video_id, value")
     ap.add_argument("--name", default=None)
-    ap.add_argument("--forms", nargs="+", default=[f for f in ALL_FORMS if f != "share_raw"], choices=ALL_FORMS)
+    ap.add_argument("--forms", nargs="+", default=[f for f in ALL_FORMS if f not in ("share_raw", "calib_scalar")], choices=ALL_FORMS)
     ap.add_argument("--transform", choices=["none", "logit"], default="none")
     ap.add_argument("--scale", choices=["match", "sd", "raw"], default="match")
     ap.add_argument("--datasets", nargs="+", default=list(DATASETS), choices=sorted(CORPORA))
