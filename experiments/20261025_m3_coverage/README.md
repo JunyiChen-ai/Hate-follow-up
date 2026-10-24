@@ -1,0 +1,158 @@
+# 候选 47：视频键改为读出"违规内容占视频多少"（M3，expected-share key）
+
+声明日期 2026-10-25（NZDT），主机 sc474397（uoa-lab1）。由 M3 研究小组完成（lead = 主会话；scout、engineer、analyst 三个成员，
+novelty / code review 各一个独立 agent）。本文件 §2–§4 的问题文本、读出、键的形式、预检与门，全部在任何 GPU 运行之前写下。
+**状态：已声明，未运行。**
+
+## 1. 机制与来源
+
+- **子挑战**（`research-wiki/paradigm_framing.md` §2）：整段裁定只说"有没有"，不说"占多少"；pooled 两项主要反映视频间排序，
+  而行为覆盖视频的多少决定一个视频里有多少正帧。r6 用窗读数均值代替"占多少"：K = z_video + mean_w z_w，再经一维两高斯
+  混合无标签校准成 logit P(V=1|K)；帧分 = 键 + M2 后验在视频内的居中秩。
+- **r6 这一步的问题**（2026-10-25 小组分析，development-selected，读了 test GT）：
+  - 在 GT 为仇恨的视频里，窗均值与仇恨帧份额的 Spearman 只有 .416 / .533（HateMM / HCS），z_video 只有 .190 / .321；把 z_video
+    加进键后，键与份额的相关反而降到 .372 / .450（`runs/20261025_m3_coverage/analysis_precheck_selftest/wmean/summary.txt`）。
+  - pooled 两项对"仇恨视频之间按量排序"很敏感：只在 GT 为仇恨的视频之间重排窗均值、使顺序与份额一致（分布不变），pooled
+    ROC / PR +.061 / +.183（HateMM）、+.096 / +.138（HCS）（`runs/20261025_m3_coverage/analysis_diag_gt_extent/summary.txt`；
+    只是诊断，不是方法上限）。
+  - 窗均值是 classify-and-count 式的间接估计：每个窗的读数误差（尤其提到目标群体的窗被读高）都累积进均值。用现有缓存里的
+    其它量估份额（DVD 的 T / A / E、HVL 的引用时段占比、每视频 π0、CC / PCC 份额）都不超过窗均值
+    （scout 报告 §0；同一前缀上再问一个 Yes/No，与裁定的 Spearman .89–.99）。
+- **机制假设**：视频层要估计的量应当是"该视频违规内容占运行时间的份额"，而不是"是否违规"。不看视频内信息时，跨视频比较
+  两个帧，最优的帧分数就是各自视频的这个份额。读取器在整段上下文上可以直接估计份额（quantification 文献里的直接估计，对照
+  classify-and-count），读出用序数选项分布的期望（概率加权读出，对照取众数或 Yes/No）。键因此有了明确的量纲（份额），
+  不再需要事后的两高斯校准。
+- **来源**：G-Eval（Liu 等 2023，arXiv 2303.16634）的概率加权打分 Σ p(s_i)·s_i；Wang、Zhang & Choi（Findings EMNLP 2025，
+  arXiv 2503.03064）判断分布的均值优于众数（scout 所读版本为 42 / 48 种设置，另一版本为 92 / 120，引用时写明版本）；quantification / class-prior 估计里直接估计流行率对
+  classify-and-count（Forman 2008；Saerens 等 2002）。小组检索（scout 报告 §4）没有找到仇恨视频检测或定位工作读整段份额、
+  或用选项分布的期望做读出；比例约束只出现在用标签训练的弱监督工作（3C-Net、ARMS）里。规则 4 审查（`docs/reviews/20261025_m3_coverage_novelty.md`，PASS）另找到读出方式的先例：Video-SafetyBench 的 RJScore（评判
+  生成回答的毒性）、Q-Align（质量评估，需训练）、CORDIAL（文本序数读数）、比例优势模型（McCullagh 1980）。**读出方式不作
+  贡献主张**；可主张的是被估计的量（份额）与它和 pooled 排序的对应关系，由 14g 决定。
+- **最接近的本仓库尝试与区别**：
+  - 2026-08 检测阶段对同一视频再问一个语义不同的 Yes/No（Spearman .92–.98）、DVD 的 T / E / A（问"是否针对受保护群体"等
+    有无条件，`experiments/20260927_dvd/`）：都是有无类问题，读出是 Yes/No 对数几率。本候选问的是数量，读出是分布期望。
+  - HVL 让模型生成证据时段（`experiments/20260911_hvl/`）：生成文字再解析，占比与份额 Spearman .201 / −.055。本候选不生成
+    文字，读的是一个 token 位置上 6 个选项的概率。
+  - twolevel §11.1 的"期望占比"：份额取自 M2 后验，属于从窗读数推出来的间接估计。
+  - 键的其它改写（中位数、上半均值、乘积、ICC、两视图混合、可修正先验、模态门控等，约 17 种，见
+    `../../research-wiki/DIRECTIONS.md` 与 `docs` 下 2026-10-25 的评估记录）都只改窗读数怎么汇总，没有新的视频层读数。
+- **改的是 M3 自身的机制**：M3 的职责是"视频间按行为覆盖多少排序"。本候选把这个量从代理（窗均值）换成直接读出的份额，
+  同时去掉两高斯校准。不改 M1 的窗读数，不改 M2。
+
+## 2. 方法（常数先声明，三个语料相同）
+
+### 2.1 读数
+- 读取器 `Qwen/Qwen3-VL-8B-Instruct`；整段前缀与 r6 完全相同（规则 + 20 帧 + 整段带时间戳转录，`runs/20260926_glr/base_gridA`
+  的配置）。
+- **主读法（direct）**：在前缀之后、与整段裁定并列的一个隔离分支，提问文本（逐字）：
+
+  ```
+  How much of this video's running time contains content that violates any of the above rules?
+
+  A. None of it
+  B. Less than a tenth
+  C. Between a tenth and a quarter
+  D. Between a quarter and a half
+  E. Between a half and three quarters
+  F. More than three quarters
+
+  Answer with the letter only.
+  ```
+
+  读助手回合第一个位置上 A–F 六个 token 的 logit，在六个选项上做 softmax 得到 p_A..p_F。
+- **份额**：各选项取区间中点 m = (0, .05, .175, .375, .625, .875)，E[c] = Σ_k p_k m_k。E[c] > 0 恒成立（softmax 无零概率）。
+- **诊断读法（stance）**：先接 r6 的整段裁定轮（立场轮）再问同一个问题。只报告，不进方法。
+- **备用读出 η（2026-10-25 冒烟测试后、完整运行前加入，见 §7）**：把六个选项看成有序类别，按比例优势（cumulative logit，
+  McCullagh 1980）模型读潜变量：对 j = 1..5，ℓ_j = log P(选项 ≥ j) − log P(选项 < j)（选项按 A..F 排序，P 为六选项归一化
+  概率，在 log 空间用 logsumexp 算），η = (1/5) Σ_j ℓ_j。比例优势模型下 logit P(≥ j) = η* − θ_j，所以 η 是潜变量 η* 减去
+  阈值均值的估计；单位是对数几率，与 z_video 同量纲；没有常数。动机：选项分布接近 one-hot 时，E[c] 在 .875 或 0 处饱和，
+  量的差别只留在极小的概率里；η 用的是 log 概率，不饱和。
+
+### 2.2 键与帧分
+- **主臂 A1（share key）**：K = logit E[c]；不加 z_video，不做两高斯校准；帧分 = K + r6_bma 的视频内居中秩项（M2 不变）。
+- **次臂 A2（verdict + share）**：K = z_video + s · logit E[c]，s = 该语料全部视频上 sd(mean_w z_w) / sd(logit E[c])，即份额项
+  取它所替换的窗均值项的同一离散度（固定规则，由无标签读数算出，规则 13 允许）；再按 r6 同样的两高斯混合无标签校准
+  （`--key calib`）；帧分 = 校准后的键 + 同一秩项。不缩放直接相加时 z_video 的标准差 12.2 / 7.5 远大于 logit E[c]，键几乎
+  只剩裁定，所以在看到读数前定下这个缩放（2026-10-25，engineer 的量纲检查）。
+- 两臂都没有可调常数。A1 是声明的方法；只有 A1 不过门而 A2 过门时，A2 才成为方法，并标明"在两个声明的臂之间按 test 结果
+  选出"（development-selected）。
+- A2 系列的 s 与 s_η 在整个 test split 的无标签读数上算（与 r6 两高斯校准的口径相同，属 transductive；单个新视频需要存一组
+  参照读数）。
+- **η 两臂（冒烟测试后加入）**：A1η：K = η，不校准，帧分 = K + 同一秩项；A2η：K = z_video + s_η · η，s_η 按 A2 的同一规则
+  （sd(mean_w z_w) / sd(η)），再两高斯校准。
+- **方法的选定顺序（运行前写定）**：A1 → A2 → A1η → A2η，按此顺序第一个同时过 §3 预检与 §4 门的臂成为方法。四个臂的数字
+  全部报告；最终方法标"在四个声明的臂之间按 test 结果选出"（development-selected），除非 A1 过门。η 臂的预检 P1–P3 用 η
+  代替 E[c] 计算。
+- M2 参数与 r6_bma 完全相同（`twolevel_r2.py --noleak --transform nscore --key calib --duration bma --bma-prior length
+  --min-windows 2 --bma-grid 6 --arm m2`）。within 按构造与 r6_bma 相同。
+
+### 2.3 消融与诊断（都在同一次读数上，CPU）
+- 14g 消融：键换回 r6（= r6_bma 本身）。
+- 读出消融：E[c] 换成众数选项的中点 c_mode（argmax_k p_k 对应的 m_k；为避免 logit 0，众数为 A 时取 .01）。η 臂的读出消融
+  用 logit c_mode 代替 η（A2η 的缩放按同一规则重算）。
+- 诊断：stance 读法；HCS 只算仇恨类 GT 下的同一张表（对 r6_bma 与两臂一致地报）；控制窗均值后 E[c] 与份额的偏 Spearman。
+
+## 3. 预检（读 test GT，规则 10；一次 GPU 读数同时供预检与解码）
+
+- **P0 管线（不读 GT）**：六个选项都是单 token；前 2 个视频 / 语料，缓存分支与一次普通完整调用的六选项归一化概率最大差
+  < .01、E[c] 差 < .005、η 差 < .5；复现的 z_video 与 r6 存档相差 < .05。不过 → 修代码，不算候选失败。
+  （2026-10-25 冒烟测试后修订：原定"六个选项 log 概率相差 < .05"。实测差 .11–.59 全部出在概率 < 1e-7 的选项上，归一化概率
+  最大差 4.7e-5、E[c] 最大差 4e-5，是 bf16 在极小概率上的数值差，不是管线错误；门改为用方法实际用到的量。）
+- 份额 = 该视频 4 fps 协议 GT 的仇恨帧占比。"仇恨视频" = 至少一个仇恨帧（HateMM 85 / 215，HCS 103 / 118）。
+- **P1 量的信息**：在仇恨视频里，ρ_Spearman(E[c], 份额) > 窗均值的值（.416 / .533），两语料都要满足（点估计）。
+- **P3 不是裁定换名**：全部视频上 ρ_Spearman(E[c], z_video) < .90，两语料都要满足。
+- P1 或 P3 任一语料不过 → 机制不成立，候选归档（仍报告解码数字作记录）。
+- **P2（约束 A1 与 A1η，即不含 z_video 的两个臂）**：在 P(V=1|K_r6) > .5 的视频里，E[c]（A1η 用 η）区分"有 / 无仇恨帧"
+  的 AUC ≥ 窗均值的值（.821 / .710）。不过 → 该臂不能作方法。P(V=1|K_r6) 用 r6 在整个 test split 无标签读数上拟合的校准，
+  与 r6 口径相同。
+- 另报（不设门）：偏 Spearman（控制窗均值）、E[c] 在无仇恨视频上的分布、选项分布的熵、众数分布、max p > .99 的视频占比、
+  ρ(η, z_video)（2026-10-25 规则 4 审查建议）。
+
+## 4. 门（`scratchpad` 小组章程的完成标准，运行前写定）
+
+对按 §2.2 选定顺序（A1 → A2 → A1η → A2η）考察的每个臂：
+- **G1 不掉分**：HateMM、HCS 六个数都不低于 r6_bma 超过噪声下限（pooled .005、within .01）。r6_bma：HateMM
+  .8971 / .6942 / .7508，HCS .7168 / .6711 / .6373（`runs/20260926_twolevel/r6_bma/metrics.json`）。
+- **G2 规则 14g**：键换回 r6 后，pooled ROC 或 pooled PR 至少一项在两语料都下降 ≥ .01（等价于该臂相对 r6_bma 同一项两语料
+  都 ≥ +.01）。
+- **G3**：DeHate external 报数（`runs/20260927_dehate_external/r6_bma/metrics.json` 对照），不作门。
+- 另需：规则 4 novelty 审查 PASS（运行前），规则 6 code review PASS（运行前）。
+- 全过 = 候选 47 成功，M3 换成该臂，进入 STATUS。任一不过 = 按规则 12 归档，写明哪条不过。
+
+## 5. 代价
+
+- 最终方法：每个视频多一个约 60 token 的分支，接在已有的前缀缓存上，读一个位置的 6 个 logit；估计 < .3 s / 视频
+  （RTX 5090）。不加窗分支，不加帧。
+- 去掉的计算：两高斯键校准（A1）。
+- 本次实验：重新编码前缀，约 1 s / 视频；HateMM + HCS 333 个视频约 6–10 分钟加模型加载；DeHate 1151 个约 25–30 分钟。
+  解码与分析在 CPU 上，几分钟。
+
+## 6. 怎么跑
+
+- 读数（GPU，Slurm，lab1）：`RUN=<name> QFILE=experiments/20261025_m3_coverage/questions/share_letters.txt OPTIONS="A B C D E F"
+  MODE=both [LIMIT=2 VERIFY=1] [DATASETS=DeHate] sbatch experiments/20261025_m3_coverage/launch/lab1_read.sbatch`
+  → `runs/20261025_m3_coverage/<name>/reads.jsonl`（每视频一行：两种读法的六个选项 log 概率、选项在全词表上的概率质量、
+  复现的 z_video 与 r6 的差）。`read_extra.py --dry-run` 只用 CPU 检查渲染与 token 拼接（1674 个视频全部通过）。
+- 键（CPU）：`make_key.py`（写解码用的键文件，经 `twolevel_r2.py --dvd-reads/--dvd-conds T` 只换键、M2 不变；`--form r6`
+  与 r6_bma 逐帧最大差 3.6e-15，六个数相同，DeHate 也相同，`runs/20261025_m3_coverage/plumb_r6key_dvdT{,_dehate}/`）；
+  `key_eval.py`（各臂的帧分与统一评测器指标、相对 r6_bma 的配对 bootstrap；自检：窗均值替换为自身，帧分最大差 5.3e-15）。
+- 预检（CPU，读 GT）：`precheck.py --values <标量文件>`（自检：窗均值复现 .4163 / .5334；随机量 6 格区间都含 0）。
+- 一条命令的分析流程：analyst 补写，见下次更新。
+
+## 7. test 读取记录（规则 10）
+
+- 2026-10-25 模块评估：`runs/20260926_twolevel/` 与 `runs/20260926_glr/base_gridA` 的读数配 4 fps GT，算各种键与份额的
+  相关和 pooled 差（`scratchpad` 下 `novelty_eval/`，未入仓库）。发现：HCS 只用窗均值做键 pooled +.022 / +.024；HateMM
+  在现有输入下没有余量；窗均值与份额 ρ .416 / .533。影响：选定 M3 为改进对象，选定"直接读份额"这一族。
+- 2026-10-25 scout：DVD、HVL、π0、CC / PCC 各量与份额的相关；份额进 M2 段长网格与按份额平移后验两条路线的 GT 份额检查
+  （都不移动 within 或不如键 + 秩）。影响：排除候选 B、C；不用乘积式键。
+- 2026-10-25 analyst：§1 的 Spearman 表与 GT 份额诊断。影响：§3 的 P1 阈值取窗均值的值；动机段落。
+- 问题文本、选项、中点、键的两种形式、预检与门都在看到任何份额读数之前写下。
+- 2026-10-25 冒烟测试（Slurm 880，sc474397，每语料前 2 个视频，`runs/20261025_m3_coverage/smoke/`，未读 GT）：看了 4 个视频
+  的读数与核对记录。发现：(1) 缓存与普通调用的 log 概率差只在极小概率的选项上，修订 P0；(2) 四个视频的选项分布都接近
+  one-hot：整段裁定为 Yes 的 3 个视频（含一个 HateMM 非仇恨视频）都以 p ≈ 1 答 F，裁定为 No 的 1 个答 A，E[c] 只取 .875
+  或 ≈ 0。影响：加入备用读出 η 与两个 η 臂（§2.1、§2.2），并写定四个臂的选定顺序。没有改问题文本、选项、中点、A1 / A2。
+
+## 8. 结果
+
+（未运行。）
