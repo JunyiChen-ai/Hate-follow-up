@@ -296,7 +296,11 @@ novelty / code review 各一个独立 agent）。本文件 §2–§4 的问题�
 - **消融与诊断**：
   - G2 消融：去掉量项，K = z_video（同样校准）。
   - 相对 r6 键的差（只报告）。
-  - 诊断（不进方法）：C3 = 只用 s·q_v 不加 z_video；"相加"形 z_video + 窗均值 + s·q_v；HCS 只算仇恨类 GT；DeHate（G3）。
+  - 诊断（不进方法）：C3 = 只用 s·q_v 不加 z_video；"相加"形 z_video + 窗均值 + s·q_v；HCS 只算仇恨类 GT；DeHate（G3）；
+    winonly 臂 K = z_video + s·mean(单窗读 z_w)（分开"互不可见"与"段长"两个因素；单窗读用旧 ASR 缓存
+    `runs/20260910_spvl/mllm/q3vl-8b/winonly`，报数时注明）。另报 ρ(q_v, 窗均值)、ρ(q_v, 时长)、ρ(logit p̂_v, 时长)
+    （规则 4 审查建议，`docs/reviews/20261025_m3_segment_presence_novelty.md`）。
+  - 措辞：C1 也是 classify-and-count，区别是各段互不可见、单元更粗；group testing（Dorfman / Thompson）只是 C2 的来源。
 
 ### 11.3 预检（读 GT，规则 10）
 - P0（不读 GT）：复现的 z_video 与 r6 存档 |dz| < .05；前 2 个视频 / 语料，每段 token 拼接一致、缓存 vs 普通调用 |dz_j| < 1。
