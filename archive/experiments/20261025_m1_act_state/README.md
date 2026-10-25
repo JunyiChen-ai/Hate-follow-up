@@ -1,3 +1,5 @@
+Archived 2026-10-25 (item 40): stage-0 stop; the verdict span gives the same window-by-window change with another video's same-sign verdict state (corr .95-.96 on all three corpora).
+
 # Candidate 50: act-state reading, mask form A1 (falsifier pre-check)
 
 Declared 2026-10-25, before any run. No GPU job has been submitted and no read of this candidate exists yet.
@@ -447,8 +449,36 @@ the first video of each corpus (some on every video).
 - Arms, thresholds and definitions come from review_m1.md §5.3. That reviewer's test reads are logged in
   review_m1.md §7.
 
-**Later entries:** one per stage, written when the stage is analysed.
+**2026-10-25, stage 0 (Slurm 890, sc474397).** GT-free: no test GT was read. Read only the stage-0 reads and the
+r6 verdict signs (donor rule). Outcome: STOP, so stages 1 and 2 and form A2 were not run.
 
 ## 12. Results
 
-None yet.
+**Stage 0, 2026-10-25, Slurm 890 on sc474397 (uoa-lab1).** 60 videos (first 20 by sorted id per corpus), 234 s,
+5 donor passes, 0 errors. All in-job checks passed (60 records in `checks.jsonl`; largest own-span key re-rotation
+difference 0.0). Output `runs/20261025_m1_act_state/stage0/{stage0_summary.json, run.log, checks.jsonl, <arm>/}`;
+Slurm log `runs/20261025_m1_act_state/slurm_890.out`. GT-free; these are not development-selected metrics.
+
+Visual change d = A1 − all_local (the gate); the speech row is a diagnostic only.
+
+| corpus | S1 median within-video sd of d (pass ≥ .5) | S2 median constant share (pass ≤ .8) | S3 median corr(d, A1_other − all_local) (pass ≤ .9) | median mean abs(A1_other − A1) | speech S3 (diagnostic) |
+|---|---|---|---|---|---|
+| HateMM | 1.583 PASS | .421 PASS | .949 FAIL (Spearman .938) | .675 | .975 |
+| HateClipSeg | 1.760 PASS | .573 PASS | .956 FAIL (Spearman .940) | .710 | .967 |
+| DeHate | 1.475 PASS | .855 FAIL | .957 FAIL (Spearman .946) | .963 | .965 |
+
+**Verdict: STOP (S3 fails on all three corpora; S2 also fails on DeHate). Candidate 50 is archived.**
+
+Reading:
+- Opening the verdict span does change the window reads, by about 1.5 logit within a video, and on HateMM and
+  HateClipSeg most of the change is not a per-video constant.
+- The same window-by-window change appears when the span holds another video's verdict-turn states with the same
+  verdict sign (correlation .95-.96 on every corpus). Within a video the two arms differ by about .7 logit on
+  average, but in the same direction for the same windows.
+- So what the verdict span passes to a local read is the generic state of "the model said Yes (or No)", not anything
+  specific to this video's act. This agrees with three earlier results: the dominant judge-state direction is the
+  verdict itself (Spearman .992, history M1-h), a permuted other-video hypothesis works as well as the video's own
+  (M1-b), and the stance acts on window reads as a per-video gain (R² .90-.92, team design_story P10).
+- Form A2 (transferring the verdict-position hidden state into a short local read) would transfer the same state,
+  so it was not run, as the kill rule in §3 requires.
+

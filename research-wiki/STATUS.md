@@ -1,6 +1,13 @@
 # 当前研究状态
 
-截至 **2026-10-25 06:30 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+截至 **2026-10-25 22:30 NZDT**。以下为当前入口；其后的日期记录保留历史，不代表最新运行状态。
+
+- **M1 / M3 novelty 小组（2026-10-25，用户要求 M1 或 M3 至少再有一个可以 claim 的机制；候选 50，sc474397 Slurm 890；归档第 40 项，方法未变）**：三轮、10 名成员。记录在 `docs/reviews/20261025_m1m3_team/`（过往实验整理 `history.md`：全部 M1 / M3 尝试、已关闭方向、缓存清单；文献约 95 篇 `lit_m1.md`、`lit_m3.md`；三名设计者 `design_{m1,m3,story}.md`；两名反方审查 `review_{m1,m3}.md`），CPU 检查脚本与输出在 `runs/20261025_m1m3_team/`。数字均 development-selected，对照为当前方法（不校准的键）。
+  - M3：三个方案全部放弃（前缀 / 后缀裁定定范围、相反立场再读、视频级作为 M2 的上层节点），另有 11 个想法被 CPU 数字否定。现有读数上没有任何 M3 做法让 HateMM 涨分。乘积组合 P(V|K)·P(h|V=1) 的 PR 涨分只来自已去掉的校准，不校准时 HateMM −.027 / −.048。
+  - M1"本窗证据绑定"：涨分是窗特定的。把读数变化在同一视频内换窗打乱（30 个种子），重新给本窗帧仍高 HateMM +.019 [+.002, +.039]、HCS +.020 [+.003, +.039]；本窗帧 + 对齐词合起来对 r6 within +.028 [−.000, +.058] / +.042 [+.014, +.073]，对换窗打乱 +.032 / +.045（区间在 0 以上）。它是输入改动（规则 5），重新给帧有 Prompt Repetition、RE2、TVC、ReKV 先例，不能作 novelty；是否采用由用户定。DeHate 还没有这组读数。
+  - 候选 50（每个窗口分支只看本窗加裁定轮，掩码形式 A1；规则 4 PASS、规则 6 PASS）：第 0 步（每语料 20 视频、不读 GT、234 s）STOP。换成同号的别的视频的裁定状态，窗内变化的相关 .949 / .956 / .957（门 ≤ .9）：裁定轮传给局部读数的只是"模型答了 Yes / No"这个通用状态。隐藏状态迁移形式按停止规则不跑。`archive/experiments/20261025_m1_act_state/README.md` §12；审查 `docs/reviews/20261025_m1_act_state_{novelty,code}.md`。
+  - 现有 M1 写法的风险：Superposition Prompting（ICML 2024）、Parallel Context Windows（ACL 2023）已是"共享前缀 + 隔离分支"的方法先例；paradigm_framing 的单窗读消融行（−.021 / −.071）混了分支类型与带上下文的帧；HCS 上整段上下文的作用是每视频平移。
+  - 结论：在 Qwen3-VL-8B、现有输入与 HCS 协议 GT 下，M1 读法与 M3 都没有剩下的有依据候选。
 
 - **M3 研究小组（2026-10-25，用户要求提升 M3 视频键的 novelty、可能的话提升性能；候选 47–49，sc474397 Slurm 880–885，全部归档为第 37–39 项，方法未变）**：三个候选都在 `experiments/20261025_m3_coverage/`（README §1–§13），三份规则 4 审查 PASS（`docs/reviews/20261025_m3_{coverage,stance_share,segment_presence}_novelty.md`）。47：在整段前缀上用六选项问"违规内容占视频多少"，读选项分布的期望或比例优势潜变量。P3 不过：读数与 z_video 的 Spearman .965 / .904（E[c]）、.973 / .958（η）；裁定为 Yes 的视频 142 / 146、108 / 108 以 p > .99 答"超过四分之三"。48：先接立场轮再问份额。P1 不过：与 GT 份额 ρ .195 / .252，窗均值 .416 / .533；pooled HateMM −.011 / −.038、HCS −.035 / −.048。49：视频等分 4 段，每段只用本段的 5 帧与本段转录，问整段裁定原题，用四段的存在判断估份额替换窗均值。P1 不过（.278 / .419），pooled HateMM −.010 / −.048、HCS −.011 / −.017；只算仇恨类的 HCS 诊断 +.018 / +.019，DeHate PR +.015。另在 CPU 上探索了 39 个键 / 组合形式（两部分帧分、秩项宽度、每视频比例 MLE、段模型 Bayes factor，README §13），没有一个同时过 G1 与 G2 而又不靠 HCS 的 GT 定义。结论：整段上下文上的新读数塌回裁定，去掉上下文的读数丢掉份额信息，所有新量控制窗均值后的偏相关 ≤ 0；在现有读数与协议下，M3 没有有依据的下一个候选（独立策略评估同结论）。按"仇恨"定义改进视频层（DVD 的目标群体问题、49 的逐段读数）在 HCS 的协议 GT 上掉分、在只算仇恨类的 GT 与 DeHate 上涨分。数字均 development-selected。
 
@@ -310,14 +317,14 @@ r6_bma = r3_m2（用户 2026-09-27 定的默认方法）去掉时序层里以秒
 - M1 读取，与 SPVL-r2 相同。Qwen3-VL-8B 先读共享前缀（规则 + 20 帧 + 整段转录），给出整段裁定，再过立场轮，然后每个 8 秒窗读画面、语音两个隔离分支。
 - M2 读数变证据。每个模态的读数先换成语料内排名的正态分数，再由 EM 估"违规 / 非违规"两类读数分布。
 - M3 时序。每个模态一条链，任一条链处在违规状态即算违规。最短段 = 两个读数窗（形状 4 由读取网格推出，不是选的）。平均段长不再设定，在每个视频内对 [两窗, 视频长度] 按长度均匀先验积分掉。
-- M4 组合。整段分 = 两类混合无标签校准后的对数几率；帧分 = 整段分 + 视频内居中秩。`--arm full` 输出区间。
-- 代码：`experiments/20260926_twolevel/twolevel_r2.py --noleak --transform nscore --key calib --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2`，读数 `runs/20260926_glr/base_gridA`。最终运行与消融见该 README §20。
+- M4 组合。整段分 = 裁定 + 窗均值，不做校准（用户 2026-10-07 去掉了校准）；帧分 = 整段分 + 视频内居中秩。`--arm full` 输出区间。
+- 代码：`experiments/20260926_twolevel/twolevel_r2.py --noleak --transform nscore --key raw --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2`，读数 `runs/20260926_glr/base_gridA`。最终运行与消融见该 README §20。
 
 结果（test，4 fps；pooled ROC / pooled PR / within）：
 
 | 方法 | HateMM | HateClipSeg | DeHate（external，1151 视频） |
 |---|---|---|---|
-| **r6_bma**（`runs/20260926_twolevel/r6_bma/metrics.json`；DeHate `runs/20260927_dehate_external/r6_bma/metrics.json`） | .8971 / .6942 / .7508 | .7168 / .6711 / .6373 | .7011 / .1582 / .6431 |
+| **r6_bma**（`runs/20260926_twolevel/final_rawkey/metrics.json`；DeHate `runs/20260927_dehate_external/r6_rawkey/metrics.json`；2026-10-25 改：此行原为带校准的旧版本） | .8955 / .6883 / .7508 | .7137 / .6666 / .6373 | .6994 / .1568 / .6431 |
 | r3_m2（用户定的默认，`runs/20260926_twolevel/r3_m2/metrics.json`；DeHate `runs/20260927_dehate_external/r3_m2/metrics.json`） | .8971 / .6953 / .7525 | .7168 / .6705 / .6397 | .7009 / .1578 / .6539 |
 | SPVL-r2 + 时长先验（`runs/20260926_glr/infer/base_gridA_d80/metrics.json`） | .8956 / .6888 / .7546 | .7136 / .6671 / .6364 | .6996 / .1570 / .6364 |
 | SPVL-r2（`runs/20260926_glr/infer/base_gridA_spvlr2/metrics.json`） | .8952 / .6867 / .6800 | .7134 / .6667 / .6101 | .6993 / .1570 / .6406 |
