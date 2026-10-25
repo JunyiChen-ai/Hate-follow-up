@@ -30,13 +30,16 @@ Per video, three API calls to `qwen3-vl-plus` (DashScope OpenAI-compatible endpo
    social entities (people, organisations, places, dates, events), visible social groups, symbols (flags, logos,
    gestures, on-screen text, meme formats), coded or unusual terms in the speech, and the social domain. Each clue has
    the time(s) where it appears and at most two Wikipedia search queries.
-2. **Retrieval (no model).** English Wikipedia API: for each query (at most 12 per video) the top 3 search hits; for each
-   hit the REST summary, cut to its first 5 sentences (CHER keeps the first five lines). Only entity names and search
-   words leave the machine; no video content is sent to Wikipedia.
+2. **Retrieval (no model).** English Wikipedia API: for each query (at most 12 per video) the top 3 search hits with the
+   lead section of each, in one request (`generator=search`, `prop=extracts`, `exintro`, plain text), cut to its first 5
+   sentences (CHER keeps the first five lines). Requests are serialised with 1 s between them and retried on HTTP 429
+   (the first smoke test, 4 threads in parallel, was rate-limited after the first query of each video). Only entity
+   names and search words leave the machine; no video content is sent to Wikipedia.
 3. **Self-reflection (text call).** Input: transcript, clues, retrieved summaries. Keep only entries that pass both
    CHER criteria (known in mainstream English-language online discourse; directly explains something in this video).
-   Output: at most 8 notes `{t_start, t_end, clue, source_title, note}`, each note at most 60 words of neutral
-   encyclopaedic fact.
+   Output: at most 8 notes `{t_start, t_end, clue, source_title, note}`, each note at most 60 words restating only what
+   its summary says, each summary used at most once (the first smoke test showed notes with facts from the model's
+   own memory attributed to an unrelated summary).
 4. **Judgment (vision call).** Input: frames, transcript, the kept notes, the same 9 policy rules the 8B reader uses.
    Output JSON: `violates` (yes / no), `confidence` (0–1), target, intent, means, times `[[s, e], ...]`, explanation
    (at most 80 words). The user ruled (2026-10-26) that the reader may take this judgment as an input; arm J and arm KJ

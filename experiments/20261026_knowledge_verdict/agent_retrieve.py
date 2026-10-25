@@ -18,7 +18,6 @@ import socket
 import sys
 import threading
 import time
-import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -66,7 +65,7 @@ Below are the timestamped transcript of a video, the items a first reader identi
 For each summary decide:
 (1) cultural consciousness: is this information known in mainstream English-language online discourse?
 (2) relevance: does it directly explain an item that appears in this video, rather than being only topically adjacent?
-Keep only summaries that pass both. For each kept summary write one note of at most 60 words stating the neutral encyclopaedic fact that explains the item. Do not judge or describe the video itself in the note.
+Keep only summaries that pass both. For each kept summary write one note of at most 60 words that restates, in neutral encyclopaedic terms, only what that summary says about the item; do not add facts that are not in the summary, and use each summary at most once. Do not judge or describe the video itself in the note.
 Return at most {max_notes} notes, most relevant first, with the time span of the item they explain. Return JSON only, in this form:
 {{"notes": [{{"summary_id": 1, "clue": "...", "t_start": 0.0, "t_end": 0.0, "source_title": "...", "note": "..."}}]}}
 If nothing passes, return {{"notes": []}}.
@@ -107,6 +106,9 @@ Transcript:
 
 _lock = threading.Lock()
 _spent = {"in": 0, "out": 0}
+_wiki_lock = threading.Lock()
+_wiki_last = [0.0]
+WIKI_MIN_INTERVAL = 1.0      # seconds between Wikipedia requests over all threads (bursts from 4 threads got HTTP 429)
 
 
 def image_part(path):
@@ -168,21 +170,40 @@ def first_sentences(text, k):
     return " ".join(sents[:k])
 
 
-def wiki_search(query):
-    r = requests.get("https://en.wikipedia.org/w/api.php", headers=UA, timeout=20,
-                     params={"action": "query", "list": "search", "srsearch": query, "srlimit": HITS_PER_QUERY,
-                             "format": "json"})
-    r.raise_for_status()
-    return [h["title"] for h in r.json().get("query", {}).get("search", [])]
+def wiki_get(params):
+    """One English Wikipedia API request, serialised over threads with WIKI_MIN_INTERVAL between requests; retries
+    HTTP 429 / 5xx up to 4 times (Retry-After or 2, 4, 8, 16 s). Returns (json or None, last HTTP status)."""
+    status = None
+    for k in range(5):
+        with _wiki_lock:
+            wait = _wiki_last[0] + WIKI_MIN_INTERVAL - time.time()
+            if wait > 0:
+                time.sleep(wait)
+            r = requests.get("https://en.wikipedia.org/w/api.php", headers=UA, timeout=20, params=params)
+            _wiki_last[0] = time.time()
+        status = r.status_code
+        if status == 200:
+            return r.json(), status
+        if status != 429 and status < 500:
+            break
+        try:
+            delay = float(r.headers.get("Retry-After", ""))
+        except ValueError:
+            delay = 2.0 ** (k + 1)
+        time.sleep(min(delay, 60.0))
+    return None, status
 
 
-def wiki_summary(title):
-    """Returns (first SUMMARY_SENTENCES sentences or None, HTTP status)."""
-    r = requests.get("https://en.wikipedia.org/api/rest_v1/page/summary/" + urllib.parse.quote(title.replace(" ", "_")),
-                     headers=UA, timeout=20)
-    if r.status_code != 200:
-        return None, r.status_code
-    return first_sentences(r.json().get("extract", ""), SUMMARY_SENTENCES), 200
+def wiki_search_summaries(query):
+    """Top HITS_PER_QUERY search hits of a query with the lead section of each (plain text), in one request.
+    Returns ([(title, first SUMMARY_SENTENCES sentences)], HTTP status)."""
+    js, status = wiki_get({"action": "query", "generator": "search", "gsrsearch": query, "gsrlimit": HITS_PER_QUERY,
+                           "prop": "extracts", "exintro": 1, "explaintext": 1, "exlimit": HITS_PER_QUERY,
+                           "redirects": 1, "format": "json"})
+    if js is None:
+        return None, status
+    pages = sorted((js.get("query") or {}).get("pages", {}).values(), key=lambda p: p.get("index", 99))
+    return [(p["title"], first_sentences(p.get("extract", ""), SUMMARY_SENTENCES)) for p in pages], status
 
 
 def clamp_time(x, dur):
@@ -248,23 +269,18 @@ def process(client, row, asr, usage_log):
     summaries, seen = [], set()
     for q in queries:
         try:
-            titles = wiki_search(q)
+            hits, status = wiki_search_summaries(q)
         except Exception as exc:
             out["errors"].setdefault("wikipedia", []).append(f"search {q!r}: {type(exc).__name__}")
             continue
-        for t in titles:
-            if t in seen:
+        if hits is None:
+            out["errors"].setdefault("wikipedia", []).append(f"search {q!r}: HTTP {status}")
+            continue
+        for t, s in hits:
+            if t in seen or not s:
                 continue
             seen.add(t)
-            try:
-                s, status = wiki_summary(t)
-            except Exception as exc:
-                out["errors"].setdefault("wikipedia", []).append(f"summary {t!r}: {type(exc).__name__}")
-                continue
-            if status != 200:
-                out["errors"].setdefault("wikipedia", []).append(f"summary {t!r}: HTTP {status}")
-            if s:
-                summaries.append({"id": len(summaries) + 1, "query": q, "title": t, "summary": s})
+            summaries.append({"id": len(summaries) + 1, "query": q, "title": t, "summary": s})
     out["queries"], out["summaries"] = queries, summaries
     # 3. self-reflection
     notes = []
@@ -277,11 +293,13 @@ def process(client, row, asr, usage_log):
         if err:
             out["errors"]["reflect"] = err
         by_id = {s["id"]: s for s in summaries}
+        used = set()
         for n in (ref or {}).get("notes", [])[:MAX_NOTES]:
             a, b = clamp_time(n.get("t_start"), dur), clamp_time(n.get("t_end"), dur)
             src = by_id.get(as_int(n.get("summary_id")))
-            if a is None or b is None or src is None or not str(n.get("note", "")).strip():
+            if a is None or b is None or src is None or src["id"] in used or not str(n.get("note", "")).strip():
                 continue
+            used.add(src["id"])
             notes.append({"summary_id": src["id"], "clue": str(n.get("clue", "")).strip(), "t_start": min(a, b),
                           "t_end": max(a, b), "source_title": src["title"],
                           "note": " ".join(str(n["note"]).split()[:60])})
