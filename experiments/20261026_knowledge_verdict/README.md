@@ -67,7 +67,7 @@ Per video, three API calls to `qwen3-vl-plus` (DashScope OpenAI-compatible endpo
 | J | judgment | none |
 | J0 | judgment written without the notes | none |
 | Kother | notes of another video of the same corpus (fixed derangement, seed 0), times scaled to this video's duration | that video's notes mapped to windows by the scaled time |
-| Kshift | as K | the video's own notes, each moved by half the video duration (circular, length kept) |
+| Kshift | as K | the video's own notes, each moved by half the video duration (circular, length kept: the part past the end continues at 0; a whole-video note stays whole) |
 | Kmark | as K | at the windows K would note: the notes' time spans with the content replaced by "(note withheld)" |
 | A (CPU) | none; z_video := the agent's judgment probability, put on the base z_video scale by rank within the corpus subset | base window reads |
 | A0 (CPU) | as A, from the judgment written without the notes | base window reads |
@@ -85,8 +85,10 @@ times are themselves a localization signal from the stronger model).
   HateMM 11 / 1, HateClipSeg 3 / 2, DeHate 17 / 0; videos with a within-video ROC: 15, 35, 6.
 - **Decoding:** arm reads replace the r6 reads of the subset videos; all other videos keep their r6 reads; the full
   corpus is decoded with the r6 settings, and metrics are computed on the 40 subset videos with the repo evaluator.
-- **G0 (GT-free):** at least 60 % of videos get ≥ 1 note; Spearman(z_video of K, z_video of base) < .9 on at least two
-  corpora.
+- **G0 (GT-free):** on each of the three corpora at least 60 % of the 40 videos get ≥ 1 note; Spearman(z_video of K,
+  z_video of base) < .9 on at least two corpora. Reported next to it (no threshold): note grounding (share of a note's
+  content words found in the summary it cites), API errors, moderation refusals, judgments with confidence < .5.
+- **Base check:** arm base must reproduce the stored r6 z_video: median |Δ| ≤ .1 and max |Δ| ≤ 1.0 per corpus.
 - **G1 (development, on the subset):** for K or KJ: (a) pooled ROC and PR both above base on HateMM and on HateClipSeg;
   (b) at least 40 % of base false positives become verdict-No, counted over the three corpora together (31 base false
   positives; HateClipSeg alone has 3); (c) at most 1 new false negative per corpus; (d) gain ≥ 2 × max(Kother gain, 0),

@@ -55,3 +55,76 @@ Date: 2026-10-26. Reviewer: independent agent. Scope (rule 6): only bugs that wo
 
   - The splice replaces exactly the subset rows that have a non-error read.
   - The evaluator is the unmodified repo file.
+
+## Re-review (2026-10-26, after the fixes for B1, notes 1–8 and the rule-4 advisories)
+
+Scope: only the changes in commits `f199e74` and `adc4986`. These cover `common.py`, `kv_measure.py`, `agent_retrieve.py`, `decode_eval.py`, README §2–§7 and `launch/`. No candidate file was edited. CPU only.
+
+### VERDICT: one BLOCKER
+
+**B2. Kshift does not keep the note length, which biases G2** (`common.py:48-55`).
+- README §3 says the shift is "circular, length kept". The code shifts the start circularly but clips the end at the video duration.
+- So a note that crosses the midpoint loses coverage after the shift. A whole-video note `[0, dur]` becomes `[dur/2, dur]`.
+- Checked on CPU with `hate_video_1` (12 windows): the whole-video note reaches 12 windows in K but only 7 (windows 5–11) in Kshift.
+- Effect on the control:
+  - In K, such a note is uniform across all windows and carries no position.
+  - In Kshift, the note becomes a half-video position signal, and the windows get less text.
+- G2 is a strict "within(K) > within(Kshift)" test on 15 and 35 videos. It would partly measure note coverage, not note placement.
+- Fix: wrap the part that runs past the end, and count each note once per window. Sketch:
+  - If `b − a ≥ dur`, keep `[0, dur]`.
+  - Otherwise, with `a2 = (a + dur/2) % dur` and `b2 = a2 + (b − a)`:
+    - if `b2 ≤ dur`, emit `[a2, b2]`;
+    - if `b2 > dur`, emit two pieces, `[a2, dur]` and `[0, b2 − dur]`. Tag both with the note's index `_k`.
+  - In `window_notes`, deduplicate by `_k` before applying the 2-note cap.
+
+### Non-blocking notes
+
+1. **G0 strictness** (`decode_eval.py:209`). The code requires the ≥ 60 % notes share on all three corpora. The README sentence can also be read as one share over all videos. Fix the reading in README §4.
+2. **A corpus with no judgment empties that corpus's gates** (`decode_eval.py:161`). If a whole corpus has no judgment (e.g. all judge calls refused), `cpu_arm_reads` returns nothing for it. Then `ids` is empty for every arm on that corpus, and gate (c) passes by default (`:217`, `.get(..., 0)`). Fix: build `ids` from the GPU arms only, or give the CPU arms the base read in that case.
+3. **`base_reproduction` has no declared tolerance and is not part of `verdict`.** Declare a bound, or at least report it next to G1.
+4. **Confidence semantics of A / A0** (`decode_eval.py:48`). The code assumes that `confidence` refers to the given answer. If the model sometimes gives the probability of violation instead, a "no" with confidence < .5 lands on the wrong side. Report how many answers have confidence < .5.
+
+### Checked and found correct
+
+- **Inserts for all nine arms** (stub-model CPU render, with the token-seam check on every arm):
+  - J0 shows `judgment0`, and J shows `judgment`.
+  - Kshift and Kmark use K's prefix, with the original times.
+  - Kmark notes exactly K's windows, with the text "(note withheld)".
+  - Kother times are rescaled: `[15, 30]` of a 30 s video becomes `[47.5, 95.0]` of 95 s, so the covered fraction is kept.
+  - A note at `t = duration` now reaches the last window (old note 4).
+  - `--limit` together with `--run-name read` exits.
+- **`agent_retrieve.py`:**
+  - `summary_id` is coerced with `as_int`.
+  - Wikipedia non-200 statuses are recorded.
+  - The model name returned by the endpoint is recorded.
+  - The JUDGE0 prompt has no notes, and `parse_judgment` is shared by both judgment calls.
+  - The `DataInspectionFailed` count works: the DashScope compatible-mode 400 message contains `<400> InternalError.Algo.DataInspectionFailed` within its first 300 characters (seen in the Retrieval-hate logs).
+- **`decode_eval.py`:**
+  - B1 is fixed: GT-missing ids are dropped from the GT counts, G0 is counted over all 40, and `n_not_in_gt` is recorded.
+  - The G1 code matches README §4:
+    - (a) both pooled deltas > 0 on HateMM and HCS;
+    - (b) the FP share is pooled over the three corpora (31 base FPs);
+    - (c) new FN ≤ 1 per corpus;
+    - (d) gain ≥ 2 × max(Kother gain, 0), with gain = the mean of ΔROC and ΔPR over HateMM and HCS;
+    - (e) KJ gain > J0 gain;
+    - an arm passes only if every condition is `True`, so a missing comparison counts as a fail.
+  - G2 equals within(K) − within(x) > 0 for Kp, Kshift and Kmark on both corpora.
+  - The A / A0 mapping, tested with synthetic packs:
+    - Spearman(mapped z, agent probability) = 1;
+    - the mapped values are base z values of the same subset videos (tied probabilities share an interpolated value);
+    - videos without a judgment keep their base read;
+    - window reads are unchanged, and the base reads are not mutated.
+- **`launch/lab2_agent.sh`** uses lab2's HateVideo env, which has openai 2.30, and runs detached with `setsid nohup`.
+
+### Addendum: `adc4986` (Wikipedia requests and reflection notes)
+
+**Checked and found correct**, with a mocked HTTP layer (no network):
+- `wiki_get` serialises all requests over the threads with 1 s spacing.
+- On 429 or 5xx it retries, waiting `Retry-After` or else 2, 4, 8, 16 s. On any other 4xx it stops and returns `(None, status)`, and the failure is written to `errors["wikipedia"]`.
+- `wiki_search_summaries` returns the hits in search order (sorted by `index`), each cut to 5 sentences. A hit without an extract is skipped. A query with no hits returns an empty list, not an error.
+- At most one note is kept per `summary_id`.
+- The smoke packs from the rate-limited run were moved out of `agent/<dataset>/`. The full run therefore regenerates them instead of skipping them.
+
+**Non-blocking note 5.** Nothing in the code checks that a note restates its own summary. The prompt now asks for this, but a note written from the model's memory and filed under an unused `summary_id` still passes. Add a check that uses no labels, for example the share of the note's content words that occur in its summary or clue. Run it on the new smoke packs before the full run, and report the share next to G0. If notes still come from memory, K measures the agent's own knowledge, not retrieved knowledge. That changes the CHER-style claim, though not the gates.
+
+The verdict stays: **one BLOCKER (B2, Kshift clipping in `common.py:48-55`, unchanged in `adc4986`)**. B2 affects only the reader arms and G2. The agent run on uoa-lab2 can go ahead.

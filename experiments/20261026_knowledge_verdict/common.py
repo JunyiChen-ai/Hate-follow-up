@@ -46,12 +46,20 @@ def mark_line(n):
 
 
 def shifted_notes(notes, dur):
-    """Kshift: every note moved by half the video duration (circular), its length kept and clipped to the video."""
+    """Kshift: every note moved by half the video duration, circularly with its length kept: the part past the end
+    continues at 0 as a second piece of the same note. A note covering the whole video stays as it is. Pieces carry the
+    note's index (_idx) so that window_notes counts a note once per window."""
     out = []
-    for n in notes or []:
+    for i, n in enumerate(notes or []):
         a, b = float(n["t_start"]), float(n["t_end"])
-        a2 = (a + dur / 2) % dur if dur > 0 else a
-        out.append({**n, "t_start": a2, "t_end": min(a2 + (b - a), dur)})
+        if dur <= 0 or b - a >= dur:
+            out.append({**n, "_idx": i})
+            continue
+        a2 = (a + dur / 2) % dur
+        b2 = a2 + (b - a)
+        out.append({**n, "t_start": a2, "t_end": min(b2, dur), "_idx": i})
+        if b2 > dur:
+            out.append({**n, "t_start": 0.0, "t_end": b2 - dur, "_idx": i})
     return out
 
 
@@ -87,8 +95,13 @@ def prefix_insert(pack, with_notes, judgment_key=None):
 def window_notes(notes, a, b, last=False):
     """Notes whose [t_start, t_end] overlaps the window [a, b) ([a, b] for the last window), at most MAX_WINDOW_NOTES,
     in pack order."""
-    out = [n for n in (notes or []) if (float(n["t_start"]) < b or (last and float(n["t_start"]) <= b))
-           and float(n["t_end"]) >= a]
+    out, seen = [], set()
+    for k, n in enumerate(notes or []):
+        if (float(n["t_start"]) < b or (last and float(n["t_start"]) <= b)) and float(n["t_end"]) >= a:
+            idx = n.get("_idx", k)
+            if idx not in seen:
+                seen.add(idx)
+                out.append(n)
     return out[:MAX_WINDOW_NOTES]
 
 

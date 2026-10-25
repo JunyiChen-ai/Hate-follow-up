@@ -7,6 +7,7 @@ Arms read on the GPU (kv_measure.py) plus two CPU arms: A / A0 replace the 8B's 
 reads stay those of arm base. Test GT is read only here, for metrics and the false-positive / false-negative counts
 (rule 10)."""
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -30,6 +31,28 @@ R6 = ["--noleak", "--evidence", "em", "--transform", "nscore", "--fusion", "or",
       "--d-gap", "80", "--d-hate", "80", "--kind", "two"]
 OUT = ROOT / "runs" / EXP
 ENV = {"PYTHONPATH": str(ROOT), "PATH": "/usr/bin:/bin"}
+BASE_TOL = {"median_abs_dz_video": 0.1, "max_abs_dz_video": 1.0}     # arm base vs the stored r6 reads (bf16 noise)
+STOP = set("""the and for that with this from which have has had was were are been being their there they them its
+into than then also such these those other only about over under after before between during while where when what who
+whom whose would could should will shall may might must can not but nor all any each both some most more many much very
+upon onto within without against among including known called used often""".split())
+
+
+def content_words(text):
+    return {w for w in re.findall(r"[a-z]+", (text or "").lower()) if len(w) >= 4 and w not in STOP}
+
+
+def note_grounding(pack):
+    """Share of a note's content words that occur in the summary it cites (GT-free check that the note restates its
+    summary rather than the model's own memory). One value per note."""
+    by_id = {x["id"]: x for x in (pack or {}).get("summaries") or []}
+    out = []
+    for n in (pack or {}).get("notes") or []:
+        w = content_words(n["note"])
+        src = by_id.get(n.get("summary_id"))
+        if w and src:
+            out.append(len(w & content_words(src["title"] + " " + src["summary"])) / len(w))
+    return out
 
 
 def read_jsonl(p):
@@ -56,11 +79,11 @@ def cpu_arm_reads(base_reads, subset, key):
         vids = [v for v in subset[ds] if (ds, v) in base_reads]
         ps = {v: agent_prob(load_pack(ds, v), key) for v in vids}
         have = [v for v in vids if ps[v] is not None]
-        if not have:
-            continue
         for v in vids:
             if ps[v] is None:
                 out[(ds, v)] = base_reads[(ds, v)]
+        if not have:
+            continue
         zs = np.sort([base_reads[(ds, v)]["extra"]["z_video"] for v in have])
         ranks = rankdata([ps[v] for v in have]) - 1
         mapped = np.interp(ranks, np.arange(len(have)), zs)
@@ -157,8 +180,13 @@ def main():
              "api_errors": {c: sum(c in ((p or {}).get("errors") or {}) for p in packs_all.values())
                             for c in ["clues", "reflect", "judge", "judge0"]},
              "moderation_refusals": sum("DataInspectionFailed" in json.dumps((p or {}).get("errors") or {})
-                                        for p in packs_all.values())}
-        ids = [v for v in subset[ds] if v in gt and all((ds, v) in reads[a] for a in arms)]
+                                        for p in packs_all.values()),
+             "judgment_confidence_below_.5": {k: sum(bool((p or {}).get(k)) and p[k]["confidence"] < .5
+                                                     for p in packs_all.values()) for k in ["judgment", "judgment0"]}}
+        gr = [x for p in packs_all.values() for x in note_grounding(p)]
+        g["note_grounding"] = {"n_notes": len(gr), "mean": float(np.mean(gr)) if gr else None,
+                               "share_below_.5": float(np.mean(np.array(gr) < .5)) if gr else None}
+        ids = [v for v in subset[ds] if v in gt and all((ds, v) in reads[a] for a in arms if a in GPU_ARMS)]
         if not ids or "base" not in arms:
             summary["gates"][ds] = g
             continue
@@ -177,7 +205,7 @@ def main():
         for a in arms:
             if a == "base":
                 continue
-            za = np.array([reads[a][(ds, v)]["extra"]["z_video"] for v in ids])
+            za = np.array([reads[a].get((ds, v), reads["base"][(ds, v)])["extra"]["z_video"] for v in ids])
             g[a] = {"spearman_z_vs_base": float(spearmanr(za, zb)[0]),
                     "fp_fixed": int(((za <= 0) & fp_b).sum()),
                     "fp_fixed_share": float(((za <= 0) & fp_b).sum() / max(1, fp_b.sum())),
@@ -185,8 +213,8 @@ def main():
                     "new_fp": int(((za > 0) & (zb <= 0) & ~y).sum()),
                     "fn_fixed": int(((za > 0) & (zb <= 0) & y).sum()),
                     "video_auc": float(roc_auc_score(y, za)) if 0 < y.sum() < len(y) else None,
-                    "mean_windows_with_notes": float(np.mean([reads[a][(ds, v)]["extra"].get("windows_with_notes", 0)
-                                                              for v in ids]))}
+                    "mean_windows_with_notes": float(np.mean([reads[a].get((ds, v), reads["base"][(ds, v)])["extra"]
+                                                              .get("windows_with_notes", 0) for v in ids]))}
             pooled[a]["base_fp"] += int(fp_b.sum())
             pooled[a]["fp_fixed"] += g[a]["fp_fixed"]
         summary["gates"][ds] = g
@@ -201,11 +229,16 @@ def main():
         d = [delta(a, ds, m) for ds in MAIN for m in ("pooled_roc", "pooled_pr")]
         return float(np.mean(d)) if all(x is not None for x in d) else None
 
-    verdict = {"G0": None, "G1": {}, "G2": None,
+    rep = summary["base_reproduction"] or {}
+    verdict = {"G0": None, "G1": {}, "G2": None, "base_tolerance": BASE_TOL,
+               "base_reproduction_ok": bool(rep) and all(
+                   r["n"] > 0 and r["median_abs_dz_video"] <= BASE_TOL["median_abs_dz_video"]
+                   and r["max_abs_dz_video"] <= BASE_TOL["max_abs_dz_video"] for r in rep.values()),
                "gain_mean_main": {a: gain(a) for a in arms if a != "base"},
                "pooled_fp_fixed_share": {a: v["fp_fixed"] / max(1, v["base_fp"]) for a, v in pooled.items()}}
     if "K" in arms:
         n_sp = sum(G[ds].get("K", {}).get("spearman_z_vs_base", 1.0) < .9 for ds in CORPORA if ds in G)
+        # notes share: at least .6 on each of the three corpora
         verdict["G0"] = {"notes_share_ok": all(G[ds]["share_with_notes"] >= .6 for ds in CORPORA if ds in G),
                          "n_corpora_spearman_below_.9": int(n_sp)}
         verdict["G0"]["pass"] = verdict["G0"]["notes_share_ok"] and n_sp >= 2
@@ -214,7 +247,7 @@ def main():
             continue
         c = {"a_pooled_up_HateMM_HCS": all(delta(a, ds, m) > 0 for ds in MAIN for m in ("pooled_roc", "pooled_pr")),
              "b_fp_fixed_share_pooled_ge_.40": verdict["pooled_fp_fixed_share"][a] >= .40,
-             "c_new_fn_le_1_each": all(G[ds].get(a, {}).get("new_fn", 0) <= 1 for ds in CORPORA if ds in G)}
+             "c_new_fn_le_1_each": all(G[ds].get(a, {}).get("new_fn", float("inf")) <= 1 for ds in CORPORA if ds in G)}
         if "Kother" in arms and gain("Kother") is not None:
             c["d_gain_ge_2x_Kother"] = gain(a) >= 2 * max(gain("Kother"), 0.0)
         else:
