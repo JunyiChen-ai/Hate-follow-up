@@ -1,3 +1,5 @@
+**Archived 2026-10-26 (item 41): G0, G1 and G2 all fail on the 40-video subset; the stronger model's verdict is not more accurate than the 8B reader's, retrieved notes lower it further, and any note in the prefix (even with its content withheld) raises the window reads of non-hateful videos. Not scaled (scale-up required G1).**
+
 # Candidate 51: agent-retrieved knowledge for the M1 verdict (and the window reads)
 
 Declared 2026-10-26, before any run. Development host uoa-lab1 (sc474397). API calls run on uoa-lab2 (sc474399), which
@@ -123,7 +125,51 @@ times are themselves a localization signal from the stronger model).
 ## 6. Error analysis log (rule 10)
 - 2026-10-26: `experiments/20261026_verdict_oracle/` (verdict flips, test GT) set the target "fix about half of the
   false positives". No other test file was read for this design.
+- 2026-10-26, after the subset run (files read: `runs/20261026_knowledge_verdict/read_*/predictions.jsonl`,
+  `runs/20261026_knowledge_verdict/agent/*/*.json`, `data/gt_4fps/{HateMM,HateClipSeg,DeHate}.npz` video labels,
+  `runs/20261026_knowledge_verdict/analysis/summary.json`). Findings:
+  1. Video-level AUC of the verdict score on the subset (40 / 40 / 34 videos): base .912 / .694 / .756; K .899 / .667 /
+     .661; J0 .931 / .658 / .714. The agent's own probability: with notes .837 / .516 / .752, without notes (judgment0)
+     .873 / .646 / .775. The stronger model is below the 8B reader on HateMM and HateClipSeg, and the Wikipedia notes
+     make it worse on all three corpora.
+  2. Mean window score on non-hateful vs hateful videos (HateMM): base −4.97 / +8.20; K −1.59 / +7.46; Kmark −1.40 /
+     +8.40; Kother −4.33 / +6.91. Notes in the prefix lift the window reads of non-hateful videos by about 3.4 logits and
+     barely move hateful ones; Kmark (content replaced by "(note withheld)") lifts them as much as K, so the reader takes
+     the presence of a note as a hate cue. The agent writes notes on sensitive topics for non-hateful videos too (e.g.
+     a news clip about the Ku Klux Klan, HateMM non_hate_video_20).
+  3. DashScope content moderation (`DataInspectionFailed`) refused 11 videos (HateClipSeg 7, DeHate 4, HateMM 0; 6 with
+     every call refused); 3 videos lost the clues or reflection step to malformed JSON. These fall back to the base read.
+  No design was changed after these findings; the candidate is archived.
 
 ## 7. Status
-Rule-4 review PASS, rule-6 review one blocker (DeHate ids missing from GT in the gate code), fixed together with the
-review advisories (arms J0, Kshift, Kmark, A, A0; gates computed in code). Waiting for the agent run.
+Rule-4 review PASS; rule-6 review PASS after fixes (B1, B2; `docs/reviews/20261026_knowledge_verdict_code.md`).
+
+Runs (2026-10-26): agent on uoa-lab2 (sc474399), 120 packs, 500 API calls, 2.29M input / 0.22M output tokens, about
+¥6.35 at the Retrieval-hate price; restarted once at 08:37 with `--workers 8` (finished packs kept). GPU read on
+uoa-lab1 (sc474397) Slurm 892, 9 arms × 120 videos, 1929 s, 0 errors, verify |Δz| ≤ .17, peak 18.6 GB. Decode and
+gates on uoa-lab1 CPU (`decode_eval.py --jobs 6`, 10 min). Source: `runs/20261026_knowledge_verdict/analysis/summary.json`.
+
+Subset metrics (pooled ROC / pooled PR / within; within videos 15 / 35 / 6; development-selected):
+
+| arm | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| base | .9081 / .6560 / .6575 | .6921 / .6441 / .6667 | .7902 / .1443 / .5867 |
+| K | .8046 / .5423 / .6584 | .6550 / .6243 / .6427 | .7163 / .0731 / .7027 |
+| Kp | .8112 / .5622 / .6826 | .6608 / .6351 / .6535 | .7169 / .0726 / .6784 |
+| KJ | .7965 / .5486 / .6410 | .6434 / .6408 / .6365 | .7697 / .1330 / .6467 |
+| J | .8123 / .5648 / .6549 | .6688 / .6547 / .6514 | .7664 / .1422 / .6543 |
+| J0 | .8849 / .6267 / .6584 | .6639 / .6415 / .6306 | .7583 / .1511 / .5591 |
+| Kother | .9149 / .6721 / .7120 | .6406 / .6151 / .6630 | .6636 / .3330 / .4928 |
+| Kshift | .8036 / .5418 / .6799 | .6539 / .6203 / .6454 | .7184 / .0723 / .6658 |
+| Kmark | .8124 / .5620 / .6851 | .6466 / .6144 / .6404 | .7268 / .0719 / .7161 |
+| A | .8456 / .5637 / .6574 | .6586 / .6599 / .6660 | .8204 / .1104 / .5753 |
+| A0 | .8783 / .5983 / .6576 | .6643 / .6581 / .6662 | .8592 / .2015 / .5753 |
+
+Gates: base reproduction OK (median and max |Δz_video| 0). G0 FAIL: notes on 82.5 / 72.5 / 80 % of videos (pass), but
+Spearman(K, base) .917 / .906 / .924, none below .9. G1 FAIL for K (gain −.069; base false positives fixed 3 / 31;
+Kother gain −.014) and for KJ (gain −.068; fixed 11 / 31, the same as J and J0; 4 new false negatives on HateClipSeg).
+G2 FAIL: within(K) − within(Kp / Kshift / Kmark) = −.024 / −.021 / −.027 on HateMM, −.011 / −.003 / +.002 on
+HateClipSeg. Note grounding: mean .79–.82, 3–5 % of notes below .5.
+
+Decision: archived as item 41. Not scaled; no smaller reader tried. Within gains on DeHate (6 videos) and on HateMM for
+Kp / Kmark appear equally in the content-free control, so no metric gain is attributable to the knowledge (rule 9).

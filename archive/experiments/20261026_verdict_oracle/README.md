@@ -1,3 +1,5 @@
+**Archived 2026-10-26 with candidate 51 (item 41), which this analysis motivated; see `archive/experiments/20261026_knowledge_verdict/README.md` §7.**
+
 # Verdict oracle: how much a more accurate video verdict would help frame-level metrics
 
 2026-10-26, uoa-lab1 (sc474397), CPU only. Asked by the user: "video-level 判断得更准了，对我们当前的 frame-level ranking
