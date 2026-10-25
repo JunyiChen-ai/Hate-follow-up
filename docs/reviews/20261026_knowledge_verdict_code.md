@@ -128,3 +128,27 @@ Scope: only the changes in commits `f199e74` and `adc4986`. These cover `common.
 **Non-blocking note 5.** Nothing in the code checks that a note restates its own summary. The prompt now asks for this, but a note written from the model's memory and filed under an unused `summary_id` still passes. Add a check that uses no labels, for example the share of the note's content words that occur in its summary or clue. Run it on the new smoke packs before the full run, and report the share next to G0. If notes still come from memory, K measures the agent's own knowledge, not retrieved knowledge. That changes the CHER-style claim, though not the gates.
 
 The verdict stays: **one BLOCKER (B2, Kshift clipping in `common.py:48-55`, unchanged in `adc4986`)**. B2 affects only the reader arms and G2. The agent run on uoa-lab2 can go ahead.
+
+## Re-review addendum (2026-10-26, commit `e152e23`)
+
+Scope: the fix for B2 and for notes 1–5 of the re-review. The changes are in `common.py` (`shifted_notes`, `window_notes`), `decode_eval.py`, and README §3–§4. No candidate file was edited. CPU only.
+
+### VERDICT: PASS (B2 fixed, no new blocker)
+
+- **B2 (Kshift).** `shifted_notes` now does three things:
+  - it keeps a whole-video note whole;
+  - it shifts the start by `dur/2`;
+  - it continues any overflow at 0 as a second piece tagged with the same `_idx`.
+
+  `window_notes` deduplicates by `_idx` before the 2-note cap. In unshifted arms the list position is the key, so K, Kmark and Kother are unchanged.
+
+  Checked on the `hate_video_1` grid (12 windows) with five notes: whole video, 30–60 s, a point, the end point, and 2–90 s. Each note reaches the same number of windows in Kshift as in K (12, 5, 1, 1, 5), including the interaction with the cap. The total length of the pieces equals the note's length. On a 12 s video both pieces of one note fall in window 1, and the note is counted there once.
+- **Note 1.** README §4 and the code both require the G0 notes share on each corpus.
+- **Note 2.**
+  - `ids` is built from the GPU arms only.
+  - For each video, a CPU arm without a read falls back to the base read, both in `cpu_arm_reads` (now also when the corpus has no judgments) and in the gate loop.
+  - Gate (c) now defaults to `inf`, i.e. it fails when an arm is missing for a corpus.
+- **Note 3.** `BASE_TOL` (median |Δz_video| ≤ .1, max ≤ 1.0 per corpus) and `base_reproduction_ok` are in the verdict. A corpus with no base read counts as not OK. This is declared in README §4.
+- **Notes 4–5.**
+  - The counts of judgments with confidence < .5 are reported for `judgment` and `judgment0`.
+  - `note_grounding` measures the share of a note's content words (at least 4 letters, not in the stopword list) that occur in the title and text of the summary it cites. It looks summaries up by the integer `summary_id` the pack stores. It is reported only, as declared.

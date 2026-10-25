@@ -6,10 +6,12 @@ Arms read on the GPU (kv_measure.py) plus two CPU arms: A / A0 replace the 8B's 
 (written with / without the notes), mapped onto the base z_video values of the same subset videos by rank; the window
 reads stay those of arm base. Test GT is read only here, for metrics and the false-positive / false-negative counts
 (rule 10)."""
+import argparse
 import json
 import re
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -30,7 +32,8 @@ R6 = ["--noleak", "--evidence", "em", "--transform", "nscore", "--fusion", "or",
       "--duration", "bma", "--bma-grid", "6", "--bma-prior", "length", "--min-windows", "2", "--k", "1",
       "--d-gap", "80", "--d-hate", "80", "--kind", "two"]
 OUT = ROOT / "runs" / EXP
-ENV = {"PYTHONPATH": str(ROOT), "PATH": "/usr/bin:/bin"}
+ENV = {"PYTHONPATH": str(ROOT), "PATH": "/usr/bin:/bin", "OMP_NUM_THREADS": "2", "OPENBLAS_NUM_THREADS": "2",
+       "MKL_NUM_THREADS": "2"}
 BASE_TOL = {"median_abs_dz_video": 0.1, "max_abs_dz_video": 1.0}     # arm base vs the stored r6 reads (bf16 noise)
 STOP = set("""the and for that with this from which have has had was were are been being their there they them its
 into than then also such these those other only about over under after before between during while where when what who
@@ -117,7 +120,9 @@ def base_reproduction(reads_base, subset):
     return res
 
 
-def decode(arm, reads_arm, subset, summary):
+def decode(arm, reads_arm, subset):
+    """Splice, decode and evaluate one arm; returns its subset metrics keyed "<arm>/<dataset>"."""
+    metrics = {}
     for grp, dss in GROUPS.items():
         if not any((d, v) in reads_arm for d in dss for v in subset[d]):
             continue
@@ -144,13 +149,17 @@ def decode(arm, reads_arm, subset, summary):
                         str(dec / "subset_predictions.jsonl"), "--gt-dir", str(ROOT / "data/gt_4fps"), "--out",
                         str(dec / "subset_metrics.json"), "--datasets", *dss], check=True, cwd=ROOT, env=ENV)
         for row in json.load(open(dec / "subset_metrics.json"))["per_dataset"]:
-            summary["metrics"][f"{arm}/{row['dataset']}"] = {
+            metrics[f"{arm}/{row['dataset']}"] = {
                 "pooled_roc": row["frame_ROC_AUC"], "pooled_pr": row["frame_PR_AUC"],
                 "within": row["within_video_macro_ROC_AUC"], "n_within": row["n_videos_defined"],
                 "n_videos": row["n_videos_overlap"], "replaced_reads": n_rep}
+    return metrics
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--jobs", type=int, default=6, help="arms decoded in parallel (each decode is its own process)")
+    args = ap.parse_args()
     subset = {ds: [r["video_id"] for r in subset_rows(ds)] for ds in CORPORA}
     arms = [a for a in GPU_ARMS if (OUT / f"read_{a}/predictions.jsonl").exists()]
     reads = {a: {(r["dataset"], r["video_id"]): r for r in read_jsonl(OUT / f"read_{a}/predictions.jsonl") if not r.get("error")}
@@ -163,8 +172,9 @@ def main():
     summary = {"arms": arms, "metrics": {}, "gates": {}, "base_reproduction": None}
     if "base" in arms:
         summary["base_reproduction"] = base_reproduction(reads["base"], subset)
-    for a in arms:
-        decode(a, reads[a], subset, summary)
+    with ThreadPoolExecutor(args.jobs) as ex:
+        for m in ex.map(lambda a: decode(a, reads[a], subset), arms):
+            summary["metrics"].update(m)
     M = summary["metrics"]
 
     # per-corpus verdict counts (GT read here only)
