@@ -1,4 +1,4 @@
-**Archived 2026-10-26 (item 41): G0, G1 and G2 all fail on the 40-video subset; the stronger model's verdict is not more accurate than the 8B reader's, retrieved notes lower it further, and any note in the prefix (even with its content withheld) raises the window reads of non-hateful videos. Not scaled (scale-up required G1).**
+**Archived 2026-10-26 (item 41): G0, G1 and G2 all fail on the 40-video subset; the stronger model's verdict is not more accurate than the 8B reader's and makes mostly the same false positives; the notes almost never change its yes/no; notes in the 8B prefix raise the window reads of non-hateful videos, most of all when a note explains a hate term or group. Not scaled (scale-up required G1).**
 
 # Candidate 51: agent-retrieved knowledge for the M1 verdict (and the window reads)
 
@@ -130,13 +130,17 @@ times are themselves a localization signal from the stronger model).
   `runs/20261026_knowledge_verdict/analysis/summary.json`). Findings:
   1. Video-level AUC of the verdict score on the subset (40 / 40 / 34 videos): base .912 / .694 / .756; K .899 / .667 /
      .661; J0 .931 / .658 / .714. The agent's own probability: with notes .837 / .516 / .752, without notes (judgment0)
-     .873 / .646 / .775. The stronger model is below the 8B reader on HateMM and HateClipSeg, and the Wikipedia notes
-     make it worse on all three corpora.
-  2. Mean window score on non-hateful vs hateful videos (HateMM): base −4.97 / +8.20; K −1.59 / +7.46; Kmark −1.40 /
-     +8.40; Kother −4.33 / +6.91. Notes in the prefix lift the window reads of non-hateful videos by about 3.4 logits and
-     barely move hateful ones; Kmark (content replaced by "(note withheld)") lifts them as much as K, so the reader takes
-     the presence of a note as a hate cue. The agent writes notes on sensitive topics for non-hateful videos too (e.g.
-     a news clip about the Ku Klux Klan, HateMM non_hate_video_20).
+     .873 / .646 / .775. The stronger model is below the 8B reader on HateMM and HateClipSeg. With notes its yes/no changes
+     on 1 video of about 120; the lower AUC comes from confidence (HateMM hateful videos −.063 on average). Its false
+     positives are mostly the 8B's: shared 8 of 10 (HateMM), 3 of 3 (HateClipSeg), 9 of 12 (DeHate).
+  2. Mean window score on non-hateful vs hateful videos (HateMM): base −4.97 / +8.20; Kp (prefix notes only) −2.08 /
+     +7.67; K −1.59 / +7.46; Kother −4.33 / +6.91. Prefix notes lift the window reads of non-hateful videos and barely
+     move hateful ones. On HateMM non-hateful videos with notes the lift (Kp − base) is +5.21 when a note uses hate
+     vocabulary (hate, racist, slur, supremacist, stereotype, ...; 8 videos) and +0.97 otherwise (10 videos), and it
+     falls on videos the base read was sure about (base window mean −12.5, lift +5.0). Non-hateful videos that mention
+     hate topics (e.g. a news clip about the Ku Klux Klan, HateMM non_hate_video_20) get notes that explain the hate
+     meaning. At the window level, a "(note withheld)" placeholder at the same time spans (Kmark, prefix notes kept)
+     does as well as the note content (G2).
   3. DashScope content moderation (`DataInspectionFailed`) refused 11 videos (HateClipSeg 7, DeHate 4, HateMM 0; 6 with
      every call refused); 3 videos lost the clues or reflection step to malformed JSON. These fall back to the base read.
   No design was changed after these findings; the candidate is archived.
