@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 from src.video_inputs import load_manifest  # noqa: E402
 
 DATASETS = ("HateMM", "HateClipSeg")
+MANIFESTS = {"DeHate": ROOT / "data/manifests/DeHate_test.jsonl"}  # 2026-10-31: DeHate for the adopted window-evidence reader
 CHUNK_S = 30.0
 SR = 16000
 OUT = ROOT / "data/asr_whisper_aligned"
@@ -65,7 +66,7 @@ def main():
     model = bundle.get_model(with_star=True).to(device).eval()
     tokenizer = bundle.get_tokenizer()
     aligner = bundle.get_aligner()
-    rows = load_manifest(ROOT / "data/omsl_v6_inputs/manifests/all_test.jsonl", a.datasets)
+    rows = [r for ds in a.datasets for r in load_manifest(MANIFESTS.get(ds, ROOT / "data/omsl_v6_inputs/manifests/all_test.jsonl"), [ds])]
     if a.only:
         rows = [r for r in rows if r["video_id"] == a.only]
     elif a.limit:
