@@ -34,3 +34,36 @@ def margin(j,cache,ctx,question):
     ids,_=j.branch_ids(ctx['msgs'],question,ctx['history'],head_text=ctx['head'])
     try:return j.cached_margin(cache,ids,in_place=True)
     finally:cache.crop(n);j.model.model.rope_deltas=ctx['rope'].clone()
+
+
+# ---- 2026-11-01: one free-form turn written onto the shared context (experiments/20261101_video_plan).
+# build() and margin() above are unchanged; the window reads of the adopted reader never call these two.
+@torch.no_grad()
+def generate_turn(j,cache,ctx,question,max_new_tokens):
+    """Greedy answer to `question` asked after the shared context (prefix + verdict turn). Generated in place on the
+    cache, which is cropped back afterwards. Returns (text, generated token count, hit max_new_tokens)."""
+    n=cache.get_seq_length();assert n==ctx['stance_cache_tokens']
+    j.model.model.rope_deltas=ctx['rope'].clone()
+    ids,_=j.branch_ids(ctx['msgs'],question,ctx['history'],head_text=ctx['head'])
+    try:text,gen=j.cached_generate(cache,ids,max_new_tokens,in_place=True)
+    finally:cache.crop(n);j.model.model.rope_deltas=ctx['rope'].clone()
+    return text,len(gen),len(gen)>=max_new_tokens
+
+
+@torch.no_grad()
+def append_turn(j,cache,ctx,question,answer):
+    """Write `question` and `answer` (as the model's own turn) onto the shared context, in place. Returns a new ctx
+    whose history / head / cache length / logical start include the turn; later branches (margin, frames_margin)
+    use that ctx unchanged. The answer text is tokenised by the chat template, the same way for any source text."""
+    n=cache.get_seq_length();assert n==ctx['stance_cache_tokens']
+    j.model.model.rope_deltas=ctx['rope'].clone()
+    qid,qtext=j.branch_ids(ctx['msgs'],question,ctx['history'],head_text=ctx['head'])
+    aid,atext=j.answer_ids(ctx['msgs'],question,answer,ctx['history'])
+    assert atext.startswith(answer) and not j.loose_stance_seam,'template re-rendered the answer turn'
+    j.extend_cache(cache,qid+aid)
+    history=ctx['history']+[{'role':'user','content':[{'type':'text','text':question}]},j.turn('assistant',answer)]
+    head=ctx['head']+qtext+atext
+    assert j.render(j.conv(ctx['msgs'],'x',history),True).startswith(head)
+    delta=int(ctx['rope'].reshape(-1)[0]);m=cache.get_seq_length()
+    assert m==n+len(qid)+len(aid) and n+delta==ctx['stance_cache_logical_start']
+    return dict(ctx,history=history,head=head,stance_cache_tokens=m,stance_cache_logical_start=m+delta,turn_tokens=len(qid)+len(aid))
