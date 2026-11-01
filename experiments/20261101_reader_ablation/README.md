@@ -198,6 +198,24 @@ adopted reads, no labels):
   losses are −.016 / −.004 / −.021 with intervals including 0 (the speech branches still carry their aligned words).
 - The stance turn (A3) is within noise on every corpus (−.006 / −.011 / +.004 within).
 
+### 6.1 Timing of the adopted reader (§5.1; 2026-11-02, lab-server sc448960, NVIDIA GeForce RTX 5090 32 GB)
+
+Slurm 1387 (HateMM, 11 min 04 s elapsed incl. model load) and 1388 (HateClipSeg, 9 min 38 s), one after the other,
+each alone on the node's only GPU; all test videos (215 / 118), 0 errors. Reads equal the stored adopted reads on
+every video (`z_video`, every `z_visual` / `z_speech`, speech presence, score curve: max |Δ| = 0.0). Records
+`runs/20261101_reader_ablation/timing_<corpus>/records/base/<corpus>/*.json`; per-video seconds exclude model load.
+
+| | HateMM | HateClipSeg |
+|---|---|---|
+| per-video seconds, mean / median (p90, max) | 3.07 / 2.55 (5.12, 23.2) | 4.85 / 4.80 (5.92, 6.7) |
+| prefix forward + verdict + stance turn, mean / median s | 0.43 / 0.42 | 0.45 / 0.45 |
+| window branches, mean / median s per video | 2.64 / 2.18 | 4.40 / 4.35 |
+| per window / per branch s | 0.151 / 0.079 | 0.145 / 0.077 |
+| windows / branches per video, median | 15 / 28 | 30 / 56 |
+| prefix tokens, median (min, max) | 2743 (1894, 5829) | 3040 (2254, 4644) |
+| peak GPU memory, median / max GiB | 17.09 / 17.82 | 17.16 / 17.55 |
+| corpus total (sum of per-video s) | 11.0 min | 9.5 min |
+
 ## 7. Test-read log (rule 10)
 
 - Files read with test labels: only the evaluator outputs (`metrics.json`) and the paired-bootstrap tables
