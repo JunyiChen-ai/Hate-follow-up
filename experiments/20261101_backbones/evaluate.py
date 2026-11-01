@@ -48,6 +48,11 @@ OLD_ABL = {
     "gemma3-12b": [-.027, -.016, -.014, -.081, -.019, +.006, -.022, -.007, +.001, -.056, -.021, -.007],
 }
 METRICS = ("frame_ROC_AUC", "frame_PR_AUC", "within_video_macro_ROC_AUC")
+# Qwen3-VL-8B A1 / A2 / A3 / A6: the reader-ablation runs are the same computation (same functions in the same order;
+# the smoke records of both experiments agree to 0.0 on all four videos, README §5), so they are used instead of a
+# second run. A4 differs (frame cap here), so this study runs its own q3vl-8b A4.
+EXTERNAL = {("q3vl-8b", arm): ROOT / "runs/20261101_reader_ablation/{ds}" / arm / "predictions.jsonl"
+            for arm in ("no_transcript", "no_prefix_frames", "no_stance", "joint")}
 
 
 def run(cmd):
@@ -57,9 +62,11 @@ def run(cmd):
 
 def merge(tag, arm):
     srcs = [R / tag / ds / arm / "predictions.jsonl" for ds in DS]
+    if (tag, arm) in EXTERNAL and not all(p.exists() for p in srcs):
+        srcs = [Path(str(EXTERNAL[(tag, arm)]).format(ds=ds)) for ds in DS]
     if not all(p.exists() for p in srcs):
         return None
-    rows = [json.loads(l) for p in srcs for l in open(p) if l.strip()]
+    rows = [r for p in srcs for r in map(json.loads, open(p)) if r["dataset"] in DS]
     n = {ds: sum(r["dataset"] == ds for r in rows) for ds in DS}
     if n != {"HateMM": 215, "HateClipSeg": 118} or any(r.get("error") for r in rows):
         print(f"skip {tag}/{arm}: incomplete {n}")
