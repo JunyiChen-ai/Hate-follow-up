@@ -92,6 +92,39 @@ def compose(d, intercept, residual, skip):
     return m
 
 
+def consistency(tag):
+    """Max |difference| between reads of the same video from two runs: the smoke vs the full run (every tag), and for
+    q3vl-8b the full run vs the stored adopted reads on every video."""
+    out = {}
+    for rp in sorted((R / "smoke" / tag / "records" / "main").glob("*/*.json")):
+        q = R / tag / rp.parent.name / "records" / "main" / rp.parent.name / rp.name
+        if not q.exists():
+            continue
+        a, b = json.loads(rp.read_text()), json.loads(q.read_text())
+        d = abs(a["global_margin"] - b["global_margin"])
+        for x, y in zip(a["traces"], b["traces"]):
+            for k in ("z_visual", "z_speech", "z_alone"):
+                if x.get(k) is not None and y.get(k) is not None:
+                    d = max(d, abs(x[k] - y[k]))
+        out["smoke_vs_run_max"] = max(out.get("smoke_vs_run_max", 0.0), d)
+        out["smoke_vs_run_videos"] = out.get("smoke_vs_run_videos", 0) + 1
+    if tag == "q3vl-8b" and (R / tag / "merged" / "full" / "predictions.jsonl").exists():
+        ref = {(r["dataset"], r["video_id"]): r for r in map(json.loads, open(ROOT / "runs/20261014_m1_audio_bound/vl_aligned/vl_text_aligned/predictions.jsonl"))}
+        d, n = 0.0, 0
+        for r in map(json.loads, open(R / tag / "merged" / "full" / "predictions.jsonl")):
+            g = ref[(r["dataset"], r["video_id"])]
+            d = max(d, abs(g["extra"]["z_video"] - r["extra"]["z_video"]))
+            for x, y in zip(g["extra"]["windows"], r["extra"]["windows"]):
+                for k in ("z_visual", "z_speech"):
+                    if (k in x) != (k in y):
+                        d = float("inf")
+                    elif k in x:
+                        d = max(d, abs(x[k] - y[k]))
+            n += 1
+        out.update(adopted_vs_run_max=d, adopted_vs_run_videos=n)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tags", nargs="+", default=TAGS)
@@ -117,6 +150,8 @@ def main():
             d = merge(tag, arm)
             if d is not None:
                 t[arm] = str(compose(d, "zv_plus_mean", "rank", a.skip_existing).relative_to(ROOT))
+    for tag in a.tags:
+        table.setdefault(tag, {})["consistency"] = consistency(tag)
     # tables
     f3 = lambda x: f"{x:.3f}".replace("0.", ".", 1) if x >= 0 else f"{x:.3f}".replace("-0.", "-.", 1)  # noqa: E731
     lines = ["## Main table (pooled ROC / pooled PR / within); old = paper tab:mllms, new = this run\n",
@@ -148,6 +183,11 @@ def main():
                 cells.append(f"{old:+.3f} / " + (f"{new:+.3f}" if new is not None else "—"))
                 out.setdefault(tag, {}).setdefault(ds, {})[f"abl_{arm}"] = dict(old=old, new=new, metrics=t.get(key), base=t.get("full_reader_comp"))
             lines.append(f"| {NAMES[tag]} | {ds} | " + " | ".join(cells) + " |")
+    lines += ["\n## Consistency (max |difference| of reads, nats)\n"]
+    for tag in TAGS:
+        if table.get(tag, {}).get("consistency"):
+            lines.append(f"- {NAMES[tag]}: {table[tag]['consistency']}")
+            out.setdefault(tag, {})["consistency"] = table[tag]["consistency"]
     text = "\n".join(lines) + "\n"
     (R / "table.md").write_text(text)
     (R / "table.json").write_text(json.dumps(out, indent=1) + "\n")
