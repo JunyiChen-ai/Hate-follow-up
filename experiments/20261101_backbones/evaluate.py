@@ -108,6 +108,13 @@ def consistency(tag):
                     d = max(d, abs(x[k] - y[k]))
         out["smoke_vs_run_max"] = max(out.get("smoke_vs_run_max", 0.0), d)
         out["smoke_vs_run_videos"] = out.get("smoke_vs_run_videos", 0) + 1
+    full = R / tag / "merged" / "full" / "predictions.jsonl"
+    if full.exists():  # arms with the main reader's prefix and verdict must give its z_video
+        zv = {(r["dataset"], r["video_id"]): r["extra"]["z_video"] for r in map(json.loads, open(full))}
+        for arm in ("no_stance", "asr_windows", "joint"):
+            f = R / tag / "merged" / arm / "predictions.jsonl"
+            if f.exists():
+                out[f"z_video_{arm}_vs_full_max"] = max(abs(r["extra"]["z_video"] - zv[(r["dataset"], r["video_id"])]) for r in map(json.loads, open(f)))
     if tag == "q3vl-8b" and (R / tag / "merged" / "full" / "predictions.jsonl").exists():
         ref = {(r["dataset"], r["video_id"]): r for r in map(json.loads, open(ROOT / "runs/20261014_m1_audio_bound/vl_aligned/vl_text_aligned/predictions.jsonl"))}
         d, n = 0.0, 0
