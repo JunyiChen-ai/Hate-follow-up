@@ -1,0 +1,114 @@
+# Backbone study with the adopted reader (2026-11-01)
+
+## 1. What and why
+
+The paper's backbone table (`paper/overleaf/sections/experiments.tex`, Table `tab:mllms`) and its appendix ablations
+(`paper/overleaf/sections/appendix.tex`, Table `tab:mllm_ablation`) still hold the r6-era reader: the 2026-09-10
+family study (`experiments/20260910_spvl/README.md` §11, reads `runs/20260910_spvl/mllm/<m>/`) decoded with the r6 time
+level and the calibrated key (`experiments/20260926_twolevel/README.md` §12.1, §19.3, `robust/<m>_r6`). Since
+2026-10-31 the method uses the window-evidence reader (`experiments/20261031_window_evidence/`, `src/window_evidence.py`)
+and the raw key (calibration removed 2026-10-07). This experiment re-runs both tables with the adopted reader on the
+same eight checkpoints, HateMM and HateClipSeg only (the two tables cover only these corpora). It is a reporting run,
+not a candidate: nothing is promoted or decided here.
+
+Backbones (same Hugging Face checkpoints as the 2026-09-10 study):
+
+| tag | checkpoint | family (`model_type`) | path in `src/window_evidence_family.py` |
+|---|---|---|---|
+| q3vl-2b / q3vl-4b / q3vl-8b / q3vl-32b | `Qwen/Qwen3-VL-{2B,4B,8B,32B}-Instruct` | qwen3_vl | mRoPE (adopted code unchanged) |
+| q25vl-7b | `Qwen/Qwen2.5-VL-7B-Instruct` | qwen2_5_vl | mRoPE (adopted code unchanged) |
+| internvl35-8b | `OpenGVLab/InternVL3_5-8B-HF` | internvl | 1D |
+| llava-ov-7b | `llava-hf/llava-onevision-qwen2-7b-ov-hf` | llava_onevision | 1D |
+| gemma3-12b | `google/gemma-3-12b-it` | gemma3 | 1D |
+
+## 2. Definitions (declared 2026-11-01, before any GPU run)
+
+**Reader ("full").** The adopted reader, unchanged in content: shared prefix (system message, intro, the 20 uniform
+frames of `data/frames_k20` with their timestamps, the whole timestamped Whisper transcript, the 9 rules, the reader
+note; `Judge.prefix_messages`) encoded once → whole-video question → `z_video` → the model's own Yes/No written back as
+the stance turn → per 8 s window two isolated branches on the shared cache: visual (the window's 0.5 fps frames of
+`data/temporal_retrieved_kv/<ds>`, `t1 <= t < t2`, each labelled `[t=..s]`, then the r6 visual question, one user turn;
+a window without a 0.5 fps frame asks the visual question alone) and speech (the r6 speech question with the words whose
+forced-aligned midpoint lies in the window, `data/asr_whisper_aligned/<ds>`; proportional slice for videos without an
+alignment; read only when non-empty). Window read `z = max(z_visual, z_speech)`; record `src/window_evidence.window_prediction`.
+Per-family image settings `FAMILY_IMAGE_KW` (Qwen pixel cap, InternVL one 448 tile, Gemma 3 without pan-and-scan,
+LLaVA-OneVision base 384 grid), as the 2026-09-10 study.
+
+**Main table columns** (pooled frame ROC-AUC / pooled frame PR-AUC / within-video macro ROC-AUC, 4 fps, test split,
+`src/eval/evaluate_four_datasets.py`):
+- **Verdict**: the full run's `z_video` painted on every frame (`experiments/20260910_spvl/compose.py --intercept spvl
+  --residual none`, as the old column; within = .500 by construction).
+- **Per window**: each window read alone. Per window one ordinary uncached call: the old per-window-alone prompt
+  without whole-video prefix (system message + "Observe this video." + the 9 rules + the reader note, no frames, no
+  transcript, `prefix_messages([], [], with_context=False, with_frames=False)`), no verdict, no stance; then one user
+  turn with only that window's 0.5 fps frames (labelled as in the visual branch) and the joint question
+  `yesno_question(i, n, t1, t2, words, kind="joint")` carrying the window's aligned words ("(no speech)" when empty).
+  The window score is that read. Scored as the old column (`summarize_mllm.py`: `winonly` composed with
+  `--intercept spvl --residual rank`): a per-video constant plus the zero-mean centred rank of the window reads inside
+  the video. The old `winonly` `z_video` was one constant per model (whole-video question on the rules-only prefix:
+  q3vl-8b −5.526, gemma3-12b −5.734, llava-ov-7b −0.498 on every video), so the composition here is
+  `--intercept none --residual rank`, which gives the same three numbers. Differences from the old column: the old read
+  had no frames at all and the rules question; this one has the window's own frames, its aligned words and the joint
+  question wording (as requested).
+- **\ours{}**: the full reads decoded with the current time level and raw key:
+  `python experiments/20260926_twolevel/twolevel_r2.py --noleak --transform nscore --key raw --duration bma --bma-prior
+  length --min-windows 2 --bma-grid 6 --arm m2`, HateMM + HateClipSeg in one decode (EM per corpus).
+
+**Appendix table** (within change, arm − full, both measured "under the reader's own composition", no temporal model:
+`compose.py --intercept zv_plus_mean --residual rank`, i.e. verdict + mean window read + centred rank of the window
+reads; within depends only on the centred rank; as `summarize_mllm.py`). Columns and arms:
+
+| paper column | arm here | definition |
+|---|---|---|
+| alone | the Per-window read above | composed `--intercept none --residual rank` (within identical to any per-video intercept) |
+| −ctx | A1 `no_transcript` | `experiments/20261101_reader_ablation/README.md` §2 |
+| −frames | A2 `no_prefix_frames` | same (removes the 20 prefix frames; window branches keep their own frames) |
+| ASR | A4 `asr_windows` | same (Whisper segments as windows; gaps −12) |
+| −stance | A3 `no_stance` | same |
+| joint | A6 `joint` | same (one branch per window: window frames + joint question with aligned words) |
+
+The arm definitions are the reader-ablation agent's, unchanged; for the mRoPE families the context is built by its
+`src/reader_arms.build_context`, so a Qwen3-VL-8B arm here is the same computation as its arm. The 1D families build the
+same context in `src/window_evidence_family.build_arm`.
+
+## 3. Porting (`src/window_evidence_family.py`) and checks
+
+- mRoPE families (Qwen3-VL, Qwen2.5-VL): the adopted functions are called unchanged (`stance_cache.build / margin`,
+  `window_evidence.frames_margin`; explicit 3D positions continued after the cached conversation). Qwen2.5-VL has the
+  same `get_rope_index(input_ids, mm_token_type_ids, image_grid_thw, ...)` interface in transformers 5.15.1.
+- 1D families (InternVL3.5, LLaVA-OneVision, Gemma 3): the same conversation through each chat template; positions
+  continue from the cache length; every branch is a forward on a deep copy of the shared cache (Gemma 3's
+  sliding-window cache layers cannot be cropped back once full; the 2026-09-10 study also used copies). Template
+  adaptations (as the 2026-09-10 study): Gemma's template rejects consecutive user turns, so a turn asked with nothing
+  answered before it joins the prefix's user turn (`Judge.same_turn`; applies to the Per-window read and to A3);
+  LLaVA-OneVision renders a turn's images before its text, so a window's frame times are given as a list after its
+  frames ("The k images above are frames sampled from this window, in order; frame k was taken at: ..."), its stance
+  turn keeps the generation header (`Judge.loose_stance_seam`) and its branches are rendered without the stance
+  history and appended after the cached stance tokens. LLaVA-OneVision reads a turn with exactly one image in its
+  single-image (AnyRes) mode, which costs more tokens than a prefix frame; this only happens for a window with one
+  0.5 fps frame (a last window of at most 2 s).
+- Check (a), Qwen3-VL-8B: on the first 2 + 2 HateMM / HateClipSeg test videos (manifest order) the full reads must equal
+  the stored adopted reads `runs/20261014_m1_audio_bound/vl_aligned/vl_text_aligned` (`z_video`, every `z_visual`,
+  every `z_speech`, speech presence), max |Δ| ≤ 1e-3 (the window_evidence tolerance; the adopted path is expected to
+  give 0.0).
+- Check (b), every family: on the same 2 + 2 videos (smoke) and on the first video of every full run, the verdict and
+  the first four windows' visual and speech branches read on the shared cache are compared with the same token string
+  read in one ordinary uncached forward with all images (prefix frames + the branch's frames). Gate: max |Δz| < 3 nats,
+  the 2026-09-10 family study's gate (README §11 there: bf16 cached-decode vs prefill noise reaches ≈ 1 nat on rare
+  branches, a position or mask error shifts every branch by more), and the token ids of the plain call must equal the
+  cached ids + the branch ids (1D) or have the cached length + the branch ids (mRoPE). Spearman over the compared reads
+  is logged. A failure ends the job with `FAILED`.
+- Arms A3, A4, A6 share the prefix and verdict with the full reader, so their `z_video` must equal the main record's
+  (≤ 1e-3) on every video.
+
+## 4. How to run
+
+(filled in after the smoke)
+
+## 5. Results
+
+(pending)
+
+## 6. Test-read log (rule 10)
+
+(pending)
