@@ -91,7 +91,7 @@ def build(j, frames, segments):
         return cache, ctx
     msgs, files = j.prefix_messages(frames, segments)
     text, enc = j.encode_prefix(msgs, files)
-    cache = j.prefix_cache(enc)
+    cache = prefix_cache_full(j, enc)
     qid, qtext = j.branch_ids(msgs, VIDEO_QUESTION)
     z = j.cached_margin(cache, qid, in_place=True)
     stance = "Yes" if z > 0 else "No"
@@ -129,9 +129,41 @@ def _image_token_check(j, enc, n_images):
 
 
 @torch.no_grad()
+def prefix_cache_full(j, enc):
+    """1D families: the prefix forward on an explicit full-length DynamicCache (every layer keeps every token).
+    For InternVL / LLaVA-OneVision this is the cache the model builds itself (no sliding layers). For Gemma 3 the
+    model's own cache keeps only the last 1023 tokens in its sliding-window layers, and transformers 5.15.1 then builds
+    the image-block mask of a suffix with images over the full length (shape error); with full-length layers the
+    sliding window is applied by the mask alone, as in one uncached forward."""
+    from transformers import DynamicCache
+    out = j.model.model(**j.model_inputs(enc), past_key_values=DynamicCache(), use_cache=True)
+    cache = out.past_key_values
+    del out
+    return cache
+
+
+def _in_place(j):
+    """Gemma 3 (12B weights + a 2.4 GB full-length cache) reads branches in place and crops back; the others on a copy."""
+    return j.family == "gemma3"
+
+
+@torch.no_grad()
 def _forward_suffix(j, cache, text, image_paths):
-    """One forward of `text` (+ images) on a deep copy of the shared cache; Yes/No log-odds at its end."""
-    c = copy.deepcopy(cache)
+    """One forward of `text` (+ images) on the shared cache, isolated (a deep copy, or in place and cropped back);
+    Yes/No log-odds at its end."""
+    n = cache.get_seq_length()
+    c = cache if _in_place(j) else copy.deepcopy(cache)
+    try:
+        return _forward_on(j, c, text, image_paths)
+    finally:
+        if _in_place(j):
+            cache.crop(n)
+            assert cache.get_seq_length() == n
+        else:
+            del c
+
+
+def _forward_on(j, c, text, image_paths):
     images = open_images(image_paths)
     try:
         enc = j.encode(text, images) if images else j.encode(text, [])
@@ -142,7 +174,7 @@ def _forward_suffix(j, cache, text, image_paths):
     kw.pop("attention_mask", None)  # the processor's mask covers the suffix only; the model builds the mask over cache + suffix
     out = j.model.model(**kw, past_key_values=c, use_cache=True)
     hidden = out.last_hidden_state[0, -1].clone()
-    del out, c
+    del out
     return j.margins_fp32(hidden[None])[0], enc["input_ids"][0].tolist()
 
 
@@ -260,7 +292,7 @@ def build_arm(j, frames, segments, with_context=True, with_frames=True, stance=T
         return cache, ctx
     msgs, files = j.prefix_messages(frames if with_frames else [], segments, with_context=with_context, with_frames=with_frames)
     text, enc = j.encode_prefix(msgs, files)
-    cache = j.prefix_cache(enc)
+    cache = prefix_cache_full(j, enc)
     n_prefix = int(enc["input_ids"].shape[1])
     qid, qtext = j.branch_ids(msgs, VIDEO_QUESTION)
     if stance:
@@ -271,7 +303,10 @@ def build_arm(j, frames, segments, with_context=True, with_frames=True, stance=T
         history = [dict(role="user", content=[dict(type="text", text=VIDEO_QUESTION)]), j.turn("assistant", st)]
         head, head_ids = text + qtext + atext, enc["input_ids"][0].tolist() + qid + aid
     else:
-        z = j.cached_margin(cache, qid, in_place=False)
+        n0 = cache.get_seq_length()
+        z = j.cached_margin(cache, qid, in_place=_in_place(j))
+        if _in_place(j):
+            cache.crop(n0)
         st, history, head, head_ids = None, [], text, enc["input_ids"][0].tolist()
     assert cache.get_seq_length() == len(head_ids)
     return cache, dict(msgs=msgs, files=files, history=history, prefix_text=text, head=head, head_ids=head_ids, global_margin=z, stance=st,
