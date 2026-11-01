@@ -84,7 +84,35 @@ Each arm changes exactly one thing; everything not named stays as in the base.
 
 ## 5. How to run
 
-(filled in with the code)
+Code: `src/reader_arms.py` (new shared module: `build_context` with the prefix-transcript / prefix-frames / stance
+switches, `asr_windows`, `SequentialReader`, `record`), `experiments/20261101_reader_ablation/read_arms.py` (arms,
+checks, records), `launch/lab1.sbatch`, `launch/lab_server.sbatch`, `decode_eval.sh`. Existing `src/` files unchanged.
+
+1. Smoke (uoa-lab1): `SCOPE=smoke sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch`
+   → `runs/20261101_reader_ablation/smoke/`.
+2. Reads, one corpus per job, the listed arms in arm-major order (all six when `ARMS` is empty):
+   - uoa-lab1: `SCOPE=HateMM sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch`, then `SCOPE=HateClipSeg …`,
+     then `SCOPE=DeHate ARMS="no_isolation joint" NAME=DeHate_b sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch`;
+   - lab-server (after `git pull`; 0.5 fps frames, aligned words and the stored adopted reads rsynced from uoa-lab1 first):
+     `SCOPE=DeHate ARMS="no_transcript no_prefix_frames no_stance asr_windows" NAME=DeHate_a sbatch experiments/20261101_reader_ablation/launch/lab_server.sbatch`.
+   Each DeHate arm runs whole on one machine; the two DeHate run directories hold disjoint arms and are linked as
+   `runs/20261101_reader_ablation/DeHate/<arm>` after the rsync back.
+3. Decode, compose and compare (CPU, uoa-lab1): `bash experiments/20261101_reader_ablation/decode_eval.sh main` and
+   `… DeHate` → `runs/20261101_reader_ablation/decoded/<arm>_<main|DeHate>/metrics.json`,
+   `compose/<fixed|asr>_<group>/metrics_izv_plus_mean_rrank.json`, `analysis_<group>/table.txt`,
+   `analysis_asr_<group>/table.txt`.
+
+### 5.1 Timing run of the adopted reader (main-session request, declared 2026-11-01 before running)
+
+The paper's cost paragraph needs a measured per-video time of the adopted reader on HateMM / HateClipSeg (until now
+only component sums; the DeHate timing covered four read sets in one pass). One uninterrupted Slurm job per corpus,
+the base arm only (no switch changed), each job alone on its GPU, on lab-server after its DeHate arm job:
+`SCOPE=HateMM ARMS=base NAME=timing_HateMM sbatch experiments/20261101_reader_ablation/launch/lab_server.sbatch`, then
+`SCOPE=HateClipSeg ARMS=base NAME=timing_HateClipSeg …`. Each record keeps `seconds` (the whole video after model
+load: frame listing, prefix forward, verdict, stance turn, all window branches), `prefix_seconds` (prefix forward +
+verdict + stance turn), `window_seconds`, `prefix_tokens`, `peak_GiB`; the base check against the stored adopted reads
+(`z_video`, every window read, speech presence, score curve) runs on every video. The `prefix_seconds` field was
+added to `read_arms.py` after the HateMM arm job (Slurm 1361) had started; the reads are unchanged.
 
 ## 6. Results
 

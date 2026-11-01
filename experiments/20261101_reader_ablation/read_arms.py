@@ -14,6 +14,9 @@ Arm-major order (every video of one arm, then the next arm). Output runs/2026110
 {records/<arm>/<ds>/<vid>.json, <arm>/predictions.jsonl, <arm>/config.json, config.json, run.log, run.pid}.
 Resumable: (arm, video) pairs with a record are not read again.
 --smoke: first two videos of HateMM, HateClipSeg, DeHate, every arm, plus no_isolation on the longest HateMM video.
+Timing run (main-session request 2026-11-01): --arms base --name timing_<corpus>, one corpus per job; each record keeps
+seconds (whole video, after model load), prefix_seconds (prefix forward + verdict + stance turn), window_seconds,
+prefix_tokens and peak_GiB; the base check against the stored adopted reads runs on every video.
 """
 import argparse
 import json
@@ -71,6 +74,7 @@ def read(j, arm, row, segments, rec):
     frames = local_frames(row)
     cache, ctx = build_context(j, native, segments, with_context=arm != "no_transcript", with_frames=arm != "no_prefix_frames",
                                stance=arm != "no_stance")
+    prefix_secs = tick() - begin  # 20 frames + transcript prefix forward, verdict read and stance turn (timing only)
     if arm == "asr_windows":
         segs = asr_windows(segments)
         wins = [(s, e) for s, e, _ in segs]
@@ -106,7 +110,8 @@ def read(j, arm, row, segments, rec):
     out = dict(model=MODEL, host=socket.gethostname(), arm=arm, GT_read=False, global_margin=ctx["global_margin"], stance=ctx["stance"],
                prefix_tokens=ctx["prefix_tokens"], stance_cache_tokens=ctx["stance_cache_tokens"],
                final_cache_tokens=cache.get_seq_length(), aligned_status=None if rec is None else rec["status"], windows=n,
-               windows_with_frames=sum(bool(t["local_times"]) for t in traces), seconds=secs,
+               windows_with_frames=sum(bool(t["local_times"]) for t in traces), seconds=secs, prefix_seconds=prefix_secs,
+               window_seconds=secs - prefix_secs, branches=sum(len(r) for r in reads),
                peak_GiB=torch.cuda.max_memory_allocated() / 2 ** 30, traces=traces, prediction=pred)
     del cache, seq
     return out
