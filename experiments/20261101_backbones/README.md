@@ -121,7 +121,78 @@ cache `.cache/hf/hub` (copied or symlinked; logs `runs/_setup_uoa-lab1/`).
 5. Decode / compose / table (uoa-lab1, CPU, HateVideo env):
    `python experiments/20261101_backbones/evaluate.py` → `runs/20261101_backbones/table.md`, `table.json`.
 
-## 5. Results
+## 5. Results (development-selected; pooled ROC / pooled PR / within, test split, 4 fps)
+
+Source of every new number: `runs/20261101_backbones/table.md` / `table.json`, transcribed from the evaluator outputs
+`runs/20261101_backbones/<tag>/merged/full/metrics_ispvl_rnone.json` (Verdict),
+`runs/20261101_backbones/<tag>/merged/alone/metrics_inone_rrank.json` (Per window),
+`runs/20261101_backbones/decoded/<tag>/metrics.json` (\ours{}). Old = the paper's `tab:mllms` (r6-era reader, calibrated key).
+Within on 84 HateMM / 99 HateClipSeg videos.
+
+### 5.1 Main table
+
+| backbone | corpus | Verdict old → new | Per window old → new | \ours{} old → new |
+|---|---|---|---|---|
+| Qwen3-VL-2B | HateMM | .847 / .571 → .851 / .580 | .544 / .271 / .628 → .543 / .271 / .632 | .854 / .629 / .738 → .864 / .617 / .752 |
+| | HateClipSeg | .613 / .585 → .605 / .579 | .525 / .494 / .542 → .558 / .524 / .611 | .623 / .614 / .575 → .634 / .632 / .632 |
+| Qwen3-VL-4B | HateMM | .871 / .627 → .871 / .626 | .549 / .275 / .631 → .551 / .276 / .658 | .883 / .660 / .751 → .882 / .659 / .777 |
+| | HateClipSeg | .683 / .652 → .681 / .652 | .538 / .500 / .568 → .573 / .535 / .632 | .699 / .672 / .618 → .707 / .676 / .660 |
+| Qwen3-VL-8B | HateMM | .882 / .646 → .880 / .638 | .550 / .271 / .628 → .548 / .274 / .636 | .894 / .691 / .764 → .899 / .692 / .780 |
+| | HateClipSeg | .674 / .617 → .674 / .616 | .544 / .505 / .576 → .572 / .538 / .627 | .716 / .672 / .637 → .733 / .689 / .687 |
+| Qwen3-VL-32B | both | not run (§5.4) | | |
+| Qwen2.5-VL-7B | HateMM | .871 / .639 → .870 / .638 | .549 / .272 / .641 → .550 / .275 / .671 | .887 / .671 / .756 → .887 / .672 / .750 |
+| | HateClipSeg | .690 / .647 → .693 / .648 | .540 / .502 / .566 → .566 / .524 / .621 | .699 / .668 / .588 → .707 / .679 / .629 |
+| InternVL3.5-8B | HateMM | .877 / .626 → .878 / .635 | .543 / .271 / .618 → .553 / .277 / .651 | .888 / .673 / .739 → .889 / .672 / .756 |
+| | HateClipSeg | .654 / .625 → .653 / .625 | .538 / .500 / .575 → .569 / .530 / .622 | .678 / .653 / .632 → .694 / .659 / .657 |
+| LLaVA-OneVision-7B | HateMM | .878 / .641 → .877 / .637 | .548 / .274 / .632 → .538 / .268 / .610 | .881 / .656 / .733 → .886 / .674 / .750 |
+| | HateClipSeg | .682 / .649 → .679 / .648 | .531 / .502 / .545 → .554 / .520 / .586 | .679 / .666 / .613 → .692 / .678 / .638 |
+| Gemma-3-12B | HateMM | .831 / .497 → .836 / .515 | .551 / .271 / .640 → .545 / .268 / .646 | .863 / .629 / .781 → .858 / .610 / .783 |
+| | HateClipSeg | .661 / .627 → .664 / .626 | .533 / .501 / .554 → .564 / .518 / .613 | .720 / .696 / .625 → .737 / .679 / .677 |
+
+(Verdict within = .500 on every row.) The Qwen3-VL-8B \ours{} row equals the adopted decode
+(`runs/20261031_window_evidence/decoded_main/adopted_rawkey/metrics.json`, .8989 / .6921 / .7799 and .7327 / .6895 / .6866):
+this run's full reads equal the stored adopted reads on all 333 videos (max |Δ| 0.0, `table.json` consistency).
+
+Reading (within, new): \ours{} − Per window = +.120 / +.119 / +.144 / +.079 / +.105 / +.140 / +.137 on HateMM and
++.021 / +.028 / +.060 / +.008 / +.035 / +.052 / +.064 on HateClipSeg (2B, 4B, 8B, Qwen2.5, InternVL, LLaVA, Gemma).
+The Per-window read now carries the window's own frames and aligned words, so on HateClipSeg it is .59–.63 (old
+.54–.58); on HateMM it stays .61–.67. \ours{} within rises over the old column on every backbone except Qwen2.5-VL
+HateMM (−.006, inside the .01 floor); pooled PR falls on Qwen3-VL-2B HateMM (−.012) and Gemma (−.019 / −.017).
+
+### 5.2 Porting checks
+
+| backbone | check (b) on the smoke: max \|Δz\| (nats), min Spearman, token seam | first video of each full run (HateMM / HateClipSeg) | check (a) |
+|---|---|---|---|
+| Qwen3-VL-2B | .166, .95, identical | .148 / .102 | |
+| Qwen3-VL-4B | .616, .983, identical | .616 / .394 | |
+| Qwen3-VL-8B | .872 (verdict of non_hate_video_4), .983, identical | .197 / .275 | 0.0 on the 4 smoke videos; 0.0 on all 333 in the full run |
+| Qwen2.5-VL-7B | .094, .95, identical | .094 / .073 | |
+| InternVL3.5-8B | .203, .967, identical | .127 / .116 | |
+| LLaVA-OneVision-7B | .068, .943, identical | .068 / .046 | |
+| Gemma-3-12B | 1.158 (after the two fixes of §3), .983, identical | 1.158 / .184 | |
+
+All below the 3-nat gate. Every smoke read equals the same video's read in the full run (max |Δ| 0.0 for every
+backbone; InternVL / LLaVA-OneVision HateClipSeg ran after the full-length-cache change of §3, their smoke before it).
+Smoke and arms smoke records: `runs/20261101_backbones/smoke/<tag>/`.
+
+### 5.3 Runs (main table)
+
+All on lab RTX 5090s through Slurm (`launch/lab23.sbatch` on sc474398 = uoa-lab3, `launch/labserver.sbatch` on
+sc448960 = lab-server); results rsynced to uoa-lab1. Jobs (elapsed): smokes 1365 (q3vl-2b, 4b, q25vl; q3vl-8b failed on a
+missing reference file) 4.4 min, 1368 (q3vl-8b, internvl, llava) 11.7 min, 1407 (gemma) 6.2 min; q3vl-2b 1369 / 1370
+(8.9 / 8.2 min), q3vl-4b 1371 / 1372 (12.6 / 11.5), q25vl-7b 1373 / 1374 (19.8 / 18.0), internvl35-8b 1380 / 1381
+(30.5 / 27.7), llava-ov-7b 1378 / 1379 (65.6 / 60.5), gemma3-12b 1408 / 1409 (69.8 / 63.2), q3vl-8b 1412 / 1413
+(17.6 / 16.2). Main table ≈ 7.6 GPU-hours including smokes. Cost per video (full + alone): 2B ≈ 2.5 s (HateMM),
+8B ≈ 4.9 s, InternVL ≈ 8.5 s, LLaVA-OneVision ≈ 18 s, Gemma ≈ 19 s; the alone read is ≈ 35–40 % of it.
+
+### 5.4 Not run: Qwen3-VL-32B
+
+bf16 weights are 66 GB, larger than a 32 GB RTX 5090; the 2026-09-10 study ran it on a campus A100. All three campus
+ControlMaster sockets were dead for the whole session (`ssh -O check uoa-campus1/2/3`: no socket), and campus login is
+token-only, so no campus job could be submitted. The table keeps the old 32B row until a campus run (one job per corpus,
+`launch/` needs a campus sbatch) or a decision to use a quantized 32B.
+
+### 5.5 Appendix table
 
 (pending)
 
