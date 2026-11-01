@@ -114,10 +114,94 @@ verdict + stance turn), `window_seconds`, `prefix_tokens`, `peak_GiB`; the base 
 (`z_video`, every window read, speech presence, score curve) runs on every video. The `prefix_seconds` field was
 added to `read_arms.py` after the HateMM arm job (Slurm 1361) had started; the reads are unchanged.
 
-## 6. Results
+## 6. Results (2026-11-02; development-selected; Qwen3-VL-8B)
 
-(pending)
+**Runs.** All on RTX 5090 (32 GB), Slurm, 0 errors, every video of every arm read:
+
+| job | host | scope | elapsed | per-arm GPU minutes (sum of per-video seconds) |
+|---|---|---|---|---|
+| 1357 | uoa-lab1 sc474397 | smoke, 6 videos × 7 arms + A5 on the 999 s HateMM video | 4 min | — |
+| 1361 | uoa-lab1 sc474397 | HateMM, A1–A6 | 75 min | A1 12.3, A2 11.8, A3 11.4, A4 9.4, A5 22.1, A6 8.2 |
+| 1362 | uoa-lab1 sc474397 | HateClipSeg, A1–A6 | 59 min | A1 8.9, A2 7.2, A3 8.8, A4 7.4, A5 19.5, A6 7.3 |
+| 1360 | lab-server sc448960 | DeHate, A1–A4 (`DeHate_a`) | 179 min | A1 48.0, A2 38.1, A3 49.4, A4 43.0 |
+| 1363 | uoa-lab1 sc474397 | DeHate, A5–A6 (`DeHate_b`) | 128 min | A5 88.0, A6 40.2 |
+
+Code: commits f93c8b1 (definitions), 721f429 (code), b07583b (launch `NAME`), 005f0f2 (timing fields; jobs 1362,
+1363 ran on it, 1361 and 1360 on b07583b; the reads do not depend on it). lab-server reads rsynced back to
+`runs/20261101_reader_ablation/DeHate_a/`; lab-server reproduced lab1 reads exactly in earlier runs
+(`experiments/20261101_video_plan` §5) and here on every shared value (`z_video` checks 0.0).
+
+**Checks.** Smoke: the base equals the stored adopted reads on all 6 videos (`z_video`, every `z_visual`, every
+`z_speech`, speech presence, score curve: max |Δ| = 0.0). Full runs: `z_video` of A3–A6 and A5's first branch equal the
+stored adopted reads on every video of every corpus (max |Δ| = 0.0). A5 on the 999 s HateMM video: 81 560 cached
+tokens, peak 29.0 GiB. Decoders: the base re-decode equals the adopted decodes exactly (max |Δ| 0.0, both groups);
+A6 decodes with one chain (`modalities ('z_joint',)`, k = 4). Segment windows (A4): HateMM 2283 windows (1794 with a
+0.5 fps frame), HateClipSeg 1555 (1272), DeHate 10 221 (8104; 2 videos without transcript have no window); the other
+windows asked the visual question alone (the base rule for a window without a frame).
+
+**Table** (arm − base, 95 % paired-bootstrap interval over videos; videos with GT: HateMM 215 / within 84,
+HateClipSeg 118 / 99, DeHate 1151 / 222). Old = the paper's Reader block (within). A4 is compared under the SPVL
+composition, so its base is the adopted reads composed the same way (`spvl_fixed`: HateMM .8984 / .6900 / .6869,
+HateClipSeg .7325 / .6883 / .6640, DeHate .6937 / .1634 / .6439). Full table with paths:
+`runs/20261101_reader_ablation/table.md` (`table.py`); sources `analysis_main/`, `analysis_DeHate/`,
+`analysis_asr_main/`, `analysis_asr_DeHate/` (`table.txt`, `summary.json`).
+
+| arm | corpus | old within | new within | new pooled ROC | new pooled PR | arm ROC / PR / within |
+|---|---|---|---|---|---|---|
+| A1 no_transcript | HateMM | −.039 | −.016 [−.054, +.022] | **−.144** [−.216, −.083] | **−.178** [−.284, −.079] | .7545 / .5144 / .7638 |
+| | HateClipSeg | +.001 | −.004 [−.025, +.016] | −.021 [−.073, +.030] | −.016 [−.067, +.030] | .7120 / .6734 / .6825 |
+| | DeHate | −.049 | −.021 [−.046, +.003] | **−.068** [−.113, −.021] | −.027 [−.067, +.015] | .6262 / .1371 / .6392 |
+| A2 no_prefix_frames | HateMM | −.060 | −.003 [−.030, +.024] | **−.017** [−.034, −.004] | −.017 [−.045, +.007] | .8817 / .6751 / .7767 |
+| | HateClipSeg | −.109 | **−.024** [−.043, −.007] | **−.068** [−.110, −.030] | **−.041** [−.073, −.014] | .6650 / .6487 / .6626 |
+| | DeHate | −.003 | **−.027** [−.051, −.004] | −.009 [−.045, +.024] | −.013 [−.051, +.013] | .6854 / .1509 / .6335 |
+| A3 no_stance | HateMM | −.014 | −.006 [−.031, +.018] | −.001 [−.008, +.005] | −.001 [−.018, +.016] | .8981 / .6912 / .7743 |
+| | HateClipSeg | −.011 | −.011 [−.033, +.007] | **−.014** [−.029, −.001] | −.018 [−.038, +.002] | .7187 / .6712 / .6756 |
+| | DeHate | −.010 | +.004 [−.014, +.022] | +.002 [−.003, +.007] | +.002 [−.005, +.010] | .6962 / .1659 / .6641 |
+| A4 asr_windows (SPVL comp.) | HateMM | −.089 | **−.110** [−.172, −.049] | −.012 [−.029, +.002] | −.020 [−.066, +.026] | .8863 / .6703 / .5765 |
+| | HateClipSeg | −.052 | **−.134** [−.181, −.088] | −.025 [−.061, +.002] | −.037 [−.071, +.002] | .7071 / .6508 / .5304 |
+| | DeHate | −.065 | **−.081** [−.123, −.040] | −.017 [−.035, +.001] | −.024 [−.055, +.002] | .6766 / .1398 / .5627 |
+| A5 no_isolation | HateMM | −.014 | **−.057** [−.099, −.014] | **−.030** [−.056, −.008] | **−.064** [−.110, −.017] | .8690 / .6284 / .7229 |
+| | HateClipSeg | +.011 | −.021 [−.046, +.005] | −.010 [−.043, +.019] | +.001 [−.032, +.031] | .7222 / .6909 / .6661 |
+| | DeHate | −.031 | −.020 [−.060, +.021] | −.003 [−.022, +.016] | −.013 [−.033, +.007] | .6905 / .1511 / .6405 |
+| A6 joint | HateMM | +.009 | −.016 [−.045, +.011] | −.008 [−.027, +.009] | −.019 [−.062, +.021] | .8913 / .6735 / .7637 |
+| | HateClipSeg | −.074 | **−.058** [−.098, −.021] | **−.033** [−.058, −.010] | −.038 [−.067, +.004] | .7000 / .6513 / .6289 |
+| | DeHate | +.027 | +.014 [−.018, +.048] | +.009 [−.003, +.021] | −.003 [−.023, +.012] | .7033 / .1610 / .6746 |
+
+Bold: interval excludes 0. Base (adopted, r6_bma raw key): HateMM .8989 / .6921 / .7799, HateClipSeg
+.7327 / .6895 / .6866, DeHate .6940 / .1636 / .6603.
+
+**Label-free read diagnostics** (`diag_reads.py` → `runs/20261101_reader_ablation/diag_reads.txt`; arm reads vs the
+adopted reads, no labels):
+- A1: the verdict changes most (Spearman with the base verdict .52 / .56 / .55); window reads fall by 1.2–2.4 nats.
+  The HateMM pooled loss (−.144 ROC) is the verdict; within changes little.
+- A2: verdict Spearman .90 / .80 / .81; window reads keep their level (mean shift −0.2 to 0.0) and their order
+  (median per-video Spearman .85 / .88 / .83).
+- A3: windows keep their order best (Spearman .92 / .93 / .91) and fall by 1.6–2.4 nats.
+- A5: window reads rise by 2.0–4.7 nats after the first branch (no trend with position: HateMM +2.6 / +3.4 / +2.9 by
+  thirds of the video) and lose their order (Spearman .68 / .70 / .70). The read after a positive read is not more
+  persistent than in the base order: P(read > 0 | previous read > 0) − P(read > 0 | previous ≤ 0) is .245 vs .271
+  (HateMM), .142 vs .159 (HateClipSeg), .161 vs .126 (DeHate). So the loss is a general drift of the reads in a
+  growing conversation, not a "stays positive" chain (only DeHate shows a small extra persistence).
+- A6: Spearman .78 / .76 / .77 with the dual window z; 14–21 % of windows change sign.
+
+**Reading.**
+- Under the adopted reader the segment windows (A4) remain the largest reader loss on all three corpora
+  (−.110 / −.134 / −.081 within, all intervals exclude 0), larger than in the old table on HateClipSeg.
+- The isolation loss (A5) is now largest on HateMM (−.057, interval excludes 0); HateClipSeg and DeHate are −.021 and
+  −.020 with intervals including 0. The old arm had no answers in the cache (§2), so the rows are not the same
+  intervention.
+- One joint branch (A6) loses on HateClipSeg (−.058, interval excludes 0), is within noise on HateMM (−.016) and
+  DeHate (+.014): the old pattern, smaller in size.
+- The prefix frames (A2) cost less than the old "all frames" row, because the visual branch keeps its own frames:
+  −.024 on HateClipSeg and −.027 on DeHate (both exclude 0), −.003 on HateMM; pooled ROC falls on both main corpora.
+- The prefix transcript (A1) now matters mostly for the verdict (pooled ROC −.144 HateMM, −.068 DeHate); within
+  losses are −.016 / −.004 / −.021 with intervals including 0 (the speech branches still carry their aligned words).
+- The stance turn (A3) is within noise on every corpus (−.006 / −.011 / +.004 within).
 
 ## 7. Test-read log (rule 10)
 
-(pending)
+- Files read with test labels: only the evaluator outputs (`metrics.json`) and the paired-bootstrap tables
+  (`analyze_dvd.py` reads the 4 fps GT to compute the metrics and the P(V) > .5 shares by class). No per-video labels
+  were inspected; no design was changed after seeing any number (the arm definitions were committed in f93c8b1 before
+  the first GPU job; the only later code change adds timing fields).
+- Label-free diagnostics (`diag_reads.py`) read predictions only.
