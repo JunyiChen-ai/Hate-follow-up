@@ -63,11 +63,13 @@ reads; within depends only on the centred rank; as `summarize_mllm.py`). Columns
 | alone | the Per-window read above | composed `--intercept none --residual rank` (within identical to any per-video intercept) |
 | −ctx | A1 `no_transcript` | `experiments/20261101_reader_ablation/README.md` §2 |
 | −frames | A2 `no_prefix_frames` | same (removes the 20 prefix frames; window branches keep their own frames) |
-| ASR | A4 `asr_windows` | same (Whisper segments as windows; gaps −12) |
+| ASR | A4 `asr_windows`, frame cap | same (Whisper segments as windows; gaps −12), except that a segment window's visual branch sees at most 4 of its 0.5 fps frames, uniformly spaced over the segment (see below) |
 | −stance | A3 `no_stance` | same |
 | joint | A6 `joint` | same (one branch per window: window frames + joint question with aligned words) |
 
-The arm definitions are the reader-ablation agent's, unchanged; for the mRoPE families the context is built by its
+**A4 frame cap (declared 2026-11-01 after the LLaVA-OneVision smoke ran out of memory on one A4 window, before any full arm run).** Whisper segments reach 479 s on HateMM and 326 s on HateClipSeg (99th percentile 146 s / 199 s; 232 / 690 segments carry ≥ 15 frames at 0.5 fps, the longest 240). With every frame in the branch (reader-ablation A4) the longest window is 22k image tokens on Qwen (91 per frame), 61k on InternVL / Gemma (256) and 175k on LLaVA-OneVision (730), past LLaVA-OneVision's 32k context and past a 32 GB GPU. So in this study A4 gives a segment window at most 4 in-window frames (`np.linspace` over the segment's frames, rounded), the number of 0.5 fps frames in one fixed 8 s window, i.e. the fixed grid's per-read visual budget; segments with ≤ 4 frames are unchanged. The cap applies to every backbone, Qwen3-VL-8B included, so this A4 is not the reader-ablation A4 on long segments. The smoke A4 records (`runs/20261101_backbones/smoke/<tag>/records/asr_windows`, q3vl-2b / q3vl-4b / q25vl-7b / q3vl-8b / internvl35-8b) predate the cap.
+
+The other arm definitions are the reader-ablation agent's, unchanged; for the mRoPE families the context is built by its
 `src/reader_arms.build_context`, so a Qwen3-VL-8B arm here is the same computation as its arm. The 1D families build the
 same context in `src/window_evidence_family.build_arm`.
 
@@ -103,7 +105,20 @@ same context in `src/window_evidence_family.build_arm`.
 
 ## 4. How to run
 
-(filled in after the smoke)
+Inputs on the machine (rsync from uoa-lab1 when missing, no delete): `data/frames_k20`, `data/temporal_retrieved_kv`,
+`data/asr_whisper_aligned`, `data/asr_whisper_large_v3` (HateMM, HateClipSeg), `data/omsl_v6_inputs/manifests`, and for
+the q3vl-8b smoke `runs/20261014_m1_audio_bound/vl_aligned/vl_text_aligned/predictions.jsonl`. Weights in the repo HF
+cache `.cache/hf/hub` (copied or symlinked; logs `runs/_setup_uoa-lab1/`).
+
+1. Smoke (checks a, b; every arm on 2 + 2 videos):
+   `TAGS="q3vl-8b q3vl-2b ..." SCOPE=smoke sbatch experiments/20261101_backbones/launch/<lab1|lab23|labserver>.sbatch`
+2. Main reads, one backbone × one corpus per job:
+   `TAG=<tag> DATASET=<HateMM|HateClipSeg> sbatch experiments/20261101_backbones/launch/<...>.sbatch`
+3. Reader arms, one backbone × one corpus per job:
+   `TAG=<tag> DATASET=<ds> ARMS="no_transcript no_prefix_frames no_stance asr_windows joint" sbatch ...`
+4. Results back to uoa-lab1: `rsync -a <host>:Hate-follow-up/runs/20261101_backbones/<tag>/ runs/20261101_backbones/<tag>/`
+5. Decode / compose / table (uoa-lab1, CPU, HateVideo env):
+   `python experiments/20261101_backbones/evaluate.py` → `runs/20261101_backbones/table.md`, `table.json`.
 
 ## 5. Results
 

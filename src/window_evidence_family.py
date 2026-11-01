@@ -235,6 +235,17 @@ def read_alone(j, row, frames, segments, rec):
 
 # ---------------------------------------------------------------- reader arms (experiments/20261101_reader_ablation §2)
 ARMS = ("no_transcript", "no_prefix_frames", "no_stance", "asr_windows", "joint")
+# A4 here: at most this many in-window frames per segment window (uniformly spaced over the segment's 0.5 fps frames).
+# Whisper segments reach 479 s (240 frames: 175k image tokens on LLaVA-OneVision, past its 32k context), so the
+# reader-ablation A4 (every frame of the segment) cannot be read on every backbone. 4 = the frames of one fixed 8 s
+# window, the fixed grid's per-read budget (experiments/20261101_backbones/README.md §2).
+ASR_MAX_FRAMES = 4
+
+
+def cap_frames(inside, k=ASR_MAX_FRAMES):
+    if len(inside) <= k:
+        return inside
+    return [inside[int(i)] for i in np.linspace(0, len(inside) - 1, k).round().astype(int)]
 
 
 @torch.no_grad()
@@ -284,6 +295,8 @@ def read_arm(j, arm, row, native, frames, segments, rec):
     n, reads = len(wins), []
     for i, ((t1, t2), body) in enumerate(zip(wins, bodies)):
         inside = in_window(frames, t1, t2)
+        if arm == "asr_windows":
+            inside = cap_frames(inside)
         has_speech = body is not None and body.strip() != ""
         if arm == "joint":
             q = yesno_question(i, n, t1, t2, body, "joint")
