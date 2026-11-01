@@ -20,7 +20,7 @@ export PYTORCH_ALLOC_CONF=expandable_segments:True
 hostname; nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
 case ${SCOPE:-smoke} in
   smoke) python -u experiments/20261101_reader_ablation/read_arms.py --smoke;;
-  HateMM|HateClipSeg|DeHate) python -u experiments/20261101_reader_ablation/read_arms.py --datasets $SCOPE ${ARMS:+--arms $ARMS};;
+  HateMM|HateClipSeg|DeHate) python -u experiments/20261101_reader_ablation/read_arms.py --datasets $SCOPE ${ARMS:+--arms $ARMS} ${NAME:+--name $NAME};;
   *) echo FAILED_invalid_scope; exit 2;;
 esac
 echo READER_ABLATION_DONE
