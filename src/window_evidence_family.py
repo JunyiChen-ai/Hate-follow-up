@@ -345,10 +345,11 @@ def plain_check(j, row, frames, segments, ctx, traces, n_windows=4):
         body = window_text(segments, t1, t2)
         inside = in_window(frames, t1, t2)
         vq = yesno_question(i, len(wins), t1, t2, body, "visual")
-        zv, seam = plain_reference(j, ctx, frame_items(j, inside, vq), [p for _, p in inside])
-        dz_vis.append(abs(zv - t["z_visual"]))
-        seams.append(seam)
-        cached.append(t["z_visual"]); plain.append(zv)
+        if not (j.family == "llava_onevision" and len(inside) == 1):  # single-image mode in the branch, multi-image in one plain call
+            zv, seam = plain_reference(j, ctx, frame_items(j, inside, vq), [p for _, p in inside])
+            dz_vis.append(abs(zv - t["z_visual"]))
+            seams.append(seam)
+            cached.append(t["z_visual"]); plain.append(zv)
         if t["z_speech"] is not None:
             zs, seam = plain_reference(j, ctx, [dict(type="text", text=yesno_question(i, len(wins), t1, t2, t["text_aligned"], "speech"))], [])
             dz_sp.append(abs(zs - t["z_speech"]))
