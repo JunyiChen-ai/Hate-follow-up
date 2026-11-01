@@ -185,12 +185,14 @@ missing reference file) 4.4 min, 1368 (q3vl-8b, internvl, llava) 11.7 min, 1407 
 (17.6 / 16.2). Main table ≈ 7.6 GPU-hours including smokes. Cost per video (full + alone): 2B ≈ 2.5 s (HateMM),
 8B ≈ 4.9 s, InternVL ≈ 8.5 s, LLaVA-OneVision ≈ 18 s, Gemma ≈ 19 s; the alone read is ≈ 35–40 % of it.
 
-### 5.4 Not run: Qwen3-VL-32B
+### 5.4 Qwen3-VL-32B dropped (user decision, 2026-11-02)
 
-bf16 weights are 66 GB, larger than a 32 GB RTX 5090; the 2026-09-10 study ran it on a campus A100. All three campus
-ControlMaster sockets were dead for the whole session (`ssh -O check uoa-campus1/2/3`: no socket), and campus login is
-token-only, so no campus job could be submitted. The table keeps the old 32B row until a campus run (one job per corpus,
-`launch/` needs a campus sbatch) or a decision to use a quantized 32B.
+bf16 weights are 66 GB, larger than a 32 GB RTX 5090; the 2026-09-10 study ran it on a campus A100. The campus sockets
+were dead until 2026-11-02 morning; after uoa-campus1 / uoa-campus2 came back, the /data user quota blocked the run:
+campus1 was already over the soft quota (310 / 304 GB, other projects), campus2 had 20 GB headroom for a 66 GB download
+(removing re-downloadable HF caches there was refused by the permission check; nothing was deleted or downloaded). The
+user then dropped 32B from the study ("32B 不跑了"). Both tables cover the other seven backbones. The campus launch files
+(`launch/campus_<corpus>.sbatch`) were written for it and never submitted.
 
 ### 5.5 Appendix table
 
