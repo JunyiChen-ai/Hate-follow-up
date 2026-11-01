@@ -89,6 +89,7 @@ same context in `src/window_evidence_family.build_arm`.
   history and appended after the cached stance tokens. LLaVA-OneVision reads a turn with exactly one image in its
   single-image (AnyRes) mode, which costs more tokens than a prefix frame; this only happens for a window with one
   0.5 fps frame (a last window of at most 2 s).
+- Gemma 3 fixes found by the smoke (transformers 5.15.1; both before any full Gemma run): (i) the model's own cache keeps only the last 1023 tokens in its sliding-window layers, and a cached suffix with images then fails with a mask shape error; 1D families now encode the prefix on an explicit full-length `DynamicCache` (for InternVL / LLaVA-OneVision this is the cache they build anyway: their HateClipSeg runs with this code equal their smoke reads with the old code, 0.0); (ii) Gemma 3 lets an image's tokens attend to each other both ways, and the image-block ids are indexed by absolute position, so ids covering only the suffix left the window frames causal (plain-call check 7.4 nats); the ids now cover the cached tokens too (check 1.16 nats). Gemma 3 reads branches in place and crops back (memory: 12B weights + a 2.4 GB full-length cache).
 - Check (a), Qwen3-VL-8B: on the first 2 + 2 HateMM / HateClipSeg test videos (manifest order) the full reads must equal
   the stored adopted reads `runs/20261014_m1_audio_bound/vl_aligned/vl_text_aligned` (`z_video`, every `z_visual`,
   every `z_speech`, speech presence), max |Δ| ≤ 1e-3 (the window_evidence tolerance; the adopted path is expected to
