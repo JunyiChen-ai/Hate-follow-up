@@ -148,13 +148,13 @@ def _in_place(j):
 
 
 @torch.no_grad()
-def _forward_suffix(j, cache, text, image_paths):
+def _forward_suffix(j, cache, text, image_paths, head_ids=None):
     """One forward of `text` (+ images) on the shared cache, isolated (a deep copy, or in place and cropped back);
     Yes/No log-odds at its end."""
     n = cache.get_seq_length()
     c = cache if _in_place(j) else copy.deepcopy(cache)
     try:
-        return _forward_on(j, c, text, image_paths)
+        return _forward_on(j, c, text, image_paths, head_ids)
     finally:
         if _in_place(j):
             cache.crop(n)
@@ -163,7 +163,7 @@ def _forward_suffix(j, cache, text, image_paths):
             del c
 
 
-def _forward_on(j, c, text, image_paths):
+def _forward_on(j, c, text, image_paths, head_ids=None):
     images = open_images(image_paths)
     try:
         enc = j.encode(text, images) if images else j.encode(text, [])
@@ -172,6 +172,12 @@ def _forward_on(j, c, text, image_paths):
     _image_token_check(j, enc, len(image_paths))
     kw = j.model_inputs(enc)
     kw.pop("attention_mask", None)  # the processor's mask covers the suffix only; the model builds the mask over cache + suffix
+    if "token_type_ids" in kw and j.family == "gemma3":
+        # Gemma 3 lets an image's tokens attend to each other both ways; transformers 5.15.1 indexes the image-block ids by
+        # absolute position, so they must cover the cached tokens too (cached image tokens = 1, as the processor marks them)
+        assert head_ids is not None and len(head_ids) == c.get_seq_length()
+        cached = torch.tensor([[int(t == j.image_token_id) for t in head_ids]], dtype=kw["token_type_ids"].dtype, device=j.device)
+        kw["token_type_ids"] = torch.cat((cached, kw["token_type_ids"]), 1)
     out = j.model.model(**kw, past_key_values=c, use_cache=True)
     hidden = out.last_hidden_state[0, -1].clone()
     del out
@@ -183,7 +189,7 @@ def margin(j, cache, ctx, question):
     """Text-only branch on the shared cache."""
     if is_mrope(j):
         return stance_cache.margin(j, cache, ctx, question)
-    z, _ = _forward_suffix(j, cache, _suffix_text(j, ctx, [dict(type="text", text=question)]), [])
+    z, _ = _forward_suffix(j, cache, _suffix_text(j, ctx, [dict(type="text", text=question)]), [], ctx["head_ids"])
     return z
 
 
@@ -193,7 +199,7 @@ def frames_margin(j, cache, ctx, frames, question):
     if is_mrope(j):
         return window_evidence.frames_margin(j, cache, ctx, frames, question)
     items = frame_items(j, frames, question)
-    z, _ = _forward_suffix(j, cache, _suffix_text(j, ctx, items), [p for _, p in frames])
+    z, _ = _forward_suffix(j, cache, _suffix_text(j, ctx, items), [p for _, p in frames], ctx["head_ids"])
     return z
 
 
