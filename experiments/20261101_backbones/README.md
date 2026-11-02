@@ -194,10 +194,54 @@ campus1 was already over the soft quota (310 / 304 GB, other projects), campus2 
 user then dropped 32B from the study ("32B 不跑了"). Both tables cover the other seven backbones. The campus launch files
 (`launch/campus_<corpus>.sbatch`) were written for it and never submitted.
 
-### 5.5 Appendix table
+### 5.5 Appendix table (within, arm − full, reader composition; old = paper `tab:mllm_ablation`)
 
-(pending)
+Measurement as §2: `compose.py --intercept zv_plus_mean --residual rank` on each arm's reads and on the full reads
+(`runs/20261101_backbones/<tag>/merged/<arm>/metrics_izv_plus_mean_rrank.json` minus
+`.../merged/full/metrics_izv_plus_mean_rrank.json`); "alone" = `merged/alone/metrics_inone_rrank.json` minus the same.
+Full-reader within under this composition: HateMM .677 / .684 / .687 / .713 / .680 / .671 / .667, HateClipSeg .624 /
+.648 / .664 / .641 / .652 / .633 / .631 (2B, 4B, 8B, Qwen2.5, InternVL, LLaVA, Gemma).
+
+| backbone | corpus | alone | −ctx (A1) | −frames (A2) | ASR (A4, capped) | −stance (A3) | joint (A6) |
+|---|---|---|---|---|---|---|---|
+| Qwen3-VL-2B | HateMM | −.027 → −.045 | −.006 → −.014 | −.020 → −.007 | −.062 → −.095 | −.014 → −.006 | +.013 → +.013 |
+| | HateClipSeg | −.024 → −.013 | −.026 → −.032 | −.005 → −.008 | −.039 → −.092 | +.006 → −.011 | −.014 → −.005 |
+| Qwen3-VL-4B | HateMM | −.044 → −.026 | −.027 → −.026 | −.050 → −.006 | −.084 → −.112 | −.025 → +.009 | −.005 → +.013 |
+| | HateClipSeg | −.013 → −.016 | −.010 → −.024 | −.012 → −.003 | −.042 → −.103 | +.006 → +.000 | −.002 → −.017 |
+| Qwen3-VL-8B | HateMM | −.068 → −.051 | −.073 → −.041 | −.056 → +.006 | −.112 → −.107 | −.012 → +.016 | +.003 → +.004 |
+| | HateClipSeg | −.026 → −.037 | −.028 → −.020 | −.017 → −.012 | −.073 → −.138 | −.014 → −.007 | −.029 → −.030 |
+| Qwen2.5-VL-7B | HateMM | −.038 → −.042 | +.000 → −.023 | −.027 → −.015 | −.078 → −.133 | −.006 → −.011 | −.009 → −.004 |
+| | HateClipSeg | −.001 → −.020 | +.007 → −.015 | −.011 → +.015 | −.047 → −.106 | +.001 → −.004 | −.011 → −.028 |
+| InternVL3.5-8B | HateMM | −.042 → −.029 | +.006 → −.006 | −.029 → −.011 | −.076 → −.110 | +.013 → +.016 | +.002 → −.022 |
+| | HateClipSeg | −.029 → −.030 | +.005 → −.010 | −.045 → +.006 | −.084 → −.124 | −.008 → −.001 | −.040 → −.031 |
+| LLaVA-OneVision-7B | HateMM | −.013 → −.060 | +.005 → −.005 | +.010 → +.047 | −.053 → −.092 | −.021 → −.011 | +.002 → +.019 |
+| | HateClipSeg | −.020 → −.047 | −.002 → +.007 | −.010 → −.014 | −.037 → −.106 | −.028 → −.010 | +.008 → −.019 |
+| Gemma-3-12B | HateMM | −.027 → −.020 | −.016 → −.003 | −.014 → −.011 | −.081 → −.107 | −.019 → +.010 | +.006 → +.038 |
+| | HateClipSeg | −.022 → −.018 | −.007 → −.021 | +.001 → −.001 | −.056 → −.105 | −.021 → −.007 | −.007 → +.014 |
+
+Qwen3-VL-32B: dropped (§5.4). The Qwen3-VL-8B A1 / A2 / A3 / A6 reads are the reader-ablation runs
+(`runs/20261101_reader_ablation/{HateMM,HateClipSeg}/<arm>/predictions.jsonl`; same functions in the same order, the smoke
+records of both experiments agree to 0.0 on all four videos and all five arms; the 8B full reads under this composition
+.6869 / .6640 equal its `compose/fixed_main`); its A4 is this study's capped run. Uncapped A4 on 8B (reader ablation,
+`runs/20261101_reader_ablation/compose/asr_main/metrics_izv_plus_mean_rrank.json` − `fixed_main`): −.110 / −.134, against
+−.107 / −.138 capped, so the 4-frame cap moves 8B by ≤ .004. Consistency: in every backbone the A3 / A4 / A6 `z_video`
+equals the full run's (max |Δ| 0.0, `table.json`).
+
+Count of backbones (of 7) with arm − full ≤ −.01 (the component helps beyond the floor), HateMM / HateClipSeg:
+alone 7 / 7; ASR 7 / 7 (every value between −.092 and −.138); −ctx 4 / 6 (HCS: LLaVA +.007); −frames 3 / 2 (LLaVA HateMM
++.047, Qwen2.5 HCS +.015 the other way); −stance 2 / 2 (8B and InternVL HateMM +.016 the other way); joint 1 / 5 (HateMM
+2B, 4B, LLaVA, Gemma ≥ +.013 the other way; Gemma HCS +.014). Under the adopted reader the prefix frames and the stance
+turn no longer carry within-video order on most backbones; the window's own frames (in every branch, A2 keeps them) do
+that work. The fixed grid remains the one component that helps on every backbone and corpus.
+
+GPU time of the arms (5090, elapsed): 2B 1389 / 1390 (21 / 18 min), 4B 1391 / 1392 (30 / 26), 8B A4 1393 / 1394 (5 / 4),
+Qwen2.5 1395 / 1396 (45 / 39), InternVL 1425 / 1426 (74 / 64), all on uoa-lab2 (sc474399); LLaVA 1414 / 1415 (178 /
+157), Gemma 1423 / 1424 (169 / 144) on lab-server (sc448960). Arms ≈ 16 GPU-hours; with the main table ≈ 24 GPU-hours.
 
 ## 6. Test-read log (rule 10)
 
-(pending)
+No per-video test label or GT array was opened in this experiment. Files read: the evaluator outputs (`metrics*.json`,
+aggregate per corpus) listed above, and stored reads (adopted reads, reader-ablation reads, smoke records) for the
+consistency checks. No design choice was made from test numbers: the definitions (§2), the porting (§3) and the A4 frame cap
+(declared after an out-of-memory error, before any full arm run) were fixed before the numbers they affect were seen.
+All numbers are development-selected test numbers in the sense of CLAUDE.md (the method was developed against test).
