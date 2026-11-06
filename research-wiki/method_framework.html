@@ -1,0 +1,607 @@
+<title>HateSpan 当前方法</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one vertical pipeline, top to bottom; each stage is a section, data handed between stages sits in a strip between them. */
+:root{
+  --bg:#f5f7f9; --panel:#ffffff; --fg:#1b2129; --muted:#5b6673; --line:#d5dbe2; --soft:#eaeef2;
+  --read:#2d6a9a; --read-soft:#e3eef7;
+  --speech:#1f8a83; --speech-soft:#dff2f0;
+  --dec:#a8661a; --dec-soft:#f6ecdd;
+  --int:#3d7a4c; --int-soft:#e3f0e6;
+  --font-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --font-display:"Noto Serif SC","Songti SC",serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161b; --panel:#1a2027; --fg:#e4e8ed; --muted:#9aa5b1; --line:#2f3842; --soft:#232a33;
+  --read:#79b3e0; --read-soft:#1d2e3d; --speech:#5cc8bf; --speech-soft:#183331;
+  --dec:#e0a356; --dec-soft:#33281a; --int:#7fc38f; --int-soft:#1c3122; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161b; --panel:#1a2027; --fg:#e4e8ed; --muted:#9aa5b1; --line:#2f3842; --soft:#232a33;
+  --read:#79b3e0; --read-soft:#1d2e3d; --speech:#5cc8bf; --speech-soft:#183331;
+  --dec:#e0a356; --dec-soft:#33281a; --int:#7fc38f; --int-soft:#1c3122; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.7}
+.wrap{max-width:980px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:28px}
+h1{font-family:var(--font-display);font-size:30px;line-height:1.3;margin:0;text-wrap:balance}
+h2{font-size:20px;margin:0;line-height:1.4;text-wrap:balance}
+h3{font-size:15px;margin:0}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--font-mono);font-size:.88em}
+.muted{color:var(--muted)}
+header{display:flex;flex-direction:column;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.lead{font-size:16px}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px clamp(14px,3vw,26px);display:flex;flex-direction:column;gap:16px;min-width:0}
+.stage-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.num{font-family:var(--font-mono);font-weight:600;font-size:13px;padding:2px 9px;border-radius:6px}
+.s0 .num{background:var(--soft);color:var(--muted)}
+.s1 .num{background:var(--read-soft);color:var(--read)}
+.s2 .num{background:var(--dec-soft);color:var(--dec)}
+.s3 .num{background:var(--int-soft);color:var(--int)}
+.en{font-family:var(--font-mono);font-size:12.5px;color:var(--muted)}
+.where{font-size:12.5px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.box{background:var(--soft);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.box h3{font-size:14px}
+.box p,.box li{font-size:14px}
+ul,ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:4px}
+.why{border-top:1px dashed var(--line);padding-top:12px;font-size:14px}
+.why b{color:var(--fg)}
+.hand{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-left:clamp(8px,4vw,40px);font-size:13px;color:var(--muted)}
+.hand .arrow{font-size:20px;line-height:1}
+.pill{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg)}
+.figwrap{overflow-x:auto;min-width:0}
+svg.fig{display:block;width:100%;min-width:720px;height:auto;font-family:var(--font-body)}
+.formula{font-family:var(--font-mono);font-size:14px;background:var(--soft);border-radius:8px;padding:12px 14px;overflow-x:auto;white-space:pre}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--muted);font-size:13px}
+.tablewrap{overflow-x:auto;min-width:0}
+.tag{font-size:12px;color:var(--muted)}
+.small{font-size:13px}
+/* SVG classes */
+.b-read{fill:var(--read-soft);stroke:var(--read);stroke-width:1.2}
+.b-speech{fill:var(--speech-soft);stroke:var(--speech);stroke-width:1.2}
+.b-q{fill:var(--panel);stroke:var(--read);stroke-width:1.2;stroke-dasharray:4 3}
+.b-out{fill:var(--panel);stroke:var(--fg);stroke-width:1.2}
+.b-grp{fill:var(--soft);stroke:none}
+.t{fill:var(--fg);font-size:13px}
+.ts{fill:var(--muted);font-size:12px}
+.tb{fill:var(--fg);font-size:13px;font-weight:700}
+.tm{fill:var(--fg);font-size:13px;font-family:var(--font-mono)}
+.ln{stroke:var(--muted);stroke-width:1.3;fill:none}
+.ar{fill:var(--muted)}
+.col0{fill:var(--panel)} .col1{fill:var(--soft)}
+.tick{fill:var(--muted);font-size:11.5px;font-family:var(--font-mono)}
+.rowl{fill:var(--fg);font-size:13px;font-weight:500}
+.rows{fill:var(--muted);font-size:11.5px;font-family:var(--font-mono)}
+.zero{stroke:var(--line);stroke-width:1.2}
+.grid{stroke:var(--line);stroke-width:1;stroke-dasharray:3 3}
+.bv{fill:var(--read)} .bs{fill:var(--speech)}
+.na{fill:var(--muted);font-size:11px}
+.parea{fill:var(--dec-soft)} .pline{fill:none;stroke:var(--dec);stroke-width:2}
+.span{stroke:var(--dec);stroke-width:2}
+.ann{fill:var(--fg);font-size:12px}
+.band-a{fill:var(--int-soft);stroke:var(--int);stroke-width:1.2}
+.dot{fill:var(--int)}
+/* overview figure */
+.wide{margin-inline:calc((100% - min(1260px, 100vw - 48px)) / 2);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px clamp(12px,2vw,22px);display:flex;flex-direction:column;gap:14px;min-width:0}
+svg.ov{min-width:1000px}
+.pn0{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.pn1{fill:var(--bg);stroke:var(--read);stroke-width:1.4}
+.pn2{fill:var(--bg);stroke:var(--dec);stroke-width:1.4}
+.pn3{fill:var(--bg);stroke:var(--int);stroke-width:1.4}
+.hd{fill:var(--fg);font-size:16px;font-weight:700}
+.sub{fill:var(--muted);font-size:12px}
+.strip{fill:var(--soft)} .frm{fill:var(--read-soft);stroke:var(--read);stroke-width:1}
+.wave{fill:none;stroke:var(--speech);stroke-width:1.5}
+.win0{fill:var(--line)} .win1{fill:var(--soft);stroke:var(--line)}
+.c-read,.s-read{fill:var(--read-soft);stroke:var(--read);stroke-width:1.2}
+.c-sp,.s-sp{fill:var(--speech-soft);stroke:var(--speech);stroke-width:1.2}
+.s-q{fill:var(--panel);stroke:var(--read);stroke-width:1.2;stroke-dasharray:4 3}
+.cellv{fill:var(--read)} .cells{fill:var(--speech)} .celln{fill:none;stroke:var(--line);stroke-dasharray:3 2}
+.b-dec{fill:var(--dec-soft);stroke:var(--dec);stroke-width:1.2}
+.b-int{fill:var(--int-soft);stroke:var(--int);stroke-width:1.2}
+.lane{fill:var(--soft);stroke:var(--line)} .hate{fill:var(--dec)}
+.orc{fill:var(--panel);stroke:var(--fg);stroke-width:1.3}
+.oline{fill:none;stroke:var(--int);stroke-width:2.2}
+.steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:4px;font-size:14px;max-width:none}
+@media (max-width:520px){h1{font-size:24px}.lead{font-size:15px}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <h1>HateSpan 当前方法</h1>
+  <p class="lead">输入一个视频，输出每一帧（4 fps）的仇恨分数。整个流程分三步：读取、时序解码、组合。三步都不用任何仇恨标注，也不训练模型。</p>
+  <div class="chips">
+    <span class="chip">读取器：本窗帧 + 对齐词（2026-10-31 采用）</span>
+    <span class="chip">时序层：r6_bma（2026-09-27）</span>
+    <span class="chip">本页更新：2026-11-01</span>
+  </div>
+</header>
+
+<section class="wide" aria-labelledby="hov">
+  <div class="stage-head"><h2 id="hov">整体框架</h2><span class="en">从左到右是数据流动的顺序；曲线和色块是示意</span></div>
+  <div class="figwrap">
+<svg class="fig ov" viewBox="0 0 1240 520" role="img" aria-label="整体框架：输入、读取、时序解码、组合，从左到右">
+<defs><marker id="ov" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ar"/></marker></defs>
+<rect x="16" y="30" width="196" height="442" rx="10" class="pn0" />
+<rect x="236" y="30" width="408" height="442" rx="10" class="pn1" />
+<rect x="668" y="30" width="322" height="442" rx="10" class="pn2" />
+<rect x="1016" y="30" width="208" height="442" rx="10" class="pn3" />
+<text x="28" y="54" class="hd" text-anchor="start">输入</text>
+<text x="28" y="72" class="sub" text-anchor="start">CPU，可缓存</text>
+<text x="250" y="54" class="hd" text-anchor="start">① 读取</text>
+<text x="310" y="54" class="sub" text-anchor="start">Contextual Reader</text>
+<text x="250" y="72" class="sub" text-anchor="start">冻结的 Qwen3-VL-8B，GPU</text>
+<text x="682" y="54" class="hd" text-anchor="start">② 时序解码</text>
+<text x="770" y="54" class="sub" text-anchor="start">Temporal Decoder</text>
+<text x="682" y="72" class="sub" text-anchor="start">CPU，不用标签</text>
+<text x="1030" y="54" class="hd" text-anchor="start">③ 组合</text>
+
+<text x="1030" y="72" class="sub" text-anchor="start">Integrator，输出每帧分数</text>
+<text x="28" y="94" class="tb" text-anchor="start">视频</text>
+<rect x="28" y="102" width="170" height="40" rx="4" class="strip" />
+<rect x="34" y="108" width="27" height="28" rx="2" class="frm" />
+<rect x="67" y="108" width="27" height="28" rx="2" class="frm" />
+<rect x="100" y="108" width="27" height="28" rx="2" class="frm" />
+<rect x="133" y="108" width="27" height="28" rx="2" class="frm" />
+<rect x="166" y="108" width="27" height="28" rx="2" class="frm" />
+<polyline points="28.0,168.0 30.1,171.2 32.2,174.6 34.4,176.5 36.5,175.7 38.6,172.0 40.8,166.2 42.9,160.5 45.0,156.7 47.1,156.3 49.2,159.6 51.4,165.3 53.5,171.5 55.6,175.9 57.8,177.4 59.9,175.9 62.0,172.3 64.1,168.5 66.2,165.9 68.4,165.2 70.5,166.3 72.6,167.9 74.8,168.6 76.9,167.8 79.0,165.4 81.1,162.6 83.2,160.9 85.4,161.7 87.5,165.2 89.6,170.5 91.8,175.8 93.9,179.2 96.0,179.3 98.1,175.7 100.2,169.8 102.4,163.5 104.5,158.9 106.6,157.5 108.8,159.4 110.9,163.5 113.0,168.1 115.1,171.3 117.2,172.4 119.4,171.5 121.5,169.6 123.6,168.1 125.8,168.2 127.9,169.8 130.0,172.0 132.1,173.4 134.2,172.9 136.4,169.8 138.5,165.0 140.6,160.2 142.8,157.2 144.9,157.5 147.0,161.2 149.1,167.2 151.2,173.6 153.4,178.1 155.5,179.3 157.6,177.0 159.8,172.4 161.9,167.2 164.0,163.3 166.1,161.9 168.2,162.9 170.4,165.2 172.5,167.4 174.6,168.2 176.8,167.4 178.9,165.6 181.0,164.3 183.1,164.6 185.2,167.1 187.4,171.2 189.5,175.4 191.6,178.0 193.8,177.5 195.9,173.8 198.0,167.8" class="wave"/>
+<rect x="28" y="190" width="32" height="14" rx="2" class="win0" />
+<rect x="62" y="190" width="32" height="14" rx="2" class="win1" />
+<rect x="96" y="190" width="32" height="14" rx="2" class="win0" />
+<rect x="130" y="190" width="32" height="14" rx="2" class="win1" />
+<rect x="164" y="190" width="32" height="14" rx="2" class="win0" />
+<text x="113" y="222" class="ts" text-anchor="middle">按 8 秒切成窗口</text>
+<rect x="28" y="258" width="170" height="28" rx="6" class="c-read" />
+<text x="113" y="277" class="t" text-anchor="middle">20 张均匀帧</text>
+<rect x="28" y="296" width="170" height="28" rx="6" class="c-sp" />
+<text x="113" y="315" class="t" text-anchor="middle">整段转录（Whisper）</text>
+<rect x="28" y="366" width="170" height="28" rx="6" class="c-read" />
+<text x="113" y="385" class="t" text-anchor="middle">每窗 0.5 fps 帧</text>
+<rect x="28" y="404" width="170" height="28" rx="6" class="c-sp" />
+<text x="113" y="423" class="t" text-anchor="middle">每窗对齐的词</text>
+<text x="28" y="250" class="ts" text-anchor="start">进共享前缀</text>
+<text x="28" y="358" class="ts" text-anchor="start">进各窗口的分支</text>
+<path d="M198,272 L208,272" class="ln"/>
+<path d="M198,310 L208,310 L208,120 L250,120" class="ln" marker-end="url(#ov)"/>
+<path d="M198,380 L218,380 L218,211 L256,211" class="ln" marker-end="url(#ov)"/>
+<path d="M198,418 L228,418 L228,271 L256,271" class="ln" marker-end="url(#ov)"/>
+<text x="252" y="92" class="ts" text-anchor="start">共享上下文：整段视频只编码一次（KV cache）</text>
+<rect x="252" y="100" width="40" height="40" rx="4" class="s-read" />
+<text x="272.0" y="125" class="t" text-anchor="middle">系统</text>
+<rect x="294" y="100" width="62" height="40" rx="4" class="s-read" />
+<text x="325.0" y="125" class="t" text-anchor="middle">20 帧</text>
+<rect x="358" y="100" width="62" height="40" rx="4" class="s-sp" />
+<text x="389.0" y="125" class="t" text-anchor="middle">转录</text>
+<rect x="422" y="100" width="50" height="40" rx="4" class="s-read" />
+<text x="447.0" y="125" class="t" text-anchor="middle">规则</text>
+<rect x="474" y="100" width="74" height="40" rx="4" class="s-q" />
+<text x="511.0" y="125" class="t" text-anchor="middle">整段问题</text>
+<rect x="550" y="100" width="62" height="40" rx="4" class="s-read" />
+<text x="581.0" y="125" class="t" text-anchor="middle">Yes/No</text>
+<path d="M511.0,100 L511.0,16 L1120,16 L1120,96" class="ln" marker-end="url(#ov)"/>
+<text x="840" y="12" class="tm" text-anchor="middle">z_video：整段判定分</text>
+<path d="M410,140 L410,166" class="ln"/>
+<path d="M291,166 L573,166" class="ln"/>
+<path d="M291,166 L291,184" class="ln" marker-end="url(#ov)"/>
+<rect x="258" y="186" width="66" height="50" rx="6" class="b-read" />
+<text x="291" y="206" class="tb" text-anchor="middle">w1 画面</text>
+<text x="291" y="224" class="ts" text-anchor="middle">本窗帧</text>
+<rect x="258" y="246" width="66" height="50" rx="6" class="b-speech" />
+<text x="291" y="266" class="tb" text-anchor="middle">w1 语音</text>
+<text x="291" y="284" class="ts" text-anchor="middle">本窗词</text>
+<path d="M365,166 L365,184" class="ln" marker-end="url(#ov)"/>
+<rect x="332" y="186" width="66" height="50" rx="6" class="b-read" />
+<text x="365" y="206" class="tb" text-anchor="middle">w2 画面</text>
+<text x="365" y="224" class="ts" text-anchor="middle">本窗帧</text>
+<rect x="332" y="246" width="66" height="50" rx="6" class="b-speech" />
+<text x="365" y="266" class="tb" text-anchor="middle">w2 语音</text>
+<text x="365" y="284" class="ts" text-anchor="middle">本窗词</text>
+<path d="M439,166 L439,184" class="ln" marker-end="url(#ov)"/>
+<rect x="406" y="186" width="66" height="50" rx="6" class="b-read" />
+<text x="439" y="206" class="tb" text-anchor="middle">w3 画面</text>
+<text x="439" y="224" class="ts" text-anchor="middle">本窗帧</text>
+<rect x="406" y="246" width="66" height="50" rx="6" class="b-speech" />
+<text x="439" y="266" class="tb" text-anchor="middle">w3 语音</text>
+<text x="439" y="284" class="ts" text-anchor="middle">本窗词</text>
+<path d="M573,166 L573,184" class="ln" marker-end="url(#ov)"/>
+<rect x="540" y="186" width="66" height="50" rx="6" class="b-read" />
+<text x="573" y="206" class="tb" text-anchor="middle">wN 画面</text>
+<text x="573" y="224" class="ts" text-anchor="middle">本窗帧</text>
+<rect x="540" y="246" width="66" height="50" rx="6" class="b-speech" />
+<text x="573" y="266" class="tb" text-anchor="middle">wN 语音</text>
+<text x="573" y="284" class="ts" text-anchor="middle">本窗词</text>
+<text x="506" y="246" class="hd" text-anchor="middle">…</text>
+<text x="258" y="318" class="ts" text-anchor="start">每个分支 = 共享上下文 + 本窗证据 + 一个是/否问题</text>
+<text x="258" y="336" class="ts" text-anchor="start">分支互相隔离，也不带前一个窗口的回答</text>
+<text x="300" y="382" class="tm" text-anchor="end">z_画面</text>
+<text x="300" y="410" class="tm" text-anchor="end">z_语音</text>
+<rect x="310" y="368" width="32" height="20" rx="3" class="cellv" fill-opacity="0.28"/>
+<rect x="310" y="396" width="32" height="20" rx="3" class="cells" fill-opacity="0.23"/>
+<rect x="346" y="368" width="32" height="20" rx="3" class="cellv" fill-opacity="0.36"/>
+<rect x="346" y="396" width="32" height="20" rx="3" class="cells" fill-opacity="0.92"/>
+<rect x="382" y="368" width="32" height="20" rx="3" class="cellv" fill-opacity="0.62"/>
+<rect x="382" y="396" width="32" height="20" rx="3" class="cells" fill-opacity="0.49"/>
+<rect x="418" y="368" width="32" height="20" rx="3" class="cellv" fill-opacity="0.41"/>
+<rect x="418" y="396" width="32" height="20" rx="3" class="cells" fill-opacity="0.41"/>
+<rect x="454" y="368" width="32" height="20" rx="3" class="cellv" fill-opacity="0.79"/>
+<rect x="454" y="396" width="32" height="20" rx="3" class="cells" fill-opacity="0.66"/>
+<rect x="490" y="368" width="32" height="20" rx="3" class="cellv" fill-opacity="0.41"/>
+<rect x="490" y="396" width="32" height="20" rx="3" class="celln" />
+<text x="506" y="410" class="na" text-anchor="middle">无</text>
+<rect x="526" y="368" width="32" height="20" rx="3" class="cellv" fill-opacity="0.32"/>
+<rect x="526" y="396" width="32" height="20" rx="3" class="cells" fill-opacity="0.83"/>
+<rect x="562" y="368" width="32" height="20" rx="3" class="cellv" fill-opacity="0.23"/>
+<rect x="562" y="396" width="32" height="20" rx="3" class="cells" fill-opacity="0.23"/>
+<text x="310" y="440" class="ts" text-anchor="start">每窗两个读数，z = log P(Yes) − log P(No)</text>
+<text x="310" y="458" class="ts" text-anchor="start">读数有噪声：仇恨段里也会有低读数</text>
+<path d="M450,344 L450,364" class="ln" marker-end="url(#ov)"/>
+<path d="M598,378 L654,378 L654,112 L682,112" class="ln" marker-end="url(#ov)"/>
+<rect x="682" y="92" width="296" height="44" rx="6" class="b-dec" />
+<text x="830" y="110" class="tb" text-anchor="middle">正态分数 + EM</text>
+<text x="830" y="128" class="ts" text-anchor="middle">拟合“仇恨 / 非仇恨”两类读数分布</text>
+<path d="M830,136 L830,152" class="ln" marker-end="url(#ov)"/>
+<text x="682" y="174" class="t" text-anchor="start">画面链</text>
+<text x="682" y="208" class="t" text-anchor="start">语音链</text>
+<rect x="736" y="160" width="242" height="20" rx="3" class="lane" />
+<rect x="808.6" y="160" width="101.64" height="20" rx="3" class="hate" />
+<rect x="736" y="194" width="242" height="20" rx="3" class="lane" />
+<rect x="765.04" y="194" width="67.76" height="20" rx="3" class="hate" />
+<rect x="852.16" y="194" width="77.44000000000001" height="20" rx="3" class="hate" />
+<text x="682" y="236" class="ts" text-anchor="start">两状态，每段至少 2 个窗口</text>
+<text x="682" y="253" class="ts" text-anchor="start">段长在每个视频内推断</text>
+<path d="M978,204 L986,204" class="ln"/>
+<path d="M978,170 L986,170 L986,278 L873,278" class="ln" marker-end="url(#ov)"/>
+<circle cx="857" cy="278" r="14" class="orc"/>
+<text x="857" y="283" class="tb" text-anchor="middle">或</text>
+<text x="838" y="283" class="ts" text-anchor="end">任一链为仇恨即算</text>
+<path d="M857,292 L857,306" class="ln" marker-end="url(#ov)"/>
+<path d="M700,372 L700.0,369.0 L721.4,367.2 L742.8,351.0 L764.2,321.0 L785.5,316.8 L806.9,318.0 L828.3,319.2 L849.7,318.0 L871.1,316.2 L892.5,320.4 L913.8,336.0 L935.2,360.0 L956.6,367.2 L978.0,369.0 L978,372 Z" class="parea"/>
+<polyline points="700.0,369.0 721.4,367.2 742.8,351.0 764.2,321.0 785.5,316.8 806.9,318.0 828.3,319.2 849.7,318.0 871.1,316.2 892.5,320.4 913.8,336.0 935.2,360.0 956.6,367.2 978.0,369.0" class="pline"/>
+<line x1="700" x2="978" y1="372" y2="372" class="zero"/>
+<text x="700" y="392" class="ts" text-anchor="start">P(t)：每个时刻属于仇恨段的概率</text>
+<path d="M978,342 L1004,342 L1004,201 L1026,201" class="ln" marker-end="url(#ov)"/>
+<rect x="1026" y="96" width="190" height="50" rx="6" class="b-int" />
+<text x="1121" y="116" class="tb" text-anchor="middle">视频分 K</text>
+<text x="1121" y="135" class="ts" text-anchor="middle">z_video + 窗口读数平均</text>
+<rect x="1026" y="176" width="170" height="50" rx="6" class="b-int" />
+<text x="1111" y="196" class="tb" text-anchor="middle">视频内秩</text>
+<text x="1111" y="215" class="ts" text-anchor="middle">P(t) 在本视频内的排名</text>
+<path d="M1111,226 L1111,250" class="ln" marker-end="url(#ov)"/>
+<path d="M1208,146 L1208,264 L1127,264" class="ln" marker-end="url(#ov)"/>
+<circle cx="1111" cy="264" r="14" class="orc"/>
+<text x="1111" y="269" class="tb" text-anchor="middle">+</text>
+<path d="M1111,278 L1111,296" class="ln" marker-end="url(#ov)"/>
+<polyline points="1032.0,359.4 1044.9,359.4 1044.9,359.4 1057.7,359.4 1057.7,358.0 1070.6,358.0 1070.6,323.0 1083.4,323.0 1083.4,316.0 1096.3,316.0 1096.3,317.4 1109.1,317.4 1109.1,314.6 1122.0,314.6 1122.0,312.5 1134.9,312.5 1134.9,316.0 1147.7,316.0 1147.7,319.5 1160.6,319.5 1160.6,351.0 1173.4,351.0 1173.4,358.0 1186.3,358.0 1186.3,359.4 1199.1,359.4 1199.1,359.4 1212.0,359.4" class="oline"/>
+<line x1="1032" x2="1212" y1="372" y2="372" class="zero"/>
+<text x="1030" y="392" class="tb" text-anchor="start">每帧分数 s(t)，4 fps</text>
+<text x="1030" y="410" class="tm" text-anchor="start">s(t) = K + 秩（±0.5）</text>
+<text x="1030" y="440" class="ts" text-anchor="start">K 排视频之间</text>
+<text x="1030" y="458" class="ts" text-anchor="start">秩排同一视频内的帧</text>
+<path d="M598,406 L626,406 L626,500 L1232,500 L1232,121 L1218,121" class="ln" marker-end="url(#ov)"/>
+<text x="840" y="494" class="ts" text-anchor="middle">窗口读数的平均，进视频分 K</text>
+</svg>
+  </div>
+  <ol class="steps">
+    <li><b>输入</b>：视频切成 8 秒窗口；准备 20 张均匀帧和整段转录（进共享前缀），以及每个窗口自己的帧和词（进窗口分支）。</li>
+    <li><b>读取</b>：模型把整段视频编码一次，先回答“整段是否违规”，得到 <code>z_video</code>；再对每个窗口的画面和语音各问一次，得到两排读数。</li>
+    <li><b>时序解码</b>：把两排带噪读数看成隐藏的“仇恨 / 非仇恨”状态的观测，每个模态一条时长链，取“或”，得到每个时刻属于仇恨段的概率 P(t)。</li>
+    <li><b>组合</b>：视频分 K = <code>z_video</code> + 窗口读数平均，决定视频之间的先后；P(t) 在本视频内的秩（±0.5）决定视频之内的先后；两者相加就是每帧分数。</li>
+  </ol>
+</section>
+
+<section class="stage s0" aria-labelledby="h0">
+  <div class="stage-head"><span class="num">0</span><h2 id="h0">准备输入</h2><span class="en">CPU，可缓存</span></div>
+  <div class="grid2">
+    <div class="box"><h3>画面</h3>
+      <ul>
+        <li><b>20 张均匀帧</b>：覆盖整段视频，每张标上时间 <code>[t=..s]</code>，放进共享前缀。</li>
+        <li><b>0.5 fps 帧</b>：每 2 秒一张，按时间分到各个窗口，一个 8 秒窗口约 4 张。</li>
+      </ul></div>
+    <div class="box"><h3>语音</h3>
+      <ul>
+        <li><b>整段转录</b>：Whisper large-v3，每句带起止时间，放进共享前缀。</li>
+        <li><b>词级时间</b>：用 MMS_FA（wav2vec2 CTC）把转录强制对齐到音频，得到每个词的时间。词的中点落在哪个窗口，就算哪个窗口的词。</li>
+      </ul></div>
+  </div>
+  <p class="small muted">视频按 8 秒切成窗口（最后一个可能更短）。几分钟的视频有几十个窗口。对齐失败的视频（DeHate 有 16 个）退回按句子时间比例切分。</p>
+</section>
+
+<div class="hand"><span class="arrow">↓</span>交给第 1 步：<span class="pill">20 帧 + 整段转录</span><span class="pill">每个窗口的帧和词</span></div>
+
+<section class="stage s1" aria-labelledby="h1s">
+  <div class="stage-head"><span class="num">1</span><h2 id="h1s">读取：每个窗口都在整段视频的上下文里判断</h2><span class="en">Contextual Reader · GPU · 冻结的 Qwen3-VL-8B</span></div>
+  <div class="figwrap">
+  <svg class="fig" viewBox="0 0 920 290" role="img" aria-label="读取器：共享上下文编码一次，然后每个窗口的画面和语音分支各问一次">
+    <defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ar"/></marker></defs>
+    <!-- shared context bracket -->
+    <path d="M20,22 L20,14 L774,14 L774,22" class="ln"/>
+    <text x="397" y="9" class="ts" text-anchor="middle">共享上下文：整段视频只编码一次，存成 KV cache</text>
+    <rect x="20" y="28" width="90" height="52" rx="6" class="b-read"/>
+    <text x="65" y="50" class="t" text-anchor="middle">系统提示</text>
+    <text x="65" y="68" class="ts" text-anchor="middle">+ 开场说明</text>
+    <rect x="116" y="28" width="130" height="52" rx="6" class="b-read"/>
+    <text x="181" y="50" class="t" text-anchor="middle">20 张均匀帧</text>
+    <text x="181" y="68" class="ts" text-anchor="middle">每张带 [t=..s]</text>
+    <rect x="252" y="28" width="130" height="52" rx="6" class="b-speech"/>
+    <text x="317" y="50" class="t" text-anchor="middle">整段转录</text>
+    <text x="317" y="68" class="ts" text-anchor="middle">Whisper，带时间</text>
+    <rect x="388" y="28" width="150" height="52" rx="6" class="b-read"/>
+    <text x="463" y="50" class="t" text-anchor="middle">9 条仇恨规则</text>
+    <text x="463" y="68" class="ts" text-anchor="middle">+ 阅读说明</text>
+    <rect x="544" y="28" width="130" height="52" rx="6" class="b-q"/>
+    <text x="609" y="50" class="t" text-anchor="middle">整段问题</text>
+    <text x="609" y="68" class="ts" text-anchor="middle">是否违反规则？</text>
+    <rect x="680" y="28" width="94" height="52" rx="6" class="b-read"/>
+    <text x="727" y="50" class="t" text-anchor="middle">模型回答</text>
+    <text x="727" y="68" class="ts" text-anchor="middle">Yes 或 No</text>
+    <line x1="774" y1="54" x2="788" y2="54" class="ln" marker-end="url(#m)"/>
+    <rect x="792" y="28" width="118" height="52" rx="6" class="b-out"/>
+    <text x="851" y="50" class="tm" text-anchor="middle">z_video</text>
+    <text x="851" y="68" class="ts" text-anchor="middle">整段判定分</text>
+    <!-- trunk -->
+    <line x1="727" y1="80" x2="727" y2="104" class="ln"/>
+    <line x1="150" y1="104" x2="770" y2="104" class="ln"/>
+    <line x1="150" y1="104" x2="150" y2="120" class="ln" marker-end="url(#m)"/>
+    <line x1="440" y1="104" x2="440" y2="120" class="ln" marker-end="url(#m)"/>
+    <line x1="770" y1="104" x2="770" y2="120" class="ln" marker-end="url(#m)"/>
+    <!-- window groups -->
+    <g>
+      <rect x="14" y="122" width="272" height="112" rx="8" class="b-grp"/>
+      <text x="24" y="140" class="tb">窗口 1（0–8 秒）</text>
+      <rect x="20" y="150" width="125" height="44" rx="6" class="b-read"/>
+      <text x="82" y="168" class="t" text-anchor="middle">本窗约 4 张帧</text>
+      <text x="82" y="185" class="ts" text-anchor="middle">+ 画面问题</text>
+      <rect x="155" y="150" width="125" height="44" rx="6" class="b-speech"/>
+      <text x="217" y="168" class="t" text-anchor="middle">本窗对齐的词</text>
+      <text x="217" y="185" class="ts" text-anchor="middle">+ 语音问题</text>
+      <line x1="82" y1="194" x2="82" y2="206" class="ln" marker-end="url(#m)"/>
+      <line x1="217" y1="194" x2="217" y2="206" class="ln" marker-end="url(#m)"/>
+      <text x="82" y="224" class="tm" text-anchor="middle">z_画面(1)</text>
+      <text x="217" y="224" class="tm" text-anchor="middle">z_语音(1)</text>
+    </g>
+    <g>
+      <rect x="304" y="122" width="272" height="112" rx="8" class="b-grp"/>
+      <text x="314" y="140" class="tb">窗口 2（8–16 秒）</text>
+      <rect x="310" y="150" width="125" height="44" rx="6" class="b-read"/>
+      <text x="372" y="168" class="t" text-anchor="middle">本窗约 4 张帧</text>
+      <text x="372" y="185" class="ts" text-anchor="middle">+ 画面问题</text>
+      <rect x="445" y="150" width="125" height="44" rx="6" class="b-speech"/>
+      <text x="507" y="168" class="t" text-anchor="middle">本窗对齐的词</text>
+      <text x="507" y="185" class="ts" text-anchor="middle">+ 语音问题</text>
+      <line x1="372" y1="194" x2="372" y2="206" class="ln" marker-end="url(#m)"/>
+      <line x1="507" y1="194" x2="507" y2="206" class="ln" marker-end="url(#m)"/>
+      <text x="372" y="224" class="tm" text-anchor="middle">z_画面(2)</text>
+      <text x="507" y="224" class="tm" text-anchor="middle">z_语音(2)</text>
+    </g>
+    <text x="605" y="182" class="tb" text-anchor="middle">…</text>
+    <g>
+      <rect x="634" y="122" width="272" height="112" rx="8" class="b-grp"/>
+      <text x="644" y="140" class="tb">窗口 N</text>
+      <rect x="640" y="150" width="125" height="44" rx="6" class="b-read"/>
+      <text x="702" y="168" class="t" text-anchor="middle">本窗约 4 张帧</text>
+      <text x="702" y="185" class="ts" text-anchor="middle">+ 画面问题</text>
+      <rect x="775" y="150" width="125" height="44" rx="6" class="b-speech"/>
+      <text x="837" y="168" class="t" text-anchor="middle">本窗对齐的词</text>
+      <text x="837" y="185" class="ts" text-anchor="middle">+ 语音问题</text>
+      <line x1="702" y1="194" x2="702" y2="206" class="ln" marker-end="url(#m)"/>
+      <line x1="837" y1="194" x2="837" y2="206" class="ln" marker-end="url(#m)"/>
+      <text x="702" y="224" class="tm" text-anchor="middle">z_画面(N)</text>
+      <text x="837" y="224" class="tm" text-anchor="middle">z_语音(N)</text>
+    </g>
+    <text x="20" y="262" class="ts">每个分支都接在共享上下文后面，读完就把 cache 裁回去：分支之间互相看不到，也不带前一个窗口的回答。</text>
+    <text x="20" y="282" class="ts">没有语音的窗口不问语音分支。每个读数 z = log P(Yes) − log P(No)。</text>
+  </svg>
+  </div>
+  <div class="grid2">
+    <div class="box"><h3>具体怎么问</h3>
+      <ol>
+        <li>前缀依次是：系统提示，20 张帧，整段转录，YouTube 的 9 条仇恨规则，阅读说明（要求同时看明说的和暗含的意思）。</li>
+        <li>整段问题：“Does this video contain content that violates any of the above rules?” 读出 <code>z_video</code>，再把模型自己的 Yes/No 回答写回上下文。</li>
+        <li>画面分支：本窗的帧放在问题旁边，问“Is THIS window one of the segments where visual content that violates the above rules occurs?”</li>
+        <li>语音分支：本窗对齐出的词放进问题里，问同样的话，只是 visual 换成 speech。</li>
+      </ol></div>
+    <div class="box"><h3>每个视频的输出</h3>
+      <ul>
+        <li><code>z_video</code>：一个数，整段视频有多像违规。</li>
+        <li><code>z_画面(i)</code>、<code>z_语音(i)</code>：每个窗口两个数。</li>
+      </ul>
+      <h3 style="margin-top:6px">成本</h3>
+      <ul>
+        <li>每个视频：前缀编码 1 次，整段问题 1 次，每个窗口最多 2 个短分支。</li>
+        <li>RTX 5090 上平均每个视频 2.9 秒（DeHate 1341 个视频共 64.5 分钟）。</li>
+      </ul></div>
+  </div>
+  <div class="why"><b>为什么这样设计（对应 C1）</b>：一个时刻算不算仇恨，要看整段视频（谁在攻击谁、后面的话指的是什么）。如果每个窗口都把整段视频重新喂一遍，成本要乘以窗口数。共享前缀让每个窗口都能看到整段视频，但视频只编码一次。分支隔离是因为试过让窗口带着上一步的回答去读（HVL，2026-09-11），模型会一直照抄上一步。</div>
+  <p class="where">代码：<code>src/window_evidence.py</code>、<code>src/stance_cache.py</code>、<code>src/mllm_judge.py</code>（规则和问题原文）；入口 <code>experiments/20261031_window_evidence/read.py</code>，Slurm 脚本在同目录 <code>launch/</code>。</p>
+</section>
+
+<div class="hand"><span class="arrow">↓</span>交给第 2 步：<span class="pill">z_画面(i)</span><span class="pill">z_语音(i)</span>（<span class="pill">z_video</span> 直接交给第 3 步）</div>
+
+<section class="stage s2" aria-labelledby="h2s">
+  <div class="stage-head"><span class="num">2</span><h2 id="h2s">时序解码：把带噪的窗口读数连成一段一段的仇恨</h2><span class="en">Temporal Decoder · CPU · 不到一分钟</span></div>
+  <div class="figwrap">
+  <svg class="fig" viewBox="0 0 880 400" role="img" aria-label="解码器示意：画面读数、语音读数和解码后的仇恨概率">
+<rect x="150" y="34" width="50" height="300" class="col0"/>
+<text x="175.0" y="26" class="tick" text-anchor="middle">1</text>
+<rect x="200" y="34" width="50" height="300" class="col1"/>
+<text x="225.0" y="26" class="tick" text-anchor="middle">2</text>
+<rect x="250" y="34" width="50" height="300" class="col0"/>
+<text x="275.0" y="26" class="tick" text-anchor="middle">3</text>
+<rect x="300" y="34" width="50" height="300" class="col1"/>
+<text x="325.0" y="26" class="tick" text-anchor="middle">4</text>
+<rect x="350" y="34" width="50" height="300" class="col0"/>
+<text x="375.0" y="26" class="tick" text-anchor="middle">5</text>
+<rect x="400" y="34" width="50" height="300" class="col1"/>
+<text x="425.0" y="26" class="tick" text-anchor="middle">6</text>
+<rect x="450" y="34" width="50" height="300" class="col0"/>
+<text x="475.0" y="26" class="tick" text-anchor="middle">7</text>
+<rect x="500" y="34" width="50" height="300" class="col1"/>
+<text x="525.0" y="26" class="tick" text-anchor="middle">8</text>
+<rect x="550" y="34" width="50" height="300" class="col0"/>
+<text x="575.0" y="26" class="tick" text-anchor="middle">9</text>
+<rect x="600" y="34" width="50" height="300" class="col1"/>
+<text x="625.0" y="26" class="tick" text-anchor="middle">10</text>
+<rect x="650" y="34" width="50" height="300" class="col0"/>
+<text x="675.0" y="26" class="tick" text-anchor="middle">11</text>
+<rect x="700" y="34" width="50" height="300" class="col1"/>
+<text x="725.0" y="26" class="tick" text-anchor="middle">12</text>
+<rect x="750" y="34" width="50" height="300" class="col0"/>
+<text x="775.0" y="26" class="tick" text-anchor="middle">13</text>
+<rect x="800" y="34" width="50" height="300" class="col1"/>
+<text x="825.0" y="26" class="tick" text-anchor="middle">14</text>
+<text x="138" y="26" class="tick" text-anchor="end">窗口</text>
+<text x="138" y="96" class="rowl" text-anchor="end">画面读数</text>
+<text x="138" y="113" class="rows" text-anchor="end">z_画面</text>
+<line x1="150" x2="850" y1="100" y2="100" class="zero"/>
+<rect x="162" y="100.0" width="26" height="14.4" rx="2" class="bv"/>
+<rect x="212" y="100.0" width="26" height="17.6" rx="2" class="bv"/>
+<rect x="262" y="96.8" width="26" height="3.2" rx="2" class="bv"/>
+<rect x="312" y="100.0" width="26" height="4.8" rx="2" class="bv"/>
+<rect x="362" y="100.0" width="26" height="8.0" rx="2" class="bv"/>
+<rect x="412" y="80.8" width="26" height="19.2" rx="2" class="bv"/>
+<rect x="462" y="100.0" width="26" height="6.4" rx="2" class="bv"/>
+<rect x="512" y="100.0" width="26" height="3.2" rx="2" class="bv"/>
+<rect x="562" y="100.0" width="26" height="9.6" rx="2" class="bv"/>
+<rect x="612" y="92.0" width="26" height="8.0" rx="2" class="bv"/>
+<rect x="662" y="100.0" width="26" height="12.8" rx="2" class="bv"/>
+<rect x="712" y="100.0" width="26" height="19.2" rx="2" class="bv"/>
+<rect x="762" y="100.0" width="26" height="16.0" rx="2" class="bv"/>
+<rect x="812" y="100.0" width="26" height="17.6" rx="2" class="bv"/>
+<text x="138" y="191" class="rowl" text-anchor="end">语音读数</text>
+<text x="138" y="208" class="rows" text-anchor="end">z_语音</text>
+<line x1="150" x2="850" y1="195" y2="195" class="zero"/>
+<rect x="162" y="195.0" width="26" height="19.2" rx="2" class="bs"/>
+<rect x="212" y="195.0" width="26" height="12.8" rx="2" class="bs"/>
+<rect x="262" y="153.4" width="26" height="41.6" rx="2" class="bs"/>
+<rect x="312" y="188.6" width="26" height="6.4" rx="2" class="bs"/>
+<rect x="362" y="195.0" width="26" height="3.2" rx="2" class="bs"/>
+<rect x="412" y="180.6" width="26" height="14.4" rx="2" class="bs"/>
+<rect x="462" y="193.4" width="26" height="1.6" rx="2" class="bs"/>
+<rect x="512" y="190.2" width="26" height="4.8" rx="2" class="bs"/>
+<text x="575" y="199" class="na" text-anchor="middle">无</text>
+<rect x="612" y="161.4" width="26" height="33.6" rx="2" class="bs"/>
+<rect x="662" y="191.8" width="26" height="3.2" rx="2" class="bs"/>
+<rect x="712" y="195.0" width="26" height="16.0" rx="2" class="bs"/>
+<rect x="762" y="195.0" width="26" height="20.8" rx="2" class="bs"/>
+<rect x="812" y="195.0" width="26" height="14.4" rx="2" class="bs"/>
+<text x="138" y="285" class="rowl" text-anchor="end">解码后</text>
+<text x="138" y="302" class="rows" text-anchor="end">P(仇恨)</text>
+<line x1="150" x2="850" y1="325" y2="325" class="zero"/>
+<line x1="150" x2="850" y1="255" y2="255" class="grid"/>
+<text x="856" y="259" class="tick">1</text><text x="856" y="329" class="tick">0</text>
+<path d="M150,325 L150,321.5 L200,321.5 L200,318.0 L250,318.0 L250,260.6 L300,260.6 L300,262.0 L350,262.0 L350,263.4 L400,263.4 L400,259.9 L450,259.9 L450,263.4 L500,263.4 L500,264.8 L550,264.8 L550,266.2 L600,266.2 L600,259.9 L650,259.9 L650,274.6 L700,274.6 L700,314.5 L750,314.5 L750,320.8 L800,320.8 L800,322.2 L850,322.2 L850,325 Z" class="parea"/>
+<polyline points="150,321.5 200,321.5 200,318.0 250,318.0 250,260.6 300,260.6 300,262.0 350,262.0 350,263.4 400,263.4 400,259.9 450,259.9 450,263.4 500,263.4 500,264.8 550,264.8 550,266.2 600,266.2 600,259.9 650,259.9 650,274.6 700,274.6 700,314.5 750,314.5 750,320.8 800,320.8 800,322.2 850,322.2" class="pline"/>
+<line x1="250" x2="700" y1="343" y2="343" class="span"/>
+<line x1="250" x2="250" y1="337" y2="349" class="span"/><line x1="700" x2="700" y1="337" y2="349" class="span"/>
+<text x="475.0" y="365" class="ann" text-anchor="middle">推断出的一整段仇恨（窗口 3 到 11）</text>
+<text x="275.0" y="147" class="ann" text-anchor="middle">点名目标群体</text>
+<text x="625.0" y="155" class="ann" text-anchor="middle">再次点名</text>
+<text x="450" y="237" class="ann" text-anchor="middle">回指、对方的回答、停顿：单看都不高</text>
+</svg>
+  </div>
+  <p class="tag">示意图，数值是编的，只为说明形状。单看读数，窗口 4 到 9 都不高；解码器因为“仇恨会持续”把它们和两侧的高读数连成一段。</p>
+  <div class="grid2">
+    <div class="box"><h3>① 读数换成正态分数</h3>
+      <p>每个模态的所有窗口读数在整个语料里排名，换成正态分数 Φ⁻¹((名次 − 0.5) / N)。只用先后顺序，不用模型 logit 的尺度（不同模型的尺度差很多）。</p></div>
+    <div class="box"><h3>② EM 拟合两类读数</h3>
+      <p>每个模态拟合两条高斯分布：仇恨窗口的读数一条，非仇恨窗口的一条。用该数据集全部视频的读数做 EM，不用标签。</p></div>
+    <div class="box"><h3>③ 每个模态一条时长链</h3>
+      <ul>
+        <li>时间按 4 秒一格，一个窗口 = 2 格。状态只有“仇恨 / 非仇恨”。</li>
+        <li>一段仇恨或一段间隔<b>至少 2 个窗口</b>（16 秒），所以单个窗口的高读数不能自成一段。</li>
+        <li><b>平均段长不设定</b>：每个视频在 16 秒到视频长度之间取 6×6 组（平均间隔，平均仇恨段长），先验按长度均匀，按各组对本视频读数的似然加权平均。</li>
+        <li>前向-后向算出每格属于仇恨段的概率。没有语音的窗口不给语音链观测。</li>
+      </ul></div>
+    <div class="box"><h3>④ 两个模态取“或”</h3>
+      <p>P(t) = 1 − (1 − P<sub>画面</sub>(t)) × (1 − P<sub>语音</sub>(t))。任一模态处在仇恨状态，这个时刻就算仇恨。</p>
+      <p class="small muted">这里假设视频含仇恨，算的是“如果有，在哪里”。视频之间谁更可疑交给第 3 步。</p></div>
+  </div>
+  <div class="why"><b>为什么这样设计（对应 C2）</b>：对方的回答、停顿、回指这些时刻本身不含仇恨，只能靠时间结构把它们归进同一段。固定宽度的平滑需要事先知道段有多长，可是段长从一句话到整通电话都有，没有标签就没法设。所以“会持续”写进模型，段长在每个视频里推断。去掉时间耦合，视频内 AUC 掉 .114 / .057（HateMM / HCS，旧读法的消融）。</div>
+  <p class="where">代码：<code>experiments/20260926_twolevel/twolevel_r2.py --noleak --transform nscore --key raw --duration bma --bma-prior length --min-windows 2 --bma-grid 6 --arm m2</code>；说明见该目录 README §14、§16、§19。</p>
+</section>
+
+<div class="hand"><span class="arrow">↓</span>交给第 3 步：<span class="pill">P(t)</span>，加上第 1 步的 <span class="pill">z_video</span> 和窗口读数</div>
+
+<section class="stage s3" aria-labelledby="h3s">
+  <div class="stage-head"><span class="num">3</span><h2 id="h3s">组合：视频之间用整段判定排序，视频之内用解码结果排序</h2><span class="en">Hierarchical Integrator</span></div>
+  <div class="formula">视频分  K   = z_video + 各窗口 max(z_画面, z_语音) 的平均     （原始 logit，不校准）
+帧分    s(t) = K + 视频内居中秩( logit P(t) )                 （秩在 −0.5 到 +0.5 之间，均值 0）</div>
+  <div class="figwrap">
+  <svg class="fig" viewBox="0 0 880 150" role="img" aria-label="示意：两个视频的帧分落在各自视频分附近的窄带里">
+    <line x1="60" y1="70" x2="840" y2="70" class="zero"/>
+    <g class="tick">
+      <text x="60" y="92" text-anchor="middle">−4</text><text x="190" y="92" text-anchor="middle">−2</text><text x="320" y="92" text-anchor="middle">0</text>
+      <text x="450" y="92" text-anchor="middle">2</text><text x="580" y="92" text-anchor="middle">4</text><text x="710" y="92" text-anchor="middle">6</text><text x="840" y="92" text-anchor="middle">8</text>
+    </g>
+    <text x="320" y="112" class="ts" text-anchor="middle">帧分</text>
+    <rect x="157.5" y="52" width="65" height="36" rx="5" class="band-a"/>
+    <text x="190" y="40" class="t" text-anchor="middle">视频 B：K = −2</text>
+    <rect x="612.5" y="52" width="65" height="36" rx="5" class="band-a"/>
+    <text x="645" y="40" class="t" text-anchor="middle">视频 A：K = 5</text>
+    <g class="dot">
+      <circle cx="162" cy="70" r="3"/><circle cx="174" cy="70" r="3"/><circle cx="186" cy="70" r="3"/><circle cx="198" cy="70" r="3"/><circle cx="210" cy="70" r="3"/><circle cx="219" cy="70" r="3"/>
+      <circle cx="617" cy="70" r="3"/><circle cx="630" cy="70" r="3"/><circle cx="642" cy="70" r="3"/><circle cx="655" cy="70" r="3"/><circle cx="667" cy="70" r="3"/><circle cx="674" cy="70" r="3"/>
+    </g>
+    <text x="60" y="140" class="ts">示意：每个视频的所有帧落在自己的 K 附近、宽度为 1 的窄带里。带内的先后由 P(t) 决定。</text>
+  </svg>
+  </div>
+  <div class="grid2">
+    <div class="box"><h3>K 管视频之间</h3><p>K 主要决定 pooled ROC-AUC 和 pooled PR-AUC：可疑的视频，所有帧都排得靠前。</p></div>
+    <div class="box"><h3>秩管视频之内</h3><p>秩只在 ±0.5 范围内，几乎不改变视频之间的先后，只决定同一个视频里哪些帧更靠前，也就是 within-video AUC。</p></div>
+  </div>
+  <p class="small muted">最后把每格的分数展开到 4 fps，得到每一帧的分数。2026-10-07 起视频分不再校准。</p>
+</section>
+
+<div class="hand"><span class="arrow">↓</span>输出：<span class="pill">每帧分数（4 fps）</span>，交给唯一的评测器 <code>src/eval/evaluate.py</code></div>
+
+<section class="stage" aria-labelledby="hres">
+  <div class="stage-head"><h2 id="hres">当前结果</h2><span class="en">test，4 fps，development-selected</span></div>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>数据集</th><th>pooled ROC-AUC</th><th>pooled PR-AUC</th><th>within-video ROC-AUC</th><th>来源</th></tr></thead>
+    <tbody>
+      <tr><td>HateMM</td><td>.8989</td><td>.6921</td><td>.7799</td><td class="small"><code>runs/20261031_window_evidence/decoded_main/adopted_rawkey/metrics.json</code></td></tr>
+      <tr><td>HateClipSeg</td><td>.7327</td><td>.6895</td><td>.6866</td><td class="small">同上</td></tr>
+      <tr><td>DeHate</td><td>.6940</td><td>.1636</td><td>.6603</td><td class="small"><code>runs/20261031_window_evidence/decoded/adopted/metrics.json</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small muted">只有 runs/ 下的 metrics.json 算数；这张表是转录。DeHate 的 pooled ROC / PR 低于用视频标签训练的 CLARA（.777 / .205）。</p>
+</section>
+
+<section class="stage" aria-labelledby="htried">
+  <div class="stage-head"><h2 id="htried">试过但没有进入方法的做法（最近 5 个）</h2></div>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>日期</th><th>做法</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>2026-11-01</td><td>读取模型先写一份自由格式的检测计划（PANDA 式），再逐窗读</td><td>视频内 AUC 变化不到 .01；别的视频的计划效果一样，计划内容没被用上</td></tr>
+      <tr><td>2026-10-26</td><td>更强的模型加维基百科笔记，写进前缀（候选 51）</td><td>没过门；笔记把正常视频里提到仇恨话题的窗口抬高</td></tr>
+      <tr><td>2026-10-17</td><td>从语音分支里去掉“提到受保护群体”的方向（候选 46）</td><td>视频内排序几乎不变</td></tr>
+      <tr><td>2026-10-13</td><td>两个窗口放在一起比较（候选 42）</td><td>不比单窗读取好，相邻窗口的比较接近随机</td></tr>
+      <tr><td>2026-09-11</td><td>先写固定格式的假设，再按顺序读窗、带上一步回答（HVL）</td><td>低于基线；模型照抄上一步，也会去确认自己的假设</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="stage" aria-labelledby="hlog">
+  <div class="stage-head"><h2 id="hlog">更新记录</h2></div>
+  <ul class="small">
+    <li><b>2026-11-01</b>：建立本页；加入整体框架图。</li>
+    <li><b>2026-10-31</b>：读取器改为每个窗口带本窗的 0.5 fps 帧和强制对齐的词；视频内 AUC +.029 / +.049 / +.017（HateMM / HCS / DeHate）。</li>
+    <li><b>2026-10-07</b>：视频分去掉校准，直接用原始 logit。</li>
+    <li><b>2026-09-27</b>：时序层改为 r6_bma，平均段长不再手设，在每个视频内积分掉。</li>
+  </ul>
+  <p class="small muted">当前状态的唯一入口仍是 <code>research-wiki/STATUS.md</code>；本页随方法更新。</p>
+</section>
+
+</div>

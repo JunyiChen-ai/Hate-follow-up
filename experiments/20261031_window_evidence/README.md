@@ -32,6 +32,26 @@ prediction record); `experiments/20261014_m1_audio_bound/align_words.py` gained 
 
 Read sets from one run: `r6_replay` (must equal the stored DeHate r6 reads), `frames`, `words`, `adopted`.
 
-## 3. Results
+## 3. Results (2026-10-31, uoa-lab1 sc474397; development-selected)
 
-(pending)
+Runs: prep (CPU, 509 s, 1341 videos, 0 errors); smoke Slurm 1291 (4 videos: r6, frames and aligned reads equal the
+stored runs they were promoted from, max |Δ| = 0.0); DeHate Slurm 1292 (alignment 1315 aligned / 10 no text / 16
+failed → proportional slice; reads 1341 / 1341, 2.89 s per video, 64.5 min; r6 replay max |Δ| = 0.0 on every video).
+Decoded with r6_bma, raw key, the single evaluator (1151 DeHate test videos with frame GT).
+
+| read set (DeHate) | pooled ROC | pooled PR | within | vs r6 |
+|---|---|---|---|---|
+| r6_replay | .6994 | .1568 | .6431 | equals stored `runs/20260927_dehate_external/r6_rawkey/metrics.json` |
+| frames | .6933 | .1582 | .6510 | −.006 / +.001 / +.008 |
+| words | .6994 | .1604 | .6471 | .000 / +.004 / +.004 |
+| **adopted** | .6940 | .1636 | .6603 | −.005 / +.007 / **+.017** |
+
+HateMM / HateClipSeg, adopted reads (`runs/20261014_m1_audio_bound/vl_aligned/vl_text_aligned`) re-decoded with the raw
+key (`runs/20261031_window_evidence/decoded_main/adopted_rawkey/metrics.json`): HateMM .8989 / .6921 / .7799 (r6
+.8955 / .6883 / .7508), HateClipSeg .7327 / .6895 / .6866 (r6 .7137 / .6666 / .6373).
+
+Reading: within-video AUC rises on all three corpora (+.029 / +.049 / +.017, each above the .01 floor); DeHate pooled
+ROC −.005 sits on the .005 floor and PR rises. On DeHate the two inputs add up (frames +.008, words +.004, both
++.017). Files read for this log (rule 10): the decoded metrics above only; no per-video test labels were inspected.
+Cost: 2.9 s per DeHate video against 1.3 s for r6 (one extra vision forward per window with frames, one extra speech
+forward per window with an aligned slice).

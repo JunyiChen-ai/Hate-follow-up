@@ -223,3 +223,10 @@ every video (`z_video`, every `z_visual` / `z_speech`, speech presence, score cu
   were inspected; no design was changed after seeing any number (the arm definitions were committed in f93c8b1 before
   the first GPU job; the only later code change adds timing fields).
 - Label-free diagnostics (`diag_reads.py`) read predictions only.
+- 2026-11-02, main session (paper modality section): `experiments/20260928_infer/branch_diag.py` run on the adopted
+  reads (`runs/20261014_m1_audio_bound/vl_aligned/vl_text_aligned`, `runs/20261031_window_evidence/DeHate/adopted`)
+  against the A6 joint reads of this experiment; it reads the 4 fps GT to label windows (more than half of the
+  window's frames hateful). Output `runs/20261101_reader_ablation/branch_diag_adopted/{HateMM,HateClipSeg,DeHate}.txt`,
+  run on uoa-lab1. Found: picture-only share of hateful windows .114 / .216 / .083; joint read positive on .96-.99 of
+  hateful windows with a positive speech read and .50-.69 of the picture-only ones. Used for the paper text only; no
+  design was changed.

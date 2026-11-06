@@ -361,3 +361,42 @@ metric down, within up ≥ .01 on both), which meets the form of the rule-8 prom
 r6 reads (like the in-window frames, whose adoption is the user's decision), not a new mechanism, and the HateMM within
 step over adjacent_local (+.011) sits at the noise floor. Candidate 43 proper (the Omni reader hearing the window) is
 not promoted; its surviving finding is the HateMM hearing gain on ASR-silent windows, left open.
+
+## 12. Re-decode with the current key (2026-10-31, sc474397, CPU; rule 10)
+
+Why: every decode in §11 (arms and the verdict-swap diagnostic) used `--key calib`, the two-Gaussian key calibration the
+user removed on 2026-10-07. The current method uses `--key raw` (r6_bma raw: HateMM .8955 / .6883 / .7508, HateClipSeg
+.7137 / .6666 / .6373, `runs/20260926_twolevel/final_rawkey/metrics.json`). The user asked why the Omni reader loses
+HateClipSeg pooled metrics, so the attribution was re-checked under the current key.
+
+Run: the §11 decode command with `--key raw` for `main/{audio,text_aligned,text_prop,r6_inputs}` and
+`diag_keyswap/{r6_omniverdict,audio_r6verdict}` → `runs/20261014_m1_audio_bound/rawkey_decoded/<arm>/metrics.json`.
+Files read: those metrics, the §11 records `main/records/<corpus>/*.json`, r6 reads
+`runs/20260926_glr/base_gridA/predictions.jsonl`, test GT `data/gt_4fps/{HateMM,HateClipSeg}.npz`
+(`diag_rawkey_video.py`, `diag_rawkey_channel_share.py`, stdout only). Nothing in the method changed.
+
+| arm, raw key (time level r6_bma) | HateMM ROC / PR / within | HateClipSeg ROC / PR / within |
+|---|---|---|
+| r6_bma (current) | .8955 / .6883 / .7508 | .7137 / .6666 / .6373 |
+| audio | .9049 / .7147 / .8107 | .6943 / .6652 / .6693 |
+| text_aligned | .9005 / .6962 / .7883 | .6916 / .6655 / .6661 |
+| text_prop | .9009 / .7025 / .7760 | .6911 / .6642 / .6408 |
+| r6_inputs (Omni reader, r6 inputs) | .9007 / .7036 / .7699 | .6732 / .6470 / .6292 |
+| r6 window reads + Omni verdict | .8917 / .6860 / .7505 | .7258 / .6842 / .6375 |
+| audio window reads + Qwen3-VL verdict | .8977 / .6909 / .8107 | .6940 / .6487 / .6693 |
+
+Findings:
+- The §11 statement "the Omni verdict is worse than Qwen3-VL's on HateClipSeg" (.640) holds only under the removed
+  calibration. Under the raw key, r6's window reads with the Omni verdict reach .7258 / .6842 on HateClipSeg, above r6.
+  Video-level AUC of the verdict margin is the same for both readers (HateClipSeg .795 / .794, HateMM .933 / .935).
+- The HateClipSeg pooled loss comes from the Omni window reads: the audio arm loses ROC with either verdict (.6943,
+  .6940 against .7137). Against r6 under the raw key the audio arm is HateClipSeg −.019 ROC / −.001 PR / +.032
+  within (PR loss now inside the floor; the ROC loss still fails the §3 performance gate) and HateMM +.009 / +.026 /
+  +.060.
+- Mechanism of the loss: frame score = key + within-video centred rank (|rank| ≤ .5), so pooled ROC is set by the
+  key's order of videos. 103 of 118 HateClipSeg test videos are hateful, so that order is mostly an order of hateful
+  videos by how much of them is offensive, and the window mean carries it. Spearman of the window mean with the GT
+  share over hateful videos: Qwen3-VL .533, Omni .337 (r6 inputs). By channel: visual Qwen3-VL .457, Omni .288
+  (20 shared frames) / .357 (in-window frames); speech Qwen3-VL .290, Omni .227 (proportional text) / .245 (audio).
+  On HateMM (85 of 215 hateful) Omni's window mean orders hateful videos as well or better (.483 vs .416).
+- The verdict swap mixes two readers' outputs (rule 3); it is a diagnostic, not a method variant.
