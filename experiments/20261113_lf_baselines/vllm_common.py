@@ -1,0 +1,260 @@
+#!/usr/bin/env python3
+"""Shared pieces of the Qwen3-VL-8B label-free baselines of this directory (README).
+
+- vLLM engine for Qwen/Qwen3-VL-8B-Instruct with every content-hashing path off (prefix caching off, multimodal
+  processor cache off, request-id item ids, and vLLM's multimodal hasher replaced by an error after start-up), as in
+  experiments/20261008_baselines/clara/clara_rationale.py (CLAUDE.md hash ban).
+- Frames: ffmpeg decodes a video at a fixed rate into JPEG files under .cache/tmp (frame k at k / fps s, longer side
+  scaled to MAX_SIDE); the caller deletes them after use. No frame or feature is kept.
+- Text of a time span: the forced-aligned words whose midpoint lies in the span (the words the Reader and the naive
+  Qwen3-VL-8B per-window row read), or the proportional slice of the Whisper segments when a video has no alignment.
+- Read-outs from generation log-probabilities (logprobs = 20): the log-odds of a 0/1 label token, and the expected
+  value of a 0-1 score written with one decimal.
+No label is read anywhere in this module.
+"""
+from __future__ import annotations
+
+import json
+import math
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+import numpy as np
+
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if REPO not in sys.path:
+    sys.path.insert(0, REPO)
+from src import lf_baselines as L            # noqa: E402
+from src.video_inputs import window_text     # noqa: E402
+
+MODEL = "Qwen/Qwen3-VL-8B-Instruct"
+RUNS = os.environ.get("LF_RUN_ROOT") or os.path.join(REPO, "runs", "20261113_lf_baselines")
+ALIGNED = os.path.join(REPO, "data", "asr_whisper_aligned")
+TMP = os.path.join(REPO, ".cache", "tmp", "lf_q3vl")
+MAX_SIDE = 640
+NEG = -1e4                                   # log-probability bound when a token is outside the top 20
+
+
+# ----------------------------------------------------------------------------- text
+def aligned_words(ds):
+    path = os.path.join(ALIGNED, ds, "words.jsonl")
+    out = {}
+    if not os.path.isfile(path):
+        return out
+    with open(path) as fh:
+        for line in fh:
+            r = json.loads(line)
+            out[r["video_id"]] = r
+    return out
+
+
+def span_text(rec, segments, t1, t2):
+    """Words of [t1, t2): aligned words by midpoint (src/window_evidence.py aligned_slice), else the proportional
+    slice of the Whisper segments (src/video_inputs.py window_text). Whitespace collapsed; '' when nothing."""
+    if rec is not None and rec.get("status") == "aligned":
+        text = " ".join(w["w"] for w in rec["words"] if t1 <= (w["s"] + w["e"]) / 2 < t2)
+    else:
+        text = window_text(segments, t1, t2)
+    return " ".join(text.split())
+
+
+# ----------------------------------------------------------------------------- frames
+def decode_frames(path, fps, key):
+    """ffmpeg -> JPEG frames at `fps` in TMP/<key>/; returns [(time_s, file)] sorted by time."""
+    d = os.path.join(TMP, key)
+    shutil.rmtree(d, ignore_errors=True)
+    os.makedirs(d, exist_ok=True)
+    scale = ("scale='if(gt(iw,ih),min(iw,%d),-2)':'if(gt(iw,ih),-2,min(ih,%d))'" % (MAX_SIDE, MAX_SIDE))
+    cmd = ["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", path, "-map", "0:v:0", "-vf", "fps=%g,%s" % (fps, scale),
+           "-q:v", "3", os.path.join(d, "%06d.jpg")]
+    subprocess.run(cmd, check=True, timeout=1800)
+    files = sorted(f for f in os.listdir(d) if f.endswith(".jpg"))
+    return [(i / fps, os.path.join(d, f)) for i, f in enumerate(files)]
+
+
+def drop_frames(key):
+    shutil.rmtree(os.path.join(TMP, key), ignore_errors=True)
+
+
+def frames_in(frames, t1, t2):
+    """Frames with time in [t1, t2); the nearest frame if none falls inside (a span shorter than the frame step)."""
+    inside = [f for t, f in frames if t1 <= t < t2]
+    if inside or not frames:
+        return inside
+    mid = (t1 + t2) / 2
+    return [min(frames, key=lambda x: abs(x[0] - mid))[1]]
+
+
+def uniform(items, k):
+    """k items at uniform positions (all of them if there are at most k)."""
+    if len(items) <= k:
+        return list(items)
+    idx = np.linspace(0, len(items) - 1, k).round().astype(int)
+    return [items[i] for i in idx]
+
+
+def open_images(files):
+    from PIL import Image
+    out = []
+    for f in files:
+        with Image.open(f) as im:
+            out.append(im.convert("RGB"))
+    return out
+
+
+# ----------------------------------------------------------------------------- engine
+class Engine:
+    """A Qwen model in vLLM (vision-language by default, `text_only` for a text LLM such as Qwen3-8B, whose chat
+    template is applied with thinking off), greedy, sample log-probabilities on request."""
+
+    def __init__(self, model=MODEL, max_model_len=16384, max_images=20, text_only=False, log=print):
+        import vllm.multimodal.hasher as H
+        from transformers import AutoProcessor, AutoTokenizer
+        from vllm import LLM
+
+        def _no_hash(*a, **k):
+            raise RuntimeError("content hashing is not allowed (CLAUDE.md hash ban)")
+
+        self.model = model
+        self.text_only = text_only
+        if text_only:
+            self.processor = None
+            self.tokenizer = AutoTokenizer.from_pretrained(model)
+            self.llm = LLM(model=model, dtype="bfloat16", max_model_len=max_model_len, gpu_memory_utilization=0.90,
+                           enable_prefix_caching=False, seed=0)
+        else:
+            self.processor = AutoProcessor.from_pretrained(model)
+            self.tokenizer = self.processor.tokenizer
+            self.llm = LLM(model=model, dtype="bfloat16", max_model_len=max_model_len, gpu_memory_utilization=0.90,
+                           enable_prefix_caching=False, mm_processor_cache_gb=0,
+                           limit_mm_per_prompt={"image": max_images, "video": 0}, seed=0)
+        # start-up profiling uses synthetic images that vLLM keys internally; the guard is armed afterwards, so no
+        # frame of ours can be hashed (requests carry request-id item ids, caches are off)
+        H.MultiModalHasher.hash_kwargs = staticmethod(_no_hash)
+        log("vLLM loaded: %s, max_model_len %d%s" % (model, max_model_len, " (text only)" if text_only else ""))
+
+    def request(self, images, text, uid, prefill="", system=None):
+        """One user turn: images first, then the text (MARS / Qwen order); `prefill` starts the assistant turn."""
+        if self.text_only:
+            msgs = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": text}]
+            prompt = self.tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True,
+                                                        enable_thinking=False) + prefill
+            return {"prompt": prompt}
+        msgs = []
+        if system:
+            msgs.append({"role": "system", "content": [{"type": "text", "text": system}]})
+        msgs.append({"role": "user", "content": [{"type": "image"} for _ in images] + [{"type": "text", "text": text}]})
+        prompt = self.processor.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True) + prefill
+        req = {"prompt": prompt}
+        if images:
+            req["multi_modal_data"] = {"image": images}
+            req["multi_modal_uuids"] = {"image": ["%s/img%03d" % (uid, i) for i in range(len(images))]}
+        return req
+
+    def n_tokens(self, text):
+        return len(self.tokenizer(text, add_special_tokens=False)["input_ids"])
+
+    def generate(self, reqs, max_tokens, logprobs=None):
+        from vllm import SamplingParams
+        sp = SamplingParams(temperature=0.0, max_tokens=max_tokens, logprobs=logprobs, seed=0)
+        outs = self.llm.generate(reqs, sp, use_tqdm=False)
+        return [o.outputs[0] for o in outs]
+
+
+# ----------------------------------------------------------------------------- read-outs
+def _lse(xs):
+    xs = [x for x in xs if x is not None]
+    if not xs:
+        return None
+    m = max(xs)
+    return m + math.log(sum(math.exp(x - m) for x in xs))
+
+
+def _token_lp(step, want):
+    """log P of the tokens at one generated position whose text, stripped of spaces and quotes, equals `want`
+    (several tokenisations add up); None if none is in the top 20."""
+    return _lse([lp.logprob for lp in step.values() if (lp.decoded_token or "").strip().strip('"') == want])
+
+
+def _floor(step):
+    return min(lp.logprob for lp in step.values()) if step else NEG
+
+
+def yes_no_logodds(out):
+    """log P(Yes) - log P(No) at the first generated token (Yes / yes / YES and the No forms, with or without a
+    leading space, added up). A side outside the top 20 is bounded by the smallest top-20 log-probability."""
+    step = (out.logprobs or [{}])[0]
+    py = _lse([lp.logprob for lp in step.values() if (lp.decoded_token or "").strip().lower() == "yes"])
+    pn = _lse([lp.logprob for lp in step.values() if (lp.decoded_token or "").strip().lower() == "no"])
+    fl = _floor(step)
+    status = "ok" if (py is not None and pn is not None) else "bounded"
+    return (py if py is not None else fl) - (pn if pn is not None else fl), status
+
+
+def label_logodds(out, key="label"):
+    """log P(1) - log P(0) at the first generated token that follows `"<key>":` (optionally a quote).
+    Returns (z, status). A side outside the top 20 is bounded by the smallest top-20 log-probability."""
+    toks = out.token_ids
+    steps = out.logprobs or []
+    text = ""
+    pat = re.compile(r'"%s"\s*:\s*"?\s*$' % re.escape(key))
+    for i, step in enumerate(steps):
+        tok = step.get(toks[i])
+        piece = tok.decoded_token if tok is not None else ""
+        if pat.search(text) and piece.strip().strip('"')[:1] in ("0", "1"):
+            p1, p0 = _token_lp(step, "1"), _token_lp(step, "0")
+            fl = _floor(step)
+            status = "ok" if (p1 is not None and p0 is not None) else "bounded"
+            return (p1 if p1 is not None else fl) - (p0 if p0 is not None else fl), status
+        text += piece
+    return None, "no_label"
+
+
+def expected_decimal(steps_first, steps_decimal):
+    """Expected score on [0, 1] from the first digit distribution ('0' or '1', or a 0-10 integer d >= 2 read as d / 10)
+    and, for the '0.' branch, the decimal digit distribution. Each argument is one position's top-20 dict."""
+    mass, val = 0.0, 0.0
+    p = {}
+    for d in range(10):
+        lp = _token_lp(steps_first, str(d))
+        if lp is not None:
+            p[d] = math.exp(lp)
+    if not p:
+        return None
+    if steps_decimal is not None:
+        q = {k: math.exp(_token_lp(steps_decimal, str(k))) for k in range(10) if _token_lp(steps_decimal, str(k)) is not None}
+        qs = sum(q.values())
+        e0 = sum(k / 10 * v for k, v in q.items()) / qs if qs > 0 else 0.0
+    else:
+        e0 = 0.0
+    for d, v in p.items():
+        mass += v
+        val += v * (e0 if d == 0 else (1.0 if d == 1 else d / 10))
+    return val / mass
+
+
+def clean_json(text):
+    """MARS's clean_json_response: strip a ```json fence only if the text starts and ends with one, then json.loads;
+    None when it does not parse."""
+    t = (text or "").strip()
+    if t.startswith("```json") and t.endswith("```"):
+        t = t[len("```json"):-3].strip()
+    try:
+        return json.loads(t)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def log_to(path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    def log(msg):
+        import time
+        line = "%s %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), msg)
+        print(line, flush=True)
+        with open(path, "a") as fh:
+            fh.write(line + "\n")
+    return log
