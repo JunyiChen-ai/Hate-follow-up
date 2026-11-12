@@ -10,14 +10,17 @@ then the prompt and "\\n\\nTranscript: <text>" ("No transcript available." when 
 
 Applied per window of the fixed 8 s grid of the Reader (the unit of the naive per-window rows):
 - frames: the window's 1 fps frames (MARS samples up to 16 frames from a 1 fps folder and uses all of them when there
-  are fewer; an 8 s window has 8), longer side 640;
-- transcript: the window's forced-aligned words (the Reader's window text);
+  are fewer; an 8 s window has 8), at the image size of the naive Qwen3-VL-8B row (src/mllm_judge.py MAX_PIXELS);
+- transcript: the window's Whisper large-v3 words, sliced proportionally (as the naive rows; MARS uses Whisper);
 - decoding: greedy, at most 2048 new tokens per turn (the release samples at temperature 0.7 with 4096);
-- read-outs of turn 4: `prob` = log P("1") - log P("0") at the label token of the final decision (declared main
-  read-out, README), `label` = the 0/1 label itself (the paper's output); the verbalised confidence is recorded.
+- read-outs of turn 4: `prob` = log P("1") - log P("0") at the position where the final decision writes its label,
+  from one HF forward with an fp32 output layer on the turn-4 prompt plus the generated text up to that position
+  (README §2: the same arithmetic as the naive rows, so that scores are not rounded); `label` = the 0/1 label itself
+  (the paper's output). The verbalised confidence and the two hypothesis strengths are recorded.
 
-Stages: `infer` (GPU, vLLM env) writes runs/20261113_lf_q3vl/mars/<DS>/windows.jsonl (one line per video, resumable);
-`raster` (CPU, HateVideo env) builds the 4 fps curves of both read-outs and calls the canonical evaluator.
+Stages: `infer` (GPU, vLLM env) writes runs/20261113_lf_baselines/mars/<DS>/windows.jsonl (one line per video,
+resumable); `readout` (GPU, HateVLM env) writes readout.jsonl; `raster` (CPU, HateVideo env) builds the 4 fps curves
+of both read-outs and calls the canonical evaluator.
 No label is read.
 """
 from __future__ import annotations
@@ -156,9 +159,7 @@ def cmd_infer(args):
     if not todo:
         log("DONE infer (nothing to do)")
         return
-    aligned = Q.aligned_words(ds)
     segs = L.transcript_segments(ds, {v: man[v]["duration"] for v in vids})
-    log("aligned words: %d videos (%s)" % (len(aligned), "present" if aligned else "absent: proportional slices"))
     eng = Q.Engine(max_model_len=16384, max_images=MAX_FRAMES, log=log)
     pool = ThreadPoolExecutor(max_workers=args.workers)
 
@@ -184,8 +185,8 @@ def cmd_infer(args):
             dur = man[v]["duration"]
             for i, (t1, t2) in enumerate(L_fixed(dur)):
                 files = Q.uniform(Q.frames_in(frames, t1, t2), MAX_FRAMES)
-                text = Q.span_text(aligned.get(v), segs.get(v, []), t1, t2)
-                units.append((v, i, t1, t2, Q.open_images(files), text))
+                text = L.span_text(segs.get(v, []), t1, t2)
+                units.append((v, i, t1, t2, Q.open_images(files, reader_size=True), text))
         reqs = []
         for v, i, t1, t2, imgs, text in units:
             for k, p in enumerate((TURN1, TURN2, TURN3)):
@@ -198,15 +199,15 @@ def cmd_infer(args):
                            [x.finish_reason for x in o]))
         reqs4 = [eng.request(u[4], with_transcript(turn4(*p[1]), u[5]), "%s/%s/w%03d/t4" % (ds, u[0], u[1]))
                  for u, p in zip(units, parsed)]
-        outs4 = eng.generate(reqs4, args.max_tokens, logprobs=20) if reqs4 else []
+        outs4 = eng.generate(reqs4, args.max_tokens) if reqs4 else []
         per = {}
         for u, p, o in zip(units, parsed, outs4):
             v, i, t1, t2, imgs, text = u
             j4 = Q.clean_json(o.text)
-            z, status = Q.label_logodds(o)
             fd = get(j4, "final_decision") if isinstance(get(j4, "final_decision"), dict) else j4
             per.setdefault(v, []).append({
-                "i": i, "start": t1, "end": t2, "n_frames": len(imgs), "text": text, "z": z, "z_status": status,
+                "i": i, "start": t1, "end": t2, "n_frames": len(imgs), "text": text,
+                "t4_prompt": with_transcript(turn4(*p[1]), text), "t4_prefix": Q.label_prefix(o.text),
                 "label": get(fd, "label"), "confidence": get(fd, "confidence"),
                 "hate_strength": get(p[1][1], "strength"), "nonhate_strength": get(p[1][2], "strength"),
                 "parsed": [x is not None for x in p[1]] + [j4 is not None],
@@ -218,7 +219,7 @@ def cmd_infer(args):
                 fh.write(json.dumps(rec) + "\n")
         for v, _, _ in decoded:
             Q.drop_frames("mars_%s_%s" % (ds, v))
-        nz = sum(w["z"] is not None for ws in per.values() for w in ws)
+        nz = sum(w["t4_prefix"] is not None for ws in per.values() for w in ws)
         log("chunk %d/%d: %d videos, %d windows, %d with a label read, %d failed videos, %.0f s" % (
             ci + 1, len(chunks), len(chunk), len(units), nz, len(failed), time.time() - t0))
     log("DONE infer %s" % ds)
@@ -229,16 +230,67 @@ def L_fixed(duration):
     return fixed_windows(duration, WINDOW)
 
 
-def cmd_raster(args):
-    ds = args.dataset
-    dest = out_dir(ds)
-    path = os.path.join(dest, "windows.jsonl")
+def load_records(path):
     recs = {}
     with open(path) as fh:
         for line in fh:
             r = json.loads(line)
             recs[r["video_id"]] = r
-    stats = {"videos": len(recs), "windows": 0, "z_status": {}, "label_missing": 0, "video_median_fill": 0,
+    return recs
+
+
+def cmd_readout(args):
+    ds = args.dataset
+    dest = out_dir(ds)
+    log = Q.log_to(os.path.join(dest, "readout.log"))
+    recs = load_records(os.path.join(dest, "windows.jsonl"))
+    path = os.path.join(dest, "readout.jsonl")
+    done = done_ids(path)
+    todo = [v for v in recs if v not in done]
+    log("mars readout %s: %d videos, %d to do; code %s" % (ds, len(recs), len(todo), L.git_version()))
+    if not todo:
+        log("DONE readout (nothing to do)")
+        return
+    man = L.manifest(ds)
+    sc = Q.Scorer()
+    pool = ThreadPoolExecutor(max_workers=args.workers)
+
+    def decode(v):
+        if recs[v].get("error"):
+            return v, []
+        return v, Q.decode_frames(man[v]["video_path"], FPS, "mars_ro_%s_%s" % (ds, v))
+
+    t0, n = time.time(), 0
+    futs = [pool.submit(decode, v) for v in todo[:args.workers * 2]]
+    for k, v in enumerate(todo):
+        if k + args.workers * 2 < len(todo):
+            futs.append(pool.submit(decode, todo[k + args.workers * 2]))
+        _, frames = futs[k].result()
+        zs = []
+        for w in recs[v]["windows"]:
+            if w["t4_prefix"] is None:
+                zs.append(None)
+                continue
+            files = Q.uniform(Q.frames_in(frames, w["start"], w["end"]), MAX_FRAMES)
+            if len(files) != w["n_frames"]:
+                raise RuntimeError("%s window %d: %d frames now, %d at generation" % (v, w["i"], len(files), w["n_frames"]))
+            lp = sc.next_logprobs(Q.open_images(files, reader_size=True), w["t4_prompt"], w["t4_prefix"], ["0", "1"])
+            zs.append(lp["1"] - lp["0"])
+            n += 1
+        Q.drop_frames("mars_ro_%s_%s" % (ds, v))
+        with open(path, "a") as fh:
+            fh.write(json.dumps({"video_id": v, "z": zs}) + "\n")
+        if (k + 1) % 50 == 0:
+            log("%d / %d videos, %d windows read, %.0f s" % (k + 1, len(todo), n, time.time() - t0))
+    log("DONE readout %s: %d windows read in %.0f s" % (ds, n, time.time() - t0))
+
+
+def cmd_raster(args):
+    ds = args.dataset
+    dest = out_dir(ds)
+    recs = load_records(os.path.join(dest, "windows.jsonl"))
+    zread = {r["video_id"]: r["z"] for r in load_records(os.path.join(dest, "readout.jsonl")).values()}
+    stats = {"videos": len(recs), "windows": 0, "no_label_position": 0, "label_missing": 0, "video_median_fill": 0,
              "finish_length": 0, "turn_parse_fail": [0, 0, 0, 0]}
     for readout in ("prob", "label"):
         rows = {}
@@ -250,7 +302,7 @@ def cmd_raster(args):
                                 error=r.get("error") or "no windows")
                 continue
             if readout == "prob":
-                vals = [w["z"] for w in ws]
+                vals = zread[v]
             else:
                 vals = [float(w["label"]) if w["label"] in (0, 1, "0", "1") else None for w in ws]
             ok = [x for x in vals if x is not None]
@@ -263,7 +315,7 @@ def cmd_raster(args):
                 stats["windows"] += len(ws)
                 stats["video_median_fill"] += sum(x is None for x in vals)
                 for w in ws:
-                    stats["z_status"][w["z_status"]] = stats["z_status"].get(w["z_status"], 0) + 1
+                    stats["no_label_position"] += w["t4_prefix"] is None
                     stats["label_missing"] += w["label"] not in (0, 1, "0", "1")
                     stats["finish_length"] += sum(f == "length" for f in w["finish"])
                     for k in range(4):
@@ -282,14 +334,14 @@ def cmd_raster(args):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("stage", choices=("infer", "raster"))
+    ap.add_argument("stage", choices=("infer", "readout", "raster"))
     ap.add_argument("--dataset", required=True, choices=L.DATASETS)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--chunk", type=int, default=16, help="videos per vLLM batch")
     ap.add_argument("--workers", type=int, default=4, help="ffmpeg decoders")
     ap.add_argument("--max-tokens", type=int, default=2048)
     args = ap.parse_args()
-    {"infer": cmd_infer, "raster": cmd_raster}[args.stage](args)
+    {"infer": cmd_infer, "readout": cmd_readout, "raster": cmd_raster}[args.stage](args)
 
 
 if __name__ == "__main__":

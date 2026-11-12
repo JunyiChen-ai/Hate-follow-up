@@ -96,12 +96,23 @@ def uniform(items, k):
     return [items[i] for i in idx]
 
 
-def open_images(files):
+def open_images(files, reader_size=False):
+    """PIL RGB images. reader_size: resize to the size the Reader's processor gives Qwen3-VL (smart_resize with factor
+    32 and src/mllm_judge.py MIN_PIXELS / MAX_PIXELS), so that vLLM generation, which receives no processor arguments
+    (passing them makes vLLM hash the request's image ids, blocked by the hash guard), and the fp32 read-out through
+    Judge see images of the same size (Judge's processor leaves an image already at that size unchanged)."""
     from PIL import Image
     out = []
     for f in files:
         with Image.open(f) as im:
-            out.append(im.convert("RGB"))
+            img = im.convert("RGB")
+        if reader_size:
+            from transformers.models.qwen2_vl.image_processing_qwen2_vl import smart_resize
+            from src.mllm_judge import MAX_PIXELS, MIN_PIXELS
+            h, w = smart_resize(img.height, img.width, factor=32, min_pixels=MIN_PIXELS, max_pixels=MAX_PIXELS)
+            if (h, w) != (img.height, img.width):
+                img = img.resize((w, h), Image.BICUBIC)
+        out.append(img)
     return out
 
 
@@ -116,6 +127,12 @@ class Engine:
         from vllm import LLM
 
         def _no_hash(*a, **k):
+            # vLLM 0.11 always passes tokenization kwargs ({"truncation": False}), so it would hash even a request
+            # that carries its own item ids; the id string we supplied is returned as the key instead, so nothing is
+            # hashed. Any call with real media content still stops the run.
+            items = [v for key, v in k.items() if key in ("image", "video", "audio")]
+            if len(items) == 1 and isinstance(items[0], str):
+                return items[0]
             raise RuntimeError("content hashing is not allowed (CLAUDE.md hash ban)")
 
         self.model = model
@@ -164,7 +181,67 @@ class Engine:
         return [o.outputs[0] for o in outs]
 
 
-# ----------------------------------------------------------------------------- read-outs
+# ----------------------------------------------------------------------------- fp32 read-out (HF, HateVLM env)
+class Scorer:
+    """One ordinary forward of Qwen3-VL-8B in HF transformers (src/mllm_judge.py Judge: bf16 weights, the Reader's
+    image size) on a user turn plus a fixed start of the assistant turn; fp32 output layer over a few single-token
+    candidates, softmax restricted to them. Used to read a method's own final answer (a 0/1 label or a score digit)
+    from the position where the method writes it, so that scores are continuous instead of rounded."""
+
+    def __init__(self, model=MODEL):
+        import torch
+        from src.mllm_judge import Judge
+        self.torch = torch
+        self.j = Judge(model)
+        self._ids = {}
+
+    def token_id(self, s):
+        if s not in self._ids:
+            ids = self.j.tok.encode(s, add_special_tokens=False)
+            if len(ids) != 1:
+                raise ValueError("%r is not one token: %s" % (s, ids))
+            self._ids[s] = ids[0]
+        return self._ids[s]
+
+    def render(self, n_images, text, prefill="", system=None):
+        msgs = [{"role": "system", "content": [{"type": "text", "text": system}]}] if system else []
+        msgs.append({"role": "user", "content": [{"type": "image"}] * n_images + [{"type": "text", "text": text}]})
+        return self.j.render(msgs, add_generation_prompt=True) + prefill
+
+    def next_logprobs(self, images, text, prefill, candidates, system=None):
+        """images: PIL images (already opened). Returns {candidate: log-probability} under the restricted softmax."""
+        torch = self.torch
+        full = self.render(len(images), text, prefill, system)
+        with torch.inference_mode():
+            enc = self.j.encode(full, images)
+            out = self.j.model.model(**self.j.model_inputs(enc), use_cache=False)
+            ids = torch.tensor([self.token_id(c) for c in candidates], device=self.j.device)
+            lg = self.j._logits_fp32(out.last_hidden_state[0, -1:], ids)[0]
+            lp = torch.log_softmax(lg, 0).tolist()
+            del out
+        return dict(zip(candidates, lp))
+
+
+def label_prefix(text, key="label"):
+    """The generated text up to (not including) the first 0/1 digit that follows `"<key>":` (optionally a quote and
+    spaces), i.e. the assistant prefix after which the method writes its label; None if there is none."""
+    m = re.search(r'"%s"\s*:\s*"?\s*(?=[01])' % re.escape(key), text or "")
+    return text[:m.end()] if m else None
+
+
+def expected_score(lp_first, lp_decimal):
+    """Expected value on [0, 1] of a score written as '0.d' or '1' (a first digit d >= 2 is read on a 0-10 scale as
+    d / 10): lp_first over '0'..'9' at the first digit, lp_decimal over '0'..'9' after '0.'."""
+    p = {int(k): math.exp(v) for k, v in lp_first.items()}
+    q = {int(k): math.exp(v) for k, v in lp_decimal.items()}
+    e0 = sum(k / 10 * v for k, v in q.items()) / sum(q.values())
+    return sum(v * (e0 if d == 0 else (1.0 if d == 1 else d / 10)) for d, v in p.items()) / sum(p.values())
+
+
+DIGITS = [str(d) for d in range(10)]
+
+
+# ----------------------------------------------------------------------------- read-outs from vLLM log-probabilities
 def _lse(xs):
     xs = [x for x in xs if x is not None]
     if not xs:
