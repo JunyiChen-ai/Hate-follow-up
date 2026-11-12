@@ -221,6 +221,24 @@ class Scorer:
             del out
         return dict(zip(candidates, lp))
 
+    def score_digits(self, images, text, prefill, system=None):
+        """A 0-1 score written right after `prefill`: one forward on prefill + "0." gives the first-digit distribution
+        (the row before "0") and the decimal-digit distribution after "0." (the last row), both over '0'..'9'.
+        Returns (lp_first, lp_decimal) for expected_score."""
+        torch = self.torch
+        full = self.render(len(images), text, prefill + "0.", system)
+        with torch.inference_mode():
+            enc = self.j.encode(full, images)
+            ids = enc["input_ids"][0].tolist()
+            if self.j.tok.decode(ids[-2:]) != "0." or self.j.tok.decode(ids[-1:]) != ".":
+                raise RuntimeError("'0.' is not the last two tokens: %r" % self.j.tok.decode(ids[-4:]))
+            out = self.j.model.model(**self.j.model_inputs(enc), use_cache=False)
+            cand = torch.tensor([self.token_id(d) for d in DIGITS], device=self.j.device)
+            lg = self.j._logits_fp32(out.last_hidden_state[0, [-3, -1]], cand)
+            lp = torch.log_softmax(lg, 1).tolist()
+            del out
+        return dict(zip(DIGITS, lp[0])), dict(zip(DIGITS, lp[1]))
+
 
 def label_prefix(text, key="label"):
     """The generated text up to (not including) the first 0/1 digit that follows `"<key>":` (optionally a quote and
