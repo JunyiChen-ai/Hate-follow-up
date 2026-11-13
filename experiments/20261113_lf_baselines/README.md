@@ -8,8 +8,10 @@ scoring each window), not a published method. Two steps, in the order the user s
    instruction (`READER_PRAG`). A naive baseline must ask a plain question. Rerun them that way, with the VLM row on
    Qwen3-VL-8B (the backbone of our method; user, 2026-11-13), then look at which label-free row is best. If the
    published rows already beat the naive rows, step 2 may not be needed (user).
-2. **Published methods on Qwen3-VL-8B (§2), paused.** Re-run published training-free methods with the same MLLM and
-   both modalities. Code for MARS (ICASSP 2026) is written (`mars_q3vl.py`) and has not been run.
+2. **Published methods on Qwen3-VL-8B (§2).** The naive rows still held the best cell on 8 of 9 cells, so the user
+   asked to give the published methods a better backbone (2026-11-13): re-run published training-free methods with
+   Qwen3-VL-8B, the backbone of the naive VLM row and of our method, and both modalities. MARS done; EventVAD running;
+   LAVAD after these two.
 
 Host for code and evaluation: uoa-lab1 (sc474397). Every number here is computed on the test split.
 
@@ -88,9 +90,67 @@ in the main table (`runs/20261008_baselines/<method>_av/<DS>/metrics.json`).
 - The published rows also carry our nine rules (LAVAD-AV and EventVAD-AV put them in their scoring prompt, PRISM in
   its description pools; `experiments/20261008_baselines/hate_query.md`). Not changed here.
 
-## 2. Published methods on Qwen3-VL-8B (paused)
+## 2. Published methods on Qwen3-VL-8B
 
-Planned arms, not run: MARS (ICASSP 2026, hate-specific, four VLM calls per window; `mars_q3vl.py`), EventVAD
-(ACM MM 2025) with its existing event segmentation and Qwen3-VL-8B as the event scorer, LAVAD (CVPR 2024) with
-Qwen3-VL-8B as captioner and LLM, and possibly LELA (arXiv 2602.09637, the only training-free hate localiser; no
-code). Shared engine and read-outs: `vllm_common.py`. Waits for the §1 result and the user's decision.
+Mechanism hypothesis: none; comparison rows. Question: does a published training-free method, given the same MLLM as
+the naive VLM row, beat that row?
+
+**Shared rules** (`vllm_common.py`):
+- MLLM: Qwen/Qwen3-VL-8B-Instruct for every call; frames resized to the image size of the naive row
+  (`src/mllm_judge.py` MAX_PIXELS, `smart_resize` factor 32), so both see the same pixels.
+- Words: Whisper large-v3, as the naive rows (not our forced-aligned words).
+- Hate definition: each method keeps its own prompt; where it asks for an anomaly or a target concept, one plain
+  sentence ("An anomaly is hateful content."), not the nine rules of our Reader.
+- Two steps. (a) Generation with vLLM 0.11.0, greedy, the method's own text. Prefix caching and the multimodal cache
+  off; vLLM's multimodal hasher replaced by a function that returns the request id we supply and raises on media
+  (CLAUDE.md hash ban). (b) Read-out of the method's own final answer with one HF forward and an fp32 output layer on
+  the prompt plus the generated text, because vLLM reads log-probabilities from bf16 logits (steps of 0.25, ties).
+  The read-out uses the same number the method writes, at the position where it writes it; the method's own hard
+  output is kept as a second, check read-out.
+- 4 fps, F2 and the evaluator as §1.
+
+| method | unit | calls per unit | primary read-out (`prob`) | check read-out |
+|---|---|---|---|---|
+| MARS (ICASSP 2026, `mars_q3vl.py`) | fixed 8 s window, 1 fps frames (8) + window words | 4 (description; evidence if hateful; evidence if not; decision) | log P("1") − log P("0") where turn 4 writes `"label":` | the 0/1 label (`label`) |
+| EventVAD (ACM MM 2025, `eventvad_q3vl.py`) | events of the main-table EventVAD segmentation (`runs/20261008_baselines/eventvad/<DS>/events.jsonl`), 16 frames + event words (at most 512 tokens) | 1 (chain-of-thought anomaly score) | expected score at "\nTherefore, the final score is " after its answer (first digit, and the decimal after "0.") | the number its answer states (`text`) |
+
+**How to run.**
+```bash
+# smoke (2 videos), then full runs on uoa-lab1 / uoa-lab2 after git pull
+LIMIT=2 LF_RUN_ROOT=$PWD/runs/20261113_lf_baselines/_smoke sbatch --export=ALL experiments/20261113_lf_baselines/launch/mars_lab1.sbatch HateMM
+sbatch experiments/20261113_lf_baselines/launch/mars_lab1.sbatch <dataset> ...        # or eventvad_lab1.sbatch
+python experiments/20261113_lf_baselines/mars_q3vl.py raster --dataset <dataset>        # HateVideo env, uoa-lab1
+python experiments/20261113_lf_baselines/compare.py
+```
+
+**Runs.**
+- MARS: uoa-lab1 (sc474397) Slurm 2244, DeHate; uoa-lab2 (sc474399) Slurm 2245, HateMM then HateClipSeg. Code
+  commit 162832f; the lab2 checkout was pulled to cd6a05a during the job, so HateClipSeg generation and every
+  read-out ran under cd6a05a, which only adds functions used by EventVAD (`git diff 162832f cd6a05a`). GPU time,
+  generation + read-out: HateMM 64 + 13 min, HateClipSeg 62 + 12 min, DeHate 250 + 51 min. Outputs copied back with
+  `rsync -a`; raster and evaluator on uoa-lab1. Every window got a turn-4 label (no read-out fallback, no F2);
+  turns that hit 2048 tokens: 95 / 59 / 174 windows; turn-1 JSON parse failures 86 / 50 / 168 (MARS passes the raw
+  text on, as the release does).
+- EventVAD: smoke Slurm 2246 (uoa-lab2, 2 HateMM videos, all events scored, answers end with a stated score). Full
+  runs Slurm 2259 (uoa-lab1, DeHate, 16087 events) and 2260 (uoa-lab2, HateMM 4421 + HateClipSeg 4197 events),
+  code cd6a05a, running.
+
+**Results** (pooled ROC / pooled PR / within, %; `runs/20261113_lf_baselines/naive/compare.md`).
+
+| row | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| best published cell, main table | 73.0 / 50.2 / 63.3 | 63.6 / 61.0 / 57.6 | 60.8 / 12.4 / 57.1 |
+| **MARS, Qwen3-VL-8B** (`prob`) | 79.0 / 52.8 / 60.5 | 67.4 / 63.9 / 58.7 | 69.1 / 16.4 / 60.8 |
+| MARS, Qwen3-VL-8B, 0/1 label | 73.7 / 42.5 / 58.5 | 61.1 / 54.9 / 55.3 | 62.5 / 11.4 / 55.2 |
+| EventVAD, Qwen3-VL-8B | running | running | running |
+| naive `vlm` (§1) | 81.0 / 55.3 / 61.8 | 70.6 / 67.4 / 61.2 | 69.1 / 17.7 / 60.5 |
+| current method (main table) | 89.9 / 69.2 / 78.0 | 73.3 / 69.0 / 68.7 | 69.4 / 16.4 / 66.0 |
+
+- MARS on Qwen3-VL-8B is the best published row on 8 of 9 cells (all but HateMM within, still VideoMind).
+- It stays below the naive `vlm` row on 6 of 9 cells. DeHate pooled ROC is level (69.14 vs 69.09) and DeHate within
+  is above (60.8 vs 60.5). With the same model, frames and words, the decision at the end of the four-turn chain
+  ranks windows worse than the answer to the plain question, at four times the calls.
+- Its own 0/1 label is 2–10 points lower than the read-out at the same position; the read-out is the row to report.
+- LAVAD (CVPR 2024, captions + LLM scoring + refinement) on Qwen3-VL-8B: not started; five stages to rewrite
+  (`experiments/20261008_baselines/lavad/lavad_chain.py`, copied, not imported). LELA (arXiv 2602.09637,
+  training-free hate localiser) has no code.

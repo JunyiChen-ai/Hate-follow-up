@@ -4,7 +4,8 @@
 Reads only metrics.json written by src/eval/evaluate_four_datasets.py. Published rows are the variants the main table
 uses (runs/20261008_baselines/<method>_av, i.e. with speech); the old naive rows are the ones being replaced.
 Writes runs/20261113_lf_baselines/naive/compare.{md,json}: per corpus and metric, every row and the best cell among
-(a) the published rows, (b) the new naive rows, and which group holds the maximum.
+(a) the published rows, including the re-runs on Qwen3-VL-8B (README §2, primary read-outs only), (b) the new naive
+rows, and which group holds the maximum.
 """
 from __future__ import annotations
 
@@ -13,7 +14,8 @@ import os
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 B = os.path.join(REPO, "runs", "20261008_baselines")
-N = os.path.join(REPO, "runs", "20261113_lf_baselines", "naive")
+Q = os.path.join(REPO, "runs", "20261113_lf_baselines")
+N = os.path.join(Q, "naive")
 DATASETS = ("HateMM", "HateClipSeg", "DeHate")
 KEYS = ("frame_ROC_AUC", "frame_PR_AUC", "within_video_macro_ROC_AUC")
 ROWS = [  # (group, name, metrics path pattern)
@@ -28,7 +30,12 @@ ROWS = [  # (group, name, metrics path pattern)
     ("new naive", "Qwen3-8B, plain question", N + "/llm/{ds}/metrics.json"),
     ("new naive", "Qwen3-VL-8B, plain question, frames + transcript", N + "/vlm/{ds}/metrics.json"),
     ("new naive (check)", "Qwen3-VL-8B, plain question, transcript only", N + "/vlm_text/{ds}/metrics.json"),
+    ("published, Qwen3-VL-8B", "MARS, fp32 label log-odds", Q + "/mars/{ds}/prob/metrics.json"),
+    ("published, Qwen3-VL-8B (check)", "MARS, 0/1 label", Q + "/mars/{ds}/label/metrics.json"),
+    ("published, Qwen3-VL-8B", "EventVAD, fp32 expected score", Q + "/eventvad/{ds}/prob/metrics.json"),
+    ("published, Qwen3-VL-8B (check)", "EventVAD, stated score", Q + "/eventvad/{ds}/text/metrics.json"),
 ]
+PUBLISHED = ("published", "published, Qwen3-VL-8B")
 
 
 def read(path, ds):
@@ -53,19 +60,19 @@ def main():
             cells.append(" / ".join("%.1f" % (100 * x) for x in got[0]) if got else "—")
         lines.append("| %s | %s | %s |" % (g, name, " | ".join(cells)))
     lines.append("")
-    lines.append("Best cell per corpus and metric: published rows vs new naive rows (the old naive rows are replaced).")
+    lines.append("Best cell per corpus and metric: published rows (main table and re-run on Qwen3-VL-8B, primary read-outs) vs new naive rows (the old naive rows and the check rows are left out).")
     lines.append("")
     best = {}
     for ds in DATASETS:
         for k, key in enumerate(KEYS):
             cand = {}
             for name, d in table.items():
-                if d["group"] in ("published", "new naive") and d.get(ds):
+                if d["group"] in PUBLISHED + ("new naive",) and d.get(ds):
                     cand[name] = d[ds]["values"][k]
             if not cand:
                 continue
             top = max(cand, key=cand.get)
-            pub = max((v, n) for n, v in cand.items() if table[n]["group"] == "published")
+            pub = max((v, n) for n, v in cand.items() if table[n]["group"] in PUBLISHED)
             nai = max(((v, n) for n, v in cand.items() if table[n]["group"] == "new naive"), default=(None, None))
             best["%s %s" % (ds, key)] = {"top": top, "group": table[top]["group"], "published": pub, "naive": nai}
             lines.append("- %s %s: best published %.1f (%s), best new naive %s; top = %s" % (
