@@ -145,8 +145,8 @@ python experiments/20261113_lf_baselines/compare.py
 | best published cell, main table | 73.0 / 50.2 / 63.3 | 63.6 / 61.0 / 57.6 | 60.8 / 12.4 / 57.1 |
 | **MARS, Qwen3-VL-8B** (`prob`) | 79.0 / 52.8 / 60.5 | 67.4 / 63.9 / 58.7 | 69.1 / 16.4 / 60.8 |
 | MARS, Qwen3-VL-8B, 0/1 label | 73.7 / 42.5 / 58.5 | 61.1 / 54.9 / 55.3 | 62.5 / 11.4 / 55.2 |
-| **EventVAD, Qwen3-VL-8B** (`prob`) | 75.7 / 50.8 / 57.5 | 65.3 / 61.3 / 56.4 | 63.3 / 14.0 / 60.8 |
-| EventVAD, Qwen3-VL-8B, stated score | 73.6 / 43.9 / 59.0 | 62.3 / 55.8 / 56.0 | 62.6 / 11.5 / 59.3 |
+| **EventVAD, Qwen3-VL-8B** (`prob`) | 75.7 / 50.8 / 57.5 | 65.3 / 61.3 / 56.4 | 63.3 / 13.9 / 60.8 |
+| EventVAD, Qwen3-VL-8B, stated score | 73.5 / 43.9 / 59.0 | 62.3 / 55.8 / 56.0 | 62.6 / 11.5 / 59.3 |
 | naive `vlm` (§1) | 81.0 / 55.3 / 61.8 | 70.6 / 67.4 / 61.2 | 69.1 / 17.7 / 60.5 |
 | current method (main table) | 89.9 / 69.2 / 78.0 | 73.3 / 69.0 / 68.7 | 69.4 / 16.4 / 66.0 |
 
@@ -156,8 +156,8 @@ python experiments/20261113_lf_baselines/compare.py
   ranks windows worse than the answer to the plain question, at four times the calls.
 - Its own 0/1 label is 2–10 points lower than the read-out at the same position; the read-out is the row to report.
 - EventVAD on Qwen3-VL-8B is below MARS on 8 of 9 cells (DeHate within level, 60.83 vs 60.77) and below the naive
-  `vlm` row on 8 of 9. It also beats its main-table row on every pooled cell (e.g. DeHate pooled ROC 63.3 vs the main
-  table's best published 60.8).
+  `vlm` row on 8 of 9. It beats its main-table row (VideoLLaMA2.1-7B scorer) on all 9 cells, e.g. DeHate pooled ROC 63.3
+  vs 53.5.
 - Taken together: with Qwen3-VL-8B for every published method, the best label-free cell belongs to the naive `vlm`
   row on 6 of 9 cells and to a published row on 3 (HateMM within VideoMind 63.3; DeHate pooled ROC MARS 69.14 vs
   69.09, a tie; DeHate within EventVAD / MARS 60.8 vs 60.5). Both re-run methods add steps on top of the same model
