@@ -10,8 +10,8 @@ scoring each window), not a published method. Two steps, in the order the user s
    published rows already beat the naive rows, step 2 may not be needed (user).
 2. **Published methods on Qwen3-VL-8B (§2).** The naive rows still held the best cell on 8 of 9 cells, so the user
    asked to give the published methods a better backbone (2026-11-13): re-run published training-free methods with
-   Qwen3-VL-8B, the backbone of the naive VLM row and of our method, and both modalities. MARS done; EventVAD running;
-   LAVAD after these two.
+   Qwen3-VL-8B, the backbone of the naive VLM row and of our method, and both modalities. MARS and EventVAD done;
+   both stay below the naive Qwen3-VL-8B row on most cells. LAVAD not run (decision pending).
 
 Host for code and evaluation: uoa-lab1 (sc474397). Every number here is computed on the test split.
 
@@ -133,7 +133,10 @@ python experiments/20261113_lf_baselines/compare.py
   text on, as the release does).
 - EventVAD: smoke Slurm 2246 (uoa-lab2, 2 HateMM videos, all events scored, answers end with a stated score). Full
   runs Slurm 2259 (uoa-lab1, DeHate, 16087 events) and 2260 (uoa-lab2, HateMM 4421 + HateClipSeg 4197 events),
-  code cd6a05a, running.
+  code cd6a05a (the DeHate read-out started under 483f785, which changes only this README and `compare.py`). GPU
+  time, generation + read-out: HateMM 38 + 19 min, HateClipSeg 38 + 19 min, DeHate 143 + 71 min. Every event got a
+  read-out (no F2); answers that hit 2048 tokens 47 / 55 / 156 events; answers with no stated score 45 / 57 / 154
+  (0 in the `text` read-out, as the main-table rule C).
 
 **Results** (pooled ROC / pooled PR / within, %; `runs/20261113_lf_baselines/naive/compare.md`).
 
@@ -142,7 +145,8 @@ python experiments/20261113_lf_baselines/compare.py
 | best published cell, main table | 73.0 / 50.2 / 63.3 | 63.6 / 61.0 / 57.6 | 60.8 / 12.4 / 57.1 |
 | **MARS, Qwen3-VL-8B** (`prob`) | 79.0 / 52.8 / 60.5 | 67.4 / 63.9 / 58.7 | 69.1 / 16.4 / 60.8 |
 | MARS, Qwen3-VL-8B, 0/1 label | 73.7 / 42.5 / 58.5 | 61.1 / 54.9 / 55.3 | 62.5 / 11.4 / 55.2 |
-| EventVAD, Qwen3-VL-8B | running | running | running |
+| **EventVAD, Qwen3-VL-8B** (`prob`) | 75.7 / 50.8 / 57.5 | 65.3 / 61.3 / 56.4 | 63.3 / 14.0 / 60.8 |
+| EventVAD, Qwen3-VL-8B, stated score | 73.6 / 43.9 / 59.0 | 62.3 / 55.8 / 56.0 | 62.6 / 11.5 / 59.3 |
 | naive `vlm` (§1) | 81.0 / 55.3 / 61.8 | 70.6 / 67.4 / 61.2 | 69.1 / 17.7 / 60.5 |
 | current method (main table) | 89.9 / 69.2 / 78.0 | 73.3 / 69.0 / 68.7 | 69.4 / 16.4 / 66.0 |
 
@@ -151,6 +155,14 @@ python experiments/20261113_lf_baselines/compare.py
   is above (60.8 vs 60.5). With the same model, frames and words, the decision at the end of the four-turn chain
   ranks windows worse than the answer to the plain question, at four times the calls.
 - Its own 0/1 label is 2–10 points lower than the read-out at the same position; the read-out is the row to report.
+- EventVAD on Qwen3-VL-8B is below MARS on 8 of 9 cells (DeHate within level, 60.83 vs 60.77) and below the naive
+  `vlm` row on 8 of 9. It also beats its main-table row on every pooled cell (e.g. DeHate pooled ROC 63.3 vs the main
+  table's best published 60.8).
+- Taken together: with Qwen3-VL-8B for every published method, the best label-free cell belongs to the naive `vlm`
+  row on 6 of 9 cells and to a published row on 3 (HateMM within VideoMind 63.3; DeHate pooled ROC MARS 69.14 vs
+  69.09, a tie; DeHate within EventVAD / MARS 60.8 vs 60.5). Both re-run methods add steps on top of the same model
+  (four turns, or an event segmentation and a reasoning chain); on this task those steps rank windows worse than the
+  model's direct answer to one plain question.
 - LAVAD (CVPR 2024, captions + LLM scoring + refinement) on Qwen3-VL-8B: not started; five stages to rewrite
   (`experiments/20261008_baselines/lavad/lavad_chain.py`, copied, not imported). LELA (arXiv 2602.09637,
   training-free hate localiser) has no code.
