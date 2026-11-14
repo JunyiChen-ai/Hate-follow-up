@@ -386,3 +386,55 @@ Output `runs/20261114_exp_gates/ordinal_reads/ord_full_{main,dehate}/reads.jsonl
 (pool adjacent violators); s = mean of the ten projected values; z_ord = logit(clip(s, 1e-4, 1 − 1e-4)); s_raw = mean
 of the unprojected p_tau; z_mean = mean of the ten margins. Cost if adopted: ten more Yes/No branches per video on the
 cached prefix (about 1–2 s per video).
+
+**Result (Slurm 2312, uoa-lab1 sc474397, 2026-11-15, 25 min: 333 videos in 312 s, 1341 in 1182 s; 0.9 s per video).**
+No errors. `z_video` equals the stored verdicts on every video (max |diff| 0, 333 + 1341); `z_target` equals the
+stored protected-group read (max |diff| 0). Before the projection the ten p_tau are out of order (some rise with tau)
+in 89.8 % (HateMM), 97.5 % (HateClipSeg) and 88.4 % (DeHate) of videos.
+
+H3 video-level terms (`video_terms_eval.py ordinal`, decoder m2; `runs/20261114_exp_gates/gate_table/h3_ordinal.md`),
+video AUC / Spearman against the share of positive frames:
+
+| term | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| zv | .935 / +.727 | .794 / +.441 | .734 / +.321 |
+| mw | .885 / +.680 | .762 / +.616 | .692 / +.271 |
+| z_target | .922 / +.708 | .771 / +.378 | .816 / +.435 |
+| z_ord | .935 / +.730 | .808 / +.468 | .742 / +.330 |
+| logit(s_raw) | .935 / +.730 | .808 / +.468 | .742 / +.330 |
+| z_mean | .937 / +.731 | .810 / +.461 | .746 / +.336 |
+
+Frame score K + λ crank, pooled ROC / PR:
+
+| Integrator | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| O1 sd: mw + z_ord (λ 1) | 89.5 / 68.7 | 73.8 / 69.8 | 70.3 / 16.4 |
+| O2 sd: z_ord | 86.4 / 60.9 | 70.1 / 65.5 | 67.4 / 15.1 |
+| O3 sd: mw + z_ord + z_target | 89.5 / 68.6 | 72.1 / 68.0 | 74.0 / 19.5 |
+| O4 raw: mw + .75 z_ord (λ 8) | 89.6 / 69.1 | 74.7 / 71.0 | 70.6 / 16.6 |
+| O5 sd: mw + zv + z_ord | 89.6 / 68.8 | 72.8 / 68.7 | 69.7 / 16.5 |
+| reference: current (raw mw + zv, λ 1) | 89.9 / 69.2 | 73.3 / 68.9 | 69.4 / 16.4 |
+
+Full gate tables, O1 (`--form sd --a 0 --b 1 --lam 1 --scope ordinal`) and O4 (`--form raw --a 0 --b .75 --lam 8
+--scope ordinal`), `runs/20261114_exp_gates/gate_table/tables/{O1,O4}.md` (1000 bootstrap draws; `w/o Global
+Transcript` and `w/o Global Frames` use the full-prefix z_ord, borrowed, marked in the tables):
+
+| form | not below (14 rows) | w/o Scope Read | w/o Duration Posterior | w/o EM Evidence | DeHate − best label-free ROC / PR | HateMM, HCS − current (ROC / PR) |
+|---|---|---|---|---|---|---|
+| O1 | 19 | 4 | 1 | 8 | +1.1 / −1.3 | −0.40/−0.52, +0.51/+0.90 |
+| O4 | 19 | 3 | 0 | 8 | +1.5 / −1.1 | −0.25/−0.13, +1.44/+2.01 |
+
+- The ordinal read orders videos about as well as the verdict on HateMM (.935 both), slightly better on HateClipSeg
+  (.808 against .794), and below the protected-group read on DeHate (.742 against .816). The projection does not
+  change the ranking (z_ord and logit(s_raw) give the same AUC and Spearman); the mean margin z_mean is within .004.
+- Gate 2 fails for O1 and O4 (DeHate +1.1 / +1.5 ROC, −1.3 / −1.1 PR against the best label-free row; O1 also breaks
+  the HateMM PR limit, −0.52). O3, which keeps z_target, reaches 74.0 / 19.5 on DeHate; its DeHate gain comes with
+  z_target.
+- Gate 3 fails for both (19 cells not below). `w/o Scope Read` (removing z_ord) is not below on HateClipSeg ROC / PR in
+  both forms.
+
+Test-read record (rule 10): read the ordinal reads, the GT arrays of the three corpora and the m2 decodes for the
+tables above; no design was changed from them.
+- Code fix found while running O1: `gate_table.py` `scales()` (forms `sd` and `cdf`) built its array from the whole
+  `terms` tuple, which since §7 also holds the per-window arrays; it now takes the four video-level terms only. The
+  `sd` / `cdf` tables of §5.2 were produced before the tuple was extended, so their numbers are unaffected.

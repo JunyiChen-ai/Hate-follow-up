@@ -278,7 +278,7 @@ def scales(store, ds, form):
     (fraction of the full method's videos below the value), so every term lies in [0, 1] like the rank term."""
     if form == "raw":
         return (lambda x: x,) * 3
-    T = np.array([t for t in store.terms("full", "full", ds).values()])
+    T = np.array([t[:4] for t in store.terms("full", "full", ds).values()], float)   # (zv, mw, mm, zt)
     cols = (T[:, 1], T[:, 0], T[:, 3][np.isfinite(T[:, 3])])
     if form == "sd":
         return tuple((lambda x, c=1.0 / c_.std(): c * x) for c_ in cols)
