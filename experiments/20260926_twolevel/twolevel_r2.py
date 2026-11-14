@@ -585,6 +585,9 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
     if learned:   # one corpus grid; the prior over its (gap, hate) pairs is a corpus parameter per chain, fitted by EM
         P["grid"] = length_grid(max(v["n"] for v in videos), flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
         P["lw"] = {mods: length_prior(P["grid"]) for mods in chains_of(flags)}
+    if max_it == 0:   # --em-iters 0 (experiments/20261114_exp_gates README §9): init_params as they are, no EM update
+        log("EM skipped (--em-iters 0): percentile means, corpus variance, pi .5, uniform start")
+        return P
     prev, it = None, 0
     L = n_levels(flags); n_ph = len(KINDS[flags.get("kind", "two")]["phases"])
     for it in range(max_it):
@@ -701,6 +704,9 @@ def main():
     ap.add_argument("--vlevel", choices=["joint", "mix"], default="joint", help="video posterior: joint model (round 1) or mixture over verdict + mean reads")
     ap.add_argument("--vtemper", choices=["none", "icc"], default="none", help="video level: reads counted as ICC-effective reads")
     ap.add_argument("--kappa", type=float, default=1.0, help="diagnostic: time-level emissions tempered at inference")
+    ap.add_argument("--em-iters", type=int, default=300,
+                    help="EM iterations (default 300). 0 = decoder row 'w/o EM Evidence' (experiments/20261114_exp_gates "
+                         "README §9): the decoder uses init_params as they are, no EM update")
     ap.add_argument("--bma-weights", choices=["posterior", "prior"], default="posterior",
                     help="G2 (experiments/20261114_exp_gates README §9): at the final inference pass, average the "
                          "(gap, hate) grid with the prior weights only (pair likelihoods do not enter); EM unchanged")
@@ -875,7 +881,7 @@ def main():
                 P["key_ab"] = key_calibration([intercept(v) for v in videos[ds]])
             log(f"[{ds}] linear evidence, corpus std " + " ".join(f"{m} {x:.3f}" for m, x in P["linear"].items()))
             continue
-        P = em(videos[ds], flags, log=lambda m, ds=ds: log(f"[{ds}] {m}"))
+        P = em(videos[ds], flags, max_it=a.em_iters, log=lambda m, ds=ds: log(f"[{ds}] {m}"))
         if a.ktemper == "ar1":
             rho = residual_ar1(videos[ds], P, flags)
             P["rho"] = rho; P["kappa_m"] = {m: (1 - r_) / (1 + r_) for m, r_ in rho.items()}

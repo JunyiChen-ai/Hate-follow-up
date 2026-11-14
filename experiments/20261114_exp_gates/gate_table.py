@@ -16,7 +16,8 @@ Decoder: one or more components (COMPONENTS, extra twolevel_r2.py flags on top o
 the cell posteriors of the components are averaged (`--combine prob` or `logit`) before the centred rank.
 Every decode a row needs is looked up in EXISTING or run once into runs/20261114_exp_gates/gate_table/decodes/.
 
-Rows: the 14 rows of the appendix remove-one table plus `w/o Scope Read` (listed apart, not counted in the 14).
+Rows: the 14 rows of the appendix remove-one table plus `w/o Scope Read`, `w/o Duration Posterior` and
+`w/o EM Evidence` (listed apart, not counted in the 14; README §9).
 `w/ ASR Windows` keeps its original composition: ASR windows cannot enter the time level, so both sides use the
 SPVL composition's within-video term (experiments/20260910_spvl/compose.py, rank residual) instead of the decoder,
 with the Integrator term of this run on each side. Reader rows use their own reads for z_video and the window reads;
@@ -71,7 +72,7 @@ COMPONENTS = {   # decoder component -> extra twolevel_r2.py flags
     "plog": "--bma-prior log", "lin": "--evidence linear", "learned": "--bma-prior learned", "ar1": "--ktemper ar1",
 }
 ROW_FLAGS = {"nocoupling": "--nocoupling", "sharedchain": "--sharedchain", "fixed80": "--bma-fixed 80",
-             "lin": "--evidence linear"}
+             "lin": "--evidence linear", "wprior": "--bma-weights prior", "em0": "--em-iters 0"}
 # (component, read set, row flag) -> existing decode directory per part (same reads, same flags)
 EXISTING = {
     ("m2", "full", ""): {"main": f"{PR}/main/m2", "dehate": f"{PR}/dehate/m2"},
@@ -86,6 +87,8 @@ EXISTING = {
                     ("learned", "learned"), ("ar1", "ar1"))},
     ("fixed80", "full", ""): {"main": f"{PR}/main/fixed80", "dehate": f"{PR}/dehate/fixed80"},
     ("lin", "full", ""): {"main": f"{PR}/main/lin_bma_nscore", "dehate": f"{PR}/dehate/lin_bma_nscore"},
+    **{("m2", "full", f): {p: f"runs/20261114_exp_gates/decoder_d/{p}/{f}" for p in ("main", "dehate")}
+       for f in ("wprior", "em0")},     # README §9
 }
 COMPOSE = {"fixed": {"main": f"{RA}/compose/fixed_main", "dehate": f"{RA}/compose/fixed_DeHate"},
            "asr": {"main": f"{RA}/compose/asr_main", "dehate": f"{RA}/compose/asr_DeHate"}}
@@ -106,6 +109,8 @@ ROWS = [
     ("w/o Window Aggregate", "Hierarchical Integrator", "full", "full", "", "no_window"),
     ("w/ Mean over Modalities", "Hierarchical Integrator", "full", "full", "", "mean_mod"),
     ("w/o Scope Read", "extra (not counted)", "full", "full", "", "no_scope"),
+    ("w/o Duration Posterior", "extra (not counted)", "full", "full", "wprior", None),
+    ("w/o EM Evidence", "extra (not counted)", "full", "full", "em0", None),
 ]
 NAIVE = "runs/20261113_lf_baselines/naive/vlm/{ds}/predictions.jsonl"
 GATE1 = "runs/20261113_lf_baselines/gate/gate.json"     # best published label-free cell per corpus and metric
@@ -474,7 +479,7 @@ def render(res, chk, cfg, title):
     L.append("|---|---|---|---|---|")
     L.append("| full (absolute) | " + " | ".join(" / ".join(f"{100 * x:.1f}" for x in res[ds]["full"]["m"])
                                          for ds in DATASETS) + " | |")
-    total, total_extra, rows_ok = 0, 0, 0
+    total, extra, rows_ok = 0, {}, 0
     for row in ROWS:
         name, grp, _, _, rflag, integ = row
         cells, nb = [], 0
@@ -494,14 +499,14 @@ def render(res, chk, cfg, title):
                 parts.append(f"{d:+.1f}{flag}")
             cells.append(" / ".join(parts))
         if grp.startswith("extra"):
-            total_extra += nb
+            extra[name] = nb
         else:
             total += nb; rows_ok += nb == 0
         L.append(f"| {name}{' (compose, both sides)' if rflag == 'compose' else ''} | " + " | ".join(cells) + f" | {nb} |")
     if res.get("_note"):
         L += ["", res["_note"]]
     L += ["", f"Cells not below the full method, 14 rows: **{total}** (rows with every cell below: {rows_ok} of 14); "
-          f"`w/o Scope Read`: {total_extra}.", ""]
+          + "; ".join(f"`{k}`: {v}" for k, v in extra.items()) + ".", ""]
     vb = lambda sect: " / ".join(f"{100 * d:+.1f} ({r})" for d, r in chk["DeHate"]["vs_best_" + sect])
     L.append("Gate 2 checks (points; need ≥ +2 each on DeHate): full − naive Qwen3-VL-8B row ROC / PR = " +
              " / ".join(f"{100 * x:+.1f}" for x in chk["DeHate"]["vs_naive"][:2]) +

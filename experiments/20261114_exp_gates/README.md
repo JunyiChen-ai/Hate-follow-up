@@ -268,7 +268,7 @@ Members of D3 (within): m2 .7799 / .6866 / .6603; kap0.3 .8029 / .6484 / .6245; 
 .7775 / .7002 / .6544. No D2–D4 setting is at least m2 on HCS and at least fixed 80 s on DeHate and at least linear
 evidence on HateMM. D4 pooled ROC / PR: HateMM .8989 / .6927, HCS .7325 / .6893, DeHate .6940 / .1635.
 
-## 9. Decoder row "duration weights from the prior only" (brief 3 G2)
+## 9. Decoder rows: no duration posterior, no EM
 
 `twolevel_r2.py --bma-weights prior` (default `posterior` = unchanged): at the final inference pass the per-video
 average over the (gap, hate) grid uses the prior weights only (uniform in length, same grid and bounds); the pair
@@ -285,6 +285,28 @@ decodes value by value (main and DeHate).
 
 With prior weights only, within drops on all three corpora against m2 (−.048 / −.008 / −.013) and is below fixed 80 s
 on DeHate. As an ablation row ("w/o duration posterior") it would drop every within cell; pooled moves by at most .002.
+
+### 9.1 No EM (planning-session item J1, 2026-11-15)
+
+`twolevel_r2.py --em-iters N` (default 300 = unchanged). With `--em-iters 0` the decoder uses `init_params` as they
+are (verdict means at the 10th / 90th percentile of z_video, corpus variance, pi .5; per emitter the window-read
+percentiles as level means and the corpus variance; uniform start distribution) and no EM update; everything else is
+m2, the per-video duration posterior included. Runs `runs/20261114_exp_gates/decoder_d/{main,dehate}/em0`
+(decode.sh base flags + `--em-iters 0`; one thread). Plumbing (`decoder_d/j1.txt`): the default flag
+(`decoder_d/main/j1_default`) equals `decoder_scan/main/repro` value by value (score_curve and cell_prob, max |diff| 0,
+333 videos).
+
+| decoder | HateMM ROC / PR / within | HCS | DeHate |
+|---|---|---|---|
+| m2 (current) | .8989 / .6921 / .7799 | .7327 / .6895 / .6866 | .6940 / .1636 / .6603 |
+| linear evidence | .8990 / .6926 / .7958 | .7321 / .6888 / .6530 | .6940 / .1635 / .6573 |
+| prior weights only | .8985 / .6901 / .7316 | .7325 / .6890 / .6787 | .6939 / .1636 / .6476 |
+| no EM (`em0`) | .8989 / .6923 / .7857 | .7326 / .6895 / .6858 | .6940 / .1637 / .6715 |
+
+Without EM, within is higher than m2 on HateMM (+.006) and DeHate (+.011) and .0008 lower on HCS; pooled moves by at
+most .0002. As an ablation row ("w/o EM Evidence") it is not below the full method on most cells.
+`gate_table.py` lists both rows (`w/o Duration Posterior` = `--bma-weights prior`, `w/o EM Evidence` = `--em-iters 0`)
+apart from the 14, like `w/o Scope Read`, in every table from now on.
 
 ## 10. Video-level ordinal read on our Reader's prefix (brief 4 H2–H3; written before the run)
 
