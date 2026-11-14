@@ -159,8 +159,8 @@ def main():
     base = C.RUNS / method / ds
     for seed in args.seeds:
         out = base / f"seed{seed}"
-        if (out / "metrics.json").is_file():
-            print(f"{out}/metrics.json exists, kept", flush=True)
+        if (out / ("predictions.jsonl" if C.ALT_DIR else "metrics.json")).is_file():
+            print(f"{out}: finished seed kept", flush=True)
             continue
         out.mkdir(parents=True, exist_ok=True)
         log = C.RunLog(out / "run.log", mode="w")
@@ -181,6 +181,9 @@ def main():
                                              "experiments/20261008_baselines/mil/train_mil.py", log)
         (out / "coverage.json").write_text(json.dumps(coverage, indent=2) + "\n")
         C.evaluate(args.corpus, rows, out, log)
+    if C.ALT_DIR:                                # alternative cohort: no metrics here, so no seed summary
+        print(f"{method} {ds}: DONE (alternative cohort, not evaluated here)", flush=True)
+        return
     # seed summary
     per = {s: next(r for r in json.loads((base / f"seed{s}" / "metrics.json").read_text())["per_dataset"]
                    if r["method"] == method) for s in args.seeds}

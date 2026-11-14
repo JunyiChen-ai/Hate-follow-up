@@ -11,6 +11,9 @@ Arms:
             the window's 1 fps frames (at most 8; the Reader's pixel cap, src/mllm_judge.py MAX_PIXELS) + its
             Whisper words,
             'Transcript: <words>\\n\\nIs this video clip hateful? Answer "Yes" or "No".'
+  vlm_internvl  the `vlm` arm with OpenGVLab/InternVL3_5-8B-HF (2026-11-15, experiments/20261115_rh_hcs_split/README.md):
+            same windows, frames, words, question and read-out; one 448 tile per frame (src/mllm_judge.py
+            FAMILY_IMAGE_KW, as experiments/20261101_backbones)
   vlm_text  the same model and question without frames (the input of the old Qwen2.5-VL row), to separate the
             effect of the prompt from that of the frames
   llm       Qwen/Qwen3-8B (thinking off), one call per Whisper large-v3 segment, as the old Qwen3-8B row:
@@ -49,7 +52,9 @@ MAX_FRAMES = 8
 NO_SPEECH = "(no speech)"
 VLM_Q = 'Is this video clip hateful? Answer "Yes" or "No".'
 LLM_Q = 'Is this speech hateful? Answer "Yes" or "No".'
-MODELS = {"vlm": "Qwen/Qwen3-VL-8B-Instruct", "vlm_text": "Qwen/Qwen3-VL-8B-Instruct", "llm": "Qwen/Qwen3-8B"}
+MODELS = {"vlm": "Qwen/Qwen3-VL-8B-Instruct", "vlm_text": "Qwen/Qwen3-VL-8B-Instruct", "llm": "Qwen/Qwen3-8B",
+          "vlm_internvl": "OpenGVLab/InternVL3_5-8B-HF"}
+FRAME_ARMS = ("vlm", "vlm_internvl")     # arms that see the window's frames
 
 
 def prompt(arm, text):
@@ -138,7 +143,7 @@ def cmd_infer(args):
     segs = L.transcript_segments(ds, {v: man[v]["duration"] for v in vids})
     rd = Reader(arm)
     with open(os.path.join(dest, "prompt.txt"), "w") as fh:
-        fh.write(rd.render(prompt(arm, "<words>"), 2 if arm == "vlm" else 0))
+        fh.write(rd.render(prompt(arm, "<words>"), 2 if arm in FRAME_ARMS else 0))
 
     if arm == "llm":
         t0 = time.time()
@@ -175,7 +180,7 @@ def cmd_infer(args):
         nwin, failed = 0, 0
         with open(path, "a") as fh:
             for v, frames, err in decoded:
-                if arm == "vlm" and (err or not frames):
+                if arm in FRAME_ARMS and (err or not frames):
                     fh.write(json.dumps({"dataset": ds, "video_id": v, "duration": man[v]["duration"],
                                          "error": err or "no frames decoded", "units": []}) + "\n")
                     failed += 1
@@ -184,7 +189,7 @@ def cmd_infer(args):
                 us = []
                 for i, (t1, t2) in enumerate(windows(man[v]["duration"])):
                     text = L.span_text(segs.get(v, []), t1, t2)
-                    files = Q.uniform(Q.frames_in(frames, t1, t2), MAX_FRAMES) if arm == "vlm" else []
+                    files = Q.uniform(Q.frames_in(frames, t1, t2), MAX_FRAMES) if arm in FRAME_ARMS else []
                     us.append({"i": i, "start": t1, "end": t2, "n_frames": len(files), "text": text,
                                "z": rd.margin(prompt(arm, text), files), "status": "ok"})
                 nwin += len(us)

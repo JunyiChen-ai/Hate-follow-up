@@ -190,6 +190,9 @@ def seed_run(method, corpus, seed, best, base, log):
     ds = C.DATASET[corpus]
     out = base / f"seed{seed}"
     metrics = out / "metrics.json"
+    if C.ALT_DIR and (out / "predictions.jsonl").is_file():
+        log(f"seed {seed}: predictions.jsonl exists, kept")
+        return None
     if metrics.is_file():
         log(f"seed {seed}: metrics.json exists, kept")
         return json.loads(metrics.read_text())
@@ -270,7 +273,8 @@ def main():
         best = tune(args.method, args.corpus, base / "tuning", args.trials, log)
     for seed in args.seeds:
         seed_run(args.method, args.corpus, seed, best, base, log)
-    summarize(args.method, args.corpus, base, args.seeds, log)
+    if not C.ALT_DIR:                            # alternative cohort: not evaluated here, no seed summary
+        summarize(args.method, args.corpus, base, args.seeds, log)
     log("DONE")
 
 

@@ -41,6 +41,10 @@ ASR_DIR = REPO / "data" / "asr_whisper_large_v3"
 WAV_DIR = REPO / "data" / "wav16k_mono"
 GT_DIR = REPO / "data" / "gt_4fps"
 F2_STOP_SHARE = 0.01
+# Alternative split (experiments/20261115_rh_hcs_split/README.md): with DETWIN_ALT_COHORT=1 the cohort is the test list of
+# DETWIN_SPLIT_DIR, whatever its size; the GT file is not opened and finalize() stops after predictions.jsonl
+# (the canonical evaluator knows only the fixed cohorts). Unset = unchanged.
+ALT_COHORT = os.environ.get("DETWIN_ALT_COHORT") == "1"
 
 
 # ------------------------------------------------------------------ splits ---
@@ -348,8 +352,8 @@ def finalize(method: str, ds: str, seed: int, out_dir: Path, window_scores: dict
     split = load_split(ds)
     dur = {r["video_id"]: float(r["duration"]) for r in split["test"]}
     ids = sorted(dur)
-    t_gt = gt_lengths(ds)
-    assert len(ids) == COHORT_SIZE[ds] and set(ids) <= set(t_gt), (ds, len(ids))
+    t_gt = {v: curve_length(dur[v]) for v in ids} if ALT_COHORT else gt_lengths(ds)
+    assert (ALT_COHORT or len(ids) == COHORT_SIZE[ds]) and set(ids) <= set(t_gt), (ds, len(ids))
     failures = dict(failures or {})
     f1_windows = f1_windows or {}
     curves, bad = {}, {}
@@ -403,6 +407,11 @@ def finalize(method: str, ds: str, seed: int, out_dir: Path, window_scores: dict
            "date": datetime.date.today().isoformat(), "host": socket.gethostname(), "code": code_path,
            "code_version": code_version(), **config}
     (out_dir / "config.json").write_text(json.dumps(cfg, indent=2, sort_keys=True) + "\n")
+    if ALT_COHORT:
+        report["evaluated"] = "no (alternative cohort; evaluated outside this repository)"
+        (out_dir / "coverage.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        log(f"{ds} seed {seed}: alternative cohort ({len(ids)} videos), predictions.jsonl written, not evaluated here")
+        return report
     metrics = out_dir / "metrics.json"
     cmd = [sys.executable, "-m", "src.eval.evaluate_four_datasets", "--predictions", str(pred),
            "--gt-dir", str(GT_DIR), "--out", str(metrics), "--datasets", ds]

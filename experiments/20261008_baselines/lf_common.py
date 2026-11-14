@@ -34,6 +34,16 @@ MANIFESTS = {
 }
 COHORT_SOURCE = os.path.join(REPO, "runs", "20260926_twolevel", "final_rawkey", "predictions.jsonl")
 RATE = 4.0
+# Alternative test cohort (experiments/20261115_rh_hcs_split/README.md): if LF_ALT_COHORT_DIR holds <dataset>.txt and
+# <dataset>_manifest.jsonl, that id list and manifest replace the fixed cohort of the dataset; the GT file and the
+# canonical evaluator (which know only the fixed cohort) are then not used, and finalize() stops after
+# predictions.jsonl. LF_BASELINES_RUNS moves the outputs of the 20261008 label-free scripts. Unset = unchanged.
+ALT_COHORT_DIR = os.environ.get("LF_ALT_COHORT_DIR")
+RUNS_20261008 = os.environ.get("LF_BASELINES_RUNS") or os.path.join(REPO, "runs", "20261008_baselines")
+
+
+def alt_cohort(ds):
+    return bool(ALT_COHORT_DIR) and os.path.isfile(os.path.join(ALT_COHORT_DIR, ds + ".txt"))
 
 
 # ----------------------------------------------------------------------------- cohort and paths
@@ -58,10 +68,10 @@ def build_cohort_files():
 
 
 def cohort(ds):
-    path = os.path.join(COHORT_DIR, ds + ".txt")
+    path = os.path.join(ALT_COHORT_DIR if alt_cohort(ds) else COHORT_DIR, ds + ".txt")
     with open(path) as fh:
         vids = [x.strip() for x in fh if x.strip()]
-    if len(vids) != EXPECTED[ds]:
+    if len(vids) != EXPECTED[ds] and not alt_cohort(ds):
         raise RuntimeError("%s: %d ids, expected %d" % (path, len(vids), EXPECTED[ds]))
     return vids
 
@@ -96,7 +106,8 @@ def resolve_video(ds, vid, manifest_path):
 def manifest(ds):
     """video_id -> {duration, video_path} for the dataset's test manifest."""
     out = {}
-    with open(MANIFESTS[ds]) as fh:
+    path = os.path.join(ALT_COHORT_DIR, ds + "_manifest.jsonl") if alt_cohort(ds) else MANIFESTS[ds]
+    with open(path) as fh:
         for line in fh:
             row = json.loads(line)
             if row.get("dataset") != ds:
@@ -157,6 +168,8 @@ def span_text(segments, t1, t2):
 
 def gt_lengths(ds):
     """video_id -> number of GT frames. Only the array length is read."""
+    if alt_cohort(ds):
+        return {}                           # alternative cohort: no GT here; curves must cover ceil(4 * duration)
     gt = np.load(os.path.join(GT_DIR, ds + ".npz"), allow_pickle=True)
     return {str(v): len(gt["y4"][i]) for i, v in enumerate(gt["video_ids"]) if str(gt["split"][i]) == "test"}
 
@@ -253,7 +266,7 @@ def coverage_check(ds, rows):
             bad.append((vid, "curve %d < %d frames" % (len(s), need)))
         elif not np.isfinite(s[:need]).all():
             bad.append((vid, "%d non-finite frames" % int((~np.isfinite(s[:need])).sum())))
-    ok = not missing and not bad and len(want & set(got)) == EXPECTED[ds]
+    ok = not missing and not bad and len(want & set(got)) == (len(want) if alt_cohort(ds) else EXPECTED[ds])
     return {"dataset": ds, "ok": bool(ok), "n_cohort": len(want), "n_rows": len(got), "missing": missing,
             "extra_dropped": extra, "bad": bad}
 
@@ -275,6 +288,9 @@ def finalize(ds, rows, out_dir, method):
         for r in sorted(rows, key=lambda r: r["video_id"]):
             if r["dataset"] == ds and r["video_id"] in want:
                 fh.write(json.dumps(r) + "\n")
+    if alt_cohort(ds):
+        print("%s %s: alternative cohort (%d videos), predictions written, not evaluated here" % (method, ds, len(want)))
+        return None
     metrics = os.path.join(out_dir, "metrics.json")
     cmd = [sys.executable, "-m", "src.eval.evaluate_four_datasets", "--predictions", pred, "--gt-dir", GT_DIR,
            "--out", metrics, "--datasets", ds]

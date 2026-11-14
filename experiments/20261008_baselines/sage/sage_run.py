@@ -43,8 +43,9 @@ SAGE_DIR = C.REPO / "third_party" / "SAGE"
 sys.path.insert(0, str(SAGE_DIR / "model"))
 METHOD = "SAGE_win8"
 N_FRAMES = 16
-FRAME_DIR = C.REPO / "data" / "sage_frames16"  # <ds>/<vid>.npy uint8 [16,3,224,224] (train/val videos)
-WIN_DIR = C.REPO / "data" / "sage_frames16_win8"  # <ds>/<vid>.npy uint8 [n_win,16,3,224,224] + <vid>.json
+SAGE_DATA = Path(os.environ.get("SAGE_DATA") or C.REPO / "data")  # env override: alternative split (experiments/20261115_rh_hcs_split/README.md)
+FRAME_DIR = SAGE_DATA / "sage_frames16"  # <ds>/<vid>.npy uint8 [16,3,224,224] (train/val videos)
+WIN_DIR = SAGE_DATA / "sage_frames16_win8"  # <ds>/<vid>.npy uint8 [n_win,16,3,224,224] + <vid>.json
 
 
 def load_config() -> dict:

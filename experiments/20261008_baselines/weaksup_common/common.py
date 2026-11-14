@@ -27,7 +27,13 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[3]
 EXP_ID = "20261008_baselines"
 INPUTS = REPO / "data" / "weaksup_1fps"
-RUNS = REPO / "runs" / EXP_ID
+# Alternative split (experiments/20261115_rh_hcs_split/README.md): WEAKSUP_ALT_DIR holds splits/<corpus>_{train,val,test}.txt,
+# labels/<corpus>.json and durations/<corpus>.json for a test cohort the canonical evaluator does not know. Features
+# still come from INPUTS; the GT file is not opened and evaluate() stops after predictions.jsonl. WEAKSUP_RUNS moves
+# the outputs. Unset = unchanged.
+ALT_DIR = os.environ.get("WEAKSUP_ALT_DIR")
+SPLIT_ROOT = Path(ALT_DIR) if ALT_DIR else INPUTS
+RUNS = Path(os.environ.get("WEAKSUP_RUNS") or REPO / "runs" / EXP_ID)
 GT_DIR = REPO / "data" / "gt_4fps"
 SEEDS = (2025, 234, 3407)
 FPS = 4
@@ -48,12 +54,12 @@ def read_ids(path):
 
 
 def split_ids(corpus, split):
-    return read_ids(INPUTS / "splits" / f"{corpus}_{split}.txt")
+    return read_ids(SPLIT_ROOT / "splits" / f"{corpus}_{split}.txt")
 
 
 def train_val_labels(corpus):
     """video_id -> 0/1 for the train and val ids (the file holds nothing else)."""
-    return {k: int(v) for k, v in json.loads((INPUTS / "labels" / f"{corpus}.json").read_text()).items()}
+    return {k: int(v) for k, v in json.loads((SPLIT_ROOT / "labels" / f"{corpus}.json").read_text()).items()}
 
 
 def port_labels(corpus):
@@ -71,6 +77,8 @@ def port_labels(corpus):
 
 
 def durations(corpus):
+    if ALT_DIR:
+        return {k: float(v) for k, v in json.loads((SPLIT_ROOT / "durations" / f"{corpus}.json").read_text()).items()}
     ds = DATASET[corpus]
     out = {}
     with open(MANIFESTS[corpus]) as fh:
@@ -83,6 +91,8 @@ def durations(corpus):
 
 def gt_lengths(corpus):
     """Frame count of each cohort video's GT array (lengths only; labels are not returned)."""
+    if ALT_DIR:                               # no GT here: a curve must cover ceil(4 * duration)
+        return {v: max(1, math.ceil(d * FPS)) for v, d in durations(corpus).items()}
     z = np.load(GT_DIR / f"{DATASET[corpus]}.npz", allow_pickle=True)
     return {str(v): len(z["y4"][i]) for i, v in enumerate(z["video_ids"]) if str(z["split"][i]) == "test"}
 
@@ -150,7 +160,7 @@ def build_predictions(corpus, scores_path, branches, method_names, seed, code_pa
     """
     ds = DATASET[corpus]
     cohort = split_ids(corpus, "test")
-    if len(cohort) != COHORT_SIZE[corpus]:
+    if len(cohort) != COHORT_SIZE[corpus] and not ALT_DIR:
         raise RuntimeError(f"{corpus}: cohort has {len(cohort)} ids, expected {COHORT_SIZE[corpus]}")
     dur = durations(corpus)
     tgt = gt_lengths(corpus)
@@ -193,6 +203,9 @@ def evaluate(corpus, rows, out_dir, log):
     with pred.open("w") as fh:
         for row in rows:
             fh.write(json.dumps(row) + "\n")
+    if ALT_DIR:
+        log(f"{DATASET[corpus]}: alternative cohort, predictions.jsonl written, not evaluated here")
+        return None
     metrics = out_dir / "metrics.json"
     cmd = [sys.executable, "-m", "src.eval.evaluate_four_datasets", "--predictions", str(pred),
            "--gt-dir", str(GT_DIR), "--out", str(metrics), "--datasets", DATASET[corpus]]

@@ -58,9 +58,9 @@ sys.path.insert(0, BASE)
 import lf_common as L                                            # noqa: E402
 
 METHOD = "prism"
-OUT_ROOT = os.path.join(REPO, "runs", "20261008_baselines", "prism")
+OUT_ROOT = os.path.join(L.RUNS_20261008, "prism")
 METHOD_AV = "prism_av"
-OUT_ROOT_AV = os.path.join(REPO, "runs", "20261008_baselines", "prism_av")
+OUT_ROOT_AV = os.path.join(L.RUNS_20261008, "prism_av")
 AV_PREFIX, AV_TEXT_CAP = "Subtitles: ", 128
 CODE_PATH = "experiments/20261008_baselines/prism/prism_hate.py"
 DESC_PATH = os.path.join(HERE, "hate_descriptions.json")

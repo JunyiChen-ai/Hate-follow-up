@@ -56,9 +56,9 @@ import lf_common as L                                            # noqa: E402
 
 VM = os.path.join(REPO, "third_party", "VideoMind")
 METHOD = "videomind"
-OUT_ROOT = os.path.join(REPO, "runs", "20261008_baselines", "videomind")
+OUT_ROOT = os.path.join(L.RUNS_20261008, "videomind")
 METHOD_AV = "videomind_av"
-OUT_ROOT_AV = os.path.join(REPO, "runs", "20261008_baselines", "videomind_av")
+OUT_ROOT_AV = os.path.join(L.RUNS_20261008, "videomind_av")
 SUB_CAP = 2048                                                  # --av: subtitle tokens per prompt (Qwen2-VL tokenizer)
 CODE_PATH = "experiments/20261008_baselines/videomind/videomind_hate.py"
 QUERY = "hateful content that attacks or demeans people based on protected attributes"   # hate_query.md 2

@@ -40,7 +40,7 @@ from vllm_common import L       # noqa: E402
 sys.path.insert(0, os.path.join(Q.REPO, "scripts", "reproduction_baselines", "eventvad"))
 import prompt as pmod           # noqa: E402
 
-EVENTS = os.path.join(Q.REPO, "runs", "20261008_baselines", "eventvad")
+EVENTS = os.path.join(os.environ.get("LF_BASELINES_RUNS") or os.path.join(Q.REPO, "runs", "20261008_baselines"), "eventvad")
 FPS = 4.0
 NUM_FRAMES = 16
 SPEECH_CAP = 512

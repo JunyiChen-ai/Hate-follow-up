@@ -76,8 +76,8 @@ import video_io                                    # noqa: E402
 
 METHOD = "eventvad"
 METHOD_AV = "eventvad_av"
-OUT_ROOT = os.path.join(REPO, "runs", "20261008_baselines", "eventvad")
-OUT_ROOT_AV = os.path.join(REPO, "runs", "20261008_baselines", "eventvad_av")
+OUT_ROOT = os.path.join(L.RUNS_20261008, "eventvad")
+OUT_ROOT_AV = os.path.join(L.RUNS_20261008, "eventvad_av")
 CODE_PATH = "experiments/20261008_baselines/eventvad/eventvad_4fps.py"
 EXTRACT_SUFFIX = "\nTherefore, the final score is"
 UNPARSED_FILL = 0.0
