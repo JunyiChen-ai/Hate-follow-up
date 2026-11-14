@@ -412,7 +412,7 @@ def video_duration_grid(n_cells, flags, P=None):
     return grid, lw
 
 
-def video_terms(v, P, flags, kappa=1.0, kappas=None):
+def video_terms(v, P, flags, kappa=1.0, kappas=None, weights="posterior"):
     lv0 = lognorm(v["zv"], P["m0"], P["t2"]); lv1 = lognorm(v["zv"], P["m1"], P["t2"])
     l0 = sum(lognorm(y, P["emit"][ek(w, m)]["mu00"], P["emit"][ek(w, m)]["s2"]) for w in v["wins"] for m, y in w["y"].items())
     per, lengths, grid_post, kappa_post = [], {}, {}, {}
@@ -426,6 +426,12 @@ def video_terms(v, P, flags, kappa=1.0, kappas=None):
             if kappas:                                   # D4: integrate over the reads' noise scale per video
                 ll, g, w, wk = kappa_bma([emission_scale(v, mods, P, chs[0], kp) for kp in kappas], chs, lw)
                 kappa_post[mods] = wk
+            elif weights == "prior":                    # G2: average the pairs with their prior weights only
+                E = emission(v, mods, P, chs[0], kappa)
+                fits = [fb(E, ch_) for ch_ in chs]
+                w = np.exp(np.asarray(lw, float) - np.logaddexp.reduce(lw))
+                ll = float(np.logaddexp.reduce(np.asarray(lw, float) + np.array([f[0] for f in fits])))
+                g = np.tensordot(w, np.stack([f[1] for f in fits]), axes=1)
             else:
                 ll, g, w = bma_fb(emission(v, mods, P, chs[0], kappa), chs, lw)
             grid_post[mods] = w
@@ -695,6 +701,9 @@ def main():
     ap.add_argument("--vlevel", choices=["joint", "mix"], default="joint", help="video posterior: joint model (round 1) or mixture over verdict + mean reads")
     ap.add_argument("--vtemper", choices=["none", "icc"], default="none", help="video level: reads counted as ICC-effective reads")
     ap.add_argument("--kappa", type=float, default=1.0, help="diagnostic: time-level emissions tempered at inference")
+    ap.add_argument("--bma-weights", choices=["posterior", "prior"], default="posterior",
+                    help="G2 (experiments/20261114_exp_gates README §9): at the final inference pass, average the "
+                         "(gap, hate) grid with the prior weights only (pair likelihoods do not enter); EM unchanged")
     ap.add_argument("--bma-kappa", default="",
                     help="D4 (experiments/20261114_exp_gates README §8): comma list of noise scales kappa (read variance "
                          "s2 / kappa), uniform prior, integrated per video jointly with the duration grid at inference; "
@@ -928,6 +937,8 @@ def main():
     if kappas and not (flags["duration"] == "bma" and not flags["nocoupling"]):
         raise SystemExit("--bma-kappa requires --duration bma with temporal coupling")
     kpost = {}
+    if a.bma_weights == "prior" and kappas:
+        raise SystemExit("--bma-weights prior and --bma-kappa are not combined")
     with open(pred_path, "w") as fh:
         for ds in a.datasets:
             cterms = corpus_terms(videos[ds], params[ds], flags, a.kappa)[2] if corpus_mode else None
@@ -939,7 +950,7 @@ def main():
                     for mods, ch, ph, pon in ct["per"]:
                         miss *= 1.0 - ph
                 else:
-                    t = video_terms(v, params[ds], flags, a.kappa, kappas)
+                    t = video_terms(v, params[ds], flags, a.kappa, kappas, a.bma_weights)
                     for mods_, wk_ in t["kappa_post"].items():
                         kpost.setdefault((ds, mods_), []).append(float(np.dot(wk_, kappas)))
                     log_miss = np.zeros(v["n"])

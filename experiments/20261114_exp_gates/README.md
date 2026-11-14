@@ -61,6 +61,8 @@ Test-read log (rule 10): read `runs/20261101_paper_redecode/{main,dehate}/*/pred
 - `decode.sh`: one decoder run on one read set. `scope_read.py` + `launch/scope_lab1.sbatch`: target read on the
   `no_transcript` and `no_prefix_frames` prefixes (needed for those two ablation rows). Slurm job 2300 is queued on
   uoa-lab1 behind another project's jobs; output `runs/20261114_exp_gates/scope_reads/`.
+- Commit bd969f2 also carries the default-off `--bma-grid-spacing linear` option of experiments/20261108_duration_grid
+  (uncommitted work of an earlier session).
 
 ## 4. Next steps
 
