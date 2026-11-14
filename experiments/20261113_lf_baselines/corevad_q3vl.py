@@ -218,7 +218,7 @@ def cmd_readout(args):
         for i in range(0, len(texts), 64):
             enc = cproc(text=[t or "" for t in texts[i:i + 64]], return_tensors="pt", padding=True, truncation=True,
                         max_length=77).to(j.device)
-            f = clip.get_text_features(**enc).float()
+            f = clip.text_projection(clip.text_model(**enc).pooler_output).float()
             out.append(torch.nn.functional.normalize(f, dim=-1).cpu())
         f = torch.cat(out).numpy()
         f[[not t for t in texts]] = 0.0          # the release's text_encode: a zero vector for an empty response
@@ -252,7 +252,8 @@ def cmd_readout(args):
                 z.append(float(lg[0] - lg[1]))
                 del out
                 enc = cproc(images=images, return_tensors="pt").to(j.device)
-                f = torch.nn.functional.normalize(clip.get_image_features(**enc).float(), dim=-1)
+                f = clip.visual_projection(clip.vision_model(pixel_values=enc["pixel_values"]).pooler_output)
+                f = torch.nn.functional.normalize(f.float(), dim=-1)
                 img.append(f.mean(0).cpu().numpy())      # mean of the normalised frame features, not renormalised
                 n += 1
             us = recs[v]["units"]
