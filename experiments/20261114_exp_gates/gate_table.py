@@ -183,8 +183,8 @@ def needed_decodes(comps):
 # ------------------------------------------------------------------------------------------------ rows
 
 class Store:
-    def __init__(self, comps, combine):
-        self.comps, self.combine = comps, combine
+    def __init__(self, comps, combine, taxonomy=False):
+        self.comps, self.combine, self.taxonomy = comps, combine, taxonomy
         self.gt = {ds: gt(ds) for ds in DATASETS}
         self._c = {}
 
@@ -197,8 +197,11 @@ class Store:
         return self.get(("reads", rs, ds), lambda: by_video(f"{READS[rs][PART[ds]]}/predictions.jsonl", ds))
 
     def scope(self, sp, ds):
-        return self.get(("scope", sp, ds), lambda: {v: r["z_target"] for v, r in
-                                                    by_video(SCOPE[sp][PART[ds]], ds).items()})
+        if self.taxonomy and ds == "HateClipSeg":      # F4 / F5: HateClipSeg's own-taxonomy question (README §6)
+            path = f"runs/20261114_exp_gates/scope_reads/hcs_taxonomy_{sp}/reads.jsonl"
+        else:
+            path = SCOPE[sp][PART[ds]]
+        return self.get(("scope", sp, ds, self.taxonomy), lambda: {v: r["z_target"] for v, r in by_video(path, ds).items()})
 
     def rank(self, rs, rflag, ds):
         """video -> centred rank of the frame curve (decoder, or the composition for ASR windows)."""
@@ -233,7 +236,8 @@ class Store:
                 mw = float(np.mean([w["z"] for w in ws])) if ws else 0.0
                 mm = [np.mean([w[k] for k in ("z_visual", "z_speech") if k in w]) if ("z_visual" in w or "z_speech" in w)
                       else w["z"] for w in ws]
-                out[v] = (float(r["extra"]["z_video"]), mw, float(np.mean(mm)) if ws else 0.0, S.get(v, np.nan))
+                out[v] = (float(r["extra"]["z_video"]), mw, float(np.mean(mm)) if ws else 0.0, S.get(v, np.nan),
+                          np.array([w["z"] for w in ws], float), np.array(mm, float))
             return out
         return self.get(("terms", rs, sp, ds), build)
 
@@ -251,8 +255,60 @@ def scales(store, ds, form):
     return tuple((lambda x, c=np.sort(c_): np.searchsorted(c, x, side="right") / len(c)) for c_ in cols)
 
 
+FORMS = ("F1", "F2", "F3", "F4", "F5")
+
+
+def f_sigmas(store, ds):
+    """sigma(mw), sigma(zT), sigma(A) over all videos of the corpus, from the full method's reads (no label); the
+    same constants are used for every row (README §7)."""
+    T = store.terms("full", "full", ds)
+    mw = np.array([t[1] for t in T.values()]); zt = np.array([t[3] for t in T.values()])
+    A = np.array([np.mean(np.minimum(t[4], t[3])) if len(t[4]) else 0.0 for t in T.values()])
+    return mw.std(), zt.std(), A.std()
+
+
+def f_key(form, zv, mw, mm, zt, wz, wm, integ, sig):
+    """K_v of forms F1-F5 (main-session brief 2026-11-15) and their four Integrator rows."""
+    s_mw, s_zt, s_A = sig
+    if integ == "nokey":
+        return 0.0
+    if form == "F1":
+        if integ == "no_window":
+            return 0.5 * zt
+        if integ == "no_scope":
+            return mw + 0.5 * zv
+        return (mm if integ == "mean_mod" else mw) + 0.5 * zv + 0.5 * zt
+    if form in ("F2", "F4"):
+        if integ == "no_window":
+            return zt / s_zt
+        if integ == "no_scope":
+            return mw / s_mw
+        return (mm if integ == "mean_mod" else mw) / s_mw + zt / s_zt
+    # F3 / F5: A = mean over windows of min(z_w, zT)
+    if integ == "no_window":
+        return zt / s_zt
+    if integ == "no_scope":
+        return mw / s_mw
+    w = wm if integ == "mean_mod" else wz
+    A = float(np.mean(np.minimum(w, zt))) if len(w) else 0.0
+    return A / s_A + zt / s_zt
+
+
 def row_scores(store, ds, row, cfg):
     name, grp, rs, sp, rflag, integ = row
+    if cfg["form"] in FORMS:
+        rk = store.rank(rs, "" if integ else rflag, ds)
+        T = store.terms(rs, sp, ds)
+        sig = f_sigmas(store, ds)
+        out = {}
+        for v, r in rk.items():
+            if v not in T:
+                continue
+            zv, mw, mm, zt, wz, wm = T[v]
+            if integ not in ("nokey", "no_scope") and not np.isfinite(zt):
+                raise RuntimeError(f"missing scope read {ds} {v} ({sp})")
+            out[v] = f_key(cfg["form"], zv, mw, mm, zt, wz, wm, integ, sig) + cfg["lam"] * r
+        return out
     rk = store.rank(rs, "" if integ else rflag, ds)
     T = store.terms(rs, sp, ds)
     cw, cv, ct = scales(store, ds, cfg["form"])
@@ -261,7 +317,7 @@ def row_scores(store, ds, row, cfg):
     for v, r in rk.items():
         if v not in T:
             continue
-        zv, mw, mm, zt = T[v]
+        zv, mw, mm, zt = T[v][:4]
         if b and not np.isfinite(zt):
             raise RuntimeError(f"missing scope read {ds} {v} ({sp})")
         if integ == "nokey":
@@ -385,7 +441,8 @@ def checks(store, cfg, res):
 
 
 def render(res, chk, cfg, title):
-    L = [f"## {title}", "", f"Integrator {cfg}; decoder {res['_decoder']}. Cells: change against the full method in "
+    shown = {"form": cfg["form"], "lam": cfg["lam"]} if cfg["form"] in FORMS else cfg
+    L = [f"## {title}", "", f"Integrator {shown}; decoder {res['_decoder']}. Cells: change against the full method in "
          "points (ROC / PR / within); `!` = not below (> −0.05); `~` = 95 % paired bootstrap interval contains 0; "
          "`=` = equal by construction (exempt).", ""]
     L.append("| row | " + " | ".join(f"{ds} ROC / PR / W" for ds in DATASETS) + " | not below |")
@@ -432,7 +489,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--decoder", default="m2", help="component, or comma list of components (averaged)")
     ap.add_argument("--combine", choices=("prob", "logit"), default="prob")
-    ap.add_argument("--form", choices=("raw", "sd", "cdf"), default="raw")
+    ap.add_argument("--form", choices=("raw", "sd", "cdf") + FORMS, default="raw",
+                    help="F1-F5: fixed forms of README §7 (a, b ignored; lam from --lam)")
     ap.add_argument("--a", type=float, default=1.0, help="weight of z_video")
     ap.add_argument("--b", type=float, default=0.0, help="weight of the scope read")
     ap.add_argument("--lam", type=float, default=1.0, help="weight of the centred rank")
@@ -447,7 +505,7 @@ def main():
         for d, st in ex.map(lambda t: run_decode(*t), todo):
             if st == "decoded":
                 print("decoded", d, flush=True)
-    store = Store(comps, args.combine)
+    store = Store(comps, args.combine, taxonomy=args.form in ("F4", "F5"))
     cfg = config_from(args)
     if args.check:
         for ds in DATASETS:
@@ -460,7 +518,8 @@ def main():
     res = evaluate(store, cfg, args.boot)
     res["_decoder"] = f"{args.decoder} ({args.combine})" if len(comps) > 1 else args.decoder
     chk = checks(store, cfg, res)
-    name = args.name or f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_a{args.a:g}_b{args.b:g}_l{args.lam:g}"
+    name = args.name or (f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_l{args.lam:g}" if args.form in FORMS
+                         else f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_a{args.a:g}_b{args.b:g}_l{args.lam:g}")
     md, total = render(res, chk, cfg, name)
     d = OUT / "tables"; d.mkdir(parents=True, exist_ok=True)
     (d / f"{name}.md").write_text(md)

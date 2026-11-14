@@ -84,6 +84,36 @@ def carrier_terms(w, P):
     return on, off
 
 
+def emission_scale(v, mods, P, ch, kap):
+    """Emissions with each read's variance s2 / kap (README §8 D4 of experiments/20261114_exp_gates): per read
+    kap * (quadratic term) - 0.5 log(2 pi s2) + 0.5 log kap, i.e. kap * lognorm + (1 - kap) c + 0.5 log kap with
+    c = -0.5 log(2 pi s2). EM evidence only (no linear / carrier path)."""
+    if P.get("linear") or P.get("carrier") is not None or P.get("kappa_m"):
+        raise SystemExit("--bma-kappa supports only the EM evidence without --ktemper")
+    E = np.zeros((v["n"], ch["n_plv"] * ch["S"]))
+    for w in v["wins"]:
+        for m in mods:
+            if m in w["y"]:
+                e = P["emit"][ek(w, m)]
+                lv = ch["lvl"][m]["pair" if w["pair"] else "single"]
+                c = -0.5 * math.log(2 * math.pi * e["s2"])
+                E[w["cell"]] += kap * lognorm(w["y"][m], np.asarray(e["mu"], float)[lv], e["s2"]) + (1 - kap) * c \
+                    + 0.5 * math.log(kap)
+    return E
+
+
+def kappa_bma(Es, chs, lw):
+    """Joint model averaging over (gap, hate) chains and noise scales: Es[j] = emissions under scale j (uniform prior
+    over scales), lw = log prior over the chains. Returns (log p, posterior states, posterior over the chains, posterior
+    over the scales); equal to bma_fb over the flattened (scale, chain) grid."""
+    res = [bma_fb(E, chs, lw) for E in Es]
+    a = np.array([r[0] for r in res]) - math.log(len(Es))
+    LL = float(np.logaddexp.reduce(a)); wk = np.exp(a - LL)
+    g = sum(wk[j] * res[j][1] for j in range(len(Es)))
+    w = sum(wk[j] * res[j][2] for j in range(len(Es)))
+    return LL, g, w, wk
+
+
 def emission(v, mods, P, ch, kappa=1.0):
     """log emission over augmented states, shape (n, 2S), for the chain of modalities `mods` under V = 1."""
     masks = on_masks(ch)
@@ -107,7 +137,8 @@ def emission(v, mods, P, ch, kappa=1.0):
             if m in w["y"]:
                 e = P["emit"][ek(w, m)]
                 lv = ch["lvl"][m]["pair" if w["pair"] else "single"]
-                E[w["cell"]] += kappa * lognorm(w["y"][m], np.asarray(e["mu"], float)[lv], e["s2"])
+                km = kappa * P.get("kappa_m", {}).get(m, 1.0)   # per-modality tempering (--ktemper), 1 during EM
+                E[w["cell"]] += km * lognorm(w["y"][m], np.asarray(e["mu"], float)[lv], e["s2"])
     return E
 
 
@@ -253,6 +284,20 @@ def selftest(trials=100, seed=0):
             lps.append(lp)
         lps = np.array(lps); LLp = np.logaddexp.reduce(lps); post = np.exp(lps - LLp)
         return LLp, np.array([sum(p for p, xs in zip(post, xs_all) if ch["hb"][xs[c]]) for c in range(E.shape[0])])
+    for _ in range(trials // 5):                   # D4: (scale, chain) model averaging vs brute force over paths
+        k = int(rng.integers(1, 3)); n = int(rng.integers(1, 5)); io = rng.dirichlet(np.ones(2))
+        chs = [build_chain(k, rng.uniform(4 * k + 1, 60), rng.uniform(4 * k + 1, 60), io) for _ in range(3)]
+        lw = np.log(rng.dirichlet(np.ones(3))); kps = [1.0, 0.5, 0.25]
+        Es = [rng.normal(0, 2, size=(n, 2 * chs[0]["S"])) for _ in kps]
+        LL, g, w, wk = kappa_bma(Es, chs, lw)
+        lps, cells = [], []
+        for E in Es:
+            for j, ch in enumerate(chs):
+                LLp, ph = paths(E, ch)
+                lps.append(lw[j] - math.log(len(kps)) + LLp); cells.append(ph)
+        lps = np.array(lps); LLb = float(np.logaddexp.reduce(lps)); pb = np.exp(lps - LLb)
+        worst = max(worst, abs(LL - LLb), float(np.abs(p_hate(g, chs[0]) - sum(a * c for a, c in zip(pb, cells))).max()),
+                    float(np.abs(wk - pb.reshape(len(kps), len(chs)).sum(1)).max()))
     for _ in range(trials // 5):                   # corpus-shared pairs (README §18) vs brute force over (pair, V, paths)
         k = int(rng.integers(1, 3)); grid = rng.uniform(4 * k + 1, 60, size=2); J = 4
         ios = rng.uniform(.05, .95, size=2); nv = 3
@@ -339,21 +384,51 @@ def chain_for(P, mods, flags):
                        flags.get("kind", "two"), mods)
 
 
-def video_terms(v, P, flags, kappa=1.0):
+def length_prior(grid):
+    """Prior uniform in length on a log grid (README §19): weight of a pair proportional to gap x hate."""
+    lw = np.array([math.log(dg) + math.log(dh) for dg in grid for dh in grid])
+    return lw - np.logaddexp.reduce(lw)
+
+
+def video_duration_grid(n_cells, flags, P=None):
+    """Per-video candidates and normalized pair priors for the chosen spacing. With the learned prior
+    (experiments/20261114_exp_gates/README.md) the grid is the corpus grid P["grid"] and the caller takes the
+    prior of its chain from P["lw"] (returned here as None)."""
+    if flags.get("bma_prior") == "learned":
+        return np.asarray(P["grid"], float), None
+    grid = length_grid(n_cells, flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
+    spacing = flags.get("bma_grid_spacing", "log")
+    if spacing == "linear":
+        if flags.get("bma_prior") != "length":
+            raise ValueError("linear spacing requires the uniform-in-length prior")
+        grid = np.linspace(grid[0], grid[-1], len(grid))
+    elif spacing != "log":
+        raise ValueError(f"unknown duration grid spacing: {spacing}")
+    if flags.get("bma_prior") == "length" and spacing == "log":
+        lw = np.array([math.log(dg) + math.log(dh) for dg in grid for dh in grid])
+        lw = lw - np.logaddexp.reduce(lw)
+    else:
+        lw = np.full(len(grid) ** 2, -math.log(len(grid) ** 2))
+    return grid, lw
+
+
+def video_terms(v, P, flags, kappa=1.0, kappas=None):
     lv0 = lognorm(v["zv"], P["m0"], P["t2"]); lv1 = lognorm(v["zv"], P["m1"], P["t2"])
     l0 = sum(lognorm(y, P["emit"][ek(w, m)]["mu00"], P["emit"][ek(w, m)]["s2"]) for w in v["wins"] for m, y in w["y"].items())
-    per, lengths = [], {}
+    per, lengths, grid_post, kappa_post = [], {}, {}, {}
     kind = flags.get("kind", "two")
     for mods in chains_of(flags):
         if flags.get("duration") == "bma" and not flags.get("nocoupling"):
-            grid = length_grid(v["n"], flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
+            grid, lw = video_duration_grid(v["n"], flags, P)
+            if lw is None:
+                lw = np.asarray(P["lw"][mods], float)
             chs = [build_chain(flags["k"], dg, dh, P["iota"][mods], False, kind, mods) for dg in grid for dh in grid]
-            if flags.get("bma_prior") == "length":    # README §19: uniform in length; a log-grid point spans a length ∝ it
-                lw = np.array([math.log(dg) + math.log(dh) for dg in grid for dh in grid])
-                lw = lw - np.logaddexp.reduce(lw)
-            else:                                        # README §16: uniform in log length
-                lw = np.full(len(chs), -math.log(len(chs)))
-            ll, g, w = bma_fb(emission(v, mods, P, chs[0], kappa), chs, lw)
+            if kappas:                                   # D4: integrate over the reads' noise scale per video
+                ll, g, w, wk = kappa_bma([emission_scale(v, mods, P, chs[0], kp) for kp in kappas], chs, lw)
+                kappa_post[mods] = wk
+            else:
+                ll, g, w = bma_fb(emission(v, mods, P, chs[0], kappa), chs, lw)
+            grid_post[mods] = w
             W2 = w.reshape(len(grid), len(grid))            # rows: gap length, columns: hate length
             lengths[mods] = (float(np.exp(W2.sum(0) @ np.log(grid))), float(np.exp(W2.sum(1) @ np.log(grid))))
             per.append((mods, chs[0], ll, g))
@@ -365,7 +440,8 @@ def video_terms(v, P, flags, kappa=1.0):
     lo_verdict = math.log(P["pi"]) - math.log(1 - P["pi"]) + lv1 - lv0
     lo = lo_verdict + l1 - l0
     total = float(np.logaddexp(math.log(P["pi"]) + lv1 + l1, math.log(1 - P["pi"]) + lv0 + l0))
-    out = {"per": per, "lo": lo, "lo_verdict": lo_verdict, "total": total, "lengths": lengths}
+    out = {"per": per, "lo": lo, "lo_verdict": lo_verdict, "total": total, "lengths": lengths, "grid_post": grid_post,
+           "kappa_post": kappa_post}
     if "icc" in P and not flags.get("sharedchain"):
         # reads of one video share its context: modality m's n reads count as n / (1 + (n - 1) icc_m) reads
         lo_r = 0.0
@@ -467,13 +543,46 @@ def residual_icc(videos, P, flags):
     return icc
 
 
+def residual_ar1(videos, P, flags):
+    """Lag-1 autocorrelation of the reads' residuals (read minus its posterior expected mean) over consecutive
+    windows of a video, per modality. Label-free: uses the fitted model only. The chain treats the reads as
+    independent given the states; with AR(1) noise of correlation rho, n reads carry the information of about
+    n (1 - rho) / (1 + rho) independent reads (experiments/20261114_exp_gates/README.md)."""
+    num = {m: 0.0 for m in MODS}; den = {m: 0.0 for m in MODS}
+    for v in videos:
+        t = video_terms(v, P, flags)
+        w = float(expit(t["lo"]))
+        pa = {}
+        for mods, ch, ll, g in t["per"]:
+            for m in mods:
+                pa[m] = p_levels(v, g, ch, m)
+        for m in MODS:
+            r = []
+            for i, wi in enumerate(v["wins"]):
+                if m in wi["y"] and m in pa:
+                    e = P["emit"][ek(wi, m)]
+                    r.append(wi["y"][m] - ((1 - w) * e["mu00"] + w * float(pa[m][i] @ np.asarray(e["mu"]))))
+                else:
+                    r.append(np.nan)
+            r = np.array(r)
+            ok = ~np.isnan(r[:-1]) & ~np.isnan(r[1:])
+            num[m] += float((r[:-1][ok] * r[1:][ok]).sum())
+            den[m] += float(0.5 * ((r[:-1][ok] ** 2).sum() + (r[1:][ok] ** 2).sum()))
+    return {m: float(np.clip(num[m] / den[m], 0.0, 0.95)) if den[m] > 0 else 0.0 for m in MODS}
+
+
 def em(videos, flags, max_it=300, tol=1e-7, log=print):
     P = init_params(videos, flags)
     if flags.get("duration") == "bma_corpus" and not flags.get("nocoupling"):   # README §18: one grid per corpus
         P["grid"] = length_grid(max(v["n"] for v in videos), flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
+    learned = flags.get("duration") == "bma" and flags.get("bma_prior") == "learned" and not flags.get("nocoupling")
+    if learned:   # one corpus grid; the prior over its (gap, hate) pairs is a corpus parameter per chain, fitted by EM
+        P["grid"] = length_grid(max(v["n"] for v in videos), flags["k"], flags["bma_grid"], flags.get("bma_fixed"))
+        P["lw"] = {mods: length_prior(P["grid"]) for mods in chains_of(flags)}
     prev, it = None, 0
     L = n_levels(flags); n_ph = len(KINDS[flags.get("kind", "two")]["phases"])
     for it in range(max_it):
+        GP = {mods: 0.0 for mods in chains_of(flags)} if learned else None
         # sufficient statistics per emitter: row 0 = V = 0, rows 1..L = observation levels 0..L-1 under V = 1
         S = {e: np.zeros((1 + L, 3)) for e in P["emit"]}; W, Z = [], []
         io = {mods: [np.zeros(n_ph), 0.0] for mods in chains_of(flags)}
@@ -497,6 +606,9 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
         for v in ([] if flags.get("duration") == "bma_corpus" and not flags.get("nocoupling") else videos):
             t = video_terms(v, P, flags); total += t["total"]
             w = float(expit(t["lo"])); W.append(w); Z.append(v["zv"])
+            if learned:
+                for mods, gp in t["grid_post"].items():
+                    GP[mods] = GP[mods] + w * gp
             for wi in v["wins"]:
                 for m, y in wi["y"].items():
                     S[ek(wi, m)][0] += (1 - w) * np.array([1.0, y, y * y])
@@ -539,6 +651,10 @@ def em(videos, flags, max_it=300, tol=1e-7, log=print):
                 mu[0] = mu[1] = (S[e][0, 1] + S[e][1, 1]) / max(S[e][0, 0] + S[e][1, 0], EPS)
             ss = sum(S[e][j, 2] - 2 * mu[j] * S[e][j, 1] + mu[j] ** 2 * S[e][j, 0] for j in range(1 + L))
             P["emit"][e] = emit_entry(mu[0], mu[1:], max(float(ss / max(S[e][:, 0].sum(), EPS)), EPS))
+        if learned:
+            for mods in GP:
+                q = np.maximum(GP[mods] / max(float(np.sum(GP[mods])), EPS), 1e-6)
+                P["lw"][mods] = np.log(q / q.sum())
         for mods in io:
             vec = np.clip(io[mods][0] / max(io[mods][1], EPS), EPS, 1 - EPS)
             P["iota"][mods] = [float(x) for x in vec / vec.sum()]
@@ -579,11 +695,23 @@ def main():
     ap.add_argument("--vlevel", choices=["joint", "mix"], default="joint", help="video posterior: joint model (round 1) or mixture over verdict + mean reads")
     ap.add_argument("--vtemper", choices=["none", "icc"], default="none", help="video level: reads counted as ICC-effective reads")
     ap.add_argument("--kappa", type=float, default=1.0, help="diagnostic: time-level emissions tempered at inference")
+    ap.add_argument("--bma-kappa", default="",
+                    help="D4 (experiments/20261114_exp_gates README §8): comma list of noise scales kappa (read variance "
+                         "s2 / kappa), uniform prior, integrated per video jointly with the duration grid at inference; "
+                         "EM unchanged; off by default")
+    ap.add_argument("--exact-logodds", action="store_true",
+                    help="experiments/20261114_exp_gates README §8 D2: per-cell log-odds from the non-hate mass of each "
+                         "chain in the log domain (no 1 - p, no 1e-12 clip); off by default")
+    ap.add_argument("--ktemper", choices=["none", "ar1"], default="none",
+                    help="time level: each modality's emissions tempered at inference by (1 - rho) / (1 + rho), rho = "
+                         "lag-1 autocorrelation of its read residuals under the fitted model (label-free)")
     ap.add_argument("--duration", choices=["fixed", "bma", "bma_corpus"], default="fixed",
                     help="fixed: --d-gap / --d-hate; bma: mean lengths averaged per video over a log grid (README §16); "
                          "bma_corpus: one pair per chain shared by the corpus, posterior from all videos (README §18)")
     ap.add_argument("--bma-grid", type=int, default=6, help="bma: grid points per mean length")
-    ap.add_argument("--bma-prior", choices=["log", "length"], default="log",
+    ap.add_argument("--bma-grid-spacing", choices=["log", "linear"], default="log",
+                    help="per-video candidate grid spacing; linear supports the uniform-in-length prior only")
+    ap.add_argument("--bma-prior", choices=["log", "length", "learned"], default="log",
                     help="bma: prior over the mean lengths, uniform in log length (README §16) or in length (§19)")
     ap.add_argument("--bma-fixed", type=float, default=0.0, help="plumbing check only: pin the bma grid to one value (s)")
     ap.add_argument("--min-windows", type=float, default=0.0,
@@ -614,6 +742,8 @@ def main():
     ap.add_argument("--datasets", nargs="+", default=["HateMM", "HateClipSeg"])
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
+    if a.bma_grid_spacing == "linear" and (a.duration != "bma" or a.bma_prior != "length" or a.nocoupling):
+        raise SystemExit("--bma-grid-spacing linear requires --duration bma --bma-prior length and temporal coupling")
     out = Path(a.out_root) / a.tag
     out.mkdir(parents=True, exist_ok=True)
     logf = open(out / "run.log", "w")
@@ -634,6 +764,7 @@ def main():
     flags = {"k": a.k, "d_gap": a.d_gap, "d_hate": a.d_hate, "sharedchain": a.sharedchain or a.fusion == "max", "carrier": a.fusion == "carrier",
              "nocoupling": a.nocoupling, "noleak": a.noleak, "iota_stationary": a.iota_stationary,
              "duration": a.duration, "bma_grid": a.bma_grid, "bma_fixed": a.bma_fixed, "bma_prior": a.bma_prior,
+             "bma_grid_spacing": a.bma_grid_spacing,
              "kind": a.kind}
     if a.kind != "two" and (a.nocoupling or a.sharedchain or a.fusion != "or" or a.evidence != "em" or a.duration == "bma_corpus"):
         raise SystemExit("--kind other than two supports only the EM evidence, OR / joint fusion and fixed or bma durations")
@@ -736,6 +867,11 @@ def main():
             log(f"[{ds}] linear evidence, corpus std " + " ".join(f"{m} {x:.3f}" for m, x in P["linear"].items()))
             continue
         P = em(videos[ds], flags, log=lambda m, ds=ds: log(f"[{ds}] {m}"))
+        if a.ktemper == "ar1":
+            rho = residual_ar1(videos[ds], P, flags)
+            P["rho"] = rho; P["kappa_m"] = {m: (1 - r_) / (1 + r_) for m, r_ in rho.items()}
+            log(f"[{ds}] residual lag-1 autocorrelation " + "  ".join(f"{m} {x:.3f}" for m, x in rho.items()) +
+                "  tempering " + "  ".join(f"{m} {x:.3f}" for m, x in P["kappa_m"].items()))
         if a.vtemper == "icc":
             P["icc"] = residual_icc(videos[ds], P, flags)
             log(f"[{ds}] residual ICC " + "  ".join(f"{m} {x:.3f}" for m, x in P["icc"].items()))
@@ -788,6 +924,10 @@ def main():
             log(f"[{ds}] share of cells per phase under V = 1: {np.round(ph_share / ph_share.sum(), 3).tolist()}")
     pred_path = out / "predictions.jsonl"
     corpus_mode = flags["duration"] == "bma_corpus" and not flags["nocoupling"]
+    kappas = [float(x) for x in a.bma_kappa.split(",") if x.strip()] if a.bma_kappa else None
+    if kappas and not (flags["duration"] == "bma" and not flags["nocoupling"]):
+        raise SystemExit("--bma-kappa requires --duration bma with temporal coupling")
+    kpost = {}
     with open(pred_path, "w") as fh:
         for ds in a.datasets:
             cterms = corpus_terms(videos[ds], params[ds], flags, a.kappa)[2] if corpus_mode else None
@@ -799,10 +939,23 @@ def main():
                     for mods, ch, ph, pon in ct["per"]:
                         miss *= 1.0 - ph
                 else:
-                    t = video_terms(v, params[ds], flags, a.kappa)
+                    t = video_terms(v, params[ds], flags, a.kappa, kappas)
+                    for mods_, wk_ in t["kappa_post"].items():
+                        kpost.setdefault((ds, mods_), []).append(float(np.dot(wk_, kappas)))
+                    log_miss = np.zeros(v["n"])
                     for mods, ch, ll, g in t["per"]:
                         gm = gate.get(ds, {}).get(mods[0], {}).get(v["rec"]["video_id"], 1.0) if len(mods) == 1 else 1.0
                         miss *= 1.0 - gm * p_hate(g, ch)
+                        if a.exact_logodds:          # non-hate mass of the chain taken from g directly (D2)
+                            nh = g[:, ch["hate"] == 0].sum(1)
+                            with np.errstate(divide="ignore"):
+                                log_miss += np.log(nh if gm == 1.0 else (1.0 - gm) + gm * nh)
+                if a.exact_logodds:
+                    if corpus_mode:
+                        raise SystemExit("--exact-logodds is not implemented for --duration bma_corpus")
+                    with np.errstate(divide="ignore", invalid="ignore"):
+                        cell_lo = np.log(-np.expm1(log_miss)) - log_miss
+                    miss = np.exp(log_miss)
                 p = np.clip(1.0 - miss, 1e-12, 1 - 1e-12)
                 lo = params[ds]["vmix_fn"](v) if a.vlevel == "mix" else (t["lo_icc"] if a.vtemper == "icc" else t["lo"])
                 intervals = []
@@ -825,7 +978,8 @@ def main():
                 else:
                     key = K
                 if a.arm == "m2":
-                    score = key + (0.0 if a.norank else centered_rank(to_frames(np.log(p) - np.log1p(-p), v["L"])))
+                    lo_cells = cell_lo if a.exact_logodds else np.log(p) - np.log1p(-p)
+                    score = key + (0.0 if a.norank else centered_rank(to_frames(lo_cells, v["L"])))
                     score = np.full(v["L"], score) if np.ndim(score) == 0 else score
                 elif a.arm == "lexi":
                     score = lo + centered_rank(to_frames(np.log(p) - np.log1p(-p), v["L"]))
@@ -835,13 +989,28 @@ def main():
                 fh.write(json.dumps({**v["rec"], "method": f"twolevel_r2__{a.tag}", "score_curve": [float(x) for x in score],
                                      "intervals": intervals, "extra": {"z_video": v["zv"], "p_video_logodds": lo,
                                                                 "cell_prob": [float(x) for x in p],
+                                                                **({"cell_logodds": [float(x) for x in cell_lo]}
+                                                                   if a.exact_logodds else {}),
                                                                 "gate": {m: g_[v["rec"]["video_id"]] for m, g_ in gate.get(ds, {}).items()}}}) + "\n")
+    if kpost:                                     # D4: posterior mean of kappa per video, summarised per corpus and chain
+        ksum = {}
+        for (ds_, mods_), xs in kpost.items():
+            xs = np.asarray(xs)
+            ksum[f"{ds_} {'+'.join(mods_)}"] = {"mean": float(xs.mean()), "median": float(np.median(xs)),
+                                                "p10": float(np.percentile(xs, 10)), "p90": float(np.percentile(xs, 90)),
+                                                "videos": int(len(xs))}
+            log(f"[{ds_}] {'+'.join(mods_)} posterior mean kappa per video: mean {xs.mean():.3f} median "
+                f"{np.median(xs):.3f} [10-90% {np.percentile(xs, 10):.3f}-{np.percentile(xs, 90):.3f}]")
+        (out / "kappa_post.json").write_text(json.dumps(ksum, indent=1))
     metrics_path = out / "metrics.json"
     subprocess.run([sys.executable, str(ROOT / "src/eval/evaluate_four_datasets.py"), "--predictions", str(pred_path),
                     "--gt-dir", a.gt_dir, "--out", str(metrics_path), "--datasets", *a.datasets],
                    check=True, cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)}, stdout=subprocess.DEVNULL)
     for P in params.values():
         P.pop("vmix_fn", None)
+        if "lw" in P:                              # learned prior over the corpus grid's (gap, hate) pairs, per chain
+            P["grid"] = [float(x) for x in P["grid"]]
+            P["lw"] = {"+".join(k_): [float(x) for x in v_] for k_, v_ in P["lw"].items()}
         if "pair_post" in P:                       # README §18: corpus grid and posterior over (gap, hate) pairs
             P["grid"] = [float(x) for x in P["grid"]]
             P["pair_post"] = {"+".join(k_): [float(x) for x in v_] for k_, v_ in P["pair_post"].items()}

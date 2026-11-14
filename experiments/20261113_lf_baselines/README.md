@@ -183,6 +183,13 @@ when it exists for all three corpora (no per-corpus choice).
 
 ### 3.1 Probe-VAD (arXiv 2609.17211; preprint under review, not peer-reviewed)
 
+Paper: Gu, Zhao, Guo, Zhong, Zhang, Lyu, Zhao, Xie, Shan, "Probe-VAD: Ordinal Likelihood Probing for Training-Free
+Video Anomaly Detection", https://arxiv.org/abs/2609.17211 (v1, 15 Sep 2026; arXiv Comments field: "Under Review";
+no venue). Code: https://github.com/yvestine/COVAS-VAD (now served as github.com/yvestine/Probe-VAD; MIT). Checked
+2026-11-15 by opening the arXiv abstract page and the GitHub page (both HTTP 200; the abstract links the repository,
+the repository README links the arXiv page). The local clone `third_party/COVAS-VAD` is at commit dafcdd7d
+(2026-11-05). Status: **preprint under review, not peer-reviewed**; it counts only in gate-table sets A and B.
+
 Release github.com/yvestine/COVAS-VAD (`docs/METHOD.md`, `research_code/src/prompt_configs.py`). Training-free: a
 frozen video LLM answers ten ordered YES / NO questions per clip, "is the severity at least tau", tau = 0.1 … 1.0;
 p_tau = softmax over the YES / NO logits; the ten values are projected onto a non-increasing profile (pool adjacent
@@ -221,7 +228,14 @@ clips have a YES probability that rises somewhere along the thresholds (`raster_
 `clips_with_order_violation`); the projection is the release's fix for this. Outputs copied to uoa-lab1 with
 `rsync -a`; raster and evaluator on uoa-lab1.
 
-### 3.2 CoReVAD (ICPR 2026 per the release; peer-reviewed)
+### 3.2 CoReVAD (ICPR 2026; peer-reviewed)
+
+Paper: Lim, Hur, "CoReVAD: A Contextual Reasoning Framework for Training-Free Video Anomaly Detection",
+https://arxiv.org/abs/2605.23116 (v1, 22 May 2026; arXiv Comments field: "Accepted to ICPR 2026"). Code:
+https://github.com/Muk-00/CoReVAD (README: "(ICPR 2026)"). Checked 2026-11-15 by opening the arXiv abstract page and
+the GitHub page (both HTTP 200; the abstract links the repository). The ICPR 2026 proceedings page itself was not
+opened; acceptance rests on the authors' arXiv comment and README. Local clone `third_party/CoReVAD` at commit 76ea2a0
+(2026-04-28).
 
 Release github.com/Muk-00/CoReVAD (`src/ucf/LRC.py`, `src/ucf/eval_ucf.py`, `P_VLM_format.txt`). One frozen VLM per
 segment writes a binary decision line and a one-sentence description; the decisions are refined with frozen CLIP

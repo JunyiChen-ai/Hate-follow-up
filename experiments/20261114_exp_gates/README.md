@@ -177,3 +177,83 @@ verdict `z_video` as a check against the stored reads. Run: `QUESTION=hcs_taxono
 experiments/20261114_exp_gates/launch/scope_lab1.sbatch` → `runs/20261114_exp_gates/scope_reads/hcs_taxonomy_<prefix>/`.
 Compared in `gate_table.py` as forms F4 / F5 (F2 / F3 with this read in place of the protected-group read on
 HateClipSeg only). Cost if adopted: one Yes/No branch per video on the cached prefix (about 0.5 s).
+
+## 7. Integrator forms F1–F5 (main-session brief 2026-11-15)
+
+Forms fixed by the main session; no form chosen here. zT = protected-group scope read, mw = mean over windows of
+max(z_visual, z_speech), σ(x) = s.d. of x over all videos of the corpus (full method's reads; the same constants for
+every row), crank = the decoder's within-video centred rank (current m2). `gate_table.py --form F1..F5 --lam <λ>`.
+- F1: K = mw + 0.5 zv + 0.5 zT, score K + 8 crank. F2: K = mw/σ(mw) + zT/σ(zT), λ 1. F3: A = mean_w min(z_w, zT),
+  K = A/σ(A) + zT/σ(zT), λ 1. F4 / F5: F2 / F3 with HateClipSeg's zT replaced by the taxonomy read of §6 (pending
+  Slurm 2310).
+- Integrator rows (fixed): w/o Video-Level Term (K = 0); w/o Window Aggregate (K = the zT term only: F1 0.5 zT,
+  F2–F5 zT/σ(zT)); w/o Scope Read (F1 mw + 0.5 zv; F2–F5 mw/σ(mw)), listed apart and not counted in the 14; Mean over
+  Modalities (per window the mean of the available modality reads replaces the max; σ constants unchanged).
+- Reader and decoder rows as in §5.1.
+
+| form | full HateMM / HCS / DeHate (ROC / PR) | not below (14 rows) | w/o Scope Read not below | DeHate − best label-free ROC / PR | HateMM, HCS − current (ROC / PR) |
+|---|---|---|---|---|---|
+| F1 | 90.2/70.1, 73.2/69.3, 73.8/19.9 | 19 | 3 | +2.4 / +2.2 | +0.34/+0.93, −0.02/+0.32 |
+| F2 | 90.1/70.2, 72.8/69.0, 75.8/21.3 | 19 | 2 | +4.4 / +3.6 | +0.17/+0.96, −0.47/+0.04 |
+| F3 | 90.0/69.9, 71.4/68.0, 76.7/23.3 | 16 | 2 | +5.2 / +5.6 | +0.10/+0.66, −1.89/−0.95 |
+
+Tables: `runs/20261114_exp_gates/gate_table/tables/m2_prob__F{1,2,3}_l*.md`. Gate 3 fails for all three.
+- F1 equals Integrator (i) of §5.2 except for the w/o Window Aggregate row (now K = 0.5 zT only): HateMM −5.1 / −10.7,
+  HCS −5.5 / −6.0, DeHate +1.9 / +1.6 (not below).
+- w/o Window Aggregate on DeHate: F1 +1.9 / +1.6, F2 +0.6 / +1.1 (not below), F3 −0.2 / −0.9 (below, both intervals
+  contain 0). w/o Scope Read on HCS: F1 +1.8 / +2.0, F2 +2.6 / +3.0, F3 +4.0 / +4.0 (all not below).
+- Gate 2: F1 and F2 within all limits (F2 HCS ROC −0.47, limit −0.5); F3 breaks the HCS limit (−1.89 ROC).
+- Remaining not-below cells common to F1–F3: Joint Query DeHate ROC and within; Verdict Turn HateMM ROC / PR and
+  DeHate; Window Evidence DeHate ROC; Fixed Mean Duration HateMM ROC / PR and DeHate within; Linear Evidence HateMM
+  ROC / PR / within and DeHate ROC; Mean over Modalities DeHate (F1, F2) or HCS ROC and DeHate ROC (F3).
+
+## 8. Decoder D1–D4 (main-session brief 2026-11-15)
+
+Base flags = the current method. Outputs `runs/20261114_exp_gates/decoder_d/`. Code: `d1_ties.py` (new) and two
+options in `experiments/20260926_twolevel/twolevel_r2.py` (`--exact-logodds`, `--bma-kappa`; both off by default).
+
+**D1, saturation and ties of `cell_prob`** (`d1_ties.py`; cell GT = majority of its 16 4-fps frames).
+
+| decode | corpus | (a) at the 1e-12 clip | (b) tied within-video pairs | (c) GT-mixed among tied | min(p, 1−p) < 1e-6 / < 1e-9 |
+|---|---|---|---|---|---|
+| m2 | HateMM | 0 % | 0 % | — | 15.31 % / 1.86 % |
+| m2 | HCS | 0 % | 0 % | — | 7.83 % / 0.58 % |
+| m2 | DeHate | 0 % | 0 % | — | 4.58 % / 0.37 % |
+| kap0.3 | all three | 0 % | 0 % | — | ≤ 0.03 % / 0 % |
+
+No cell reaches the clip and no two cells of a video have the same value; a sizeable share is within 1e-6 of 0 or 1.
+
+**D2, exact log-odds** (`--exact-logodds`: per chain the non-hate mass = sum of g over hate == 0 states, log miss
+summed over chains, cell log-odds = log(−expm1(log miss)) − log miss, no clip). Flag off: `repro_off_1t` (one thread)
+equals `decoder_scan/main/repro` value by value (score_curve and cell_prob, max |diff| 0); with four threads the
+cell_prob differs by ≤ 8.8e-15 in 323 videos from summation order while score_curve stays identical. Flag on:
+within m2 .7799 / .6866 / .6603, fixed 80 s .7781 / .6735 / .6761, linear evidence .7958 / .6530 / .6573, identical to
+the clipped versions; on the main corpora no cell's exact log-odds differs from logit(clip(p)) by more than 1e-3. D2
+does not change any number, so D3 uses the stored cell_prob.
+
+**D3, logit average of decodes** (from `runs/20261114_exp_gates/decoder_avg/scan.json`; `d3.txt`).
+
+**D4, per-video integration over the read noise scale** (`--bma-kappa "1,0.5,0.25"`: read variance s2/κ, uniform prior
+over κ, joint (gap, hate, κ) model averaging per chain at inference, EM unchanged). Self-test against brute force over
+(κ, chain, path) inside the existing self-test: max abs difference 4.26e-14 (all tests together). `--bma-kappa 1`
+equals m2 value by value. Posterior mean κ per video (mean / median): HateMM visual .783 / .852, speech .776 / .827;
+HCS visual .885 / .990, speech .876 / .975; DeHate visual .773 / .795, speech .756 / .756. The video-level log-odds
+`lo` keeps the κ = 1 likelihood under V = 0 (it is not used by the m2 score).
+
+| decoder | HateMM | HCS | DeHate |
+|---|---|---|---|
+| reference m2 | .7799 | .6866 | .6603 |
+| reference fixed 80 s | .7781 | .6735 | .6761 |
+| reference linear evidence | .7958 | .6530 | .6573 |
+| D2 exact, m2 | .7799 | .6866 | .6603 |
+| D2 exact, fixed 80 s | .7781 | .6735 | .6761 |
+| D2 exact, linear | .7958 | .6530 | .6573 |
+| D3 S1 m2 + kap0.3 | .7887 | .6797 | .6499 |
+| D3 S2 m2 + fixed80 | .7862 | .6805 | .6760 |
+| D3 S3 m2 + kap0.3 + fixed80 | .7902 | .6773 | .6676 |
+| D3 S4 m2 + kap0.3 + fixed80 + plog | .7861 | .6848 | .6593 |
+| D4 κ ∈ {1, .5, .25} | .7931 | .6780 | .6536 |
+
+Members of D3 (within): m2 .7799 / .6866 / .6603; kap0.3 .8029 / .6484 / .6245; fixed80 .7781 / .6735 / .6761; plog
+.7775 / .7002 / .6544. No D2–D4 setting is at least m2 on HCS and at least fixed 80 s on DeHate and at least linear
+evidence on HateMM. D4 pooled ROC / PR: HateMM .8989 / .6927, HCS .7325 / .6893, DeHate .6940 / .1635.
