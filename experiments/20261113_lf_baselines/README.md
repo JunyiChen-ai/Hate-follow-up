@@ -166,3 +166,85 @@ python experiments/20261113_lf_baselines/compare.py
 - LAVAD (CVPR 2024, captions + LLM scoring + refinement) on Qwen3-VL-8B: not started; five stages to rewrite
   (`experiments/20261008_baselines/lavad/lavad_chain.py`, copied, not imported). LELA (arXiv 2602.09637,
   training-free hate localiser) has no code.
+
+## 3. More published methods on Qwen3-VL-8B (gate 1, user 2026-11-14)
+
+Gate (user, 2026-11-14; `experiments/20261114_exp_gates/README.md` §1): the best published label-free cell must be
+>= the naive Qwen3-VL-8B row on at least 7 of 9 cells, the rest at most 1 point below. §2 left 3 of 9. Mechanism
+hypothesis: none; comparison rows. Same shared rules as §2 (Qwen3-VL-8B for every call, frames at the naive row's
+image size, Whisper large-v3 words, fp32 read-out of the method's own answer, 4 fps, F2, single evaluator).
+Allowed per the brief: no component of our method goes into a baseline; the naive row is not renamed as a published
+method; labels may be used only to choose a configuration, and every configuration tried is listed.
+
+The gate table is `experiments/20261113_lf_baselines/gate.py` → `runs/20261113_lf_baselines/gate/gate.{md,json}`. It
+reports four row sets: A all published rows and every configuration tried; B only configurations fixed before the
+run; C only peer-reviewed methods; D peer-reviewed and fixed before the run. A configuration counts as one row only
+when it exists for all three corpora (no per-corpus choice).
+
+### 3.1 Probe-VAD (arXiv 2609.17211; preprint under review, not peer-reviewed)
+
+Release github.com/yvestine/COVAS-VAD (`docs/METHOD.md`, `research_code/src/prompt_configs.py`). Training-free: a
+frozen video LLM answers ten ordered YES / NO questions per clip, "is the severity at least tau", tau = 0.1 … 1.0;
+p_tau = softmax over the YES / NO logits; the ten values are projected onto a non-increasing profile (pool adjacent
+violators); clip score = their mean; Gaussian smoothing over the clip sequence; a clip's score goes to the frames from
+its centre to the next centre. Code `probevad_q3vl.py`; the ten questions share one encoded prefix per clip.
+
+Kept: clip window [c − 5 s, c + 5 s] clipped to the video, 2 fps sampling with at most 10 frames, the ten thresholds,
+single-token YES / NO at T = 1, the projection, the mean, Gaussian smoothing (scipy default, reflect), the frame
+expansion rule.
+
+Every deviation from the release (all fixed before any run):
+1. Backbone Qwen3-VL-8B (release default VideoLLaMA3-7B; the paper also reports Qwen3-VL-8B); frames at the naive
+   row's image size; YES / NO logits from an fp32 output layer.
+2. The clip's Whisper words are added to the user turn (`Transcript: <words>`, `(no speech)` when empty), as in every
+   row of §1–§2. The release sees frames only.
+3. System prompt and question: the release's sentences with the surveillance anomaly-severity scale replaced by a
+   hatefulness scale, sentence by sentence (exact text `runs/20261113_lf_baselines/probevad/<DS>/s4/prompt.txt`).
+4. Clip stride 4 s (release: one clip per 16 frames, about 0.53 s at 30 fps), for cost: about 7.5 times fewer clips.
+5. The smoothing sigma is kept in seconds (release: 10 clips of 16 frames = 5.33 s at 30 fps), i.e. 1.33 clips at
+   the 4 s stride.
+6. The ten questions are scored in one batched pass over a shared prefix cache. In-job check on the first video of
+   each corpus: largest |difference| of a YES − NO logit difference against a full forward per question 0.37–0.42
+   (logit units), from bf16 attention; not a change of method.
+
+Configurations (all three corpora each; raster `python experiments/20261113_lf_baselines/probevad_q3vl.py raster
+--dataset <DS> --sigma 5.33333 0`):
+
+| configuration | status | HateMM ROC / PR / within | HateClipSeg | DeHate |
+|---|---|---|---|---|
+| `s4/sig5.33333` (release sigma) | fixed before the run (gate default) | 84.1 / 58.3 / 62.4 | 72.3 / 69.6 / 63.9 | 71.5 / 17.6 / 64.0 |
+| `s4/sig0` (no smoothing) | extra configuration, counted as test-selected | 81.0 / 57.6 / 62.7 | 70.8 / 68.0 / 61.6 | 69.3 / 15.7 / 63.7 |
+
+Runs: uoa-lab3 (sc474398) Slurm 2302, code e53a25a (2026-11-14), HateVLM env; GPU time HateMM 26 min, HateClipSeg
+24 min, DeHate 98 min (7422 / 7128 / 28182 clips). Every cohort video scored, no F2. Before the projection, 78–86 % of
+clips have a YES probability that rises somewhere along the thresholds (`raster_stats.json`
+`clips_with_order_violation`); the projection is the release's fix for this. Outputs copied to uoa-lab1 with
+`rsync -a`; raster and evaluator on uoa-lab1.
+
+### 3.2 CoReVAD (ICPR 2026 per the release; peer-reviewed)
+
+Release github.com/Muk-00/CoReVAD (`src/ucf/LRC.py`, `src/ucf/eval_ucf.py`, `P_VLM_format.txt`). One frozen VLM per
+segment writes a binary decision line and a one-sentence description; the decisions are refined with frozen CLIP
+ViT-B/16 features: (1) Local Response Cleaning (a segment takes the response of the neighbour in [i − 1, i + 1] whose
+text embedding is closest to its mean frame embedding); (2) softmax refinement over all segments' descriptions,
+tau = 0.05; (3) Gaussian smoothing, kernel 9, sigma 5 segments; (4) multiplication by a Gaussian position weight
+centred on the middle of the video (s.d. half its length). Code `corevad_q3vl.py`.
+
+Every deviation from the release (all fixed before any run):
+1. Backbone Qwen3-VL-8B instead of InternVL2-8B; frames at the naive row's image size.
+2. The segment's Whisper words are added to the prompt input (`Transcript: <words>`).
+3. Prompt wording: "anomaly" replaced by "hateful content"; decision lines "Hateful scenes." / "Normal scenes."
+4. Segment length 8 s with 8 frames (1 fps; the naive row's unit) instead of 30 frames (about 1 s), for cost.
+5. The assistant turn starts with the opening code fence, so the decision is the first token written.
+6. Primary read-out `prob` = P(Hateful) from the fp32 output layer at the decision position (§2 shared rule); the
+   release's 0 / 1 decision is kept as `label` (declared before the run as the check read-out).
+7. CLIP frame embedding of a segment = mean over its 8 sampled frames (the release averages all frames).
+8. CLIP features are computed with the projection heads applied to the pooled outputs
+   (`text_projection(text_model(...).pooler_output)`, `visual_projection(vision_model(...).pooler_output)`): the
+   installed transformers 5.15.1 `get_*_features` returns an output object, not the projected tensor. Same features as
+   the release.
+
+Configurations: `u8/prob_lrc1_tau0.05_g9-5_pos1` (gate default, release constants) and
+`u8/label_lrc1_tau0.05_g9-5_pos1` (the release's hard decision; counted as an extra configuration by `gate.py`).
+Smoke: uoa-lab1 Slurm 2303 (2 HateMM videos, 17 segments; every answer had both lines). Full run: uoa-lab1 Slurm
+2305, code 10aec17. Results: pending.
