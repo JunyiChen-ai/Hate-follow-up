@@ -189,6 +189,31 @@ experiments/20261114_exp_gates/launch/scope_lab1.sbatch` → `runs/20261114_exp_
 Check: `z_video` of `tax_full_hcs` against the stored verdicts of the full reads (same tolerance as Slurm 2300).
 Evaluation: G3 / F4 / F5 (§7). Cost if adopted: one Yes/No branch per video on the cached prefix (about 0.5 s).
 
+**Result (Slurm 2311, uoa-lab1 sc474397, 2026-11-15, 3 min).** 118 videos on each of the three prefixes, no errors.
+`z_video` on all three prefixes equals the stored verdicts value by value (max |diff| 0, 118 / 118 each;
+`runs/20261114_exp_gates/scope_reads/tax_zvideo_check.txt`). G3 extras (`video_terms_eval.py taxonomy`, decoder m2,
+full prefix; `runs/20261114_exp_gates/gate_table/g3_hcs.md`):
+
+| HateClipSeg term | video AUC | Spearman vs positive-frame share |
+|---|---|---|
+| mw | .762 | +.616 |
+| zv | .794 | +.441 |
+| z_target (protected) | .771 | +.378 |
+| z_tax | .825 | +.500 |
+
+| K (raw, rank weight 8) | pooled ROC | pooled PR |
+|---|---|---|
+| mw | 75.5 | 72.0 |
+| mw + .75 z_tax | 76.0 | 72.0 |
+| .75 z_tax | 71.5 | 66.7 |
+| mw + .5 zv + .5 z_tax | 75.0 | 70.9 |
+| reference: mw + .75 z_target, Integrator (ii) | 72.8 | 69.0 |
+
+The taxonomy read separates hateful from non-hateful HateClipSeg videos better than the protected-group read (.825
+against .771) and better than mw and zv; its Spearman with the positive share (+.500) is below mw (+.616). In the
+frame score, mw + .75 z_tax is +3.2 ROC / +3.0 PR over the (ii) reference and +0.5 / 0.0 over mw alone.
+Development-selected (test labels read for the evaluation only).
+
 ## 7. Integrator forms F1–F5 (main-session brief 2026-11-15)
 
 Forms fixed by the main session; no form chosen here. zT = protected-group scope read, mw = mean over windows of
@@ -216,6 +241,25 @@ Tables: `runs/20261114_exp_gates/gate_table/tables/m2_prob__F{1,2,3}_l*.md`. Gat
 - Remaining not-below cells common to F1–F3: Joint Query DeHate ROC and within; Verdict Turn HateMM ROC / PR and
   DeHate; Window Evidence DeHate ROC; Fixed Mean Duration HateMM ROC / PR and DeHate within; Linear Evidence HateMM
   ROC / PR / within and DeHate ROC; Mean over Modalities DeHate (F1, F2) or HCS ROC and DeHate ROC (F3).
+
+**F4, F5, F6 (after Slurm 2311; HateClipSeg scope read = taxonomy read on each row's own prefix, HateMM and DeHate keep
+the protected-group read).** F6 = `--form raw --a 0 --b .75 --lam 8 --hcs-taxonomy` (Integrator (ii) with the taxonomy
+read on HateClipSeg). Tables `runs/20261114_exp_gates/gate_table/tables/{m2_prob__F4_l1,m2_prob__F5_l1,F6}.md`
+(1000 bootstrap draws; the two decoder rows of §9.1 included).
+
+| form | full HateMM / HCS / DeHate (ROC / PR) | not below (14 rows) | w/o Scope Read | w/o Duration Posterior | w/o EM Evidence | DeHate − best label-free ROC / PR | HateMM, HCS − current (ROC / PR) |
+|---|---|---|---|---|---|---|---|
+| F4 | 90.1/70.2, 75.6/71.4, 75.8/21.3 | 19 | 1 | 0 | 8 | +6.7 / +3.6 | +0.17/+0.96, +2.30/+2.42 |
+| F5 | 90.0/69.9, 75.3/70.8, 76.7/23.3 | 15 | 2 | 0 | 8 | +7.5 / +5.6 | +0.10/+0.66, +2.07/+1.86 |
+| F6 | 90.0/70.1, 76.0/72.0, 76.0/21.6 | 19 | 1 | 0 | 8 | +6.8 / +3.9 | +0.12/+0.84, +2.69/+3.00 |
+
+- Gate 2 holds for all three (DeHate margins ≥ +2; HateMM and HCS not below current; within unchanged by construction).
+- Gate 3 fails for all three. F5 has the fewest not-below cells (15; 8 of 14 rows below on every cell). Remaining in
+  F5: Joint Query DeHate ROC / within; Verdict Turn HateMM ROC / PR, DeHate ROC / within; Window Evidence DeHate ROC;
+  Fixed Mean Duration HateMM ROC / PR, DeHate within; Linear Evidence HateMM ROC / PR / within, DeHate ROC; Mean over
+  Modalities DeHate ROC. These are reader and decoder rows; the Integrator does not change their within cells.
+- With the taxonomy read, `w/o Scope Read` on HateClipSeg drops in ROC under F4–F6 (−0.1 / −0.1 / −0.4, intervals
+  contain 0); under F2 / F3 it rose by 2.6 / 4.0.
 
 ## 8. Decoder D1–D4 (main-session brief 2026-11-15)
 
