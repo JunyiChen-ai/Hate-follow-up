@@ -36,14 +36,11 @@ SCOPE_QUESTION = ("Is the hostile or demeaning content in this video aimed at a 
                   "\n\nAnswer \"No\" if it is aimed only at specific individuals, public figures, officials, "
                   "organizations, or groups not defined by a protected attribute, or if the video has no hostile content."
                   "\n\nAnswer \"Yes\" or \"No\".")
-# Question written from HateClipSeg's own label taxonomy (README §6; categories [Normal, Hateful, Insulting, Sexual,
-# Violence, Self-Harm], the order of scripts/build_gt_4fps_hate_only.py from the HateClipSeg paper). Fixed before the run.
-HCS_TAXONOMY_QUESTION = ("Does this video contain content of any of these kinds: hateful content (attacking or demeaning "
-                         "people because of a protected attribute such as race, ethnicity, religion, gender, sexual "
-                         "orientation or disability), insulting content (insults, mockery or verbal abuse aimed at "
-                         "people), sexual content, violent content, or self-harm content?"
-                         "\n\nAnswer \"No\" if the video contains none of these kinds of content."
-                         "\n\nAnswer \"Yes\" or \"No\".")
+# Question from HateClipSeg's own label dimensions (README §6; scripts/build_gt_4fps_hate_only.py line 10, order
+# [Normal, Hateful, Insulting, Sexual, Violence, Self-Harm] from the HateClipSeg paper). Text fixed by the main session
+# (brief 3, 2026-11-15) before the run; no glosses.
+HCS_TAXONOMY_QUESTION = ("Does this video contain content of any of these kinds: hateful, insulting, sexual, violence, "
+                         "or self-harm?\n\nAnswer \"No\" if the video contains none of these.\n\nAnswer \"Yes\" or \"No\".")
 QUESTIONS = {"protected": SCOPE_QUESTION, "hcs_taxonomy": HCS_TAXONOMY_QUESTION}
 VARIANTS = {"full": (True, True), "no_transcript": (False, True), "no_prefix_frames": (True, False)}
 

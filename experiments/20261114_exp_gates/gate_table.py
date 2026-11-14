@@ -198,7 +198,7 @@ class Store:
 
     def scope(self, sp, ds):
         if self.taxonomy and ds == "HateClipSeg":      # F4 / F5: HateClipSeg's own-taxonomy question (README §6)
-            path = f"runs/20261114_exp_gates/scope_reads/hcs_taxonomy_{sp}/reads.jsonl"
+            path = f"runs/20261114_exp_gates/scope_reads/tax_{sp}_hcs/reads.jsonl"
         else:
             path = SCOPE[sp][PART[ds]]
         return self.get(("scope", sp, ds, self.taxonomy), lambda: {v: r["z_target"] for v, r in by_video(path, ds).items()})

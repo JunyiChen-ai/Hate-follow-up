@@ -155,28 +155,37 @@ EXISTING, the reader-ablation reads and compositions, `runs/20261114_exp_gates/s
 are reported, not adopted). The Integrator forms (iii)/(iv) and the averaging scan were chosen after seeing the
 earlier test numbers of §2; every configuration run is listed above.
 
-## 6. Exploratory read: a HateClipSeg scope question from the dataset's own label taxonomy (B4; written before the run)
+## 6. Exploratory read: a HateClipSeg scope question from the dataset's own label taxonomy (G1 / B4; written before the run)
 
 Status: exploratory, waits for the user's decision; the method is not changed. HateClipSeg labels each segment with
-six categories, in this order (`scripts/build_gt_4fps_hate_only.py`, which cites the HateClipSeg paper; the CSV
-`~/data/HateClipSeg/Dataset/segment_level_annotation.csv` stores only the six-bit vectors, no names): Normal, Hateful,
-Insulting, Sexual, Violence, Self-Harm. The protocol GT counts a frame positive when any of the five non-normal
-categories is set. Question, fixed 2026-11-15 before any read (`scope_read.py` `HCS_TAXONOMY_QUESTION`):
+six categories, in this order (`scripts/build_gt_4fps_hate_only.py` line 10, from the HateClipSeg paper, arXiv
+2508.01712; the CSV `~/data/HateClipSeg/Dataset/segment_level_annotation.csv` stores only the six-bit vectors): Normal,
+Hateful, Insulting, Sexual, Violence, Self-Harm. The protocol GT counts a frame positive when any of the five
+non-normal categories is set.
 
-> Does this video contain content of any of these kinds: hateful content (attacking or demeaning people because of a
-> protected attribute such as race, ethnicity, religion, gender, sexual orientation or disability), insulting content
-> (insults, mockery or verbal abuse aimed at people), sexual content, violent content, or self-harm content?
+**Mechanism hypothesis** (main session, brief 3): HateClipSeg's ground truth counts all five kinds as positive; the
+protected-group question covers only the first. A video-level read that states the benchmark's positive class should
+order HateClipSeg videos better than the protected-group read and at least as well as the mean window read.
+
+**Question** (text fixed by the main session, brief 3, 2026-11-15, before any read; `scope_read.py`
+`HCS_TAXONOMY_QUESTION`, `--question hcs_taxonomy`; category names as the label dimensions, no glosses):
+
+> Does this video contain content of any of these kinds: hateful, insulting, sexual, violence, or self-harm?
 >
-> Answer "No" if the video contains none of these kinds of content.
+> Answer "No" if the video contains none of these.
 >
 > Answer "Yes" or "No".
 
-Read: one isolated Yes/No branch per HateClipSeg test video (118) on three prefixes (full, `no_transcript`,
-`no_prefix_frames`; the last two feed the two reader ablation rows under F4 / F5), stored as `z_target` with the
-verdict `z_video` as a check against the stored reads. Run: `QUESTION=hcs_taxonomy sbatch
-experiments/20261114_exp_gates/launch/scope_lab1.sbatch` → `runs/20261114_exp_gates/scope_reads/hcs_taxonomy_<prefix>/`.
-Compared in `gate_table.py` as forms F4 / F5 (F2 / F3 with this read in place of the protected-group read on
-HateClipSeg only). Cost if adopted: one Yes/No branch per video on the cached prefix (about 0.5 s).
+An earlier text with a gloss per category was committed on 2026-11-15 (commits 2640be9, then a three-prefix variant)
+and submitted as Slurm 2309 / 2310; both jobs were cancelled while pending, before any read, and the text was replaced
+by the one above. No read with the earlier text exists.
+
+**Run.** One isolated Yes/No branch per HateClipSeg test video (118) on three prefixes (full, `no_transcript`,
+`no_prefix_frames`; the last two feed the two reader ablation rows), stored as `z_target`, with the verdict
+`z_video` on the same prefix as a check against the stored reads. `QUESTION=hcs_taxonomy sbatch
+experiments/20261114_exp_gates/launch/scope_lab1.sbatch` → `runs/20261114_exp_gates/scope_reads/tax_<prefix>_hcs/`.
+Check: `z_video` of `tax_full_hcs` against the stored verdicts of the full reads (same tolerance as Slurm 2300).
+Evaluation: G3 / F4 / F5 (§7). Cost if adopted: one Yes/No branch per video on the cached prefix (about 0.5 s).
 
 ## 7. Integrator forms F1–F5 (main-session brief 2026-11-15)
 

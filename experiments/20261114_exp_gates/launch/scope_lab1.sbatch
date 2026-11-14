@@ -20,7 +20,7 @@ VLM=/home/jehc223/Hate-follow-up/.cache/envs/HateVLM/bin/python
 SFX=${LIMIT:+_smoke}
 if [ "${QUESTION:-protected}" = hcs_taxonomy ]; then   # README §6: HateClipSeg only, full prefix
   for v in full no_transcript no_prefix_frames; do
-    $VLM -u experiments/20261114_exp_gates/scope_read.py --run-name hcs_taxonomy_${v}$SFX --variant $v --question hcs_taxonomy \
+    $VLM -u experiments/20261114_exp_gates/scope_read.py --run-name tax_${v}_hcs$SFX --variant $v --question hcs_taxonomy \
         --datasets HateClipSeg ${LIMIT:+--limit $LIMIT} || { echo "FAILED hcs_taxonomy $v"; exit 1; }
   done
   echo SCOPE_READ_DONE; exit 0
