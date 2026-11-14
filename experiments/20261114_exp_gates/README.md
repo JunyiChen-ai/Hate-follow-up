@@ -193,8 +193,7 @@ Forms fixed by the main session; no form chosen here. zT = protected-group scope
 max(z_visual, z_speech), σ(x) = s.d. of x over all videos of the corpus (full method's reads; the same constants for
 every row), crank = the decoder's within-video centred rank (current m2). `gate_table.py --form F1..F5 --lam <λ>`.
 - F1: K = mw + 0.5 zv + 0.5 zT, score K + 8 crank. F2: K = mw/σ(mw) + zT/σ(zT), λ 1. F3: A = mean_w min(z_w, zT),
-  K = A/σ(A) + zT/σ(zT), λ 1. F4 / F5: F2 / F3 with HateClipSeg's zT replaced by the taxonomy read of §6 (pending
-  Slurm 2310).
+  K = A/σ(A) + zT/σ(zT), λ 1. F4 / F5: F2 / F3 with HateClipSeg's zT replaced by the taxonomy read of §6 (Slurm 2311).
 - Integrator rows (fixed): w/o Video-Level Term (K = 0); w/o Window Aggregate (K = the zT term only: F1 0.5 zT,
   F2–F5 zT/σ(zT)); w/o Scope Read (F1 mw + 0.5 zv; F2–F5 mw/σ(mw)), listed apart and not counted in the 14; Mean over
   Modalities (per window the mean of the available modality reads replaces the max; σ constants unchanged).
@@ -266,3 +265,35 @@ HCS visual .885 / .990, speech .876 / .975; DeHate visual .773 / .795, speech .7
 Members of D3 (within): m2 .7799 / .6866 / .6603; kap0.3 .8029 / .6484 / .6245; fixed80 .7781 / .6735 / .6761; plog
 .7775 / .7002 / .6544. No D2–D4 setting is at least m2 on HCS and at least fixed 80 s on DeHate and at least linear
 evidence on HateMM. D4 pooled ROC / PR: HateMM .8989 / .6927, HCS .7325 / .6893, DeHate .6940 / .1635.
+
+## 10. Video-level ordinal read on our Reader's prefix (brief 4 H2–H3; written before the run)
+
+Origin: Probe-VAD (arXiv 2609.17211) was excluded as a baseline by the user on 2026-11-15 ("不要这个 Probe-VAD 但是记下它的方法
+它可以用来refine我们的method"); its probing (ten ordered "at least tau" Yes/No questions, monotone projection, mean) is
+tested here on the whole video, inside our method. (The brief called this §7; §7 already holds F1–F5.)
+
+**Mechanism hypothesis** (main session, brief 4): one Yes / No margin measures confidence at a single implicit
+threshold; ten ordered "at least tau" probes give the expected severity. A graded severity read should order videos
+better across a corpus than the verdict margin, and it gives offensive-but-not-protected-target content a middle value
+instead of a No, which fits HateClipSeg's ground truth and DeHate's at once.
+
+**Read** (`ordinal_read.py`, `launch/ordinal_lab1.sbatch`; uoa-lab1). Prefix = the adopted Reader's prefix, unchanged
+(rules + 20 frames + transcript), same prefix cache as `z_video`. Per video, isolated branches, each on its own copy
+of the cache, read one by one (no batching, so no batched-vs-single check is needed): `z_video` (verdict question,
+checked against the stored verdicts with |diff| ≤ 1e-3, the tolerance of Slurm 2300, where the observed difference was
+0.0), `z_target` (protected-group scope question) and ten ordinal branches. Question text, fixed by the main session
+before the run, tau = 0.1, 0.2, …, 1.0 printed with one decimal:
+
+> Use an ordered hatefulness scale from 0 to 1: 0 means ordinary non-hateful content; 0.5 means clearly concerning or
+> plausibly hateful content; 1 means unmistakably severe, explicit hateful content. Intermediate values preserve this
+> order.
+>
+> On this scale, is the hatefulness of this video at least {tau}?
+>
+> Answer "Yes" or "No".
+
+Output `runs/20261114_exp_gates/ordinal_reads/ord_full_{main,dehate}/reads.jsonl`: `m_ord` (ten Yes − No margins),
+`z_video`, `z_target`. Derived on CPU without labels: p_tau = sigmoid(m_tau); non-increasing projection over tau
+(pool adjacent violators); s = mean of the ten projected values; z_ord = logit(clip(s, 1e-4, 1 − 1e-4)); s_raw = mean
+of the unprojected p_tau; z_mean = mean of the ten margins. Cost if adopted: ten more Yes/No branches per video on the
+cached prefix (about 1–2 s per video).

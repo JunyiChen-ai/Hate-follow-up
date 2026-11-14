@@ -183,6 +183,10 @@ when it exists for all three corpora (no per-corpus choice).
 
 ### 3.1 Probe-VAD (arXiv 2609.17211; preprint under review, not peer-reviewed)
 
+**Excluded as a baseline (user, 2026-11-15). Kept as a record; the probing method is tested inside our method,
+`experiments/20261114_exp_gates/README.md` §10.** (User: "不要这个 Probe-VAD 但是记下它的方法 它可以用来refine我们的method".)
+`gate.py` no longer reads its rows; its runs stay on disk under `runs/20261113_lf_baselines/probevad/`.
+
 Paper: Gu, Zhao, Guo, Zhong, Zhang, Lyu, Zhao, Xie, Shan, "Probe-VAD: Ordinal Likelihood Probing for Training-Free
 Video Anomaly Detection", https://arxiv.org/abs/2609.17211 (v1, 15 Sep 2026; arXiv Comments field: "Under Review";
 no venue). Code: https://github.com/yvestine/COVAS-VAD (now served as github.com/yvestine/Probe-VAD; MIT). Checked

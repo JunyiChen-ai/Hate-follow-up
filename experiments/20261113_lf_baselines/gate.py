@@ -31,12 +31,14 @@ CELLS = [(ds, k) for ds in C.DATASETS for k in range(3)]
 KEY_NAMES = ("pooled ROC", "pooled PR", "within")
 # method directory -> (display name, peer-reviewed venue or None for a preprint, default <variant>/<config>)
 METHODS = {
-    "probevad": ("Probe-VAD", None, "s4/sig5.33333"),
     "corevad": ("CoReVAD", "ICPR 2026", "u8/prob_lrc1_tau0.05_g9-5_pos1"),
     "cogvadu": ("Cog-VADU", "TMLR 2026", "s4/prob_default"),
     "lavad": ("LAVAD", "CVPR 2024", "prob_default"),
     "lela": ("LELA", None, "prob_default"),
 }
+# Run and then excluded as a baseline by the user on 2026-11-15 (README §3.1); not read into any row set.
+EXCLUDED_NOTE = ("Probe-VAD (arXiv 2609.17211) was run and then excluded as a baseline by the user on 2026-11-15; "
+                 "numbers in README §3.1.")
 PEER_REVIEWED_MAIN = {"ZS-CLIP", "ZS-ImageBind", "LAVAD", "EventVAD", "PRISM", "VideoMind",
                       "MARS, fp32 label log-odds", "EventVAD, fp32 expected score"}
 
@@ -107,6 +109,8 @@ def main():
         g = gate(sub, naive)
         res[title[:1]] = g
         lines += fmt(title, g)
+    lines.append(EXCLUDED_NOTE)
+    lines.append("")
     lines.append("### Rows read")
     lines.append("")
     lines.append("| row | HateMM ROC / PR / within | HateClipSeg ROC / PR / within | DeHate ROC / PR / within | cells >= naive |")
