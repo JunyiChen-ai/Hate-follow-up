@@ -18,6 +18,11 @@ export PYTORCH_ALLOC_CONF=expandable_segments:True
 hostname; nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
 VLM=/home/jehc223/Hate-follow-up/.cache/envs/HateVLM/bin/python
 SFX=${LIMIT:+_smoke}
+if [ "${QUESTION:-protected}" = hcs_taxonomy ]; then   # README §6: HateClipSeg only, full prefix
+  $VLM -u experiments/20261114_exp_gates/scope_read.py --run-name hcs_taxonomy_full$SFX --variant full --question hcs_taxonomy \
+      --datasets HateClipSeg ${LIMIT:+--limit $LIMIT} || { echo "FAILED hcs_taxonomy"; exit 1; }
+  echo SCOPE_READ_DONE; exit 0
+fi
 for v in ${VARIANTS:-no_transcript no_prefix_frames}; do
   $VLM -u experiments/20261114_exp_gates/scope_read.py --run-name ${v}_main$SFX --variant $v ${LIMIT:+--limit $LIMIT} || { echo "FAILED $v main"; exit 1; }
   $VLM -u experiments/20261114_exp_gates/scope_read.py --run-name ${v}_dehate$SFX --variant $v --datasets DeHate \

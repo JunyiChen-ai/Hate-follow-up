@@ -36,11 +36,20 @@ SCOPE_QUESTION = ("Is the hostile or demeaning content in this video aimed at a 
                   "\n\nAnswer \"No\" if it is aimed only at specific individuals, public figures, officials, "
                   "organizations, or groups not defined by a protected attribute, or if the video has no hostile content."
                   "\n\nAnswer \"Yes\" or \"No\".")
+# Question written from HateClipSeg's own label taxonomy (README §6; categories [Normal, Hateful, Insulting, Sexual,
+# Violence, Self-Harm], the order of scripts/build_gt_4fps_hate_only.py from the HateClipSeg paper). Fixed before the run.
+HCS_TAXONOMY_QUESTION = ("Does this video contain content of any of these kinds: hateful content (attacking or demeaning "
+                         "people because of a protected attribute such as race, ethnicity, religion, gender, sexual "
+                         "orientation or disability), insulting content (insults, mockery or verbal abuse aimed at "
+                         "people), sexual content, violent content, or self-harm content?"
+                         "\n\nAnswer \"No\" if the video contains none of these kinds of content."
+                         "\n\nAnswer \"Yes\" or \"No\".")
+QUESTIONS = {"protected": SCOPE_QUESTION, "hcs_taxonomy": HCS_TAXONOMY_QUESTION}
 VARIANTS = {"full": (True, True), "no_transcript": (False, True), "no_prefix_frames": (True, False)}
 
 
 @torch.no_grad()
-def score_video(judge, row, segments, frames_k, variant):
+def score_video(judge, row, segments, frames_k, variant, question=SCOPE_QUESTION):
     frames = frame_paths(row["dataset"], row["video_id"], frames_k, "k20")
     if not frames:
         return {"dataset": row["dataset"], "video_id": row["video_id"], "error": "no frames cached"}
@@ -51,7 +60,7 @@ def score_video(judge, row, segments, frames_k, variant):
     _, enc = judge.encode_prefix(msgs, image_files)
     cache = judge.prefix_cache(enc)
     out = {}
-    for name, q in (("z_video", VIDEO_QUESTION), ("z_target", SCOPE_QUESTION)):
+    for name, q in (("z_video", VIDEO_QUESTION), ("z_target", question)):
         bids, _ = judge.branch_ids(msgs, q)
         out[name] = judge.cached_margin(cache, bids, in_place=False)
     n_tok = int(enc["input_ids"].shape[1])
@@ -69,6 +78,8 @@ def main():
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--frames", type=int, default=20)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--question", choices=list(QUESTIONS), default="protected",
+                    help="scope question stored as z_target (hcs_taxonomy: HateClipSeg's own categories)")
     ap.add_argument("--out-root", default=str(ROOT / "runs/20261114_exp_gates/scope_reads"))
     args = ap.parse_args()
     torch.manual_seed(SEED)
@@ -86,20 +97,22 @@ def main():
     import transformers
     (out_dir / "config.json").write_text(json.dumps(
         {**vars(args), "code_path": CODE_PATH, "date": time.strftime("%Y-%m-%d"), "host": socket.gethostname(),
-         "seed": SEED, "video_question": VIDEO_QUESTION, "scope_question": SCOPE_QUESTION,
+         "seed": SEED, "video_question": VIDEO_QUESTION, "scope_question": QUESTIONS[args.question],
          "transformers": transformers.__version__, "torch": torch.__version__}, indent=2, ensure_ascii=False))
     pred_path = out_dir / "reads.jsonl"
     done = set()
     if pred_path.exists():
         done = {(r["dataset"], r["video_id"]) for r in map(json.loads, open(pred_path)) if not r.get("error")}
-    logging.info("videos %d (already done %d) variant %s model %s", len(rows), len(done), args.variant, args.model)
+    logging.info("videos %d (already done %d) variant %s question %s model %s", len(rows), len(done), args.variant,
+                 args.question, args.model)
     n_err, t0 = 0, time.time()
     with open(pred_path, "a") as fh:
         for n, row in enumerate(rows):
             if (row["dataset"], row["video_id"]) in done:
                 continue
             try:
-                rec = score_video(judge, row, asr[row["dataset"]].get(row["video_id"], []), args.frames, args.variant)
+                rec = score_video(judge, row, asr[row["dataset"]].get(row["video_id"], []), args.frames, args.variant,
+                                  QUESTIONS[args.question])
             except Exception as e:  # noqa: BLE001  (one failed video must not stop the corpus; it is counted)
                 rec = {"dataset": row["dataset"], "video_id": row["video_id"], "error": f"{type(e).__name__}: {e}"}
             n_err += bool(rec.get("error"))

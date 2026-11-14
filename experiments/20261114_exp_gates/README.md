@@ -154,3 +154,25 @@ EXISTING, the reader-ablation reads and compositions, `runs/20261114_exp_gates/s
 `runs/20260927_dvd/reads_*`, the naive and Probe-VAD predictions. Found: §5.2–§5.3. Design changed: none (candidates
 are reported, not adopted). The Integrator forms (iii)/(iv) and the averaging scan were chosen after seeing the
 earlier test numbers of §2; every configuration run is listed above.
+
+## 6. Exploratory read: a HateClipSeg scope question from the dataset's own label taxonomy (B4; written before the run)
+
+Status: exploratory, waits for the user's decision; the method is not changed. HateClipSeg labels each segment with
+six categories, in this order (`scripts/build_gt_4fps_hate_only.py`, which cites the HateClipSeg paper; the CSV
+`~/data/HateClipSeg/Dataset/segment_level_annotation.csv` stores only the six-bit vectors, no names): Normal, Hateful,
+Insulting, Sexual, Violence, Self-Harm. The protocol GT counts a frame positive when any of the five non-normal
+categories is set. Question, fixed 2026-11-15 before any read (`scope_read.py` `HCS_TAXONOMY_QUESTION`):
+
+> Does this video contain content of any of these kinds: hateful content (attacking or demeaning people because of a
+> protected attribute such as race, ethnicity, religion, gender, sexual orientation or disability), insulting content
+> (insults, mockery or verbal abuse aimed at people), sexual content, violent content, or self-harm content?
+>
+> Answer "No" if the video contains none of these kinds of content.
+>
+> Answer "Yes" or "No".
+
+Read: one isolated Yes/No branch on the full Reader prefix per HateClipSeg test video (118), stored as `z_target`
+with the verdict `z_video` as a check against the stored reads. Run: `QUESTION=hcs_taxonomy sbatch
+experiments/20261114_exp_gates/launch/scope_lab1.sbatch` → `runs/20261114_exp_gates/scope_reads/hcs_taxonomy_full/`.
+Compared in `gate_table.py` as forms F4 / F5 (F2 / F3 with this read in place of the protected-group read on
+HateClipSeg only). Cost if adopted: one Yes/No branch per video on the cached prefix (about 0.5 s).
