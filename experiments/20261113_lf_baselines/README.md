@@ -265,7 +265,22 @@ Every deviation from the release (all fixed before any run):
 Configurations: `u8/prob_lrc1_tau0.05_g9-5_pos1` (gate default, release constants) and
 `u8/label_lrc1_tau0.05_g9-5_pos1` (the release's hard decision; counted as an extra configuration by `gate.py`).
 Smoke: uoa-lab1 Slurm 2303 (2 HateMM videos, 17 segments; every answer had both lines). Full run: uoa-lab1 Slurm
-2305, code 10aec17. Results: pending.
+2305, code 10aec17, host sc474397, HateVLM env (vLLM generation, then fp32 HF read-out). GPU time (generation +
+read-out): HateMM 15 + 20 min, HateClipSeg 16 + 20 min, DeHate 62 + 95 min (3768 / 3591 / 14375 segments). Every
+cohort video scored (215 / 118 / 1151), every answer had a decision line, no video truncated (`raster_stats.json`).
+Raster and evaluator on uoa-lab1 (`corevad_q3vl.py raster`); metrics from the evaluator's `metrics.json` under
+`runs/20261113_lf_baselines/corevad/<DS>/u8/<config>/`.
+
+| configuration | status | HateMM ROC / PR / within | HateClipSeg | DeHate |
+|---|---|---|---|---|
+| `u8/prob_lrc1_tau0.05_g9-5_pos1` | fixed before the run (gate default) | 76.5 / 44.5 / 72.9 | 70.2 / 66.8 / 57.1 | 63.9 / 12.1 / 58.1 |
+| `u8/label_lrc1_tau0.05_g9-5_pos1` | extra configuration, counted as test-selected | 76.2 / 44.1 / 71.7 | 70.1 / 66.6 / 58.2 | 62.9 / 11.8 / 55.5 |
+
+Against the naive Qwen3-VL-8B row (81.0 / 55.3 / 61.8, 70.6 / 67.4 / 61.2, 69.1 / 17.7 / 60.5) CoReVAD is higher only
+on HateMM within (+11.2); HateClipSeg pooled ROC / PR are 0.3 / 0.6 points below. Gate 1 after adding CoReVAD
+(`runs/20261113_lf_baselines/gate/gate.md`): 3 of 9 cells in all four row sets (A–D), largest shortfall 2.53 points
+(HateMM pooled PR); gate 1 fails. CoReVAD supplies the best published cell on HateMM within and HateClipSeg pooled
+ROC / PR.
 
 ### 3.3 AnyAnomaly (WACV 2026; written before the run)
 
