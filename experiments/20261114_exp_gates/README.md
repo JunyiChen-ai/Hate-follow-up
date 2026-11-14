@@ -307,6 +307,9 @@ Without EM, within is higher than m2 on HateMM (+.006) and DeHate (+.011) and .0
 most .0002. As an ablation row ("w/o EM Evidence") it is not below the full method on most cells.
 `gate_table.py` lists both rows (`w/o Duration Posterior` = `--bma-weights prior`, `w/o EM Evidence` = `--em-iters 0`)
 apart from the 14, like `w/o Scope Read`, in every table from now on.
+Current Integrator with these rows (`gate_table/tables/current_j1.md`, 1000 bootstrap draws): 14-row count unchanged
+(24); cells not below: `w/o Duration Posterior` 5 of 9 (within drops −4.8 / −0.8 / −1.3, HCS and DeHate intervals
+contain 0), `w/o EM Evidence` 8 of 9 (only HCS within drops, −0.1, interval contains 0).
 
 ## 10. Video-level ordinal read on our Reader's prefix (brief 4 H2–H3; written before the run)
 
