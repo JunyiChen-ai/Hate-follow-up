@@ -266,6 +266,24 @@ Members of D3 (within): m2 .7799 / .6866 / .6603; kap0.3 .8029 / .6484 / .6245; 
 .7775 / .7002 / .6544. No D2–D4 setting is at least m2 on HCS and at least fixed 80 s on DeHate and at least linear
 evidence on HateMM. D4 pooled ROC / PR: HateMM .8989 / .6927, HCS .7325 / .6893, DeHate .6940 / .1635.
 
+## 9. Decoder row "duration weights from the prior only" (brief 3 G2)
+
+`twolevel_r2.py --bma-weights prior` (default `posterior` = unchanged): at the final inference pass the per-video
+average over the (gap, hate) grid uses the prior weights only (uniform in length, same grid and bounds); the pair
+likelihoods do not enter the weights; EM unchanged (posterior weights). Runs `runs/20261114_exp_gates/decoder_d/
+{main,dehate}/wprior` (decode.sh base flags + `--bma-weights prior`; one thread). Plumbing (`g2.txt`): the default
+flag equals `decoder_scan/main/repro` value by value; `--bma-weights prior --bma-fixed 80` equals the stored fixed80
+decodes value by value (main and DeHate).
+
+| decoder | HateMM ROC / PR / within | HCS | DeHate |
+|---|---|---|---|
+| m2 (current) | .8989 / .6921 / .7799 | .7327 / .6895 / .6866 | .6940 / .1636 / .6603 |
+| fixed 80 s | .8987 / .6921 / .7781 | .7324 / .6887 / .6735 | .6938 / .1633 / .6761 |
+| prior weights only | .8985 / .6901 / .7316 | .7325 / .6890 / .6787 | .6939 / .1636 / .6476 |
+
+With prior weights only, within drops on all three corpora against m2 (−.048 / −.008 / −.013) and is below fixed 80 s
+on DeHate. As an ablation row ("w/o duration posterior") it would drop every within cell; pooled moves by at most .002.
+
 ## 10. Video-level ordinal read on our Reader's prefix (brief 4 H2–H3; written before the run)
 
 Origin: Probe-VAD (arXiv 2609.17211) was excluded as a baseline by the user on 2026-11-15 ("不要这个 Probe-VAD 但是记下它的方法
