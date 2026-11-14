@@ -171,8 +171,9 @@ categories is set. Question, fixed 2026-11-15 before any read (`scope_read.py` `
 >
 > Answer "Yes" or "No".
 
-Read: one isolated Yes/No branch on the full Reader prefix per HateClipSeg test video (118), stored as `z_target`
-with the verdict `z_video` as a check against the stored reads. Run: `QUESTION=hcs_taxonomy sbatch
-experiments/20261114_exp_gates/launch/scope_lab1.sbatch` → `runs/20261114_exp_gates/scope_reads/hcs_taxonomy_full/`.
+Read: one isolated Yes/No branch per HateClipSeg test video (118) on three prefixes (full, `no_transcript`,
+`no_prefix_frames`; the last two feed the two reader ablation rows under F4 / F5), stored as `z_target` with the
+verdict `z_video` as a check against the stored reads. Run: `QUESTION=hcs_taxonomy sbatch
+experiments/20261114_exp_gates/launch/scope_lab1.sbatch` → `runs/20261114_exp_gates/scope_reads/hcs_taxonomy_<prefix>/`.
 Compared in `gate_table.py` as forms F4 / F5 (F2 / F3 with this read in place of the protected-group read on
 HateClipSeg only). Cost if adopted: one Yes/No branch per video on the cached prefix (about 0.5 s).
