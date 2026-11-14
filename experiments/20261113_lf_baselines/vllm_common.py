@@ -121,7 +121,7 @@ class Engine:
     """A Qwen model in vLLM (vision-language by default, `text_only` for a text LLM such as Qwen3-8B, whose chat
     template is applied with thinking off), greedy, sample log-probabilities on request."""
 
-    def __init__(self, model=MODEL, max_model_len=16384, max_images=20, text_only=False, log=print):
+    def __init__(self, model=MODEL, max_model_len=16384, max_images=20, text_only=False, log=print, gpu_mem=0.90):
         import vllm.multimodal.hasher as H
         from transformers import AutoProcessor, AutoTokenizer
         from vllm import LLM
@@ -140,12 +140,12 @@ class Engine:
         if text_only:
             self.processor = None
             self.tokenizer = AutoTokenizer.from_pretrained(model)
-            self.llm = LLM(model=model, dtype="bfloat16", max_model_len=max_model_len, gpu_memory_utilization=0.90,
+            self.llm = LLM(model=model, dtype="bfloat16", max_model_len=max_model_len, gpu_memory_utilization=gpu_mem,
                            enable_prefix_caching=False, seed=0)
         else:
             self.processor = AutoProcessor.from_pretrained(model)
             self.tokenizer = self.processor.tokenizer
-            self.llm = LLM(model=model, dtype="bfloat16", max_model_len=max_model_len, gpu_memory_utilization=0.90,
+            self.llm = LLM(model=model, dtype="bfloat16", max_model_len=max_model_len, gpu_memory_utilization=gpu_mem,
                            enable_prefix_caching=False, mm_processor_cache_gb=0,
                            limit_mm_per_prompt={"image": max_images, "video": 0}, seed=0)
         # start-up profiling uses synthetic images that vLLM keys internally; the guard is armed afterwards, so no

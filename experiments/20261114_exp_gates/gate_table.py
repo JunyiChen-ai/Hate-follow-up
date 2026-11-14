@@ -126,6 +126,25 @@ def gt(ds):
     return {str(v): np.asarray(y, np.int8) for v, s, y in zip(z["video_ids"], z["split"], z["y4"]) if str(s) == "test"}
 
 
+ORD = {"main": "runs/20261114_exp_gates/ordinal_reads/ord_full_main/reads.jsonl",
+       "dehate": "runs/20261114_exp_gates/ordinal_reads/ord_full_dehate/reads.jsonl"}
+
+
+def ordinal_terms(m):
+    """(z_ord, logit(s_raw), z_mean) from the ten ordinal margins (README §10): p = sigmoid(m), non-increasing
+    projection over tau (pool adjacent violators), s = mean; z_ord = logit(clip(s, 1e-4, 1 - 1e-4))."""
+    from sklearn.isotonic import IsotonicRegression
+    m = np.asarray(m, float)
+    p = 1.0 / (1.0 + np.exp(-m))
+    q = IsotonicRegression(increasing=False).fit_transform(np.arange(len(p)), p)
+    lg = lambda x: float(np.log(x) - np.log1p(-x))
+    return lg(np.clip(q.mean(), 1e-4, 1 - 1e-4)), lg(np.clip(p.mean(), 1e-4, 1 - 1e-4)), float(m.mean())
+
+
+def z_ord(m):
+    return ordinal_terms(m)[0]
+
+
 def centered_rank(v):     # experiments/20260926_twolevel/twolevel.py centered_rank (copied; no cross-experiment import)
     v = np.asarray(v, float)
     if len(v) <= 1 or np.ptp(v) <= 1e-12:
@@ -183,8 +202,8 @@ def needed_decodes(comps):
 # ------------------------------------------------------------------------------------------------ rows
 
 class Store:
-    def __init__(self, comps, combine, taxonomy=False):
-        self.comps, self.combine, self.taxonomy = comps, combine, taxonomy
+    def __init__(self, comps, combine, taxonomy=False, scope_src="protected"):
+        self.comps, self.combine, self.taxonomy, self.scope_src = comps, combine, taxonomy, scope_src
         self.gt = {ds: gt(ds) for ds in DATASETS}
         self._c = {}
 
@@ -197,7 +216,13 @@ class Store:
         return self.get(("reads", rs, ds), lambda: by_video(f"{READS[rs][PART[ds]]}/predictions.jsonl", ds))
 
     def scope(self, sp, ds):
-        if self.taxonomy and ds == "HateClipSeg":      # F4 / F5: HateClipSeg's own-taxonomy question (README §6)
+        """video -> scope read. Default: the protected-group read on prefix `sp`. taxonomy: HateClipSeg's own-taxonomy
+        read (README §6) on HateClipSeg. ordinal: z_ord of the video-level ordinal read (README §10), full prefix only,
+        so the two ablated-prefix rows borrow the full-prefix value."""
+        if self.scope_src == "ordinal":
+            path = ORD[PART[ds]]
+            return self.get(("scope", "ord", ds), lambda: {v: z_ord(r["m_ord"]) for v, r in by_video(path, ds).items()})
+        if self.taxonomy and ds == "HateClipSeg":
             path = f"runs/20261114_exp_gates/scope_reads/tax_{sp}_hcs/reads.jsonl"
         else:
             path = SCOPE[sp][PART[ds]]
@@ -473,6 +498,8 @@ def render(res, chk, cfg, title):
         else:
             total += nb; rows_ok += nb == 0
         L.append(f"| {name}{' (compose, both sides)' if rflag == 'compose' else ''} | " + " | ".join(cells) + f" | {nb} |")
+    if res.get("_note"):
+        L += ["", res["_note"]]
     L += ["", f"Cells not below the full method, 14 rows: **{total}** (rows with every cell below: {rows_ok} of 14); "
           f"`w/o Scope Read`: {total_extra}.", ""]
     vb = lambda sect: " / ".join(f"{100 * d:+.1f} ({r})" for d, r in chk["DeHate"]["vs_best_" + sect])
@@ -494,6 +521,9 @@ def main():
     ap.add_argument("--a", type=float, default=1.0, help="weight of z_video")
     ap.add_argument("--b", type=float, default=0.0, help="weight of the scope read")
     ap.add_argument("--lam", type=float, default=1.0, help="weight of the centred rank")
+    ap.add_argument("--hcs-taxonomy", action="store_true", help="HateClipSeg scope read = the taxonomy read (README §6)")
+    ap.add_argument("--scope", choices=("protected", "ordinal"), default="protected",
+                    help="ordinal: the scope term is z_ord (README §10); ablated-prefix rows borrow the full-prefix z_ord")
     ap.add_argument("--boot", type=int, default=1000)
     ap.add_argument("--jobs", type=int, default=6)
     ap.add_argument("--name", default=None)
@@ -505,7 +535,7 @@ def main():
         for d, st in ex.map(lambda t: run_decode(*t), todo):
             if st == "decoded":
                 print("decoded", d, flush=True)
-    store = Store(comps, args.combine, taxonomy=args.form in ("F4", "F5"))
+    store = Store(comps, args.combine, taxonomy=args.form in ("F4", "F5") or args.hcs_taxonomy, scope_src=args.scope)
     cfg = config_from(args)
     if args.check:
         for ds in DATASETS:
@@ -517,6 +547,14 @@ def main():
         return
     res = evaluate(store, cfg, args.boot)
     res["_decoder"] = f"{args.decoder} ({args.combine})" if len(comps) > 1 else args.decoder
+    notes = []
+    if args.scope == "ordinal":
+        notes.append("Scope term = z_ord (README §10). `w/o Global Transcript` and `w/o Global Frames` use the full-prefix "
+                     "z_ord (borrowed; no ordinal read on the ablated prefixes).")
+    if store.taxonomy:
+        notes.append("HateClipSeg scope read = the taxonomy read on each row's own prefix (README §6); HateMM and DeHate "
+                     "keep the protected-group read.")
+    res["_note"] = " ".join(notes)
     chk = checks(store, cfg, res)
     name = args.name or (f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_l{args.lam:g}" if args.form in FORMS
                          else f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_a{args.a:g}_b{args.b:g}_l{args.lam:g}")

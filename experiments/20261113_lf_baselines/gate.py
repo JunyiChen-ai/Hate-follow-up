@@ -32,6 +32,7 @@ KEY_NAMES = ("pooled ROC", "pooled PR", "within")
 # method directory -> (display name, peer-reviewed venue or None for a preprint, default <variant>/<config>)
 METHODS = {
     "corevad": ("CoReVAD", "ICPR 2026", "u8/prob_lrc1_tau0.05_g9-5_pos1"),
+    "anyanomaly": ("AnyAnomaly", "WACV 2026", "u8/prob"),
     "cogvadu": ("Cog-VADU", "TMLR 2026", "s4/prob_default"),
     "lavad": ("LAVAD", "CVPR 2024", "prob_default"),
     "lela": ("LELA", None, "prob_default"),

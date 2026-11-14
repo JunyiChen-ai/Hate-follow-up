@@ -266,3 +266,50 @@ Configurations: `u8/prob_lrc1_tau0.05_g9-5_pos1` (gate default, release constant
 `u8/label_lrc1_tau0.05_g9-5_pos1` (the release's hard decision; counted as an extra configuration by `gate.py`).
 Smoke: uoa-lab1 Slurm 2303 (2 HateMM videos, 17 segments; every answer had both lines). Full run: uoa-lab1 Slurm
 2305, code 10aec17. Results: pending.
+
+### 3.3 AnyAnomaly (WACV 2026; written before the run)
+
+Paper: Ahn, Jo, Lee, Kwon, Hong, Park, "AnyAnomaly: Zero-Shot Customizable Video Anomaly Detection with LVLM", WACV
+2026, arXiv 2503.04504; code github.com/SkiddieAhn/Paper-AnyAnomaly (local clone `third_party/AnyAnomaly`, commit
+ec7e9fc, 2026-02-27; README: "Our paper has been accepted to WACV 2026", links the CVF open-access page). Venue taken
+from the release README; the arXiv and CVF pages were not opened in this session. Chosen by the planning session
+(brief 4 H4).
+
+Method (release `vad_proposed_Qwen_vllm.py`): training-free customizable VAD. Per clip and a user-defined anomaly text,
+CLIP (ViT-B/32) builds three images and an LVLM scores each on 0–1 ("does the image include <keyword>"): the key frame
+(KFS: CLIP similarity, then grouping), a position-context image (key frame masked by multi-scale WinCLIP patch
+similarity) and a temporal-context 2×2 grid (the patch most similar to the keyword across four key frames). Clip score
+= .6 key + .3 position + .1 temporal; Gaussian smoothing, sigma 15 frames; min-max normalisation. Code
+`anyanomaly_q3vl.py`.
+
+Configuration fixed before the run (the release's constants): keyword "hateful content"; KFS 4; avenue scales (the
+release's default dataset: image 240, patches 48 / 80 / 240, stride = size); template ensemble on; alpha .6, beta .3,
+gamma .1; sigma 15 frames. The release's default `--grid_search True` searches sigma and the three weights on the test
+labels; it is not used.
+
+Every deviation from the release:
+1. Backbone Qwen3-VL-8B (release default Qwen2.5-VL-3B-Instruct); greedy decoding, at most 50 new tokens (release:
+   temperature .1, top_p .001, repetition penalty 1.05, 50 tokens). Images resized by the naive row's rule
+   (smart_resize, src/mllm_judge.py) so generation and the fp32 read-out see the same pixels.
+2. The clip's Whisper words are added before each instruction (`Transcript: <words>`; `(no speech)` when empty).
+3. Clip = 8 s window with 24 frames from a 3 fps decode (release: 24 consecutive native frames, about 1 s at 25 fps),
+   for cost; a short last window uses the frames it has (the release drops an incomplete last clip).
+4. Class adaptation off. The release softmaxes the patch similarity over the dataset's anomaly classes; with one
+   keyword the softmax is 1 everywhere and the attention normalisation divides by zero. The release's
+   `class_adaption False` path is used.
+5. CLIP ViT-B/32 from transformers (openai/clip-vit-base-patch32, same weights as the `clip` package); KFS
+   preprocessing as `clip.load` (resize 224 bicubic, centre crop, CLIP normalisation); patches go to the image
+   encoder unnormalised, as in the release.
+6. Read-outs: `prob` (primary) = expected score from the fp32 output layer at the position where the answer writes its
+   first number (if there is none, after the answer + "\nScore: "); `text` (check) = the release's extract_score
+   (first number, 0 if none).
+7. Smoothing per video on the 4 fps curve with sigma 0.6 s (15 frames at 25 fps; release smooths the concatenated
+   test set); global min-max omitted (monotone, no effect on any metric).
+8. The two CLIP-built images per window are stored as JPEG (quality 95) under the run directory between generation and
+   read-out (both stages read the same files) and removed after the raster (`clean`).
+
+Cost: 3 generations + 3 read-out forwards per 8 s window, plus about 200 CLIP image encodings per window.
+Run plan: smoke (2 HateMM videos), then the three corpora on uoa-lab1 after the ordinal read (Slurm 2312):
+`sbatch experiments/20261113_lf_baselines/launch/q3vl_lab1.sbatch anyanomaly HateMM HateClipSeg DeHate`, raster
+`python experiments/20261113_lf_baselines/anyanomaly_q3vl.py raster --dataset <DS>`, gate row in `gate.py`
+(`anyanomaly`, default `u8/prob`).

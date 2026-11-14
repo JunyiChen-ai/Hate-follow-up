@@ -4,6 +4,7 @@
 #   corevad   `corevad_q3vl.py infer` (vLLM env) then `readout` (HateVLM env);  UNIT=<seconds> (default 8)
 #   cogvadu   `cogvadu_q3vl.py infer` (vLLM env) then `readout` (HateVLM env);  STRIDE=<seconds> (default 4)
 #   lavad     `lavad_q3vl.py infer` (vLLM env) then `readout` (HateVLM env)
+#   anyanomaly `anyanomaly_q3vl.py infer` (vLLM env: CLIP context + generation) then `readout` (HateVLM env)
 #   lela      `lela_q3vl.py infer` (vLLM env) then `readout` (HateVLM env)
 # All stages are resumable. LIMIT=<n> for a smoke run (first n cohort videos); LF_RUN_ROOT=<dir> writes outside the
 # run root. Called by q3vl_lab{1,2,3}.sbatch inside the Slurm allocation.
@@ -32,7 +33,7 @@ for ds in "$@"; do
     cogvadu)
       $VL $X infer --dataset $ds --stride ${STRIDE:-4} --limit ${LIMIT:-0} || { echo "FAILED infer $ds"; rc=1; continue; }
       $HF $X readout --dataset $ds --stride ${STRIDE:-4} || { echo "FAILED readout $ds"; rc=1; } ;;
-    lavad|lela)
+    lavad|lela|anyanomaly)
       $VL $X infer --dataset $ds --limit ${LIMIT:-0} || { echo "FAILED infer $ds"; rc=1; continue; }
       $HF $X readout --dataset $ds || { echo "FAILED readout $ds"; rc=1; } ;;
     *) echo "FAILED unknown method $method"; exit 2 ;;
