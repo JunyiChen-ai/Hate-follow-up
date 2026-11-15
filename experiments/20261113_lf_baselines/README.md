@@ -711,7 +711,7 @@ Written rows (evaluator `metrics.json` under `runs/20261113_lf_baselines/smooth/
 
 - MARS: the configuration fixed in advance (sigma 5 s on the log-odds) is also the one the selection rule picks. It
   is at or above the naive row on 7 of 9 cells on its own (exceptions HateClipSeg pooled ROC −1.08, pooled PR −2.07).
-  Against unsmoothed MARS every cell rises: +3.3 / +2.6 / +1.8, +2.1 / +1.5 / +2.6, +2.5 / +2.0 / +1.3.
+  Against unsmoothed MARS every cell rises: +3.2 / +2.7 / +1.8, +2.1 / +1.5 / +2.6, +2.5 / +2.0 / +1.3.
 - The two cells that failed gate 1 are now covered by this row: HateClipSeg within 61.24 vs 61.18 (+0.06; with the
   probability space, sigma 4–12 s, 61.7–61.8) and DeHate pooled PR 18.44 vs 17.69 (+0.75).
 - **Gate 1** (`runs/20261113_lf_baselines/gate/gate.md`): sets A and C **9 of 9, passes**; sets B and D unchanged,
@@ -721,6 +721,8 @@ Written rows (evaluator `metrics.json` under `runs/20261113_lf_baselines/smooth/
   it too: naive + sigma 5 s is above MARS + sigma 5 s on 7 of 9 cells (not on DeHate pooled ROC 71.3 vs 71.6 and
   HateMM within, level). The gate compares against the frozen unsmoothed naive row, as defined; against a smoothed
   naive row the best published cell would be at or above it on 3 of 9 cells.
-- EventVAD gains on pooled ROC (HateMM +5.6, DeHate +4.5) and stays below the naive row on HateClipSeg and DeHate
-  pooled PR. CoReVAD and Cog-VADU do not change beyond ±1 point on any cell except DeHate within (CoReVAD −1.7 at
-  sigma 5 s): their scores are already smooth over time.
+- EventVAD rises on every cell (+5.5 / +2.9 / +5.0, +3.0 / +1.9 / +3.3, +4.5 / +1.4 / +0.5) and is at or above the
+  naive row on 3 cells (HateMM pooled ROC and within, DeHate within); it stays below on all HateClipSeg cells, HateMM
+  pooled PR and DeHate pooled ROC and PR. CoReVAD and Cog-VADU change pooled cells by at most 0.4 points; within
+  moves by −1.8 to +1.4 (CoReVAD DeHate −1.8; Cog-VADU HateMM +1.2, DeHate +1.4). Their scores are already smooth
+  over time (CoReVAD's own temporal step; Cog-VADU's chain smoothing and re-ranking).
