@@ -57,6 +57,10 @@ PER_CORPUS_NOTE = ("The row \"AnyAnomaly, release protocol (per-dataset grid sea
 # Run and then excluded as a baseline by the user on 2026-11-15 (README §3.1); not read into any row set.
 EXCLUDED_NOTE = ("Probe-VAD (arXiv 2609.17211) was run and then excluded as a baseline by the user on 2026-11-15; "
                  "numbers in README §3.1.")
+# README §3.5: Gaussian smoothing of the stored 4 fps scores, added by our port (not an option of these releases).
+# Rows runs/20261113_lf_baselines/smooth/<method>/<DS>/{s5_raw,sel}/metrics.json; test-selected; sets A and C only.
+SMOOTH = {"mars": "MARS", "eventvad": "EventVAD", "corevad": "CoReVAD", "cogvadu": "Cog-VADU"}
+SMOOTH_NAMES = {"s5_raw": "sigma 5 s fixed before its numbers were seen", "sel": "selected"}
 PEER_REVIEWED_MAIN = {"ZS-CLIP", "ZS-ImageBind", "LAVAD", "EventVAD", "PRISM", "VideoMind",
                       "MARS, fp32 label log-odds", "EventVAD, fp32 expected score"}
 
@@ -90,6 +94,19 @@ def rows():
                 label = NAMES[(m, cfg)] + " [test-selected candidate]"
             out.append((label, {d: v[0] for d, v in got.items()}, {d: v[1] for d, v in got.items()}, is_def,
                         venue is not None))
+    summ = os.path.join(RUNS, "smooth", "summary.json")
+    cfgs = json.load(open(summ))["methods"] if os.path.isfile(summ) else {}
+    for m, disp in SMOOTH.items():
+        for name, what in SMOOTH_NAMES.items():
+            pat = os.path.join(RUNS, "smooth", m, "{ds}", name, "metrics.json")
+            got = {ds: C.read(pat, ds) for ds in C.DATASETS}
+            if not all(got.values()) or m not in cfgs:
+                continue
+            w = cfgs[m]["written"][name]
+            label = "%s on Qwen3-VL-8B + Gaussian smoothing (not in the release), sigma %g s on the %s score, %s " \
+                    "[test-selected candidate]" % (disp, w["sigma_s"], "stored" if w["space"] == "raw" else "probability",
+                                                   what)
+            out.append((label, {d: v[0] for d, v in got.items()}, {d: v[1] for d, v in got.items()}, False, True))
     return out
 
 

@@ -685,3 +685,42 @@ Metrics in the grid: the evaluator functions `pooled`, `within_video_macro` (`sr
 split; the script first checks that the unsmoothed curves reproduce each stored `metrics.json`. Reported numbers
 are the evaluator's `metrics.json` of the written rows. Code `smooth_grid.py`; output
 `runs/20261113_lf_baselines/smooth/{grid.jsonl,summary.json,run.log}`. Cost: CPU minutes on uoa-lab1.
+
+#### 3.5.1 Results (2026-11-16)
+
+Run: uoa-lab1 (sc474397), CPU, 8 processes, under 2 minutes; code f792310; log
+`runs/20261113_lf_baselines/smooth/{run.log,stdout.log}`, grid `grid.jsonl`, `summary.json`. The unsmoothed curves
+reproduce every stored `metrics.json` (15 checks). Test files read: the test split of `data/gt_4fps/<DS>.npz`
+through the evaluator functions, for the 56 configurations of the grid (metrics only; no prediction or video was
+inspected). Design change that followed: none beyond the row choice below.
+
+Written rows (evaluator `metrics.json` under `runs/20261113_lf_baselines/smooth/<method>/<DS>/<name>/`), pooled ROC
+/ pooled PR / within:
+
+| row | HateMM | HateClipSeg | DeHate | cells >= naive |
+|---|---|---|---|---|
+| naive `vlm` (frozen, unsmoothed; the gate's row) | 81.0 / 55.3 / 61.8 | 70.6 / 67.4 / 61.2 | 69.1 / 17.7 / 60.5 | — |
+| MARS, unsmoothed (§2) | 79.0 / 52.8 / 60.5 | 67.4 / 63.9 / 58.7 | 69.1 / 16.4 / 60.8 | 2 |
+| **MARS + smoothing, sigma 5 s, stored score** (`s5_raw` = `sel`) | 82.2 / 55.5 / 62.3 | 69.5 / 65.4 / 61.2 | 71.6 / 18.4 / 62.1 | 7 |
+| EventVAD + smoothing, sigma 5 s (`s5_raw` = `sel`) | 81.3 / 53.8 / 62.5 | 68.3 / 63.2 / 59.7 | 67.8 / 15.4 / 61.3 | 3 |
+| CoReVAD default + smoothing, sigma 5 s (`s5_raw`) | 76.4 / 44.9 / 72.8 | 70.3 / 66.8 / 57.2 | 63.9 / 12.0 / 56.4 | 1 |
+| CoReVAD default + smoothing, sigma 2 s (`sel`) | 76.5 / 44.7 / 72.8 | 70.2 / 66.8 / 57.1 | 63.9 / 12.1 / 57.6 | 1 |
+| Cog-VADU default + smoothing, sigma 5 s (`s5_raw`) | 70.6 / 44.3 / 57.3 | 68.9 / 64.0 / 54.7 | 55.1 / 11.6 / 53.1 | 0 |
+| Cog-VADU default + smoothing, sigma 2 s (`sel`) | 70.6 / 44.3 / 57.3 | 68.9 / 64.0 / 54.6 | 55.0 / 11.6 / 52.7 | 0 |
+| reference, not a gate row: naive `vlm` + the same filter, sigma 5 s | 83.7 / 58.2 / 62.3 | 73.1 / 69.7 / 63.6 | 71.3 / 18.9 / 62.4 | 9 |
+
+- MARS: the configuration fixed in advance (sigma 5 s on the log-odds) is also the one the selection rule picks. It
+  is at or above the naive row on 7 of 9 cells on its own (exceptions HateClipSeg pooled ROC −1.08, pooled PR −2.07).
+  Against unsmoothed MARS every cell rises: +3.3 / +2.6 / +1.8, +2.1 / +1.5 / +2.6, +2.5 / +2.0 / +1.3.
+- The two cells that failed gate 1 are now covered by this row: HateClipSeg within 61.24 vs 61.18 (+0.06; with the
+  probability space, sigma 4–12 s, 61.7–61.8) and DeHate pooled PR 18.44 vs 17.69 (+0.75).
+- **Gate 1** (`runs/20261113_lf_baselines/gate/gate.md`): sets A and C **9 of 9, passes**; sets B and D unchanged,
+  3 of 9 (no smoothing row counts as fixed before the run).
+- Limits to state wherever these rows are shown. (1) The filter is our addition to the MARS port, not part of the
+  MARS release; the row is "MARS + Gaussian smoothing", test-selected. (2) The same filter on the naive row lifts
+  it too: naive + sigma 5 s is above MARS + sigma 5 s on 7 of 9 cells (not on DeHate pooled ROC 71.3 vs 71.6 and
+  HateMM within, level). The gate compares against the frozen unsmoothed naive row, as defined; against a smoothed
+  naive row the best published cell would be at or above it on 3 of 9 cells.
+- EventVAD gains on pooled ROC (HateMM +5.6, DeHate +4.5) and stays below the naive row on HateClipSeg and DeHate
+  pooled PR. CoReVAD and Cog-VADU do not change beyond ±1 point on any cell except DeHate within (CoReVAD −1.7 at
+  sigma 5 s): their scores are already smooth over time.
