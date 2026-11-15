@@ -36,6 +36,7 @@ dependencies:
   - pip:
       - absl-py==2.4.0
       - accelerate==1.5.2
+      - opencv-python-headless==4.10.0.84  # 2026-11-16, ImageBind FrameVideo (Cog-VADU port); installed with --no-deps
       - addict==2.4.0
       - aiofiles==24.1.0
       - aiohappyeyeballs==2.6.1
