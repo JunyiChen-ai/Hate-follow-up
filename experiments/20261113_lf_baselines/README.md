@@ -282,7 +282,7 @@ on HateMM within (+11.2); HateClipSeg pooled ROC / PR are 0.3 / 0.6 points below
 (HateMM pooled PR); gate 1 fails. CoReVAD supplies the best published cell on HateMM within and HateClipSeg pooled
 ROC / PR.
 
-### 3.3 AnyAnomaly (WACV 2026; written before the run)
+### 3.3 AnyAnomaly (WACV 2026; method and configuration written before the run)
 
 Paper: Ahn, Jo, Lee, Kwon, Hong, Park, "AnyAnomaly: Zero-Shot Customizable Video Anomaly Detection with LVLM", WACV
 2026, arXiv 2503.04504; code github.com/SkiddieAhn/Paper-AnyAnomaly (local clone `third_party/AnyAnomaly`, commit
@@ -328,3 +328,20 @@ Run plan: smoke (2 HateMM videos), then the three corpora on uoa-lab1 after the 
 `sbatch experiments/20261113_lf_baselines/launch/q3vl_lab1.sbatch anyanomaly HateMM HateClipSeg DeHate`, raster
 `python experiments/20261113_lf_baselines/anyanomaly_q3vl.py raster --dataset <DS>`, gate row in `gate.py`
 (`anyanomaly`, default `u8/prob`).
+
+**Result.** Smoke: uoa-lab1 Slurm 2317 (2 HateMM videos, 17 windows, every answer had a number). Full run: uoa-lab1
+(sc474397) Slurm 2321, code 7fed039, HateVLM env; 7 h 37 min. GPU time (generation + read-out): HateMM 66 + 19 min,
+HateClipSeg 54 + 18 min, DeHate 232 + 66 min (3768 / 3591 / 14375 windows). Every cohort video scored (215 / 118 /
+1151), no answer without a number; answers that reached the 50-token limit: 68 / 94 / 257 generations
+(`raster_stats.json` `finish_length`; their first number is still read). Context images removed after the raster
+(`clean`). Metrics from the evaluator's `metrics.json` under `runs/20261113_lf_baselines/anyanomaly/<DS>/u8/<config>/`.
+
+| configuration | status | HateMM ROC / PR / within | HateClipSeg | DeHate |
+|---|---|---|---|---|
+| `u8/prob` | fixed before the run (gate default) | 79.1 / 53.7 / 63.3 | 64.9 / 61.8 / 58.2 | 66.4 / 15.3 / 60.2 |
+| `u8/text` | release read-out, counted as test-selected | 73.7 / 47.0 / 58.3 | 62.1 / 57.5 / 55.9 | 60.4 / 12.4 / 53.2 |
+
+Against the naive Qwen3-VL-8B row AnyAnomaly is higher only on HateMM within (+1.5). It becomes the best published
+row on HateMM pooled ROC (79.06, MARS 79.05) and pooled PR (53.66, MARS 52.80), both still below naive (−1.93 /
+−1.67). Gate 1 after adding AnyAnomaly (`runs/20261113_lf_baselines/gate/gate.md`): 3 of 9 cells in all four row sets,
+largest shortfall 2.51 points (HateClipSeg within); gate 1 fails.
