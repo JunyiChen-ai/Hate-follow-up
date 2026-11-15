@@ -14,6 +14,10 @@ Arms:
   vlm_internvl  the `vlm` arm with OpenGVLab/InternVL3_5-8B-HF (2026-11-15, experiments/20261115_rh_hcs_split/README.md):
             same windows, frames, words, question and read-out; one 448 tile per frame (src/mllm_judge.py
             FAMILY_IMAGE_KW, as experiments/20261101_backbones)
+  vlm_tax   the `vlm` arm with the question replaced by the HateClipSeg taxonomy question (2026-11-15, brief 5 K3;
+            fairness reference for the taxonomy scope read, README §1 reference row):
+            'Transcript: <words>\n\nDoes this video clip contain content of any of these kinds: hateful, insulting,
+            sexual, violence, or self-harm? Answer "Yes" or "No".'  Everything else identical to `vlm`.
   vlm_text  the same model and question without frames (the input of the old Qwen2.5-VL row), to separate the
             effect of the prompt from that of the frames
   llm       Qwen/Qwen3-8B (thinking off), one call per Whisper large-v3 segment, as the old Qwen3-8B row:
@@ -52,13 +56,16 @@ MAX_FRAMES = 8
 NO_SPEECH = "(no speech)"
 VLM_Q = 'Is this video clip hateful? Answer "Yes" or "No".'
 LLM_Q = 'Is this speech hateful? Answer "Yes" or "No".'
+TAX_Q = ('Does this video clip contain content of any of these kinds: hateful, insulting, sexual, violence, or '
+         'self-harm? Answer "Yes" or "No".')
 MODELS = {"vlm": "Qwen/Qwen3-VL-8B-Instruct", "vlm_text": "Qwen/Qwen3-VL-8B-Instruct", "llm": "Qwen/Qwen3-8B",
-          "vlm_internvl": "OpenGVLab/InternVL3_5-8B-HF"}
-FRAME_ARMS = ("vlm", "vlm_internvl")     # arms that see the window's frames
+          "vlm_internvl": "OpenGVLab/InternVL3_5-8B-HF", "vlm_tax": "Qwen/Qwen3-VL-8B-Instruct"}
+FRAME_ARMS = ("vlm", "vlm_internvl", "vlm_tax")     # arms that see the window's frames
 
 
 def prompt(arm, text):
-    return "Transcript: %s\n\n%s" % (text or NO_SPEECH, LLM_Q if arm == "llm" else VLM_Q)
+    q = LLM_Q if arm == "llm" else TAX_Q if arm == "vlm_tax" else VLM_Q
+    return "Transcript: %s\n\n%s" % (text or NO_SPEECH, q)
 
 
 def out_dir(arm, ds):
