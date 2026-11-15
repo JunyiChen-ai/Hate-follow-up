@@ -462,7 +462,7 @@ Full method, absolute (ROC / PR / within):
 | em0, F5 | 90.0 / 70.0 / 78.6 | 75.3 / 70.8 / 68.6 | 76.7 / 23.4 / 67.2 | 12 | 8 of 14 |
 | em0, F6 | 90.0 / 70.2 / 78.6 | 75.9 / 71.9 / 68.6 | 76.0 / 21.6 / 67.2 | 17 | 6 of 14 |
 | m2, F5 (§7) | 90.0 / 69.9 / — | 75.3 / 70.8 / — | 76.7 / 23.3 / — | 15 | 8 of 14 |
-| m2, F6 (§7) | 90.0 / 70.1 / — | 76.0 / 72.0 / — | 76.0 / 21.6 / — | 19 | 8 of 14 |
+| m2, F6 (§7) | 90.0 / 70.1 / — | 76.0 / 72.0 / — | 76.0 / 21.6 / — | 19 | 7 of 14 |
 
 Not-below cells among the 14 rows (change in points, 95 % paired interval):
 - F5 (12): Verdict Turn HateMM ROC +0.06, PR +0.27, within +0.02, DeHate ROC +0.20; Linear Evidence HateMM ROC +0.05,
