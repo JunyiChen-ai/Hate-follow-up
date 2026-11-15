@@ -227,7 +227,18 @@ def cmd_extract(args):
                     tmp = os.path.join(dest, "_transcode", vid + ".mp4")
                     path = L.transcode_h264(src, tmp)
                     rec["transcoded"] = True
-                frames, total, fps = read_samples(path)
+                try:
+                    frames, total, fps = read_samples(path)
+                except Exception as exc:                               # noqa: BLE001
+                    # PRISM_TRANSCODE_ON_READ_ERROR=1 (experiments/20261115_rh_hcs_split): a file that passes
+                    # decord_ok but fails in the full read gets the same decode-only H.264 re-encode. Unset = unchanged.
+                    if tmp or os.environ.get("PRISM_TRANSCODE_ON_READ_ERROR") != "1":
+                        raise
+                    tmp = os.path.join(dest, "_transcode", vid + ".mp4")
+                    path = L.transcode_h264(src, tmp)
+                    rec["transcoded"] = True
+                    rec["transcode_reason"] = "%s: %s" % (type(exc).__name__, str(exc)[:200])
+                    frames, total, fps = read_samples(path)
                 rec.update(n_native_frames=total, native_fps=fps, n_samples=len(frames))
                 starts = list(range(0, len(frames) - WINDOW_SIZE + 1, WINDOW_STRIDE))
                 rec["n_windows"] = len(starts)

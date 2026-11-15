@@ -15,6 +15,9 @@ REPO=$PWD
 source experiments/20261115_rh_hcs_split/env.sh
 PY=$REPO/.cache/envs/prism/bin/python              # torch 2.8.0+cu128, transformers 4.57.1, qwen-vl-utils 0.0.14
 export HF_HOME=$REPO/.cache/hf HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+# two webm files of this cohort pass decord_ok but fail in the full decord read; with 79 videos two F2 videos exceed the
+# 1 % stop rule, so they take the script own decode-only H.264 re-encode instead (README.md, deviations)
+export PRISM_TRANSCODE_ON_READ_ERROR=1
 echo "host $(hostname) job ${SLURM_JOB_ID:-} start $(date '+%F %T') commit $(git log -1 --format=%h)"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv
 MODEL=$(ls -d $HF_HOME/hub/models--Qwen--Qwen3-VL-Embedding-2B/snapshots/* | head -1)
