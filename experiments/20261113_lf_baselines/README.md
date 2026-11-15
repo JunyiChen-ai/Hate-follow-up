@@ -474,3 +474,90 @@ per-corpus row is allowed only because it is the method's published protocol, st
 - Gate 1 still fails: largest shortfall 2.17 > 1.0. Failing cells: HateClipSeg within −2.17 (best is now
   `k4_clipunit_default`, 59.01; was MARS −2.51) and DeHate pooled PR −1.30 (MARS).
 - B and D unchanged: 3 of 9, largest shortfall 2.51.
+
+### 3.4 Cog-VADU (TMLR 2026; method and configuration written before the run; planning-session brief 5, item H5)
+
+Paper: Wani, Atito, Kittler, Awais, "Cog-VADU: A Training-Free Cognitive Reasoning Framework for Video Anomaly
+Detection and Understanding", Transactions on Machine Learning Research (2026), https://openreview.net/forum?id=QcuSMNG7J8.
+Code: local clone `third_party/Cog-VADU` at commit b440861 (2026-09-01). Venue from the release README (badge "TMLR
+Accepted" linking the OpenReview forum; BibTeX `journal={Transactions on Machine Learning Research}`, year 2026).
+Opened: the release README and code only. Not opened: the OpenReview page and the PDF; acceptance rests on the
+release README.
+
+**What the release code does** (scripts `Scripts/01`–`05`, `evaluate/06_evaluate.sh`; every constant as the scripts
+set it):
+1. Raw stage (`MY_MODEL/Raw_CoADTP_STAGE1.py`, backbone VideoLLaMA3-7B). Clip centres every `frame_interval` = 16
+   frames (30 fps, so every 0.53 s); each clip = the `clip_duration` = 10 s around the centre (300 frames, clipped
+   at the video ends), 10 frames uniformly sub-sampled, written as a 1 fps video and given to the model at
+   `fps_vlama` 1. System message "You are a helpful assistant specialized in video analysis and anomaly detection.";
+   user text = the chain-of-thought prompt (`build_cot_prompt`): role and 0.000–1.000 score task, the ANOMALY
+   CATEGORIES list (`anomaly_db`: NORMAL + 13 UCF-Crime classes), then, from the second clip of a video on, a
+   PREVIOUS CLIP CONTEXT block with the previous clip's DESCRIPTION, ANOMALY_TYPE and (smoothed) score (`%.3f`) and
+   the instruction to keep temporal consistency, then the output format DESCRIPTION / REASONING / EXPLANATION /
+   ANOMALY_SCORE / ANOMALY_TYPE and the scoring guidelines. `max_new_tokens` 512 (script; argparse default 150).
+   Parsing (`_parse_videollama_output`): an answer containing a refusal phrase reuses the previous analysis
+   unchanged; otherwise the line starting `anomaly_score:` gives the first number, clamped to [0, 1] and rounded to
+   3 decimals (no such line: the previous clip's score); a type not in `anomaly_db` becomes NORMAL. Temporal
+   smoothing: score = 0.3 × previous score + 0.7 × this score (`temporal_consistency_weight` 0.3, a constructor
+   default, not a command-line argument), rounded to 3 decimals; the smoothed analysis is what the next clip's
+   prompt carries. The chain restarts for every video.
+2. `extract_raw_scores_summaries.py`: raw score = the smoothed score; summary = the DESCRIPTION.
+3. `get_visual_embeddings.py`: ImageBind-huge VISION embedding per clip centre (same 10 s window, 10 frames,
+   `load_and_transform_video_data`).
+4. `create_summary_index_FAST.py`: per video, a FAISS inner-product index of the L2-normalised ImageBind TEXT
+   embeddings of the descriptions; identical descriptions share one entry (index entry → every centre with that
+   description).
+5. `video_text_TEST3_fast.py` (script: N = 10, `num_neighbors` 10; defaults `initial_k` None → max(30, 3 × 10) = 30,
+   `text_weight` 0.5, `visual_weight` 0.5, `temporal_window` 5): per clip centre, the L2-normalised video embedding
+   searches the index for `initial_k` descriptions (inner product D); each candidate gets text_sim = 1 / (1 + D) and
+   visual_sim = the largest, over the centres sharing that description, of cos(query video embedding, that centre's
+   video embedding) × w, with w = 1 + 0.5 exp(−|Δ| / (2 × 16 frames)) if |Δ| ≤ 5 × 16 frames, else 1; combined =
+   0.5 text_sim + 0.5 visual_sim; the top `num_neighbors` by combined score are kept with their raw scores and their
+   D.
+6. `eval2_k_exp.py` (script loops `--num_neighbors` 2 … 10 and reports each; argparse default 2): clip score =
+   Σ softmax(D) × raw score over the top `num_neighbors` kept neighbours by D; each centre score is repeated for 16
+   frames.
+
+**Port** (`cogvadu_q3vl.py`; shared rules of §2–§3):
+- Stages: `infer` (vLLM env: the chain, generation), `readout` (HateVLM env: fp32 read-out of the score), `embed`
+  (HateVideo env: ImageBind VIDEO and TEXT embeddings with the release's own copy `third_party/Cog-VADU/ImageBind`,
+  weights `data/assets/imagebind/imagebind_huge.pth`), `raster` (CPU: stages 4–6, 4 fps, F2, evaluator).
+- Configuration fixed now (`u8/prob_default`; `u8/text_default` = the check read-out, same configuration):
+  `initial_k` 30, `text_weight` 0.5, `visual_weight` 0.5, `temporal_window` 5, retrieval `num_neighbors` 10, eval
+  `num_neighbors` 10, chain smoothing 0.3. Eval `num_neighbors` 10 is chosen because stage 5 retrieves 10 and the
+  release's evaluation loop ends at 10; the other values (2 … 9) are in the grid of §3.4.1.
+
+Deviations (all fixed before any run):
+1. Backbone Qwen3-VL-8B instead of VideoLLaMA3-7B; frames given as images at the naive row's image size (not as a
+   video file); vLLM greedy generation, `max_tokens` 512.
+2. Unit: non-overlapping 8 s segments (`fixed_windows`), 8 frames at 1 fps, instead of 10 s windows every 0.53 s
+   (about 15 times more calls); the same 8 frames go to the LVLM and to ImageBind (release: 10 frames per window).
+   One segment = one release step in every step-counted constant: the chain (one previous segment, smoothing 0.3 per
+   step), `temporal_window` 5 steps → 5 segments, the decay 2 × `frame_interval` → 2 segments. (In seconds the
+   release's window is 5 × 0.53 = 2.7 s, less than one of our segments, so a seconds conversion would leave only
+   the segment itself boosted; that case is `temporal_window` 0 in the §3.4.1 grid.)
+3. Words: `Transcript: <words>` (Whisper large-v3 slice of the segment, `(no speech)` when empty) before the release
+   prompt.
+4. Anomaly definition: the ANOMALY CATEGORIES list (NORMAL + 13 UCF-Crime classes) is replaced by two entries,
+   NORMAL (release text, unchanged) and HATEFUL: "An anomaly is hateful content."; ANOMALY_TYPE then lists NORMAL,
+   HATEFUL. Everything else in the prompt is the release text, typos included.
+5. Read-outs. `prob` (primary): fp32 expected score at the position where the answer writes its ANOMALY_SCORE
+   number (first digit, and the decimal after "0."; §2 rule), on the same prompt and images; the per-segment value
+   then goes through the same chain rule as the release score (0.3 × previous + 0.7 × this; a refusal reuses the
+   previous value), without rounding. An answer with no ANOMALY_SCORE number is read after the answer plus
+   "\nANOMALY_SCORE: ". `text` (check): the release's parsed and smoothed number. The chain itself (what the next
+   prompt carries) is always the generated text, as in the release.
+6. Retrieval when a video has fewer distinct descriptions than `initial_k` or `num_neighbors`: candidates and kept
+   neighbours are limited to the entries that exist (FAISS would return id −1, which the release code would read as
+   the last entry). With 8 s segments most videos have fewer than 30 segments, so the text search usually returns
+   every description of the video.
+7. Stages 4–6 are run in numpy (inner products of normalised vectors, the same arithmetic as `faiss.IndexFlatIP`);
+   the t-SNE plot and the per-video visualisation are skipped (no effect on scores).
+8. 4 fps: a frame takes the score of the segment containing its centre (`units_to_4fps`), F2, single evaluator.
+
+Cost (new video): one generation per 8 s segment (up to 512 tokens, the chain makes a video's segments sequential;
+segments of different videos are batched), one fp32 forward for the read-out, one ImageBind VIDEO and TEXT
+embedding per segment. Segments: HateMM 3768, HateClipSeg 3591, DeHate 14375.
+
+Plan: smoke on 2 HateMM videos (uoa-lab1), then HateMM, HateClipSeg, DeHate; raster; `gate.py` row in sets A–D for
+`u8/prob_default` (the text read-out as an extra, test-selected configuration).
