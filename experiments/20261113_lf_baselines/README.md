@@ -539,8 +539,9 @@ Deviations (all fixed before any run):
 3. Words: `Transcript: <words>` (Whisper large-v3 slice of the segment, `(no speech)` when empty) before the release
    prompt.
 4. Anomaly definition: the ANOMALY CATEGORIES list (NORMAL + 13 UCF-Crime classes) is replaced by two entries,
-   NORMAL (release text, unchanged) and HATEFUL: "An anomaly is hateful content."; ANOMALY_TYPE then lists NORMAL,
-   HATEFUL. Everything else in the prompt is the release text, typos included.
+   NORMAL (release text, unchanged) and HATEFUL: "An anomaly is hateful content.". Everything else in the prompt is
+   the release text, typos included; the ANOMALY_TYPE line keeps the literal text `{', '.join(anomaly_types)}`,
+   because in the release that part of the prompt is a plain (not an f-) string.
 5. Read-outs. `prob` (primary): fp32 expected score at the position where the answer writes its ANOMALY_SCORE
    number (first digit, and the decimal after "0."; §2 rule), on the same prompt and images; the per-segment value
    then goes through the same chain rule as the release score (0.3 × previous + 0.7 × this; a refusal reuses the
