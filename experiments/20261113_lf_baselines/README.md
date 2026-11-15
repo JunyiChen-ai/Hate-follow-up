@@ -618,7 +618,7 @@ equals `refine_video` exactly on four configurations, and at start it checks aga
 Runs: uoa-lab1 (sc474397). Smoke Slurm 2349 failed at the ImageBind stage (pytorchvideo `FrameVideo` needs OpenCV,
 missing in HateVideo; `opencv-python-headless==4.10.0.84` installed with `--no-deps`, numpy 1.26.4 kept, recorded in
 `environment_HateVideo.yml` and `runs/_setup_lab1/pip_installs.log`); smoke Slurm 2352 passed (2 HateMM videos, 17
-segments). Full run Slurm 2353, 6 h 12 min GPU (generation 33 / 24 / 103 min, read-out 17 / 13 / about 60 min,
+segments). Full run Slurm 2353, 6 h 12 min GPU (generation 33 / 24 / 103 min, read-out 17 / 13 / 54 min,
 ImageBind 23 / 20 / 84 min for HateMM / HateClipSeg / DeHate). Grid: `cogvadu_grid.py` on uoa-lab1 CPU, 16
 processes, 19 min. No failed videos. Segments 3768 / 3591 / 14375; answers without an ANOMALY_SCORE number 0 / 1 / 0
 (read after the appended prefix); refusal steps that reuse the previous value 0 / 1 / 6; answers cut at 512 tokens
