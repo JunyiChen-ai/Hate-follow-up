@@ -605,3 +605,10 @@ so the 25 weight pairs give 9 distinct results; an eval `num_neighbors` above th
 neighbours. Read-out `prob`. Selection: the K1 rule (one configuration for all three corpora; most cells ≥ the naive
 row, ties by the smallest largest shortfall, then grid order). The selected row enters gate sets A and C as
 test-selected.
+
+Code: `cogvadu_grid.py` (written before the full run). Grid order for ties: eval `num_neighbors`, kept
+`num_neighbors`, `initial_k`, `text_weight`, `visual_weight`, `temporal_window`, each in the order of the table
+(33 750 configurations). The script splits `refine_video` into retrieval and averaging; on the smoke videos the split
+equals `refine_video` exactly on four configurations, and at start it checks again on the full data against
+`refine_video` and the stored `prob_default` metrics. Output: `runs/20261113_lf_baselines/cogvadu_grid/`
+(`grid.jsonl`, `summary.json`) and `cogvadu/<DS>/u8/grid_selected/metrics.json`.
