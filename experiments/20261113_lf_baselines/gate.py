@@ -43,6 +43,15 @@ METHODS = {
 ONLY = {"corevad": {"u8/prob_lrc1_tau0.05_g9-5_pos1", "u8/label_lrc1_tau0.05_g9-5_pos1",
                     "u8/prob_lrc1_tau0.1_g5-1_pos1",      # K1 selection among release options
                     "u8/prob_lrc1_tau0.05_g3-1_pos0"}}    # K1 selection among all 32 (position prior off)
+# Display names of configurations (README §3.3.1, brief 5 K4); all three are test-selected.
+NAMES = {("anyanomaly", "u8/k4_clipunit_default"): "AnyAnomaly on Qwen3-VL-8B, clip-unit default (sigma 5 s)",
+         ("anyanomaly", "u8/k4_grid_common"): "AnyAnomaly on Qwen3-VL-8B, release grid, one configuration for all corpora",
+         ("anyanomaly", "u8/k4_grid_per_corpus"):
+             "AnyAnomaly, release protocol (per-dataset grid search on test labels)"}
+PER_CORPUS_NOTE = ("The row \"AnyAnomaly, release protocol (per-dataset grid search on test labels)\" uses a different "
+                   "configuration per corpus (selected by pooled ROC on each corpus's test labels). This breaks the "
+                   "one-configuration-per-row rule and is allowed only because it is the method's published protocol "
+                   "(release default `--grid_search True`); README §3.3.1.")
 # Run and then excluded as a baseline by the user on 2026-11-15 (README §3.1); not read into any row set.
 EXCLUDED_NOTE = ("Probe-VAD (arXiv 2609.17211) was run and then excluded as a baseline by the user on 2026-11-15; "
                  "numbers in README §3.1.")
@@ -75,6 +84,8 @@ def rows():
             label = "%s on Qwen3-VL-8B, %s%s%s" % (
                 disp, cfg, ", position prior off (not a release option)" if m == "corevad" and cfg.endswith("_pos0") else "",
                 "" if is_def else " [test-selected candidate]")
+            if (m, cfg) in NAMES:
+                label = NAMES[(m, cfg)] + " [test-selected candidate]"
             out.append((label, {d: v[0] for d, v in got.items()}, {d: v[1] for d, v in got.items()}, is_def,
                         venue is not None))
     return out
@@ -120,6 +131,8 @@ def main():
         g = gate(sub, naive)
         res[title[:1]] = g
         lines += fmt(title, g)
+    lines.append(PER_CORPUS_NOTE)
+    lines.append("")
     lines.append(EXCLUDED_NOTE)
     lines.append("")
     lines.append("### Rows read")

@@ -419,3 +419,58 @@ Against the naive Qwen3-VL-8B row AnyAnomaly is higher only on HateMM within (+1
 row on HateMM pooled ROC (79.06, MARS 79.05) and pooled PR (53.66, MARS 52.80), both still below naive (−1.93 /
 −1.67). Gate 1 after adding AnyAnomaly (`runs/20261113_lf_baselines/gate/gate.md`): 3 of 9 cells in all four row sets,
 largest shortfall 2.51 points (HateClipSeg within); gate 1 fails.
+
+#### 3.3.1 The release's own grid search on the stored scores (planning-session brief 5, item K4, 2026-11-15; test-selected)
+
+Why: (a) the release's default protocol is `--grid_search True`: it searches sigma (`--sigma_range 1,30`) and the
+three context weights (`--weight_step 0.1`) on the test labels of each dataset; the run above fixed alpha .6 / beta .3
+/ gamma .1 and searched nothing. (b) Deviation 7 kept sigma in seconds (15 frames at 25 fps = 0.6 s), but our clip is
+8 s, not about 1 s; in clip units the release's sigma 15 frames is 15 / 24 of a clip = 5 s here, so the run above had
+almost no smoothing.
+
+CPU only, no new inference: the stored `prob` read-outs of the three context images per window (`readout.jsonl`
+`key` / `wa` / `tc`; all present for every window of every cohort video). Code `anyanomaly_k4.py`. The enumeration
+follows the release (`third_party/AnyAnomaly/functions/eval_func.py` `evaluate_auc`): `for sigma in range(1, 30)`
+(1 … 29; the release's range excludes 30), `for a1, a2 in np.arange(0.0, 1.1, 0.1)`, `a3 = 1 - a1 - a2` kept if
+`0 <= a3 <= 1`. With the release's floating-point arithmetic this keeps 60 weight triples, not 66 (six triples with
+a1 + a2 = 1 get a3 slightly below 0 and are dropped, as in the release). 29 × 60 = 1740 configurations per corpus.
+sigma s release frames is applied as s / 24 windows = s / 3 seconds on the 4 fps curve, per video (as our port).
+Selection rules fixed by the planning session before the grid was read. Check: the code reproduces the stored `prob`
+metrics.json (HateMM and HateClipSeg to 2e-8; DeHate within differs by 0.0004 from floating-point rounding: many
+AnyAnomaly curves have plateaus of near-equal values, so within-video ROC changes with the last bits; the curves agree
+to 4e-16). Selection uses the grid values; reported numbers are the evaluator's metrics.json of the written rows.
+
+Run: uoa-lab1 (sc474397), CPU, `setsid nohup`, 2026-11-15, code at commit 26bcd29 plus `anyanomaly_k4.py`
+(committed with this section). Full grid (5220 lines: corpus, sigma, weights, ROC / PR / within) in
+`runs/20261113_lf_baselines/anyanomaly_k4/grid.jsonl`; selections and ranges in `summary.json`; log `run.log`.
+A second launch started by mistake while the first was still running was stopped; its partial per-sigma files were
+deleted, and every number here is from the first run.
+
+Rows written (`runs/20261113_lf_baselines/anyanomaly/<DS>/u8/<name>/metrics.json`); all three are test-selected:
+
+| row | configuration | HateMM ROC / PR / within | HateClipSeg | DeHate | cells ≥ naive |
+|---|---|---|---|---|---|
+| naive Qwen3-VL-8B | | 81.0 / 55.3 / 61.8 | 70.6 / 67.4 / 61.2 | 69.1 / 17.7 / 60.5 | |
+| run above (`u8/prob`) | .6 / .3 / .1, sigma 0.6 s | 79.1 / 53.7 / 63.3 | 64.9 / 61.8 / 58.2 | 66.4 / 15.3 / 60.2 | 1 |
+| `k4_clipunit_default` (defined before its numbers were seen) | .6 / .3 / .1, sigma 15 (5 s) | 80.9 / 53.9 / 63.7 | 66.8 / 63.0 / 59.0 | 67.0 / 16.0 / 58.8 | 1 |
+| `k4_grid_common` (K1 rule) | .2 / .4 / .4, sigma 14 (4.7 s) | 82.0 / 55.9 / 62.8 | 67.2 / 63.6 / 58.8 | 66.9 / 15.6 / 60.3 | 3 |
+| `k4_grid_per_corpus` = "AnyAnomaly, release protocol (per-dataset grid search on test labels)" | HateMM 0 / .2 / .8, sigma 29; HCS .2 / 0 / .8, sigma 29; DeHate .5 / .5 / 0, sigma 15 | 84.0 / 56.8 / 60.1 | 68.8 / 64.4 / 57.5 | 67.4 / 15.2 / 59.6 | 2 |
+
+- `k4_grid_common`: 4 of 9 cells ≥ naive in the grid values, largest shortfall 3.80; the written metrics.json gives 3
+  (DeHate within: 60.57 in the grid, 60.35 in the written metrics.json, naive 60.51; the same rounding effect as above,
+  here 0.22 points, decides this cell).
+  Next in the ranking: .1 / .5 / .4 sigma 14 (shortfall 3.90), .2 / .3 / .5 sigma 10 (3.91).
+- `k4_grid_per_corpus`: selected per corpus by pooled ROC only (the release selects by frame AUC); the other two
+  metrics are those of the same configuration. On HateMM and HateClipSeg the best sigma is 29, the end of the
+  release's range.
+- Grid range per corpus (lowest / highest over the 1740 configurations): HateMM ROC 77.5–84.0, PR 50.7–57.3, within
+  56.4–64.8; HateClipSeg ROC 62.9–68.8, PR 60.4–64.5, within 56.4–59.4; DeHate ROC 64.9–67.4, PR 13.8–17.3, within
+  56.1–61.8. No configuration reaches the naive row on HateClipSeg ROC / PR / within or on DeHate ROC / PR.
+
+Gate 1 (`runs/20261113_lf_baselines/gate/gate.md`, regenerated; the three rows enter sets A and C, not B / D; the
+per-corpus row is allowed only because it is the method's published protocol, stated under the tables in gate.md):
+- A and C: 7 of 9 cells ≥ naive (was 5). New: HateMM pooled ROC 84.04 (+3.05) and PR 56.84 (+1.51), both from the
+  per-corpus row. Without the per-corpus row, A / C are still 7 of 9 (`k4_grid_common`: HateMM ROC +1.04, PR +0.59).
+- Gate 1 still fails: largest shortfall 2.17 > 1.0. Failing cells: HateClipSeg within −2.17 (best is now
+  `k4_clipunit_default`, 59.01; was MARS −2.51) and DeHate pooled PR −1.30 (MARS).
+- B and D unchanged: 3 of 9, largest shortfall 2.51.
