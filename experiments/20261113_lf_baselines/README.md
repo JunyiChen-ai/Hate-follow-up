@@ -90,6 +90,27 @@ in the main table (`runs/20261008_baselines/<method>_av/<DS>/metrics.json`).
 - The published rows also carry our nine rules (LAVAD-AV and EventVAD-AV put them in their scoring prompt, PRISM in
   its description pools; `experiments/20261008_baselines/hate_query.md`). Not changed here.
 
+### 1.1 `vlm_tax` on HateClipSeg (planning-session brief 5, item K3, 2026-11-16; reference row only)
+
+Same as `vlm` (Qwen3-VL-8B, frames + transcript, 8 s windows, fp32 Yes/No read-out), with the question replaced by the
+HateClipSeg category list: "Does this video clip contain content of any of these kinds: hateful, insulting, sexual,
+violence, or self-harm? Answer \"Yes\" or \"No\"." (`naive_prompt.py`, arm `vlm_tax`, commit 5af9561). The prompt was
+written knowing that the HateClipSeg ground truth marks offensive content of these kinds, so the row is
+development-selected and is a reference only: it is not in `gate.py`, and the frozen `vlm` row is unchanged.
+
+Run: uoa-lab1 (sc474397), Slurm 2348, 9 min GPU; raster on uoa-lab1. 118 test videos, 3591 windows, no failed videos.
+Metrics: `runs/20261113_lf_baselines/naive/vlm_tax/HateClipSeg/metrics.json`.
+
+| row (HateClipSeg) | pooled ROC | pooled PR | within |
+|---|---|---|---|
+| `vlm`, plain hateful question | 70.6 | 67.4 | 61.2 |
+| `vlm_tax`, category list | 73.7 | 70.5 | 63.9 |
+| current method (main table) | 73.3 | 69.0 | 68.7 |
+
+- Naming the HateClipSeg categories adds 3.2 / 3.1 / 2.7 over the plain question.
+- With this prompt the naive row is above the current method on HateClipSeg pooled ROC (+0.4) and pooled PR (+1.5);
+  within stays 4.8 below.
+
 ## 2. Published methods on Qwen3-VL-8B
 
 Mechanism hypothesis: none; comparison rows. Question: does a published training-free method, given the same MLLM as
