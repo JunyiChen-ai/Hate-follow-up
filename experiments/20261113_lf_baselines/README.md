@@ -282,6 +282,80 @@ on HateMM within (+11.2); HateClipSeg pooled ROC / PR are 0.3 / 0.6 points below
 (HateMM pooled PR); gate 1 fails. CoReVAD supplies the best published cell on HateMM within and HateClipSeg pooled
 ROC / PR.
 
+#### 3.2.1 Hyperparameter grid (planning-session brief 5, item K1, 2026-11-15; test-selected)
+
+CPU only, on the stored read-outs (no new inference): `corevad_q3vl.py raster` with the `prob` read-out, LRC on,
+tau ∈ {0.05, 0.1, 0.5, 1.0} (softmax refinement), Gaussian (size, sigma) ∈ {(9, 5) release, (5, 1), (3, 1), none
+(`g1-1`, size 1 = no smoothing)}, position weight ∈ {on (release), off}: 32 configurations, every one on all three
+corpora. tau / size / sigma are command-line arguments of the release (`src/ucf/eval_ucf.py`); turning the position
+weight off is not a release option (deviation 9 below). The selection rule was fixed by the planning session before
+the grid was read: the one configuration, the same on all three corpora, with the most cells ≥ the naive row, ties
+by the smallest largest shortfall; reported once among release-option configurations (position weight on) and once
+among all 32. Every number here was chosen by reading test metrics: **test-selected (development-selected)**.
+
+Deviation 9 (K1 only): rows named `..._pos0` skip step 4 (the multiplication by the position weight). The release has
+no switch for this; such rows carry "position prior off (not a release option)" in their gate.py name.
+
+Run: uoa-lab1 (sc474397), CPU, `setsid nohup`, 2026-11-15, commit 5af9561, script and logs in
+`runs/20261113_lf_baselines/corevad_k1/` (`run.sh`, `raster_<DS>.log`, `select.py`, `grid.md`, `selected.json`).
+The release-default configuration was rastered again in the same call; its metrics.json equals the earlier one on all
+three corpora. Metrics from the evaluator's metrics.json under `runs/20261113_lf_baselines/corevad/<DS>/u8/<config>/`.
+
+| configuration | HateMM ROC / PR / within | HateClipSeg | DeHate | cells >= naive | largest shortfall |
+|---|---|---|---|---|---|
+| naive Qwen3-VL-8B | 81.0 / 55.3 / 61.8 | 70.6 / 67.4 / 61.2 | 69.1 / 17.7 / 60.5 | — | — |
+| `prob_lrc1_tau0.05_g9-5_pos1` | 76.5 / 44.5 / 72.9 | 70.2 / 66.8 / 57.1 | 63.9 / 12.1 / 58.1 | 1 | 10.86 |
+| `prob_lrc1_tau0.05_g9-5_pos0` | 76.7 / 49.5 / 72.0 | 70.5 / 67.5 / 56.3 | 64.1 / 12.6 / 55.2 | 2 | 5.79 |
+| `prob_lrc1_tau0.05_g5-1_pos1` | 76.3 / 44.0 / 71.9 | 70.7 / 67.2 / 58.5 | 64.5 / 12.8 / 57.2 | 2 | 11.28 |
+| `prob_lrc1_tau0.05_g5-1_pos0` | 76.5 / 50.3 / 70.8 | 70.7 / 67.9 / 58.0 | 64.7 / 13.7 / 56.6 | 3 | 5.06 |
+| `prob_lrc1_tau0.05_g3-1_pos1` | 76.2 / 44.0 / 71.7 | 70.8 / 67.3 / 58.7 | 64.5 / 12.8 / 57.6 | 2 | 11.35 |
+| `prob_lrc1_tau0.05_g3-1_pos0` **(selected, all 32)** | 76.5 / 50.7 / 68.7 | 70.7 / 67.9 / 57.7 | 64.8 / 13.7 / 57.1 | 3 | 4.59 |
+| `prob_lrc1_tau0.05_g1-1_pos1` | 75.8 / 43.5 / 72.2 | 70.7 / 67.3 / 59.5 | 64.7 / 12.8 / 59.3 | 2 | 11.83 |
+| `prob_lrc1_tau0.05_g1-1_pos0` | 76.0 / 49.5 / 54.9 | 70.5 / 67.2 / 55.4 | 64.8 / 13.6 / 54.2 | 0 | 6.83 |
+| `prob_lrc1_tau0.1_g9-5_pos1` | 77.5 / 45.6 / 72.3 | 70.2 / 66.6 / 57.7 | 64.0 / 12.2 / 57.9 | 1 | 9.70 |
+| `prob_lrc1_tau0.1_g9-5_pos0` | 77.7 / 50.7 / 72.2 | 70.4 / 67.0 / 56.2 | 64.2 / 12.6 / 54.5 | 1 | 6.03 |
+| `prob_lrc1_tau0.1_g5-1_pos1` **(selected, release options)** | 77.3 / 45.2 / 71.7 | 70.6 / 67.0 / 58.2 | 64.6 / 12.9 / 56.4 | 2 | 10.10 |
+| `prob_lrc1_tau0.1_g5-1_pos0` | 77.5 / 51.4 / 71.8 | 70.6 / 67.3 / 58.3 | 64.7 / 13.7 / 56.8 | 1 | 4.36 |
+| `prob_lrc1_tau0.1_g3-1_pos1` | 77.3 / 45.2 / 71.8 | 70.6 / 67.1 / 58.3 | 64.7 / 12.9 / 56.8 | 2 | 10.15 |
+| `prob_lrc1_tau0.1_g3-1_pos0` | 77.5 / 51.8 / 69.6 | 70.5 / 67.2 / 58.5 | 64.8 / 13.6 / 56.8 | 1 | 4.29 |
+| `prob_lrc1_tau0.1_g1-1_pos1` | 76.9 / 44.7 / 72.3 | 70.6 / 67.1 / 58.8 | 64.7 / 12.9 / 59.1 | 2 | 10.64 |
+| `prob_lrc1_tau0.1_g1-1_pos0` | 77.1 / 50.6 / 56.3 | 70.3 / 66.6 / 55.4 | 64.8 / 13.6 / 54.8 | 0 | 5.80 |
+| `prob_lrc1_tau0.5_g9-5_pos1` | 78.5 / 46.8 / 71.9 | 69.8 / 66.1 / 57.7 | 64.2 / 12.3 / 57.6 | 1 | 8.52 |
+| `prob_lrc1_tau0.5_g9-5_pos0` | 78.6 / 51.7 / 71.6 | 70.1 / 66.7 / 56.7 | 64.4 / 12.7 / 53.9 | 1 | 6.62 |
+| `prob_lrc1_tau0.5_g5-1_pos1` | 78.3 / 46.4 / 71.3 | 70.1 / 66.4 / 57.7 | 64.7 / 13.0 / 55.5 | 1 | 8.94 |
+| `prob_lrc1_tau0.5_g5-1_pos0` | 78.4 / 52.2 / 72.8 | 70.2 / 66.8 / 58.5 | 64.8 / 13.6 / 55.9 | 1 | 4.64 |
+| `prob_lrc1_tau0.5_g3-1_pos1` | 78.3 / 46.3 / 71.4 | 70.2 / 66.5 / 57.7 | 64.8 / 12.9 / 55.8 | 1 | 9.01 |
+| `prob_lrc1_tau0.5_g3-1_pos0` | 78.4 / 52.7 / 69.3 | 70.1 / 66.7 / 58.6 | 64.9 / 13.6 / 56.7 | 1 | 4.22 |
+| `prob_lrc1_tau0.5_g1-1_pos1` | 77.9 / 45.8 / 71.8 | 70.1 / 66.4 / 57.8 | 64.8 / 13.0 / 58.2 | 1 | 9.52 |
+| `prob_lrc1_tau0.5_g1-1_pos0` | 77.9 / 51.4 / 56.8 | 69.9 / 66.0 / 55.3 | 64.8 / 13.5 / 55.0 | 0 | 5.91 |
+| `prob_lrc1_tau1_g9-5_pos1` | 78.6 / 47.0 / 71.8 | 69.8 / 66.0 / 57.6 | 64.2 / 12.3 / 57.5 | 1 | 8.34 |
+| `prob_lrc1_tau1_g9-5_pos0` | 78.8 / 51.9 / 71.6 | 70.0 / 66.5 / 56.7 | 64.4 / 12.7 / 53.7 | 1 | 6.84 |
+| `prob_lrc1_tau1_g5-1_pos1` | 78.4 / 46.6 / 71.2 | 70.1 / 66.3 / 57.6 | 64.8 / 13.0 / 55.4 | 1 | 8.76 |
+| `prob_lrc1_tau1_g5-1_pos0` | 78.5 / 52.3 / 71.9 | 70.1 / 66.7 / 58.3 | 64.9 / 13.6 / 55.9 | 1 | 4.57 |
+| `prob_lrc1_tau1_g3-1_pos1` | 78.4 / 46.5 / 71.2 | 70.1 / 66.3 / 57.6 | 64.8 / 12.9 / 55.8 | 1 | 8.84 |
+| `prob_lrc1_tau1_g3-1_pos0` | 78.5 / 52.8 / 69.7 | 70.1 / 66.6 / 58.5 | 64.9 / 13.5 / 56.4 | 1 | 4.21 |
+| `prob_lrc1_tau1_g1-1_pos1` | 78.1 / 46.0 / 71.6 | 70.0 / 66.3 / 57.6 | 64.9 / 13.0 / 58.0 | 1 | 9.35 |
+| `prob_lrc1_tau1_g1-1_pos0` | 78.0 / 51.5 / 57.1 | 69.8 / 65.9 / 55.2 | 64.8 / 13.5 / 55.0 | 0 | 6.02 |
+
+Selected among release options (position weight on): `prob_lrc1_tau0.1_g5-1_pos1` (2 cells, shortfall 10.10).
+Selected among all 32: `prob_lrc1_tau0.05_g3-1_pos0` (3 cells, shortfall 4.59).
+
+Gate 1 (`runs/20261113_lf_baselines/gate/gate.md`, regenerated; `gate.py` reads only the release default, the label
+read-out and the two selected configurations of CoReVAD (`ONLY`); the two selected rows are test-selected candidates,
+so they enter sets A and C and not B / D):
+- A and C: 5 of 9 cells ≥ naive (was 3). The two new cells are HateClipSeg pooled ROC 70.72 (+0.16) and pooled PR
+  67.90 (+0.46), both from `prob_lrc1_tau0.05_g3-1_pos0` (position prior off). Largest shortfall unchanged, 2.51
+  (HateClipSeg within, MARS). Gate 1 still fails.
+- With only the release-option selection added (`prob_lrc1_tau0.1_g5-1_pos1`, position weight on), A and C would have
+  4 of 9 (HateClipSeg pooled ROC +0.02; pooled PR −0.39), largest shortfall 2.51.
+- B and D unchanged: 3 of 9, largest shortfall 2.51.
+- Remaining failing cells (A): HateMM pooled ROC −1.93 and PR −1.67 (AnyAnomaly), HateClipSeg within −2.51 (MARS),
+  DeHate pooled PR −1.30 (MARS).
+- Turning the position weight off raises HateMM pooled PR in all 16 pairs (+4.9 to +6.7; release setting 44.5 →
+  49.5) and DeHate pooled PR in all 16 (+0.4 to +0.9); HateClipSeg pooled PR moves by −0.5 to +0.7. Without both
+  position weight and smoothing (`g1-1_pos0`) within falls sharply (HateMM 72.2 → 54.9 at tau 0.05). No configuration
+  reaches the naive row on HateMM pooled ROC / PR or on DeHate pooled ROC / PR.
+
 ### 3.3 AnyAnomaly (WACV 2026; method and configuration written before the run)
 
 Paper: Ahn, Jo, Lee, Kwon, Hong, Park, "AnyAnomaly: Zero-Shot Customizable Video Anomaly Detection with LVLM", WACV

@@ -37,6 +37,12 @@ METHODS = {
     "lavad": ("LAVAD", "CVPR 2024", "prob_default"),
     "lela": ("LELA", None, "prob_default"),
 }
+# Configurations read per method when the method directory holds more (README §3.2, brief 5 K1: the 32-configuration
+# CoReVAD grid is reported in the README; only the release default, the label read-out and the two selected rows enter
+# the gate). Methods not listed: every configuration present.
+ONLY = {"corevad": {"u8/prob_lrc1_tau0.05_g9-5_pos1", "u8/label_lrc1_tau0.05_g9-5_pos1",
+                    "u8/prob_lrc1_tau0.1_g5-1_pos1",      # K1 selection among release options
+                    "u8/prob_lrc1_tau0.05_g3-1_pos0"}}    # K1 selection among all 32 (position prior off)
 # Run and then excluded as a baseline by the user on 2026-11-15 (README §3.1); not read into any row set.
 EXCLUDED_NOTE = ("Probe-VAD (arXiv 2609.17211) was run and then excluded as a baseline by the user on 2026-11-15; "
                  "numbers in README §3.1.")
@@ -59,12 +65,16 @@ def rows():
         base = os.path.join(RUNS, m, C.DATASETS[0])
         for p in sorted(glob.glob(os.path.join(base, "**", "metrics.json"), recursive=True)):
             cfg = os.path.relpath(os.path.dirname(p), base)
+            if m in ONLY and cfg not in ONLY[m]:
+                continue
             pat = os.path.join(RUNS, m, "{ds}", cfg, "metrics.json")
             got = {ds: C.read(pat, ds) for ds in C.DATASETS}
             if not all(got.values()):
                 continue
             is_def = cfg == default
-            label = "%s on Qwen3-VL-8B, %s%s" % (disp, cfg, "" if is_def else " [test-selected candidate]")
+            label = "%s on Qwen3-VL-8B, %s%s%s" % (
+                disp, cfg, ", position prior off (not a release option)" if m == "corevad" and cfg.endswith("_pos0") else "",
+                "" if is_def else " [test-selected candidate]")
             out.append((label, {d: v[0] for d, v in got.items()}, {d: v[1] for d, v in got.items()}, is_def,
                         venue is not None))
     return out
