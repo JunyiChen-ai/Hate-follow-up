@@ -1,6 +1,6 @@
 # Experiment-section gates: baselines, DeHate margin, ablation rows (started 2026-11-14)
 
-Host: sc474397 (uoa-lab1). Status: **in progress, no gate passed yet.** All numbers are on the test split and are
+Host: sc474397 (uoa-lab1). Status: **gate 1 passed 2026-11-16 (§12); gates 2 and 3 open (§13).** All numbers are on the test split and are
 development-selected. Nothing in the method, STATUS or the paper has been changed.
 
 ## 1. Gates (set by the user, 2026-11-14)
@@ -490,3 +490,83 @@ is in the apart row `w/ EM Evidence` (HateMM ROC under F6, −0.04).
 
 Test-read record (rule 10): read the GT arrays of the three corpora, the em0 decodes and the two tables; no design was
 changed from them.
+
+## 12. Gate 1 passed (2026-11-16)
+
+From 2026-11-16 the planning session does all work itself (user instruction). Baseline work:
+`experiments/20261113_lf_baselines/README.md` §3.4.2 (Cog-VADU: 0 of 9 cells, no change) and §3.5 (Gaussian
+smoothing of stored baseline scores). `runs/20261113_lf_baselines/gate/gate.md`: sets A and C **9 of 9, gate
+passes**; sets B and D 3 of 9. The two cells that were missing come from "MARS + Gaussian smoothing, sigma 5 s"
+(82.2 / 55.5 / 62.3, 69.5 / 65.4 / 61.2, 71.6 / 18.4 / 62.1): HateClipSeg within 61.24 vs 61.18, DeHate pooled PR
+18.44 vs 17.69. Limits (stated in that README): the filter is our addition to the MARS port; the naive row with the
+same filter (83.7 / 58.2 / 62.3, 73.1 / 69.7 / 63.6, 71.3 / 18.9 / 62.4) is above MARS + smoothing on 7 of 9 cells.
+
+Consequence for gate 2: the best label-free DeHate row is now MARS + smoothing, pooled ROC 71.62 / PR 18.44, so
+gate 2 needs DeHate ROC >= 73.62 and PR >= 20.44. The current method (69.40 / 16.36) is below that row.
+
+## 13. Gates 2 and 3: analysis on cached reads and decodes (2026-11-16; CPU; development-selected)
+
+Test-read log (rule 10): the reads and decodes of §5–§11 and the test GT, through `gate_table.py`'s loaders;
+scripts `video_terms_auc.py`, `integrator_scan.py` (no bootstrap). Looked at: video-level AUC of each video term,
+and the 17-row table for the forms below. Design changes: none adopted.
+
+**13.1 Which video-level term orders videos** (`video_terms_auc.py`; video label = at least one hateful frame;
+decoder em0):
+
+| term | HateMM (85 of 215) | HateClipSeg (103 of 118) | DeHate (234 of 1151) |
+|---|---|---|---|
+| verdict `z_video` | .935 | .794 | .734 |
+| protected-group scope read `z_target` | .922 | .771 | **.816** |
+| HateClipSeg taxonomy read | — | .825 | — |
+| mean window read | .885 | .762 | .692 |
+| mean of the top quarter of the windows | .909 | .825 | .702 |
+| A = mean of min(window read, scope read) | .911 | .755 | .758 |
+| decoder's own video log-odds | .863 | .732 | .716 |
+| scope + mean window (each / s.d.) | .924 | .781 | .777 |
+| scope + A | .926 | .772 | .797 |
+| scope + verdict + mean window | .932 | .798 | .770 |
+
+On DeHate the scope read alone is the best term; every window aggregate and the verdict lower it. On HateClipSeg
+almost every video is positive, so the video order matters little there and the pooled metrics follow the share of
+hateful frames (correlation with that share: mean window read +.61, verdict +.46, scope +.41).
+
+**13.2 The no-EM decoder's evidence is a linear evidence.** `init_params` puts the two emission means at the 10th
+and 90th percentile of the normal-score reads with the corpus variance (1), so the log-likelihood ratio of a read y
+is 2.56 y; `--evidence linear` uses y / s.d. = y. Under em0 the row `w/ Linear Evidence` therefore only changes the
+slope from 2.56 to 1 (the same change as `--kappa 0.39`). It is not a different evidence model.
+
+**13.3 Integrator scan** (`integrator_scan.py`, decoder em0, universal protected-group question on all corpora;
+full = pooled ROC / PR / within; not-below over the 14 rows, all 9 cells / only the ROC and within cells that the
+appendix table prints):
+
+| video term (each / s.d.) + lambda x centred rank | HateMM | HateClipSeg | DeHate | not below |
+|---|---|---|---|---|
+| mean window + scope, lambda 1 (= F2 with em0) | 90.1 / 70.3 / 78.6 | 72.8 / 69.0 / 68.6 | 75.8 / 21.4 / 67.2 | 16 / 11 |
+| mean window + scope, lambda 2 | 89.4 / 69.0 / 78.6 | 73.4 / 69.6 / 68.6 | 75.6 / 21.2 / 67.2 | 11 / 8 |
+| mean window + scope, lambda 3.46 | 86.8 / 64.5 / 78.6 | 73.3 / 69.4 / 68.6 | 74.3 / 20.0 / 67.2 | 8 / 6 |
+| A + scope, lambda 1 | 90.0 / 70.0 / 78.6 | 71.4 / 68.0 / 68.6 | 76.7 / 23.4 / 67.2 | 13 / 9 |
+| A + scope, lambda 2 | 89.2 / 68.5 / 78.6 | 72.1 / 68.7 / 68.6 | 76.5 / 22.8 / 67.2 | 8 / 6 |
+| A + scope, lambda 3.46 | 86.4 / 63.7 / 78.6 | 72.1 / 68.4 / 68.6 | 75.2 / 21.2 / 67.2 | 6 / 4 |
+| top quarter + scope, lambda 1 | 89.6 / 68.5 / 78.6 | 70.3 / 66.3 / 68.6 | 75.4 / 21.7 / 67.2 | 18 / 11 |
+| mean window + verdict + scope, lambda 1 | 90.3 / 70.1 / 78.6 | 71.9 / 67.8 / 68.6 | 73.8 / 20.2 / 67.2 | 16 / 10 |
+| product: corpus rank of (mean window + scope) x within-video quantile | 79.6 / 58.0 / 78.6 | 71.7 / 67.7 / 68.6 | 70.2 / 17.6 / 67.2 | 11 / 7 |
+
+- Gate 2 against the new best label-free row (71.62 / 18.44): mean window + scope, lambda 1 gives +4.2 / +3.0;
+  A + scope +5.1 / +5.0. Both pass. HateClipSeg pooled ROC against the current method (73.27): −0.5 and −1.9; the
+  A form needs the taxonomy read on HateClipSeg (F5, 75.3 / 70.8) to stay inside the limit.
+- A larger within-video weight makes the reader and decoder rows move the pooled cells, but above lambda 2 it costs
+  pooled ROC / PR on HateMM (−3.3 / −5.8 at 3.46). The product form loses 10 points on HateMM.
+- Three within-video cells do not depend on the Integrator and stay above −0.05 under em0: `w/o Global Transcript`
+  HateClipSeg +0.38, `w/o Verdict Turn` HateMM +0.02, `w/ Linear Evidence` HateMM +1.01. Under the EM decoder (m2)
+  the set is different (`w/o Verdict Turn` DeHate +0.4, `w/ Joint Query` DeHate +1.4, `w/ Fixed Mean Duration`
+  DeHate +1.6, `w/ Linear Evidence` HateMM +1.6). All of these have bootstrap intervals that contain 0 (§11).
+- DeHate pooled ROC rises for rows that change only the window reads (`w/ Joint Query`, `w/o Verdict Turn`,
+  `w/o Window Evidence`) and for `w/o Window Aggregate`, `w/ Mean over Modalities`, because on DeHate the mean
+  window read lowers the video order that the scope read gives (13.1). The A form removes most of these cells.
+
+**13.4 Reading.** No choice of decoder and Integrator among the forms above makes every cell of the 14 rows drop.
+Two parts have no measurable effect and are the source of most remaining cells: the verdict turn (three-corpus
+mean change when removed: pooled ROC −0.1, within −0.5, no cell significant on HateMM or DeHate) and EM (§9.1).
+Removing them from the method removes their rows; the other reader rows must then be re-read without the verdict
+turn (the six arms took 7.4 GPU-hours on RTX 5090s in `experiments/20261101_reader_ablation/README.md` §5).
+Not started; it changes the method description, so it waits for the user.
