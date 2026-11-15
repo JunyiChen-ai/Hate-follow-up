@@ -32,6 +32,15 @@ Score = log P(Yes) - log P(No) at the first answer position, from one ordinary f
 segments containing its centre, and the score of the same question with "(no speech)" outside every segment (the
 old row's rule F1).
 
+Settings (2026-11-16, Retrieval-hate request: does the plain question change with its setting?). Frame arms only;
+defaults reproduce the rows above exactly and write to the same directory:
+  --window S     window length in seconds (default 8); 0 = one window covering the whole video. Frames are the
+                 1 fps frames of the window, at most 8 at uniform positions (as before), so windows longer than 8 s
+                 see 8 frames, shorter ones fewer.
+  --no-text      frames only: the prompt has no transcript line, just the question.
+  --question tax the taxonomy question TAX_Q with any frame arm (the arm vlm_tax stays as it was).
+Any non-default setting writes to naive/<arm>__<tag>/<DS> with tag e.g. w16, wall, notext, qtax.
+
 Stages: `infer` (GPU, HateVLM env) -> runs/20261113_lf_baselines/naive/<arm>/<DS>/units.jsonl (one line per video,
 resumable); `raster` (CPU, HateVideo env) -> predictions.jsonl + canonical evaluator. No label is read.
 """
@@ -63,13 +72,29 @@ MODELS = {"vlm": "Qwen/Qwen3-VL-8B-Instruct", "vlm_text": "Qwen/Qwen3-VL-8B-Inst
 FRAME_ARMS = ("vlm", "vlm_internvl", "vlm_tax")     # arms that see the window's frames
 
 
+SET = {"window": WINDOW, "no_text": False, "question": "plain"}      # set from the command line in main()
+
+
+def tag():
+    t = []
+    if SET["window"] != WINDOW:
+        t.append("wall" if SET["window"] == 0 else "w%g" % SET["window"])
+    if SET["no_text"]:
+        t.append("notext")
+    if SET["question"] != "plain":
+        t.append("q" + SET["question"])
+    return "_".join(t)
+
+
 def prompt(arm, text):
-    q = LLM_Q if arm == "llm" else TAX_Q if arm == "vlm_tax" else VLM_Q
+    q = LLM_Q if arm == "llm" else TAX_Q if (arm == "vlm_tax" or SET["question"] == "tax") else VLM_Q
+    if SET["no_text"]:
+        return q
     return "Transcript: %s\n\n%s" % (text or NO_SPEECH, q)
 
 
 def out_dir(arm, ds):
-    return os.path.join(Q.RUNS, "naive", arm, ds)
+    return os.path.join(Q.RUNS, "naive", arm + ("__" + tag() if tag() else ""), ds)
 
 
 def done_ids(path):
@@ -81,7 +106,9 @@ def done_ids(path):
 
 def windows(duration):
     from src.video_inputs import fixed_windows
-    return fixed_windows(duration, WINDOW)
+    if SET["window"] == 0:
+        return [(0.0, duration)]
+    return fixed_windows(duration, SET["window"])
 
 
 class Reader:
@@ -142,8 +169,8 @@ def cmd_infer(args):
         vids = vids[:args.limit]
     done = done_ids(path)
     todo = [v for v in vids if v not in done]
-    log("naive %s %s: model %s, %d cohort videos, %d to do; code %s" % (
-        arm, ds, MODELS[arm], len(vids), len(todo), L.git_version()))
+    log("naive %s %s: model %s, setting %s, %d cohort videos, %d to do; code %s" % (
+        arm, ds, MODELS[arm], json.dumps(SET), len(vids), len(todo), L.git_version()))
     if not todo:
         log("DONE infer (nothing to do)")
         return
@@ -241,7 +268,7 @@ def cmd_raster(args):
                 rows[v] = L.row("naive_" + arm, ds, v, r["duration"], [], None, __file__, error="no windows")
                 continue
             curve = L.units_to_4fps([u["start"] for u in us], [u["end"] for u in us], [u["z"] for u in us], n)
-            native = 1.0 / WINDOW
+            native = 1.0 / (SET["window"] or r["duration"])
         rows[v] = L.row("naive_" + arm, ds, v, r["duration"], curve, native, __file__)
     med, failed = L.apply_f2(rows, ds)
     stats["f2_videos"] = failed
@@ -259,7 +286,13 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--chunk", type=int, default=8, help="videos decoded ahead")
     ap.add_argument("--workers", type=int, default=4, help="ffmpeg decoders")
+    ap.add_argument("--window", type=float, default=WINDOW, help="window seconds; 0 = whole video")
+    ap.add_argument("--no-text", action="store_true", help="frames only, no transcript line")
+    ap.add_argument("--question", choices=("plain", "tax"), default="plain")
     args = ap.parse_args()
+    if (args.window != WINDOW or args.no_text or args.question != "plain") and args.arm not in FRAME_ARMS:
+        ap.error("--window / --no-text / --question are for the frame arms %s" % (FRAME_ARMS,))
+    SET.update(window=args.window, no_text=args.no_text, question=args.question)
     {"infer": cmd_infer, "raster": cmd_raster}[args.stage](args)
 
 

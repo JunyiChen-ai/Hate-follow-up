@@ -1,6 +1,7 @@
 #!/bin/bash
 # Body of the label-free jobs on the Retrieval-hate cohorts (README.md); called by lf_lab1.sbatch / lf_lab3.sbatch
 # inside the Slurm allocation. Arguments, run one after the other (each stage is resumable):
+#   naivex:<arm>:<dataset>:<flags>  the same with naive_prompt.py settings (--window,16 / --no-text / --question,tax)
 #   naive:<arm>:<dataset>    naive_prompt.py infer + raster   (arm vlm = Qwen3-VL-8B, vlm_internvl = InternVL3.5-8B)
 #   mars:<dataset>           mars_q3vl.py infer (vLLM) + readout (HF) + raster
 #   eventvad:<dataset>       eventvad_q3vl.py infer (vLLM) + readout (HF) + raster; needs $RH_RUNS/eventvad/<dataset>/events.jsonl
@@ -21,11 +22,15 @@ CPU=$HOME/miniconda3/envs/HateVideo/bin/python
 X=experiments/20261113_lf_baselines
 failed=()
 for task in "$@"; do
-  IFS=: read -r kind a b <<< "$task"
+  IFS=: read -r kind a b c <<< "$task"
   echo "$(date -Is) TASK START $task"
   case $kind in
   naive)
     $HF $X/naive_prompt.py infer --arm $a --dataset $b && $CPU $X/naive_prompt.py raster --arm $a --dataset $b ;;
+  naivex)
+    # naivex:<arm>:<dataset>:<flags, comma-separated>, e.g. naivex:vlm:HateClipSeg:--window,16 (naive_prompt.py settings)
+    f=${c//,/ }
+    $HF $X/naive_prompt.py infer --arm $a --dataset $b $f && $CPU $X/naive_prompt.py raster --arm $a --dataset $b $f ;;
   mars)
     $VL $X/mars_q3vl.py infer --dataset $a && $HF $X/mars_q3vl.py readout --dataset $a && $CPU $X/mars_q3vl.py raster --dataset $a ;;
   eventvad)
