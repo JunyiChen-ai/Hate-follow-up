@@ -438,3 +438,55 @@ tables above; no design was changed from them.
 - Code fix found while running O1: `gate_table.py` `scales()` (forms `sd` and `cdf`) built its array from the whole
   `terms` tuple, which since §7 also holds the per-window arrays; it now takes the four video-level terms only. The
   `sd` / `cdf` tables of §5.2 were produced before the tuple was extended, so their numbers are unaffected.
+
+## 11. Ablation tables with the no-EM decoder as the full method's decoder (brief 5 K2, 2026-11-15)
+
+Reason (planning session): `w/o EM Evidence` (§9.1) is not below the full method on 8 of 9 cells; a simpler decoder
+that is not worse should be the method's decoder. Development-selected (the decision rests on test tables).
+
+`gate_table.py --decoder em0`: every row's decode uses `--em-iters 0` on top of the base flags. Reader rows decode
+their own reads with `--em-iters 0`; decoder rows `w/o Temporal Coupling`, `w/ Shared Chain`, `w/ Fixed Mean
+Duration`, `w/o Duration Posterior` add their flag on top of `--em-iters 0`; `w/ Linear Evidence` reuses the current
+linear decode (`twolevel_r2.py` runs no EM under `--evidence linear`); `w/ ASR Windows` uses the composition on both
+sides, so the decoder does not enter it. The apart row `w/o EM Evidence` is replaced by `w/ EM Evidence` = the current
+m2 decode (`--em-iters 300`). The full decode is `decoder_d/{main,dehate}/em0` (§9.1). 20 new decodes in
+`runs/20261114_exp_gates/gate_table/decodes/{main,dehate}/em0__*` (one run each). Code: `gate_table.py` (COMPONENTS
+`em0`, ROW_FLAGS `em300`, EXISTING entries, `ROWS_EM0`). Run: uoa-lab1, CPU, `gate_table/logs/k2_run.sh`, logs
+`gate_table/K2_F5.log`, `K2_F6.log`; 1000 paired bootstrap draws. Tables `gate_table/tables/em0__F5.md`,
+`em0__F6.md` (and `.json`); every not-below cell with its interval in `gate_table/K2_notbelow.txt`.
+
+Full method, absolute (ROC / PR / within):
+
+| decoder, form | HateMM | HCS | DeHate | not below, 14 rows | rows below on every cell |
+|---|---|---|---|---|---|
+| em0, F5 | 90.0 / 70.0 / 78.6 | 75.3 / 70.8 / 68.6 | 76.7 / 23.4 / 67.2 | 12 | 8 of 14 |
+| em0, F6 | 90.0 / 70.2 / 78.6 | 75.9 / 71.9 / 68.6 | 76.0 / 21.6 / 67.2 | 17 | 6 of 14 |
+| m2, F5 (§7) | 90.0 / 69.9 / — | 75.3 / 70.8 / — | 76.7 / 23.3 / — | 15 | 8 of 14 |
+| m2, F6 (§7) | 90.0 / 70.1 / — | 76.0 / 72.0 / — | 76.0 / 21.6 / — | 19 | 8 of 14 |
+
+Not-below cells among the 14 rows (change in points, 95 % paired interval):
+- F5 (12): Verdict Turn HateMM ROC +0.06, PR +0.27, within +0.02, DeHate ROC +0.20; Linear Evidence HateMM ROC +0.05,
+  PR +0.15, within +1.01, DeHate ROC −0.03; Global Transcript HCS within +0.38; Joint Query DeHate ROC +0.50; Window
+  Evidence DeHate ROC +0.04; Mean over Modalities DeHate ROC −0.03. Every interval contains 0.
+- F6 (17): Verdict Turn HateMM ROC +0.10, PR +0.14, within +0.02, DeHate ROC +0.58, PR +0.44; Linear Evidence HateMM
+  ROC +0.04, PR +0.11, within +1.01, DeHate ROC −0.03; Fixed Mean Duration HateMM PR −0.01; Global Transcript HCS
+  within +0.38; Joint Query DeHate ROC +0.49; Window Evidence DeHate ROC +0.20; Window Aggregate DeHate ROC +0.64, PR
+  +1.08; Mean over Modalities DeHate ROC +0.37, PR +0.72. Every interval contains 0.
+
+Apart rows (not counted):
+- `w/o Scope Read`: F5 2 not below (HCS ROC +0.09, PR +1.15); F6 1 (HCS PR +0.10). Intervals contain 0.
+- `w/o Duration Posterior`: F5 1 (HCS PR +0.01); F6 1 (HCS PR −0.02). Within drops −3.9 / −0.5 / −1.2 in both.
+- `w/ EM Evidence`: F5 4 not below (HCS ROC +0.02, PR +0.00, within +0.08; DeHate ROC −0.03); F6 6 (adds HateMM ROC
+  −0.04, interval [−0.08, −0.01] excludes 0, and DeHate PR −0.03). DeHate within −1.1 (interval excludes 0) and HateMM
+  within −0.6 in both: adding EM back lowers within.
+
+Gate 2: DeHate full − best label-free row ROC / PR: F5 +7.5 (MARS) / +5.7 (naive row); F6 +6.9 / +3.9. Passes for both.
+HateMM / HCS against the current method (ROC / PR / within; limits −0.5 pooled, −1.0 within): F5 +0.15 / +0.82 / +0.58,
++2.05 / +1.86 / −0.08; F6 +0.16 / +0.97 / +0.58, +2.67 / +2.99 / −0.08. Within limits for both.
+
+Gate 3 fails for both (12 and 17 not-below cells; needs 0). With em0 instead of m2 the count drops by 3 (F5) and 2
+(F6). Every not-below cell of the 14 rows has an interval containing 0; the only not-below interval that excludes 0
+is in the apart row `w/ EM Evidence` (HateMM ROC under F6, −0.04).
+
+Test-read record (rule 10): read the GT arrays of the three corpora, the em0 decodes and the two tables; no design was
+changed from them.

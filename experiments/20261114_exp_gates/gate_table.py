@@ -70,9 +70,11 @@ SCOPE = {   # scope read per prefix
 COMPONENTS = {   # decoder component -> extra twolevel_r2.py flags
     "m2": "", "kap0.3": "--kappa 0.3", "kap0.5": "--kappa 0.5", "kap0.7": "--kappa 0.7", "fixed80": "--bma-fixed 80",
     "plog": "--bma-prior log", "lin": "--evidence linear", "learned": "--bma-prior learned", "ar1": "--ktemper ar1",
+    "em0": "--em-iters 0",      # README §11: the no-EM decoder as the full method's decoder (brief 5 K2)
 }
 ROW_FLAGS = {"nocoupling": "--nocoupling", "sharedchain": "--sharedchain", "fixed80": "--bma-fixed 80",
-             "lin": "--evidence linear", "wprior": "--bma-weights prior", "em0": "--em-iters 0"}
+             "lin": "--evidence linear", "wprior": "--bma-weights prior", "em0": "--em-iters 0",
+             "em300": "--em-iters 300"}     # em300 overrides the em0 component (argparse: last value wins)
 # (component, read set, row flag) -> existing decode directory per part (same reads, same flags)
 EXISTING = {
     ("m2", "full", ""): {"main": f"{PR}/main/m2", "dehate": f"{PR}/dehate/m2"},
@@ -89,6 +91,11 @@ EXISTING = {
     ("lin", "full", ""): {"main": f"{PR}/main/lin_bma_nscore", "dehate": f"{PR}/dehate/lin_bma_nscore"},
     **{("m2", "full", f): {p: f"runs/20261114_exp_gates/decoder_d/{p}/{f}" for p in ("main", "dehate")}
        for f in ("wprior", "em0")},     # README §9
+    # README §11, decoder em0: the full decode is decoder_d em0; `w/ EM Evidence` = the current m2 decode; linear
+    # evidence has no EM (twolevel_r2.py skips em() under --evidence linear), so its decode is unchanged.
+    ("em0", "full", ""): {p: f"runs/20261114_exp_gates/decoder_d/{p}/em0" for p in ("main", "dehate")},
+    ("em0", "full", "em300"): {"main": f"{PR}/main/m2", "dehate": f"{PR}/dehate/m2"},
+    ("em0", "full", "lin"): {"main": f"{PR}/main/lin_bma_nscore", "dehate": f"{PR}/dehate/lin_bma_nscore"},
 }
 COMPOSE = {"fixed": {"main": f"{RA}/compose/fixed_main", "dehate": f"{RA}/compose/fixed_DeHate"},
            "asr": {"main": f"{RA}/compose/asr_main", "dehate": f"{RA}/compose/asr_DeHate"}}
@@ -112,6 +119,9 @@ ROWS = [
     ("w/o Duration Posterior", "extra (not counted)", "full", "full", "wprior", None),
     ("w/o EM Evidence", "extra (not counted)", "full", "full", "em0", None),
 ]
+# With --decoder em0 the apart row `w/o EM Evidence` is replaced by `w/ EM Evidence` (README §11).
+ROWS_EM0 = [r for r in ROWS if r[0] != "w/o EM Evidence"] + [
+    ("w/ EM Evidence", "extra (not counted)", "full", "full", "em300", None)]
 NAIVE = "runs/20261113_lf_baselines/naive/vlm/{ds}/predictions.jsonl"
 GATE1 = "runs/20261113_lf_baselines/gate/gate.json"     # best published label-free cell per corpus and metric
 CURRENT = {"HateMM": f"{PR}/main/m2", "HateClipSeg": f"{PR}/main/m2", "DeHate": f"{PR}/dehate/m2"}
@@ -535,6 +545,9 @@ def main():
     ap.add_argument("--check", action="store_true", help="plumbing: current method must equal its metrics.json")
     args = ap.parse_args()
     comps = args.decoder.split(",")
+    if comps == ["em0"]:
+        global ROWS
+        ROWS = ROWS_EM0
     todo = needed_decodes(comps)
     with ThreadPoolExecutor(args.jobs) as ex:
         for d, st in ex.map(lambda t: run_decode(*t), todo):
