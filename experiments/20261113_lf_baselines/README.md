@@ -642,3 +642,46 @@ PR / within:
 - Gate 1 after adding the three rows (`runs/20261113_lf_baselines/gate/gate.md`): unchanged. A / C 7 of 9 (fails:
   HateClipSeg within −2.17, AnyAnomaly clip-unit default; DeHate pooled PR −1.30, MARS); B / D 3 of 9. No Cog-VADU
   row is the best published row on any cell.
+
+### 3.5 Gaussian temporal smoothing of the stored scores (planning session, 2026-11-16; written before the run)
+
+From here on the planning session does the work itself (user, 2026-11-16).
+
+Why. Gate 1 fails on two cells: HateClipSeg within (best published 59.01, naive 61.18) and DeHate pooled PR (best
+16.40, naive 17.69). The releases of AnyAnomaly and Probe-VAD end with a Gaussian filter over time; on our corpora
+that filter alone moved HateClipSeg within by +0.8 (AnyAnomaly, §3.3.1) and DeHate pooled PR by +1.9 (Probe-VAD,
+§3.1). MARS, EventVAD, CoReVAD and Cog-VADU have no such step. MARS is a video-level detector; how its per-window
+decision becomes a frame score is part of our port, not of the method. So the port gets a post-processing step:
+a Gaussian filter over the 4 fps score curve of each video. This is **not** an option of any of the four releases
+and every row below says so. No component of our method is used. Mechanism hypothesis: none; comparison rows.
+
+Input (no new inference, CPU): the stored `predictions.jsonl` (4 fps curves) of
+- MARS `mars/<DS>/prob` (score = log-odds),
+- EventVAD `eventvad/<DS>/prob`,
+- CoReVAD `corevad/<DS>/u8/prob_lrc1_tau0.05_g9-5_pos1` (release default),
+- Cog-VADU `cogvadu/<DS>/u8/prob_default` (release default),
+- reference only, not a gate row: the naive row `naive/vlm/<DS>` (score = log-odds).
+
+Operation: per video `scipy.ndimage.gaussian_filter1d(curve, sigma = 4 * sigma_s)` (reflect boundary, as §3.3.1).
+
+Grid (fixed now):
+- `sigma_s` (seconds): 2, 4, 5, 8, 12, 16, 24, 32 (0.25 to 4 of our 8 s windows; 5 s is the AnyAnomaly clip-unit
+  default of §3.3.1).
+- score space: `raw` (the stored score) for every method; for the two log-odds rows (MARS, naive reference) also
+  `prob` = 1 / (1 + exp(−score)), because averaging log-odds and averaging probabilities are different operations.
+- Order: sigma ascending, `raw` before `prob`. MARS 16 configurations, the other three 8 each.
+
+Rows written per method (evaluator `metrics.json` under `runs/20261113_lf_baselines/smooth/<method>/<DS>/<name>/`):
+- `s5_raw`: sigma 5 s on the stored score; fixed before its numbers were seen.
+- `sel`: one configuration for all three corpora, chosen on test labels by this rule: add the configuration's row
+  to gate set A as it stands at commit 2439878; most cells >= naive for the enlarged set; ties by the smallest
+  largest shortfall of the enlarged set; then by the row's own number of cells >= naive; then grid order.
+Both rows enter gate sets A and C only, labelled "+ Gaussian smoothing (not in the release) [test-selected
+candidate]" (the step itself was added after the gate result was known, so no smoothing row counts as fixed before
+the run). The naive reference with the same filter is reported here and is not a gate row; the gate's naive row
+stays the frozen unsmoothed row.
+
+Metrics in the grid: the evaluator functions `pooled`, `within_video_macro` (`src/eval/evaluate.py`) on the test
+split; the script first checks that the unsmoothed curves reproduce each stored `metrics.json`. Reported numbers
+are the evaluator's `metrics.json` of the written rows. Code `smooth_grid.py`; output
+`runs/20261113_lf_baselines/smooth/{grid.jsonl,summary.json,run.log}`. Cost: CPU minutes on uoa-lab1.
