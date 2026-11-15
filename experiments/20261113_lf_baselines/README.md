@@ -612,3 +612,33 @@ Code: `cogvadu_grid.py` (written before the full run). Grid order for ties: eval
 equals `refine_video` exactly on four configurations, and at start it checks again on the full data against
 `refine_video` and the stored `prob_default` metrics. Output: `runs/20261113_lf_baselines/cogvadu_grid/`
 (`grid.jsonl`, `summary.json`) and `cogvadu/<DS>/u8/grid_selected/metrics.json`.
+
+#### 3.4.2 Results (2026-11-16)
+
+Runs: uoa-lab1 (sc474397). Smoke Slurm 2349 failed at the ImageBind stage (pytorchvideo `FrameVideo` needs OpenCV,
+missing in HateVideo; `opencv-python-headless==4.10.0.84` installed with `--no-deps`, numpy 1.26.4 kept, recorded in
+`environment_HateVideo.yml` and `runs/_setup_lab1/pip_installs.log`); smoke Slurm 2352 passed (2 HateMM videos, 17
+segments). Full run Slurm 2353, 6 h 12 min GPU (generation 33 / 24 / 103 min, read-out 17 / 13 / about 60 min,
+ImageBind 23 / 20 / 84 min for HateMM / HateClipSeg / DeHate). Grid: `cogvadu_grid.py` on uoa-lab1 CPU, 16
+processes, 19 min. No failed videos. Segments 3768 / 3591 / 14375; answers without an ANOMALY_SCORE number 0 / 1 / 0
+(read after the appended prefix); refusal steps that reuse the previous value 0 / 1 / 6; answers cut at 512 tokens
+0 / 1 / 0.
+
+Metrics (evaluator `metrics.json` under `runs/20261113_lf_baselines/cogvadu/<DS>/u8/<config>/`), pooled ROC / pooled
+PR / within:
+
+| row | HateMM | HateClipSeg | DeHate | cells >= naive |
+|---|---|---|---|---|
+| naive `vlm` | 81.0 / 55.3 / 61.8 | 70.6 / 67.4 / 61.2 | 69.1 / 17.7 / 60.5 | — |
+| `prob_default` (release defaults; fixed before the run; sets A–D) | 70.7 / 44.4 / 56.1 | 68.9 / 64.0 / 54.3 | 55.0 / 11.6 / 51.7 | 0 |
+| `text_default` (the release's own number; check, test-selected) | 69.6 / 43.9 / 54.0 | 68.2 / 63.2 / 54.2 | 54.7 / 10.9 / 51.8 | 0 |
+| `grid_selected` (§3.4.1, K1 rule; test-selected; sets A, C) | 70.9 / 43.1 / 53.5 | 67.2 / 61.8 / 50.7 | 56.4 / 11.3 / 52.0 | 0 |
+
+- `grid_selected` = eval `num_neighbors` 3, kept `num_neighbors` 10, `initial_k` 15, `text_weight` 2,
+  `visual_weight` 0.125, `temporal_window` 0. No configuration of the 33 750 is at or above the naive row on any cell,
+  so the K1 rule decides on the smallest largest shortfall (12.7 points, DeHate pooled ROC).
+- Ranges over the grid: HateMM 67.5–73.2 / 40.6–47.0 / 47.5–57.8; HateClipSeg 65.7–69.4 / 60.2–65.5 / 47.3–57.0;
+  DeHate 53.5–56.5 / 9.2–12.2 / 48.3–55.6. Best single cells stay below the naive row on all nine cells.
+- Gate 1 after adding the three rows (`runs/20261113_lf_baselines/gate/gate.md`): unchanged. A / C 7 of 9 (fails:
+  HateClipSeg within −2.17, AnyAnomaly clip-unit default; DeHate pooled PR −1.30, MARS); B / D 3 of 9. No Cog-VADU
+  row is the best published row on any cell.

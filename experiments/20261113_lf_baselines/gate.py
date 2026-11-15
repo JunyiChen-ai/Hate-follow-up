@@ -47,7 +47,9 @@ ONLY = {"corevad": {"u8/prob_lrc1_tau0.05_g9-5_pos1", "u8/label_lrc1_tau0.05_g9-
 NAMES = {("anyanomaly", "u8/k4_clipunit_default"): "AnyAnomaly on Qwen3-VL-8B, clip-unit default (sigma 5 s)",
          ("anyanomaly", "u8/k4_grid_common"): "AnyAnomaly on Qwen3-VL-8B, release grid, one configuration for all corpora",
          ("anyanomaly", "u8/k4_grid_per_corpus"):
-             "AnyAnomaly, release protocol (per-dataset grid search on test labels)"}
+             "AnyAnomaly, release protocol (per-dataset grid search on test labels)",
+         ("cogvadu", "u8/grid_selected"): "Cog-VADU on Qwen3-VL-8B, re-ranking grid, one configuration for all corpora",
+         ("cogvadu", "u8/text_default"): "Cog-VADU on Qwen3-VL-8B, default, text read-out"}
 PER_CORPUS_NOTE = ("The row \"AnyAnomaly, release protocol (per-dataset grid search on test labels)\" uses a different "
                    "configuration per corpus (selected by pooled ROC on each corpus's test labels). This breaks the "
                    "one-configuration-per-row rule and is allowed only because it is the method's published protocol "
