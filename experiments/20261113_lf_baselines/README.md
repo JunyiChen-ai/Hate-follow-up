@@ -562,3 +562,25 @@ embedding per segment. Segments: HateMM 3768, HateClipSeg 3591, DeHate 14375.
 
 Plan: smoke on 2 HateMM videos (uoa-lab1), then HateMM, HateClipSeg, DeHate; raster; `gate.py` row in sets A–D for
 `u8/prob_default` (the text read-out as an extra, test-selected configuration).
+
+#### 3.4.1 Grid over the release's re-ranking arguments (defined before the full run; CPU only; test-selected)
+
+Arguments the release exposes for stages 5–6 (command-line arguments of `video_text_TEST3_fast.py` and
+`eval2_k_exp.py`) and the ranges (the release's own range where it gives one; otherwise the default halved and
+doubled twice, rounded to integers with Python `round`):
+
+| argument | release default / script value | grid |
+|---|---|---|
+| `eval2_k_exp.py --num_neighbors` (neighbours averaged) | loop 2 … 10 in `06_evaluate.sh` | 2, 3, …, 10 (the release's range) |
+| `video_text_TEST3_fast.py --num_neighbors` (neighbours kept) | 10 | 2, 5, 10, 20, 40 |
+| `--initial_k` | None → 30 | 8, 15, 30, 60, 120 |
+| `--text_weight` | 0.5 | 0.125, 0.25, 0.5, 1, 2 |
+| `--visual_weight` | 0.5 | 0.125, 0.25, 0.5, 1, 2 |
+| `--temporal_window` (segments) | 5 | 1, 2, 5, 10, 20, and 0 (the seconds conversion of deviation 2) |
+
+Not in the grid: the chain smoothing 0.3 (`temporal_consistency_weight` is a constructor default, not an argument)
+and the decay 2 × `frame_interval` (a constant in the code). Only the ratio of the two weights changes the ranking,
+so the 25 weight pairs give 9 distinct results; an eval `num_neighbors` above the kept number averages all kept
+neighbours. Read-out `prob`. Selection: the K1 rule (one configuration for all three corpora; most cells ≥ the naive
+row, ties by the smallest largest shortfall, then grid order). The selected row enters gate sets A and C as
+test-selected.
