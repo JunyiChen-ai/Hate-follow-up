@@ -30,6 +30,7 @@ STAGE2 = {
     "joint__no_isolation": "w/ Joint Query, w/o Query Isolation",
     "joint__no_window_evidence": "w/ Joint Query, w/o Window Evidence",
     "no_isolation__no_window_evidence": "w/o Query Isolation + Window Evidence",
+    "joint__no_isolation__no_window_evidence": "w/ Joint Query, w/o Query Isolation + Window Evidence",
 }
 for arm, label in STAGE2.items():      # experiments/20261101_reader_ablation README §9: NAME=mg_<corpus>
     G.READS[arm] = {"main": f"{G.RA}/mg_merged/{arm}", "dehate": f"{G.RA}/mg_DeHate/{arm}"}

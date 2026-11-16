@@ -325,3 +325,13 @@ Checks (in-job, tolerance 1e-3): `z_video` of every combined arm equals the stor
 question); the first branch of `joint__no_isolation` equals the stored `joint` window-1 read and the first branch of
 `no_isolation__no_window_evidence` equals the older reader's window-1 visual read (nothing before either but the
 prefix and the verdict turn); the two growing-conversation arms also run on the longest HateMM video in the smoke.
+
+**Fourth combined arm (added 2026-11-17 after jobs 2412–2414 were submitted and before any of their numbers was
+seen).** `joint__no_isolation__no_window_evidence`: all three parts at once — one joint question per window with the
+older window inputs in the growing conversation (the plain sequential window reader). It is the fallback merge set
+(b) of `experiments/20261114_exp_gates/README.md` §15.1; the GPU is idle otherwise, so it is queued behind the three
+jobs instead of waiting for their tables (about 45 min for the three corpora). Same output directories
+(`NAME=mg_<corpus>`, resumable; `config.json` of a directory is that of its last job). Check: `z_video` as above, and
+its first branch equals window 1 of `joint__no_window_evidence` of the same corpus. No separate smoke: the arm
+combines code paths that the smoke of job 2411 covered, and the in-job checks end the job with `FAILED` on a
+difference.

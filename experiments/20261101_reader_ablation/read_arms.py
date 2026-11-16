@@ -17,7 +17,8 @@ No-verdict-turn family (README §8, 2026-11-16): `ns_<arm>` = the arm with the v
 no_window_evidence. The family's base is the stored `no_stance` arm.
 Combined arms (README §9, 2026-11-17): `<part>__<part>` changes two reader parts at once (verdict turn kept):
 joint__no_isolation (one joint branch per window in the growing conversation), joint__no_window_evidence (one joint
-branch with the older window inputs), no_isolation__no_window_evidence (growing conversation with the older inputs).
+branch with the older window inputs), no_isolation__no_window_evidence (growing conversation with the older inputs),
+joint__no_isolation__no_window_evidence (all three: one joint branch per window, older inputs, growing conversation).
 Arm-major order (every video of one arm, then the next arm). Output runs/20261101_reader_ablation/<name>/
 {records/<arm>/<ds>/<vid>.json, <arm>/predictions.jsonl, <arm>/config.json, config.json, run.log, run.pid}.
 Resumable: (arm, video) pairs with a record are not read again.
@@ -51,7 +52,8 @@ EXP = ROOT / "runs/20261101_reader_ablation"
 NATIVE_FRAMES = 20
 ARMS_V1 = ["base", "no_transcript", "no_prefix_frames", "no_stance", "asr_windows", "no_isolation", "joint"]  # 2026-11-01 set
 NS_KINDS = ["no_transcript", "no_prefix_frames", "asr_windows", "no_isolation", "joint", "no_window_evidence"]
-COMBINED = ["joint__no_isolation", "joint__no_window_evidence", "no_isolation__no_window_evidence"]   # README §9
+COMBINED = ["joint__no_isolation", "joint__no_window_evidence", "no_isolation__no_window_evidence",   # README §9
+            "joint__no_isolation__no_window_evidence"]
 ARMS = ARMS_V1 + ["no_window_evidence"] + ["ns_" + k for k in NS_KINDS] + COMBINED
 # prefix and verdict question as the base (the verdict is read before anything is written back or cropped)
 SAME_VERDICT = {"base", "no_stance", "asr_windows", "no_isolation", "joint", "no_window_evidence",
@@ -177,6 +179,8 @@ def check(bundle, ref, other=None):
             out["first_joint"] = abs(ow[0]["z_joint"] - mine[0]["z_joint"])
         elif arm == "no_isolation__no_window_evidence":
             out["first_visual_old"] = abs(ow[0]["z_visual"] - mine[0]["z_visual"])
+        elif arm == "joint__no_isolation__no_window_evidence":
+            out["first_joint_old"] = abs(ow[0]["z_joint"] - mine[0]["z_joint"])
     if ref is None:
         return out
     ws = ref["extra"]["windows"]
@@ -230,6 +234,9 @@ def main():
                 others[arm, ds] = stored(OLD[ds], ds)
             elif arm == "joint__no_isolation":
                 others[arm, ds] = arm_reads("joint", ds)
+            elif arm == "joint__no_isolation__no_window_evidence":   # first branch = joint__no_window_evidence, window 1
+                ref_path = EXP / f"mg_{ds}" / "joint__no_window_evidence" / "predictions.jsonl"
+                others[arm, ds] = stored(ref_path, ds) if ref_path.exists() else {}
             elif arm in ("no_stance", "ns_no_isolation"):
                 others[arm, ds] = arm_reads("no_stance", ds)
             elif arm in ("ns_no_transcript", "ns_no_prefix_frames"):
