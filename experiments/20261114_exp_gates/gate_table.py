@@ -237,7 +237,7 @@ def needed_decodes(comps):
         for name, grp, reads, scope, rflag, integ in ROWS:
             if rflag == "compose":
                 continue
-            for part in ("main", "dehate"):
+            for part in sorted({PART[ds] for ds in DATASETS}):
                 out.add((comp, reads, "" if integ else rflag, part))
     return sorted(out)
 
@@ -499,6 +499,8 @@ def checks(store, cfg, res):
         mc = metrics(y, C)
         out[ds] = {"naive": mn.tolist(), "current": mc.tolist(), "vs_naive": (mf - mn).tolist(),
                    "vs_current": (mf - mc).tolist()}
+    if "DeHate" not in DATASETS:
+        return out
     g = json.load(open(ROOT / GATE1))
     for sect in ("A", "C"):          # A: all published rows; C: peer-reviewed only
         best = {(c["dataset"], c["metric"]): (max(c["best"], c["naive"]) / 100, c["row"] if c["best"] >= c["naive"]
@@ -548,6 +550,11 @@ def render(res, chk, cfg, title):
     L += ["", f"Cells not below the full method, {n_rows} rows: **{total}** (rows with every cell below: {rows_ok} of {n_rows}; "
           f"pooled ROC and within columns only, as printed in the paper's appendix table: {total_rw}); "
           + "; ".join(f"`{k}`: {v}" for k, v in extra.items()) + ".", ""]
+    cur = "Full − current method: " + "; ".join(
+        f"{ds} " + " / ".join(f"{100 * x:+.2f}" for x in chk[ds]["vs_current"]) for ds in DATASETS)
+    if "DeHate" not in DATASETS:
+        L.append(cur + " (limits on HateMM and HateClipSeg: −0.5 pooled, −1.0 within).")
+        return "\n".join(L) + "\n", total
     vb = lambda sect: " / ".join(f"{100 * d:+.1f} ({r})" for d, r in chk["DeHate"]["vs_best_" + sect])
     L.append("Gate 2 checks (points; need ≥ +2 each on DeHate): full − naive Qwen3-VL-8B row ROC / PR = " +
              " / ".join(f"{100 * x:+.1f}" for x in chk["DeHate"]["vs_naive"][:2]) +
@@ -577,9 +584,13 @@ def main():
     ap.add_argument("--family", choices=("current", "ns"), default="current",
                     help="ns: the method without the verdict turn (README §14)")
     ap.add_argument("--skip-missing", action="store_true", help="leave out rows whose reads are not on disk yet")
+    ap.add_argument("--part", choices=("all", "main"), default="all", help="main: HateMM and HateClipSeg only")
     args = ap.parse_args()
     comps = args.decoder.split(",")
-    global ROWS, FULL
+    global ROWS, FULL, DATASETS
+    if args.part == "main":
+        DATASETS = ("HateMM", "HateClipSeg")
+    parts = sorted({PART[ds] for ds in DATASETS})
     if comps == ["em0"]:
         ROWS = ROWS_EM0
     skipped = []
@@ -591,8 +602,8 @@ def main():
             if r[4] == "compose":
                 comp = COMPOSE_NS if FULL == "no_stance" else COMPOSE
                 return all((ROOT / comp[sd][pt] / "predictions_izv_plus_mean_rrank.jsonl").exists()
-                           for sd in ("fixed", "asr") for pt in ("main", "dehate"))
-            return all((ROOT / READS[r[2]][pt] / "predictions.jsonl").exists() for pt in ("main", "dehate"))
+                           for sd in ("fixed", "asr") for pt in parts)
+            return all((ROOT / READS[r[2]][pt] / "predictions.jsonl").exists() for pt in parts)
         skipped = [r[0] for r in ROWS if not have(r)]
         ROWS = [r for r in ROWS if have(r)]
     todo = needed_decodes(comps)
