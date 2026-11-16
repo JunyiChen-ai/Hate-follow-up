@@ -230,3 +230,56 @@ every video (`z_video`, every `z_visual` / `z_speech`, speech presence, score cu
   run on uoa-lab1. Found: picture-only share of hateful windows .114 / .216 / .083; joint read positive on .96-.99 of
   hateful windows with a positive speech read and .50-.69 of the picture-only ones. Used for the paper text only; no
   design was changed.
+
+## 8. No-verdict-turn family (declared 2026-11-16, before any GPU run)
+
+**Why.** `experiments/20261114_exp_gates/README.md` §13.4: the verdict turn (A3) has no measurable effect, so its
+ablation row cannot drop. The user's go-ahead of 2026-11-16: remove it and re-run the reader rows, without changing
+the default method yet. This section re-reads the reader rows for a method **without** the verdict turn. Nothing is
+adopted here; the current method keeps its verdict turn until the user decides.
+
+### 8.1 Family base and arms
+
+Family base = the stored A3 reads (`no_stance`, §6: `runs/20261101_reader_ablation/{HateMM,HateClipSeg}/no_stance`,
+`DeHate/no_stance`): the verdict `z_video` is read on the prefix, the cache is cropped back to the prefix, and every
+window branch follows the prefix directly. Each arm changes one thing against that base; arm names carry `ns_`.
+
+| arm | paper row | change against the family base |
+|---|---|---|
+| `ns_no_transcript` | w/o Global Transcript | A1's prefix (no whole transcript); verdict read on it, not written back |
+| `ns_no_prefix_frames` | w/o Global Frames | A2's prefix (no 20 frames); verdict read on it, not written back |
+| `ns_asr_windows` | w/ ASR Windows | A4's windows (Whisper segments) |
+| `ns_no_isolation` | w/o Query Isolation | A5's growing conversation, starting right after the prefix (no verdict turn before the first branch); each branch's Yes/No written back |
+| `ns_joint` | w/ Joint Query | A6's single branch per window |
+| `ns_no_window_evidence` | w/o Window Evidence | the older window inputs: the visual branch asks the visual question alone (no in-window frames), the speech branch gets the proportional transcript slice (`window_text`) instead of the forced-aligned words and is read when that slice is non-empty |
+
+The row `w/o Window Evidence` of the paper uses the older reader's stored reads (`runs/20260926_glr/base_gridA`,
+`runs/20261031_window_evidence/DeHate/r6_replay`), which have the verdict turn. `read_arms.py` gets the arm
+`no_window_evidence` (the older window inputs **with** the verdict turn) only to check that the arm's code path is
+the older reader: it must reproduce those stored reads (§8.3).
+
+### 8.2 Code and how to run (uoa-lab1, Slurm partition `local-sc474397`)
+
+`read_arms.py`: arms `no_window_evidence` and `ns_<arm>`; `ns_<arm>` calls `build_context(..., stance=False)` and is
+otherwise the arm. `src/reader_arms.py` unchanged. With `NS="ns_no_transcript ns_no_prefix_frames ns_asr_windows
+ns_no_isolation ns_joint ns_no_window_evidence"`:
+
+1. Smoke: `SCOPE=smoke ARMS="no_stance no_window_evidence $NS" NAME=ns_smoke sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch`
+2. Reads, one corpus per job: `SCOPE=HateMM ARMS="$NS" NAME=ns_HateMM sbatch …`, then `HateClipSeg`, then `DeHate`.
+   Output `runs/20261101_reader_ablation/ns_<corpus>/<arm>/predictions.jsonl`.
+3. Decoding and tables: `experiments/20261114_exp_gates/README.md` §14 (`gate_table.py --family ns`).
+
+Expected GPU time from §6 (same arms with the verdict turn): HateMM about 75 min, HateClipSeg about 60 min, DeHate
+about 4.8 h (A1 48, A2 38, A4 43, A5 88, A6 40 min; the older window inputs about 30 min at 1.3 s per video). One RTX
+5090; uoa-lab1 is the only free lab GPU on 2026-11-16 (lab2 runs another user's jobs, lab3 and lab-server are down in
+`sinfo`).
+
+### 8.3 Checks (in-job; tolerance 1e-3; a violation ends the job with `FAILED`)
+
+- Smoke (first two videos of each corpus): `no_stance` must equal the stored `no_stance` reads (`z_video`, every
+  `z_visual`, every `z_speech`, speech presence); `no_window_evidence` must equal the stored older-reader reads (the
+  same four); the six `ns_` arms run; `ns_no_isolation` also runs on the longest HateMM video (memory worst case).
+- Full runs: `z_video` of `ns_asr_windows`, `ns_no_isolation`, `ns_joint`, `ns_no_window_evidence` must equal the
+  stored adopted `z_video` (same prefix and question); `z_video` of `ns_no_transcript` / `ns_no_prefix_frames` must
+  equal the stored A1 / A2 `z_video` (same prefix); the first branch of `ns_no_isolation` (window 1 visual, nothing
+  before it but the prefix) must equal the stored `no_stance` window-1 `z_visual`.

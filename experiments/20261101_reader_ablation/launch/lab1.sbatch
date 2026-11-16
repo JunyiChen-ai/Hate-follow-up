@@ -9,6 +9,9 @@
 #   SCOPE=smoke sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch                 (2 + 2 + 2 videos, every arm, checks)
 #   SCOPE=HateMM ARMS="no_transcript joint" sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch   (one corpus, the listed arms)
 # ARMS empty = all six arms. Output runs/20261101_reader_ablation/<corpus or NAME>/ (resumable).
+# No-verdict-turn family (README §8), NS="ns_no_transcript ns_no_prefix_frames ns_asr_windows ns_no_isolation ns_joint ns_no_window_evidence":
+#   SCOPE=smoke ARMS="no_stance no_window_evidence $NS" NAME=ns_smoke sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch
+#   SCOPE=HateMM ARMS="$NS" NAME=ns_HateMM sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch   (then HateClipSeg, DeHate)
 set -euo pipefail
 cd /home/jehc223/Hate-follow-up
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
@@ -19,7 +22,7 @@ export PYTORCH_ALLOC_CONF=expandable_segments:True
 hostname; nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
 VLM=/home/jehc223/Hate-follow-up/.cache/envs/HateVLM/bin/python
 case ${SCOPE:-smoke} in
-  smoke) $VLM -u experiments/20261101_reader_ablation/read_arms.py --smoke;;
+  smoke) $VLM -u experiments/20261101_reader_ablation/read_arms.py --smoke ${ARMS:+--arms $ARMS} ${NAME:+--name $NAME};;
   HateMM|HateClipSeg|DeHate) $VLM -u experiments/20261101_reader_ablation/read_arms.py --datasets $SCOPE ${ARMS:+--arms $ARMS} ${NAME:+--name $NAME};;
   *) echo FAILED_invalid_scope; exit 2;;
 esac

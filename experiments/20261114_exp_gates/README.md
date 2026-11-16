@@ -570,3 +570,35 @@ mean change when removed: pooled ROC −0.1, within −0.5, no cell significant 
 Removing them from the method removes their rows; the other reader rows must then be re-read without the verdict
 turn (the six arms took 7.4 GPU-hours on RTX 5090s in `experiments/20261101_reader_ablation/README.md` §5).
 Not started; it changes the method description, so it waits for the user.
+
+## 14. Ablation table without the verdict turn and without EM (design written 2026-11-16, before the reads)
+
+User, 2026-11-16: go ahead with removing the two parts and re-running; **do not change the default method yet**. So
+this section evaluates a candidate configuration; `research-wiki/STATUS.md`, the paper and the method page keep the
+current method (verdict turn, EM, `K = z_video + mean window read`).
+
+**Configuration under test.**
+- Reader: no verdict turn. Full-method reads = the stored `no_stance` reads; reader rows = the `ns_<arm>` reads of
+  `experiments/20261101_reader_ablation/README.md` §8 (GPU, Slurm on uoa-lab1).
+- Decoder: `--em-iters 0` (§9.1, §11).
+- Integrator, three variants fixed before the reads are seen, each with λ = 1: (i) the current
+  `K = z_video + mean window read` (`--form raw`); (ii) `F2`: `mw/σ + zT/σ`, the protected-group scope read on all
+  three corpora; (iii) `F3`: `A/σ + zT/σ`. Any other form tried later is post-hoc and is labelled so.
+- The scope read does not depend on the verdict turn (`scope_read.py` and `experiments/20260927_dvd/dvd_measure.py`
+  read it as a branch on the prefix cache, `in_place=False`), so the stored scope reads are used.
+
+**Rows** (`gate_table.py --family ns --decoder em0`). Two paper rows no longer exist in this configuration and are
+listed apart instead of counted: `w/o Verdict Turn` becomes `w/ Verdict Turn` (the reads with the verdict turn), and
+`w/ Linear Evidence` becomes `w/ Linear Evidence (slope 1)` (without EM the evidence is already linear, §13.2). That
+leaves **12 counted rows**: Reader 6 (`ns_no_transcript`, `ns_no_prefix_frames`, `ns_no_isolation`, `ns_joint`,
+`ns_no_window_evidence`, `ns_asr_windows` under the composition on both sides), Decoder 3, Integrator 3. Apart rows:
+the two above, `w/ EM Evidence`, `w/o Scope Read`, `w/o Duration Posterior`.
+
+**Criteria** (unchanged). Gate 3: every counted cell strictly below the full method on the three metrics (nine cells
+per row; within-video cells of Integrator rows are equal by construction and exempt); the count on the pooled ROC and
+within columns alone (the columns the paper's appendix table prints) is reported next to it. Gate 2: DeHate pooled
+ROC ≥ 73.62 and pooled PR ≥ 20.44 (§12); HateMM / HateClipSeg against the current method within −0.5 pooled, −1.0
+within.
+
+**Order of work.** Decoder and Integrator rows need only the stored `no_stance` reads and are computed on CPU first
+(`--skip-missing`); the reader rows follow when the reads are back.

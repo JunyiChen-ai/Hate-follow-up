@@ -24,6 +24,12 @@ with the Integrator term of this run on each side. Reader rows use their own rea
 `w/o Global Transcript` and `w/o Global Frames` use the scope read on their own prefix (Slurm 2300); the other reader
 rows keep the prefix of the full method and use its scope read.
 
+`--family ns` (README §14): the method without the verdict turn. The full method's reads are the `no_stance` reads;
+reader rows use the `ns_<arm>` reads of experiments/20261101_reader_ablation (README §8 there); `w/o Verdict Turn` is
+replaced by the apart row `w/ Verdict Turn` (the reads with the verdict turn); with `--decoder em0` the row
+`w/ Linear Evidence` is listed apart (without EM it is a slope change, README §13.2). `--skip-missing` leaves out rows
+whose reads are not on disk yet and names them under the table.
+
 Metrics: the canonical evaluator's functions (src/eval/evaluate.py `pooled`, `within_video_macro`) on the test split.
 Paired bootstrap over videos (videos common to the row and the full method, 1000 draws, seed 0) for every cell.
 No label enters any score; labels are read only for the metrics.
@@ -61,7 +67,11 @@ READS = {   # read set -> part -> reads directory (predictions.jsonl with z_vide
     "rs_old": {"main": "runs/20260926_glr/base_gridA", "dehate": "runs/20261031_window_evidence/DeHate/r6_replay"},
     **{a: {"main": f"{RA}/merged/{a}", "dehate": f"{RA}/DeHate/{a}"}
        for a in ("no_transcript", "no_prefix_frames", "no_isolation", "joint", "no_stance", "asr_windows")},
+    # no-verdict-turn family (README §14): read_arms.py ns_<arm>, NAME=ns_<corpus>; ns_merged = HateMM + HateClipSeg
+    **{f"ns_{a}": {"main": f"{RA}/ns_merged/ns_{a}", "dehate": f"{RA}/ns_DeHate/ns_{a}"}
+       for a in ("no_transcript", "no_prefix_frames", "no_isolation", "joint", "asr_windows", "no_window_evidence")},
 }
+FULL = "full"       # read set of the full method; `--family ns` sets it to "no_stance"
 SCOPE = {   # scope read per prefix
     "full": {"main": "runs/20260927_dvd/reads_main/reads.jsonl", "dehate": "runs/20260927_dvd/reads_dehate/reads.jsonl"},
     **{a: {p: f"runs/20261114_exp_gates/scope_reads/{a}_{p}/reads.jsonl" for p in ("main", "dehate")}
@@ -99,6 +109,8 @@ EXISTING = {
 }
 COMPOSE = {"fixed": {"main": f"{RA}/compose/fixed_main", "dehate": f"{RA}/compose/fixed_DeHate"},
            "asr": {"main": f"{RA}/compose/asr_main", "dehate": f"{RA}/compose/asr_DeHate"}}
+COMPOSE_NS = {"fixed": {"main": f"{RA}/compose/ns_fixed_main", "dehate": f"{RA}/compose/ns_fixed_DeHate"},
+              "asr": {"main": f"{RA}/compose/ns_asr_main", "dehate": f"{RA}/compose/ns_asr_DeHate"}}
 # name, group, read set, scope prefix, decoder row flag, Integrator change
 ROWS = [
     ("w/o Global Transcript", "Contextual Reader", "no_transcript", "no_transcript", "", None),
@@ -122,6 +134,22 @@ ROWS = [
 # With --decoder em0 the apart row `w/o EM Evidence` is replaced by `w/ EM Evidence` (README §11).
 ROWS_EM0 = [r for r in ROWS if r[0] != "w/o EM Evidence"] + [
     ("w/ EM Evidence", "extra (not counted)", "full", "full", "em300", None)]
+
+
+def ns_rows(rows, em0):
+    """Rows of the no-verdict-turn family (README §14)."""
+    out = []
+    for name, grp, rs, sp, rflag, integ in rows:
+        if name == "w/o Verdict Turn":
+            out.append(("w/ Verdict Turn", "extra (not counted)", "full", sp, rflag, integ))
+            continue
+        if em0 and name == "w/ Linear Evidence":
+            name, grp = "w/ Linear Evidence (slope 1)", "extra (not counted)"
+        rs = {"full": "no_stance", "rs_old": "ns_no_window_evidence"}.get(rs, "ns_" + rs)
+        out.append((name, grp, rs, sp, rflag, integ))
+    return out
+
+
 NAIVE = "runs/20261113_lf_baselines/naive/vlm/{ds}/predictions.jsonl"
 GATE1 = "runs/20261113_lf_baselines/gate/gate.json"     # best published label-free cell per corpus and metric
 CURRENT = {"HateMM": f"{PR}/main/m2", "HateClipSeg": f"{PR}/main/m2", "DeHate": f"{PR}/dehate/m2"}
@@ -247,8 +275,9 @@ class Store:
         """video -> centred rank of the frame curve (decoder, or the composition for ASR windows)."""
         def build():
             if rflag == "compose":
-                side = "asr" if rs == "asr_windows" else "fixed"
-                P = by_video(f"{COMPOSE[side][PART[ds]]}/predictions_izv_plus_mean_rrank.jsonl", ds)
+                side = "asr" if rs.endswith("asr_windows") else "fixed"
+                comp = COMPOSE_NS if FULL == "no_stance" else COMPOSE
+                P = by_video(f"{comp[side][PART[ds]]}/predictions_izv_plus_mean_rrank.jsonl", ds)
                 return {v: np.asarray(r["score_curve"], float) - np.mean(r["score_curve"]) for v, r in P.items()}
             per = []
             for comp in self.comps:
@@ -288,7 +317,7 @@ def scales(store, ds, form):
     (fraction of the full method's videos below the value), so every term lies in [0, 1] like the rank term."""
     if form == "raw":
         return (lambda x: x,) * 3
-    T = np.array([t[:4] for t in store.terms("full", "full", ds).values()], float)   # (zv, mw, mm, zt)
+    T = np.array([t[:4] for t in store.terms(FULL, "full", ds).values()], float)   # (zv, mw, mm, zt)
     cols = (T[:, 1], T[:, 0], T[:, 3][np.isfinite(T[:, 3])])
     if form == "sd":
         return tuple((lambda x, c=1.0 / c_.std(): c * x) for c_ in cols)
@@ -301,7 +330,7 @@ FORMS = ("F1", "F2", "F3", "F4", "F5")
 def f_sigmas(store, ds):
     """sigma(mw), sigma(zT), sigma(A) over all videos of the corpus, from the full method's reads (no label); the
     same constants are used for every row (README §7)."""
-    T = store.terms("full", "full", ds)
+    T = store.terms(FULL, "full", ds)
     mw = np.array([t[1] for t in T.values()]); zt = np.array([t[3] for t in T.values()])
     A = np.array([np.mean(np.minimum(t[4], t[3])) if len(t[4]) else 0.0 for t in T.values()])
     return mw.std(), zt.std(), A.std()
@@ -438,7 +467,7 @@ def config_from(args):
 
 
 def evaluate(store, cfg, nboot):
-    full_row = ("full", "", "full", "full", "", None)
+    full_row = ("full", "", FULL, "full", "", None)
     res = {}
     for ds in DATASETS:
         y = store.gt[ds]
@@ -448,7 +477,7 @@ def evaluate(store, cfg, nboot):
         for row in ROWS:
             name = row[0]
             if row[4] == "compose":        # both sides under the composition
-                base = row_scores(store, ds, ("", "", "full", "full", "compose", None), cfg)
+                base = row_scores(store, ds, ("", "", FULL, "full", "compose", None), cfg)
             else:
                 base = sf
             s = row_scores(store, ds, row, cfg)
@@ -489,10 +518,10 @@ def render(res, chk, cfg, title):
     L.append("|---|---|---|---|---|")
     L.append("| full (absolute) | " + " | ".join(" / ".join(f"{100 * x:.1f}" for x in res[ds]["full"]["m"])
                                          for ds in DATASETS) + " | |")
-    total, extra, rows_ok = 0, {}, 0
+    total, extra, rows_ok, total_rw = 0, {}, 0, 0
     for row in ROWS:
         name, grp, _, _, rflag, integ = row
-        cells, nb = [], 0
+        cells, nb, nb_rw = [], 0, 0
         for ds in DATASETS:
             r = res[ds][name]
             parts = []
@@ -503,7 +532,7 @@ def render(res, chk, cfg, title):
                 lo, hi = (100 * r["ci"][0][k], 100 * r["ci"][1][k])
                 flag = ""
                 if d > -0.05:
-                    flag += "!"; nb += 1
+                    flag += "!"; nb += 1; nb_rw += k != 1
                 if np.isfinite(lo) and lo <= 0 <= hi:
                     flag += "~"
                 parts.append(f"{d:+.1f}{flag}")
@@ -511,11 +540,13 @@ def render(res, chk, cfg, title):
         if grp.startswith("extra"):
             extra[name] = nb
         else:
-            total += nb; rows_ok += nb == 0
+            total += nb; rows_ok += nb == 0; total_rw += nb_rw
         L.append(f"| {name}{' (compose, both sides)' if rflag == 'compose' else ''} | " + " | ".join(cells) + f" | {nb} |")
     if res.get("_note"):
         L += ["", res["_note"]]
-    L += ["", f"Cells not below the full method, 14 rows: **{total}** (rows with every cell below: {rows_ok} of 14); "
+    n_rows = sum(not r[1].startswith("extra") for r in ROWS)
+    L += ["", f"Cells not below the full method, {n_rows} rows: **{total}** (rows with every cell below: {rows_ok} of {n_rows}; "
+          f"pooled ROC and within columns only, as printed in the paper's appendix table: {total_rw}); "
           + "; ".join(f"`{k}`: {v}" for k, v in extra.items()) + ".", ""]
     vb = lambda sect: " / ".join(f"{100 * d:+.1f} ({r})" for d, r in chk["DeHate"]["vs_best_" + sect])
     L.append("Gate 2 checks (points; need ≥ +2 each on DeHate): full − naive Qwen3-VL-8B row ROC / PR = " +
@@ -543,11 +574,27 @@ def main():
     ap.add_argument("--jobs", type=int, default=6)
     ap.add_argument("--name", default=None)
     ap.add_argument("--check", action="store_true", help="plumbing: current method must equal its metrics.json")
+    ap.add_argument("--family", choices=("current", "ns"), default="current",
+                    help="ns: the method without the verdict turn (README §14)")
+    ap.add_argument("--skip-missing", action="store_true", help="leave out rows whose reads are not on disk yet")
     args = ap.parse_args()
     comps = args.decoder.split(",")
+    global ROWS, FULL
     if comps == ["em0"]:
-        global ROWS
         ROWS = ROWS_EM0
+    skipped = []
+    if args.family == "ns":
+        FULL = "no_stance"
+        ROWS = ns_rows(ROWS, comps == ["em0"])
+    if args.skip_missing:
+        def have(r):
+            if r[4] == "compose":
+                comp = COMPOSE_NS if FULL == "no_stance" else COMPOSE
+                return all((ROOT / comp[sd][pt] / "predictions_izv_plus_mean_rrank.jsonl").exists()
+                           for sd in ("fixed", "asr") for pt in ("main", "dehate"))
+            return all((ROOT / READS[r[2]][pt] / "predictions.jsonl").exists() for pt in ("main", "dehate"))
+        skipped = [r[0] for r in ROWS if not have(r)]
+        ROWS = [r for r in ROWS if have(r)]
     todo = needed_decodes(comps)
     with ThreadPoolExecutor(args.jobs) as ex:
         for d, st in ex.map(lambda t: run_decode(*t), todo):
@@ -569,13 +616,19 @@ def main():
     if args.scope == "ordinal":
         notes.append("Scope term = z_ord (README §10). `w/o Global Transcript` and `w/o Global Frames` use the full-prefix "
                      "z_ord (borrowed; no ordinal read on the ablated prefixes).")
+    if args.family == "ns":
+        notes.append("Family ns (README §14): no verdict turn in the full method (reads `no_stance`) or in any reader "
+                     "row (`ns_<arm>` reads).")
+    if skipped:
+        notes.append("Rows left out (reads not on disk yet): " + ", ".join(skipped) + ".")
     if store.taxonomy:
         notes.append("HateClipSeg scope read = the taxonomy read on each row's own prefix (README §6); HateMM and DeHate "
                      "keep the protected-group read.")
     res["_note"] = " ".join(notes)
     chk = checks(store, cfg, res)
-    name = args.name or (f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_l{args.lam:g}" if args.form in FORMS
-                         else f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_a{args.a:g}_b{args.b:g}_l{args.lam:g}")
+    name = args.name or (("ns__" if args.family == "ns" else "") + (
+        f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_l{args.lam:g}" if args.form in FORMS
+        else f"{args.decoder.replace(',', '+')}_{args.combine}__{args.form}_a{args.a:g}_b{args.b:g}_l{args.lam:g}"))
     md, total = render(res, chk, cfg, name)
     d = OUT / "tables"; d.mkdir(parents=True, exist_ok=True)
     (d / f"{name}.md").write_text(md)
