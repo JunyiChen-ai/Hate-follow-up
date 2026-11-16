@@ -602,3 +602,90 @@ within.
 
 **Order of work.** Decoder and Integrator rows need only the stored `no_stance` reads and are computed on CPU first
 (`--skip-missing`); the reader rows follow when the reads are back.
+
+### 14.1 Runs (2026-11-16 / 17; uoa-lab1 sc474397)
+
+- Reads (GPU, Slurm jobs 2404–2407): `experiments/20261101_reader_ablation/README.md` §8.4. 0 errors; every in-job
+  check 0.0; coverage 215 / 118 / 1341 lines per arm.
+- Tables (CPU): `bash experiments/20261114_exp_gates/ns_tables.sh main`, then `… all`. Outputs
+  `runs/20261114_exp_gates/gate_table/tables/ns_all__em0__{raw,F2,F3,F5}.{md,json}` (main corpora alone:
+  `ns_main__em0__*`; decoder and Integrator rows before the reads: `ns_pre__em0__*`); logs `gate_table/logs/`;
+  compositions `runs/20261101_reader_ablation/compose/ns_{fixed,asr}_{main,DeHate}`. 1000 paired bootstrap draws.
+- Like-for-like tables that keep the verdict turn (same decoder, same Integrators):
+  `gate_table.py --family current --decoder em0 --form {raw,F2,F3} --name em0__{raw,F2,F3}`; `em0__F5` is the table
+  of §11.
+- Counts over the stored tables: `table_summary.py` → `gate_table/tables/summary_ns_vs_verdict_turn.md`.
+
+### 14.2 Results (development-selected; Qwen3-VL-8B; ROC / PR / within in points)
+
+Full method, DeHate margin over the best label-free row (MARS + Gaussian smoothing, 71.62 / 18.44, §12), change
+against the current method, and cells not below the full method.
+
+| verdict turn | Integrator | HateMM | HateClipSeg | DeHate | DeHate − best label-free (ROC / PR) | HateMM − current | HateClipSeg − current | counted rows | cells not below | ROC and within only | on the 12 shared rows |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| removed | raw | 89.8 / 69.1 / 78.6 | 71.9 / 67.1 / 67.3 | 69.6 / 16.6 / 66.9 | −2.0 / −1.8 | −0.07 / −0.08 / +0.60 | −1.40 / −1.83 / −1.40 | 12 | 20 | 14 | 20 |
+| removed | F2 | 90.2 / 70.4 / 78.6 | 72.0 / 67.7 / 67.3 | 76.2 / 21.5 / 66.9 | +4.6 / +3.0 | +0.29 / +1.24 / +0.60 | −1.27 / −1.29 / −1.40 | 12 | 13 | 9 | 13 |
+| removed | F3 | 90.1 / 70.4 / 78.6 | 71.4 / 67.4 / 67.3 | 76.8 / 22.3 / 66.9 | +5.2 / +3.8 | +0.23 / +1.15 / +0.60 | −1.87 / −1.58 / −1.40 | 12 | 9 | 7 | 9 |
+| removed | F5 (post-hoc here) | 90.1 / 70.4 / 78.6 | 74.2 / 69.3 / 67.3 | 76.8 / 22.3 / 66.9 | +5.2 / +3.8 | +0.23 / +1.15 / +0.60 | +0.93 / +0.39 / −1.40 | 12 | 9 | 7 | 9 |
+| kept | raw | 89.9 / 69.2 / 78.6 | 73.3 / 68.9 / 68.6 | 69.4 / 16.4 / 67.2 | −2.2 / −2.1 | +0.00 / +0.03 / +0.58 | −0.00 / −0.00 / −0.08 | 14 | 22 | 13 | 14 |
+| kept | F2 | 90.1 / 70.3 / 78.6 | 72.8 / 69.0 / 68.6 | 75.8 / 21.4 / 67.2 | +4.2 / +2.9 | +0.21 / +1.11 / +0.58 | −0.48 / +0.03 / −0.08 | 14 | 16 | 11 | 7 |
+| kept | F3 | 90.0 / 70.0 / 78.6 | 71.4 / 68.0 / 68.6 | 76.7 / 23.4 / 67.2 | +5.1 / +4.9 | +0.15 / +0.82 / +0.58 | −1.89 / −0.95 / −0.08 | 14 | 13 | 11 | 5 |
+| kept | F5 | 90.0 / 70.0 / 78.6 | 75.3 / 70.8 / 68.6 | 76.7 / 23.4 / 67.2 | +5.1 / +4.9 | +0.15 / +0.82 / +0.58 | +2.05 / +1.86 / −0.08 | 14 | 12 | 10 | 4 |
+
+"Counted rows": 12 without the verdict turn (§14 design); 14 with it (the 12, `w/o Verdict Turn`, `w/ Linear Evidence`).
+"On the 12 shared rows": the count restricted to the rows that exist in both families. The `em0__F5` table file of §11
+was written before the smoothing rows of §12 existed; its DeHate margin above is recomputed against 71.62 / 18.44.
+
+Cells not below, counted rows (every one has a paired bootstrap interval containing 0):
+
+| verdict turn removed, F3 (9 cells) | verdict turn kept, F3 (13 cells) |
+|---|---|
+| `w/o Global Transcript`: HateClipSeg within +0.8 | `w/o Global Transcript`: HateClipSeg within +0.4 |
+| `w/o Global Frames`: HateMM within +0.3 | `w/ Joint Query`: DeHate ROC +0.5 |
+| `w/o Query Isolation`: HateClipSeg ROC +0.6, PR +0.2 | `w/o Verdict Turn`: HateMM +0.1 / +0.3 / +0.0, DeHate ROC +0.2 |
+| `w/ Joint Query`: HateMM ROC +0.0, DeHate ROC +0.2, within +0.2 | `w/o Window Evidence`: DeHate ROC +0.0 |
+| `w/ Fixed Mean Duration`: HateMM ROC −0.0, PR +0.0 | `w/ Linear Evidence`: HateMM +0.0 / +0.2 / +1.0, DeHate ROC −0.0 |
+| | `w/ Mean over Modalities`: HateClipSeg ROC −0.0, DeHate ROC −0.0 |
+
+The verdict turn itself, row `w/ Verdict Turn` of the family without it (change when the verdict turn is put back):
+raw HateMM +0.1 / +0.1 / −0.0, HateClipSeg +1.4 / +1.8 / +1.3, DeHate −0.2 / −0.2 / +0.3; F3 HateMM −0.1 / −0.3 / −0.0,
+HateClipSeg +0.1 / +0.7 / +1.3, DeHate −0.2 / +1.0 / +0.3. Only the HateClipSeg pooled ROC change under raw has an
+interval that excludes 0.
+
+Post-hoc reading (added 2026-11-17 after the tables were seen; not the gate's definition): on cells averaged over the
+three corpora (one cell per metric per row), no counted row is not below the full method in six of the eight tables
+(both families under F2 and F5, F3 without the verdict turn, and F3 with it on the 12 shared rows); the exceptions are
+the two raw tables (4 and 5 cells) and `w/o Verdict Turn` under F3 (pooled ROC +0.07).
+
+### 14.3 Reading
+
+1. **Gate 3 is not passed in any configuration.** Removing the verdict turn and EM leaves 9 cells not below in 12 rows
+   (F3 / F5). Keeping the verdict turn and removing EM leaves 5 (F3) or 4 (F5) on the same 12 rows, plus 4 in the
+   `w/o Verdict Turn` row and 4 in the `w/ Linear Evidence` row.
+2. **Removing the verdict turn does not help the table and costs HateClipSeg.** The three or four not-below cells of
+   its own row disappear, and four to five new ones appear in the other reader rows (`w/o Global Frames`,
+   `w/o Query Isolation`, `w/ Joint Query`). HateClipSeg falls by 1.3–1.4 within and 1.3–1.9 pooled against the current
+   method under raw / F2 / F3 (my limit: −1.0 within, −0.5 pooled). §13.4's statement that the verdict turn has no
+   measurable effect holds for HateMM and DeHate, not for HateClipSeg.
+3. **Removing EM stands** (§9.1, §11): `w/ EM Evidence` is not below on 6–7 of 9 cells in the family without the
+   verdict turn and 4–7 with it; the no-EM decoder changes HateMM within by +0.6 and HateClipSeg within by −0.08.
+   Without EM the `w/ Linear Evidence` row is only a slope change and is not a component row.
+4. **Gate 2 passes with the scope read in both families** (F2, F3, F5: DeHate +4.2 to +5.2 ROC, +2.9 to +4.9 PR over
+   the best label-free row) and fails with the current Integrator in both. The HateClipSeg limits against the current
+   method hold only when the verdict turn is kept and the Integrator is F5 (+2.05 / +1.86 / −0.08) or F2 (−0.48 /
+   +0.03 / −0.08); F3 with the protected-group read on HateClipSeg is −1.89 on pooled ROC.
+5. **What the remaining cells are.** All are within ±1 point with intervals containing 0, and they move between rows
+   when the configuration changes (e.g. `w/o Query Isolation` on HateClipSeg pooled: −0.8 / −1.6 with the verdict
+   turn, +0.6 / +0.2 without, F3). Four of the cells with the verdict turn kept are DeHate pooled ROC: under F3 / F5
+   the DeHate video-level term is carried by the scope read (`w/o Scope Read` −5.7 / −7.1, `w/o Window Aggregate`
+   −0.2 / −1.0), so a row that only changes window reads cannot move DeHate pooled ROC by more than noise.
+
+Nothing is adopted. `research-wiki/STATUS.md`, the paper tables and the method page are unchanged (user instruction of
+2026-11-16).
+
+### 14.4 Test-read record (rule 10)
+
+Read: the test metrics in the twelve `ns_*` tables, `em0__{raw,F2,F3,F5}` and `summary_ns_vs_verdict_turn.md` (all
+under `runs/20261114_exp_gates/gate_table/tables/`); no per-video predictions were inspected. Found: §14.2–14.3.
+Design changed: none. The Integrators raw, F2, F3 were fixed before the reads (§14); F5 and the corpus-averaged
+reading are post-hoc.

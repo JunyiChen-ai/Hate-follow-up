@@ -283,3 +283,18 @@ about 4.8 h (A1 48, A2 38, A4 43, A5 88, A6 40 min; the older window inputs abou
   stored adopted `z_video` (same prefix and question); `z_video` of `ns_no_transcript` / `ns_no_prefix_frames` must
   equal the stored A1 / A2 `z_video` (same prefix); the first branch of `ns_no_isolation` (window 1 visual, nothing
   before it but the prefix) must equal the stored `no_stance` window-1 `z_visual`.
+
+### 8.4 Run record (2026-11-16, uoa-lab1 sc474397, one RTX 5090, Slurm partition `local-sc474397`; code commit a516862)
+
+| job | scope | reads | elapsed | errors | checks (worst difference) |
+|---|---|---|---|---|---|
+| 2404 | smoke (`ns_smoke`) | 49 (6 videos × 8 arms + the longest HateMM video on `ns_no_isolation`) | 3 min 53 s | 0 | `no_stance` and `no_window_evidence` against the stored reads (`z_video`, `z_visual`, `z_speech`, speech presence): all 0.0; the `ns_` checks of §8.3: all 0.0 |
+| 2405 | HateMM (`ns_HateMM`) | 1290 (215 videos × 6 arms) | 1 h 13 min 35 s | 0 | all seven `ns_` checks 0.0 |
+| 2406 | HateClipSeg (`ns_HateClipSeg`) | 708 (118 videos × 6 arms) | 1 h 04 min 21 s | 0 | all seven `ns_` checks 0.0 |
+| 2407 | DeHate (`ns_DeHate`) | 8046 (1341 videos × 6 arms) | 5 h 02 min 58 s (ended 2026-11-17 02:57) | 0 | all seven `ns_` checks 0.0 |
+
+The three full logs end with `READER_ABLATION_DONE`; the only `[ERROR]` lines in the Slurm logs are two docstring
+notices of the transformers video processor (`min_frames`, `max_frames` "not documented"), printed at model load.
+Coverage: 215, 118 and 1341 lines per arm (`ns_tables.sh` checks it). Size on disk: 39 MB, 36 MB and 177 MB. GPU time
+of the three reads together: 7 h 21 min (expected in §8.2: about 7.1 h). Tables:
+`experiments/20261114_exp_gates/README.md` §14.
