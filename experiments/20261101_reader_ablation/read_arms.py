@@ -15,6 +15,9 @@ Arms (src/reader_arms.py + the adopted src/stance_cache, src/window_evidence):
 No-verdict-turn family (README §8, 2026-11-16): `ns_<arm>` = the arm with the verdict read but not written back
 (stance=False, as no_stance), for no_transcript, no_prefix_frames, asr_windows, no_isolation, joint,
 no_window_evidence. The family's base is the stored `no_stance` arm.
+Combined arms (README §9, 2026-11-17): `<part>__<part>` changes two reader parts at once (verdict turn kept):
+joint__no_isolation (one joint branch per window in the growing conversation), joint__no_window_evidence (one joint
+branch with the older window inputs), no_isolation__no_window_evidence (growing conversation with the older inputs).
 Arm-major order (every video of one arm, then the next arm). Output runs/20261101_reader_ablation/<name>/
 {records/<arm>/<ds>/<vid>.json, <arm>/predictions.jsonl, <arm>/config.json, config.json, run.log, run.pid}.
 Resumable: (arm, video) pairs with a record are not read again.
@@ -48,10 +51,11 @@ EXP = ROOT / "runs/20261101_reader_ablation"
 NATIVE_FRAMES = 20
 ARMS_V1 = ["base", "no_transcript", "no_prefix_frames", "no_stance", "asr_windows", "no_isolation", "joint"]  # 2026-11-01 set
 NS_KINDS = ["no_transcript", "no_prefix_frames", "asr_windows", "no_isolation", "joint", "no_window_evidence"]
-ARMS = ARMS_V1 + ["no_window_evidence"] + ["ns_" + k for k in NS_KINDS]
+COMBINED = ["joint__no_isolation", "joint__no_window_evidence", "no_isolation__no_window_evidence"]   # README §9
+ARMS = ARMS_V1 + ["no_window_evidence"] + ["ns_" + k for k in NS_KINDS] + COMBINED
 # prefix and verdict question as the base (the verdict is read before anything is written back or cropped)
 SAME_VERDICT = {"base", "no_stance", "asr_windows", "no_isolation", "joint", "no_window_evidence",
-                "ns_asr_windows", "ns_no_isolation", "ns_joint", "ns_no_window_evidence"}
+                "ns_asr_windows", "ns_no_isolation", "ns_joint", "ns_no_window_evidence", *COMBINED}
 MANIFESTS = {"HateMM": ROOT / "data/omsl_v6_inputs/manifests/all_test.jsonl", "HateClipSeg": ROOT / "data/omsl_v6_inputs/manifests/all_test.jsonl",
              "DeHate": ROOT / "data/manifests/DeHate_test.jsonl"}
 STORED = {"HateMM": ROOT / "runs/20261014_m1_audio_bound/vl_aligned/vl_text_aligned/predictions.jsonl",
@@ -92,29 +96,31 @@ def read(j, arm, row, segments, rec):
     frames = local_frames(row)
     ns = arm.startswith("ns_")          # no-verdict-turn family: the arm `kind` without the stance turn
     kind = arm[3:] if ns else arm
-    cache, ctx = build_context(j, native, segments, with_context=kind != "no_transcript", with_frames=kind != "no_prefix_frames",
-                               stance=not ns and kind != "no_stance")
+    parts = set(kind.split("__"))       # a combined arm changes two parts (README §9); a single arm has one part
+    old_inputs = "no_window_evidence" in parts
+    cache, ctx = build_context(j, native, segments, with_context="no_transcript" not in parts,
+                               with_frames="no_prefix_frames" not in parts, stance=not ns and "no_stance" not in parts)
     prefix_secs = tick() - begin  # 20 frames + transcript prefix forward, verdict read and stance turn (timing only)
-    if kind == "asr_windows":
+    if "asr_windows" in parts:
         segs = asr_windows(segments)
         wins = [(s, e) for s, e, _ in segs]
         bodies = [aligned_slice(rec, s, e, t) for s, e, t in segs]
     else:
         wins = fixed_windows(float(row["duration"]), WINDOW_S)
-        if kind == "no_window_evidence":   # the older reader: proportional transcript slice, no forced alignment
+        if old_inputs:   # the older reader: proportional transcript slice, no forced alignment
             bodies = [window_text(segments, t1, t2) for t1, t2 in wins]
         else:
             bodies = [aligned_slice(rec, t1, t2, window_text(segments, t1, t2)) for t1, t2 in wins]
     n = len(wins)
-    seq = SequentialReader(j, cache, ctx) if kind == "no_isolation" else None
+    seq = SequentialReader(j, cache, ctx) if "no_isolation" in parts else None
     reads, traces = [], []
     for i, ((t1, t2), body) in enumerate(zip(wins, bodies)):
-        inside = [] if kind == "no_window_evidence" else in_window(frames, t1, t2)   # older reader: question alone
+        inside = [] if old_inputs else in_window(frames, t1, t2)   # older reader: question alone
         has_speech = body is not None and body.strip() != ""
         r = {}
-        if kind == "joint":
+        if "joint" in parts:
             q = yesno_question(i, n, t1, t2, body, "joint")
-            r["z_joint"] = visual_read(j, cache, ctx, inside, q)
+            r["z_joint"] = seq.read(inside, q) if seq is not None else visual_read(j, cache, ctx, inside, q)
         else:
             vq = yesno_question(i, n, t1, t2, body, "visual")
             sq = yesno_question(i, n, t1, t2, body, "speech") if has_speech else None
@@ -129,7 +135,7 @@ def read(j, arm, row, segments, rec):
         reads.append(r)
         traces.append(dict(i=i, bounds=[t1, t2], local_times=[t for t, _ in inside], words=len(body.split()) if has_speech else 0, **r))
     secs = tick() - begin
-    pred = record(row, ctx, wins, reads, f"reader_ablation_{arm}", secs, CODE, segment_windows=kind == "asr_windows")
+    pred = record(row, ctx, wins, reads, f"reader_ablation_{arm}", secs, CODE, segment_windows="asr_windows" in parts)
     out = dict(model=MODEL, host=socket.gethostname(), arm=arm, GT_read=False, global_margin=ctx["global_margin"], stance=ctx["stance"],
                prefix_tokens=ctx["prefix_tokens"], stance_cache_tokens=ctx["stance_cache_tokens"],
                final_cache_tokens=cache.get_seq_length(), aligned_status=None if rec is None else rec["status"], windows=n,
@@ -153,7 +159,9 @@ def check(bundle, ref, other=None):
     base; `other` = the stored read set the arm must reproduce in part or in full (README §8.3):
     no_window_evidence -> the older reader's reads (every read); no_stance -> the stored no_stance reads (every read);
     ns_no_transcript / ns_no_prefix_frames -> the stored arm with the verdict turn (z_video: same prefix);
-    ns_no_isolation -> the stored no_stance reads (first branch: nothing before it but the prefix)."""
+    ns_no_isolation -> the stored no_stance reads (first branch: nothing before it but the prefix);
+    joint__no_isolation -> the stored joint reads (first branch); no_isolation__no_window_evidence -> the older
+    reader's reads (first branch)."""
     arm, out = bundle["arm"], {}
     mine = bundle["prediction"]["extra"]["windows"]
     if other is not None:
@@ -165,6 +173,10 @@ def check(bundle, ref, other=None):
             out["arm_z_video"] = abs(other["extra"]["z_video"] - bundle["global_margin"])
         elif arm == "ns_no_isolation":
             out["first_visual_no_stance"] = abs(ow[0]["z_visual"] - mine[0]["z_visual"])
+        elif arm == "joint__no_isolation":
+            out["first_joint"] = abs(ow[0]["z_joint"] - mine[0]["z_joint"])
+        elif arm == "no_isolation__no_window_evidence":
+            out["first_visual_old"] = abs(ow[0]["z_visual"] - mine[0]["z_visual"])
     if ref is None:
         return out
     ws = ref["extra"]["windows"]
@@ -189,7 +201,7 @@ def main():
     a = ap.parse_args()
     datasets = ["HateMM", "HateClipSeg", "DeHate"] if a.smoke else a.datasets
     arms = a.arms or (ARMS_V1 if a.smoke else [x for x in ARMS_V1 if x != "base"])
-    seq_arms = [x for x in arms if x.endswith("no_isolation")]
+    seq_arms = [x for x in arms if "no_isolation" in x]
     name = a.name or ("smoke" if a.smoke else "_".join(datasets))
     out = EXP / name
     out.mkdir(parents=True, exist_ok=True)
@@ -214,8 +226,10 @@ def main():
     others = {}     # (arm, ds) -> stored read set the arm is checked against (README §8.3)
     for arm in arms:
         for ds in datasets:
-            if arm == "no_window_evidence":
+            if arm in ("no_window_evidence", "no_isolation__no_window_evidence"):
                 others[arm, ds] = stored(OLD[ds], ds)
+            elif arm == "joint__no_isolation":
+                others[arm, ds] = arm_reads("joint", ds)
             elif arm in ("no_stance", "ns_no_isolation"):
                 others[arm, ds] = arm_reads("no_stance", ds)
             elif arm in ("ns_no_transcript", "ns_no_prefix_frames"):

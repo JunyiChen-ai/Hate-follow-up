@@ -298,3 +298,30 @@ notices of the transformers video processor (`min_frames`, `max_frames` "not doc
 Coverage: 215, 118 and 1341 lines per arm (`ns_tables.sh` checks it). Size on disk: 39 MB, 36 MB and 177 MB. GPU time
 of the three reads together: 7 h 21 min (expected in §8.2: about 7.1 h). Tables:
 `experiments/20261114_exp_gates/README.md` §14.
+
+## 9. Combined arms: two reader parts changed at once (declared 2026-11-17, before any GPU run)
+
+**Why.** `experiments/20261114_exp_gates/README.md` §15 (user request: merge small components into one ablation row,
+as few merges as possible). After the merges that need no new reads, two rows still have a not-below cell, both on
+DeHate pooled ROC: `w/ Joint Query` (+0.5) and `w/o Window Evidence` (+0.0). A merged row needs reads in which both
+parts are changed in the same forward passes. Verdict turn kept (the current reader). Nothing is adopted here.
+
+| arm | changes against the adopted reader |
+|---|---|
+| `joint__no_window_evidence` | one branch per window, joint question (A6), with the older window inputs: no in-window frames, the proportional transcript slice (`window_text`) instead of the forced-aligned words |
+| `joint__no_isolation` | one branch per window, joint question, in A5's growing conversation: every window's Yes/No is written back and later windows see it |
+| `no_isolation__no_window_evidence` | A5's growing conversation (visual branch, then speech branch, each written back) with the older window inputs |
+
+Code: `read_arms.py` splits an arm name at `__` into its parts; every single arm is unchanged (one part). Run on
+uoa-lab1 (lab2 has no `HateVLM` environment and lacks the DeHate reads; lab3 and lab-server are down), with
+`MG="joint__no_window_evidence joint__no_isolation no_isolation__no_window_evidence"`:
+1. `SCOPE=smoke ARMS="$MG" NAME=mg_smoke sbatch experiments/20261101_reader_ablation/launch/lab1.sbatch`
+2. `SCOPE=HateMM ARMS="$MG" NAME=mg_HateMM sbatch …`, then `HateClipSeg`, then `DeHate`. Output
+   `runs/20261101_reader_ablation/mg_<corpus>/<arm>/predictions.jsonl`.
+
+Expected GPU time (from §6 and §8.4): about 25 min HateMM, 20 min HateClipSeg, 2.5 h DeHate.
+
+Checks (in-job, tolerance 1e-3): `z_video` of every combined arm equals the stored adopted `z_video` (same prefix and
+question); the first branch of `joint__no_isolation` equals the stored `joint` window-1 read and the first branch of
+`no_isolation__no_window_evidence` equals the older reader's window-1 visual read (nothing before either but the
+prefix and the verdict turn); the two growing-conversation arms also run on the longest HateMM video in the smoke.

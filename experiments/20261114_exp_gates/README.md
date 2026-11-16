@@ -689,3 +689,70 @@ Read: the test metrics in the twelve `ns_*` tables, `em0__{raw,F2,F3,F5}` and `s
 under `runs/20261114_exp_gates/gate_table/tables/`); no per-video predictions were inspected. Found: §14.2–14.3.
 Design changed: none. The Integrators raw, F2, F3 were fixed before the reads (§14); F5 and the corpus-averaged
 reading are post-hoc.
+
+## 15. Merging small components into one row (user request 2026-11-17; design written before the runs)
+
+User, 2026-11-17: try merging small components and see whether a table with every cell below the full method can be
+reached, with as few merges as possible. Exploratory; nothing is adopted (the default method is unchanged).
+
+**Base.** Verdict turn kept, decoder without EM (`em0`), Integrators F3 (protected-group read on all corpora) and F5
+(taxonomy read on HateClipSeg); both are reported because the HateClipSeg question is not decided. Rows: the 14 rows
+minus `w/ Linear Evidence` (without EM it is a slope change, not a component, §13.2) = 13 rows. Rows with a not-below
+cell in that base (§14.2): `w/o Global Transcript` (HateClipSeg within), `w/o Verdict Turn` (HateMM three cells,
+DeHate ROC), `w/ Joint Query` (DeHate ROC), `w/o Window Evidence` (DeHate ROC), `w/ Mean over Modalities` (DeHate ROC;
+HateClipSeg ROC under F3).
+
+**What a merged row is.** Two parts are removed (or replaced) at the same time and the result is compared with the
+same full method, on all three corpora with the same constants. A merged row replaces the rows of its parts.
+
+**Rules, fixed before the numbers.**
+1. Only rows with a not-below cell are merged; rows that are below on every cell stay as they are.
+2. The two parts must belong to one design unit that can be named in a sentence of the method section.
+3. Fewest merges; among equal counts, the set that needs no new reads.
+4. No choice per corpus or per cell; the convention `not below` = change > −0.05 point stays.
+5. Selection among merge sets is made on test tables: development-selected, and the table says so.
+
+**Stage 1 (CPU, stored reads).** `merge_rows.py` (imports `gate_table.py`, same evaluator calls, 1000 paired
+bootstrap draws):
+- part + verdict turn, from the `ns_<arm>` reads of §14 compared with the full method that keeps the verdict turn:
+  transcript, global frames, query isolation, joint query, window evidence;
+- `w/ Mean over Modalities` folded into `w/o Window Aggregate` (the max over modalities is how the aggregate is
+  built; the merged row is the existing `w/o Window Aggregate` row);
+- window evidence + mean over modalities (older reader's reads with the mean in the aggregate).
+A joint query has one read per window, so it already has one chain in the decoder and no max in the Integrator; the
+`w/ Joint Query` row is unchanged by merging `w/ Shared Chain` or `w/ Mean over Modalities` into it.
+
+**Stage 2 (GPU, only if stage 1 leaves not-below cells).** New reader arms that change two reader parts at once
+(`read_arms.py`): joint query + no query isolation, joint query + older window inputs, no query isolation + older
+window inputs. Each about 1.5–2 h on one RTX 5090 for the three corpora; which ones are run is decided from stage 1
+and written here before submission.
+
+### 15.1 Stage 1 results (2026-11-17, uoa-lab1, CPU; development-selected)
+
+`merge_rows.py --form {F5,F3} --name merge__em0__{F5,F3}`; tables `gate_table/tables/merge__em0__{F5,F3}.md`. Change
+against the full method (ROC / PR / within; `!` not below; under F5 unless stated):
+
+| merged row | HateMM | HateClipSeg | DeHate | not below (F5 / F3) |
+|---|---|---|---|---|
+| w/o Global Transcript + Verdict Turn | −21.3 / −20.7 / −1.4 | −1.5 / −1.7 / −0.5 | −11.7 / −6.5 / −2.9 | 0 / 0 |
+| w/o Global Frames + Verdict Turn | −2.3 / −2.2 / +0.4! | −8.5 / −4.7 / −2.9 | −1.6 / −2.8 / −2.2 | 1 / 1 |
+| w/o Query Isolation + Verdict Turn | −1.7 / −4.4 / −5.4 | −0.6 / −0.3 / −2.1 | −0.6 / −3.1 / −3.4 | 0 / 1 (HateClipSeg ROC +0.5) |
+| w/ Joint Query, w/o Verdict Turn | +0.1! / −0.3 / −1.1 | −4.6 / −4.3 / −7.9 | +0.4! / −1.6 / −0.1 | 2 / 2 |
+| w/o Window Evidence + Verdict Turn | −0.3 / −0.2 / −3.1 | −3.0 / −3.8 / −6.2 | −0.0! / −2.4 / −3.4 | 1 / 1 |
+| w/o Window Evidence, w/ Mean over Modalities | −0.5 / −1.4 / −2.5 | −1.9 / −3.5 / −4.9 | −0.1 / −2.1 / −2.4 | 0 / 0 |
+
+- **Transcript + verdict turn** is below on every cell under both Integrators and removes the five not-below cells
+  of its two rows. It is the only pairing of the verdict turn that does.
+- **Mean over Modalities folded into Window Aggregate**: the remaining row `w/o Window Aggregate` is below on every
+  cell (DeHate −0.2 / −1.0, intervals contain 0).
+- After these two merges the not-below cells left are `w/ Joint Query` DeHate ROC +0.5 and `w/o Window Evidence`
+  DeHate ROC +0.0. Pairing either with the verdict turn does not help, and the verdict turn is used above.
+- `w/o Window Evidence, w/ Mean over Modalities` is below on every cell, but the two parts are in different modules
+  (Reader input, Integrator aggregate) and do not form one design unit (rule 2); kept as a number, not proposed.
+
+**Stage 2 decision (before submission).** All three combined reader arms are read (uoa-lab1, about 3.3 GPU-h;
+`experiments/20261101_reader_ablation/README.md` §9): joint query + older window inputs (one merge would cover both
+remaining rows), joint query + no query isolation, no query isolation + older window inputs. Candidate merge sets,
+fixed now: (a) {transcript + verdict turn, joint query + window evidence, modalities into window aggregate} — three
+merges, 10 rows; (b) {transcript + verdict turn, joint query + query isolation + window evidence as one row,
+modalities into window aggregate} — four merges, 9 rows, needs a further arm and is read only if (a) fails.
