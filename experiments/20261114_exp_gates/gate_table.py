@@ -528,7 +528,7 @@ def render(res, chk, cfg, title):
             r = res[ds][name]
             parts = []
             for k in range(3):
-                if integ and k == 2:
+                if integ and k == 2 and row[2] == FULL:     # same reads, Integrator change only: order within a video unchanged
                     parts.append("="); continue
                 d = 100 * r["d"][k]
                 lo, hi = (100 * r["ci"][0][k], 100 * r["ci"][1][k])

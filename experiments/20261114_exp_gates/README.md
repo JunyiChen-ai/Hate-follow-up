@@ -742,7 +742,8 @@ against the full method (ROC / PR / within; `!` not below; under F5 unless state
 | w/o Window Evidence, w/ Mean over Modalities | −0.5 / −1.4 / −2.5 | −1.9 / −3.5 / −4.9 | −0.1 / −2.1 / −2.4 | 0 / 0 |
 
 - **Transcript + verdict turn** is below on every cell under both Integrators and removes the five not-below cells
-  of its two rows. It is the only pairing of the verdict turn that does.
+  of its two rows. (Corrected 2026-11-17: query isolation + verdict turn is also below on every cell under F5,
+  one cell not below under F3, but it leaves the `w/o Global Transcript` row as it is.)
 - **Mean over Modalities folded into Window Aggregate**: the remaining row `w/o Window Aggregate` is below on every
   cell (DeHate −0.2 / −1.0, intervals contain 0).
 - After these two merges the not-below cells left are `w/ Joint Query` DeHate ROC +0.5 and `w/o Window Evidence`
@@ -756,3 +757,77 @@ remaining rows), joint query + no query isolation, no query isolation + older wi
 fixed now: (a) {transcript + verdict turn, joint query + window evidence, modalities into window aggregate} — three
 merges, 10 rows; (b) {transcript + verdict turn, joint query + query isolation + window evidence as one row,
 modalities into window aggregate} — four merges, 9 rows, needs a further arm and is read only if (a) fails.
+
+### 15.2 Stage 2 results and final tables (2026-11-17, uoa-lab1; development-selected)
+
+Reads: Slurm 2411 (smoke), 2412–2414 (three combined arms), 2415–2417 (the fourth arm); 3 h 34 min GPU, 0 errors,
+all in-job checks 0.0 (`experiments/20261101_reader_ablation/README.md` §9.1). `mg_tables.sh` →
+`gate_table/tables/merge2__em0__{F5,F3}.md` (the 13 base rows and all ten merged candidates). Change against the full
+method (ROC / PR / within; `!` not below; HateClipSeg under F5, then under F3):
+
+| merged row | HateMM | HateClipSeg F5 | HateClipSeg F3 | DeHate | not below (F5 / F3) |
+|---|---|---|---|---|---|
+| w/ Joint Query, w/o Window Evidence | −0.4 / −0.6 / −2.2 | −5.1 / −4.5 / −10.6 | −3.5 / −3.6 / −10.6 | +0.2! / −2.2 / −0.6 | 1 / 1 |
+| w/ Joint Query, w/o Query Isolation | −1.1 / −3.7 / −4.2 | −4.0 / −3.7 / −7.0 | −2.5 / −4.0 / −7.0 | −2.3 / −4.1 / −4.2 | 0 / 0 |
+| w/o Query Isolation + Window Evidence | −1.3 / −3.9 / −5.1 | −2.2 / −3.6 / −7.7 | −2.4 / −4.3 / −7.7 | −1.4 / −2.0 / −1.8 | 0 / 0 |
+| w/ Joint Query, w/o Query Isolation + Window Evidence | −1.0 / −1.8 / −4.2 | −9.7 / −9.1 / −13.9 | −6.8 / −7.8 / −13.9 | −2.4 / −4.8 / −3.5 | 0 / 0 |
+
+**Merge set (a) fails**: joint query + window evidence is still not below on DeHate pooled ROC (+0.2, interval
+contains 0), as expected from §13 (on DeHate the video-level order is carried by the scope read).
+
+**Merge set (b) passes** (declared in §15.1 before the reads): {transcript + verdict turn; joint query + query
+isolation + window evidence as one row; mean over modalities folded into window aggregate}. Four merges, 13 → 9
+rows, **0 of 75 cells not below** under F5 and under F3. `merge_rows.py --form {F5,F3} --set b` →
+`gate_table/tables/final_b__em0__{F5,F3}.md`. Under F5:
+
+| row | HateMM | HateClipSeg | DeHate |
+|---|---|---|---|
+| full (absolute) | 90.0 / 70.0 / 78.6 | 75.3 / 70.8 / 68.6 | 76.7 / 23.4 / 67.2 |
+| w/o Global Transcript + Verdict Turn | −21.3 / −20.7 / −1.4 | −1.5 / −1.7 / −0.5 | −11.7 / −6.5 / −2.9 |
+| w/o Global Frames | −2.4 / −2.5 / −1.4 | −7.3 / −3.5 / −2.4 | −1.5 / −2.4 / −2.5 |
+| w/ Joint Query, w/o Query Isolation + Window Evidence | −1.0 / −1.8 / −4.2 | −9.7 / −9.1 / −13.9 | −2.4 / −4.8 / −3.5 |
+| w/ ASR Windows | −1.5 / −2.6 / −11.0 | −2.2 / −3.7 / −13.4 | −1.6 / −4.2 / −8.1 |
+| w/o Temporal Coupling | −0.5 / −2.2 / −11.9 | −0.3 / −0.6 / −3.8 | −0.4 / −1.1 / −9.5 |
+| w/ Shared Chain | −0.1 / −0.5 / −1.8 | −0.4 / −0.2 / −3.6 | −0.2 / −0.3 / −1.7 |
+| w/ Fixed Mean Duration | −0.1 / −0.1 / −0.9 | −0.2 / −0.2 / −1.5 | −0.2 / −0.7 / −1.5 |
+| w/o Video-Level Term | −32.0 / −41.0 / = | −16.1 / −15.8 / = | −19.5 / −14.1 / = |
+| w/o Window Aggregate | −4.0 / −9.0 / = | −3.2 / −3.7 / = | −0.2 / −1.0 / = |
+
+Under F3 the HateClipSeg column changes (full 71.4 / 68.0 / 68.6; rows in the stored table), the other two corpora
+are the same, and the count is also 0.
+
+**Merge set (c), found after the stage-2 tables (not declared before)**: {transcript + verdict turn; joint query +
+query isolation; window evidence + mean over modalities}. Three merges, 13 → 10 rows, **0 of 84 cells not below**
+under F5 and F3 (`--set c` → `final_c__em0__{F5,F3}.md`). It is one merge fewer than (b), but its third row pairs a
+Reader input with an Integrator choice, the pair §15.1 set aside under rule 2, and that row's DeHate ROC cell is
+−0.095 [−0.88, +0.71].
+
+**Why fewer is not possible among the tested pairings.** `w/o Global Transcript` is fixed only by the verdict turn;
+`w/ Joint Query` is fixed only together with query isolation (alone, with the verdict turn and with window evidence
+it stays not below on DeHate ROC); `w/o Window Evidence` then needs query isolation (already used: the three-part
+row) or mean over modalities (the cross-module pair); `w/ Mean over Modalities` has to go into one of the two. So
+three merges is the minimum, and four if every merged row has to stay inside one module.
+
+**How firm the result is.** Every cell is below as a point estimate. The smallest margins (both sets):
+`w/ Fixed Mean Duration` HateMM PR −0.051 [−0.56, +0.46] and HateMM ROC −0.083 [−0.25, +0.05], `w/ Shared Chain`
+HateMM ROC −0.131 [−0.32, +0.05], `w/o Window Aggregate` DeHate ROC −0.200 [−1.99, +1.62]. 25 of the 75 cells of
+set (b) have a 95 % paired bootstrap interval that contains 0 (29–31 of 84 for set (c)). The selection of the merge
+set was made on these test tables (rule 5).
+
+**Names if a set is adopted (proposal).** `w/o Global Transcript + Verdict Turn`: the prefix has no transcript and
+no video-level verdict is written back (the verdict is mostly decided by the transcript: without it HateMM pooled
+ROC falls 21 points). `w/ Joint Query, w/o Query Isolation + Window Evidence` = "w/ Plain Window Query": one joint
+question per window, asked in one growing conversation, with the proportional transcript slice and no in-window
+frames. `w/ Mean over Modalities` is not printed; `w/o Window Aggregate` covers it.
+
+**Code note.** `gate_table.py render` printed `=` (exempt) for the within cells of every row with an Integrator
+change; for `w/o Window Evidence, w/ Mean over Modalities` the reads differ too, so the cell is not equal by
+construction. The exemption now applies only when the row uses the full method's reads. No count in any earlier
+table changes (that row's within cells are −2.5 / −4.9 / −2.4).
+
+**Not changed.** Default method, `research-wiki/STATUS.md`, paper tables, method framework page. The base of this
+study (verdict turn kept, no EM, Integrator with the scope read) is itself not adopted.
+
+**Test-read record (rule 10).** Read: `gate_table/tables/merge2__em0__{F5,F3}`, `final_{b,c}__em0__{F5,F3}` (test
+metrics of merged rows on the three corpora). Found: the above. Changed: no method design; the choice of which rows
+are merged is selected on test and is labelled so.

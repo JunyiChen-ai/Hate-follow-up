@@ -335,3 +335,20 @@ jobs instead of waiting for their tables (about 45 min for the three corpora). S
 its first branch equals window 1 of `joint__no_window_evidence` of the same corpus. No separate smoke: the arm
 combines code paths that the smoke of job 2411 covered, and the in-job checks end the job with `FAILED` on a
 difference.
+
+### 9.1 Run record (2026-11-17, uoa-lab1 sc474397, one RTX 5090, Slurm partition `local-sc474397`; code commits d016b2f, fac7a23)
+
+| job | scope | arms | reads | elapsed | errors | checks (worst difference) |
+|---|---|---|---|---|---|---|
+| 2411 | smoke (`mg_smoke`) | the three two-part arms | 20 (6 videos × 3 arms + the longest HateMM video on the two growing-conversation arms) | 2 min 36 s | 0 | all 0.0 |
+| 2412 | HateMM (`mg_HateMM`) | the three two-part arms | 645 (215 × 3) | 28 min 50 s | 0 | `z_video` × 3, `first_joint`, `first_visual_old`: all 0.0 |
+| 2413 | HateClipSeg (`mg_HateClipSeg`) | the three two-part arms | 354 (118 × 3) | 24 min 49 s | 0 | all 0.0 |
+| 2414 | DeHate (`mg_DeHate`) | the three two-part arms | 4023 (1341 × 3) | 2 h 02 min 34 s | 0 | all 0.0 |
+| 2415 | HateMM | `joint__no_isolation__no_window_evidence` | 215 | 5 min 39 s | 0 | `z_video`, `first_joint_old`: 0.0 |
+| 2416 | HateClipSeg | same | 118 | 4 min 36 s | 0 | 0.0 |
+| 2417 | DeHate | same | 1341 | 25 min 10 s | 0 | 0.0 |
+
+All six full logs end with `READER_ABLATION_DONE`, no `Traceback`. Coverage 215 / 118 / 1341 lines per arm
+(`experiments/20261114_exp_gates/mg_tables.sh` checks it and merges HateMM + HateClipSeg into `mg_merged/`). GPU time
+3 h 34 min in total (expected about 4 h). Size on disk: 26 MB, 24 MB, 117 MB, merged copy 22 MB. Tables and reading:
+`experiments/20261114_exp_gates/README.md` §15.2.
